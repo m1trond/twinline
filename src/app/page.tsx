@@ -49,6 +49,7 @@ const navItems: Array<{ label: string; view: ActiveView }> = [
 
 const imageMessagePrefix = "image::";
 const videoMessagePrefix = "video::";
+const audioMessagePrefix = "audio::";
 const maxAttachmentSize = 50 * 1024 * 1024;
 
 function formatMessageTime(createdAt: string) {
@@ -77,6 +78,12 @@ function getMessageImageUrl(text: string) {
 function getMessageVideoUrl(text: string) {
   return text.startsWith(videoMessagePrefix)
     ? text.slice(videoMessagePrefix.length)
+    : null;
+}
+
+function getMessageAudioUrl(text: string) {
+  return text.startsWith(audioMessagePrefix)
+    ? text.slice(audioMessagePrefix.length)
     : null;
 }
 
@@ -146,9 +153,13 @@ export default function Home() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [isUploadingGalleryItem, setIsUploadingGalleryItem] = useState(false);
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordingChunksRef = useRef<BlobPart[]>([]);
+  const recordingStreamRef = useRef<MediaStream | null>(null);
   const latestMessageCreatedAtRef = useRef<string | null>(null);
 
   const activeUserName = useMemo(() => getDisplayName(user), [user]);
@@ -178,6 +189,12 @@ export default function Home() {
     latestMessageCreatedAtRef.current =
       messages.filter((message) => message.id > 0).at(-1)?.created_at ?? null;
   }, [messages]);
+
+  useEffect(() => {
+    return () => {
+      recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -574,6 +591,150 @@ export default function Home() {
 
         return mergeMessages(withoutOptimisticMessage, data ? [data] : []);
       });
+    }
+  }
+
+  async function sendVoiceMessage(audioBlob: Blob) {
+    if (!user) {
+      setErrorMessage("Сначала войди в аккаунт.");
+      return;
+    }
+
+    if (audioBlob.size > maxAttachmentSize) {
+      setErrorMessage("Голосовое сообщение должно быть меньше 50 МБ.");
+      return;
+    }
+
+    setIsUploadingAttachment(true);
+    setErrorMessage("");
+
+    const filePath = `${user.id}/voice-${Date.now()}-${crypto.randomUUID()}.webm`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("message-images")
+      .upload(filePath, audioBlob, {
+        cacheControl: "3600",
+        contentType: audioBlob.type || "audio/webm",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      setIsUploadingAttachment(false);
+      setErrorMessage("Не получилось загрузить голосовое сообщение.");
+      return;
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("message-images")
+      .getPublicUrl(filePath);
+
+    const optimisticMessage: MessageRow = {
+      id: -Date.now(),
+      author: activeUserName,
+      text: `${audioMessagePrefix}${publicUrlData.publicUrl}`,
+      created_at: new Date().toISOString(),
+      user_id: user.id,
+    };
+
+    setMessages((currentMessages) =>
+      mergeMessages(currentMessages, [optimisticMessage]),
+    );
+
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        author: activeUserName,
+        text: `${audioMessagePrefix}${publicUrlData.publicUrl}`,
+        user_id: user.id,
+      })
+      .select("id, author, text, created_at, user_id")
+      .single();
+
+    setIsUploadingAttachment(false);
+
+    if (error) {
+      setMessages((currentMessages) =>
+        currentMessages.filter((message) => message.id !== optimisticMessage.id),
+      );
+      setErrorMessage("Не получилось отправить голосовое сообщение.");
+    } else {
+      setMessages((currentMessages) => {
+        const withoutOptimisticMessage = currentMessages.filter(
+          (message) => message.id !== optimisticMessage.id,
+        );
+
+        return mergeMessages(withoutOptimisticMessage, data ? [data] : []);
+      });
+    }
+  }
+
+  async function startVoiceRecording() {
+    if (!user) {
+      setErrorMessage("Сначала войди в аккаунт.");
+      return;
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setErrorMessage("Браузер не поддерживает запись голоса.");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+
+      recordingChunksRef.current = [];
+      recordingStreamRef.current = stream;
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordingChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(recordingChunksRef.current, {
+          type: mediaRecorder.mimeType || "audio/webm",
+        });
+
+        recordingChunksRef.current = [];
+        recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
+        recordingStreamRef.current = null;
+        mediaRecorderRef.current = null;
+
+        if (audioBlob.size > 0) {
+          sendVoiceMessage(audioBlob);
+        }
+      };
+
+      mediaRecorder.start();
+      setIsRecordingVoice(true);
+      setErrorMessage("");
+    } catch {
+      setErrorMessage("Не получилось получить доступ к микрофону.");
+    }
+  }
+
+  function stopVoiceRecording() {
+    const mediaRecorder = mediaRecorderRef.current;
+
+    if (!mediaRecorder) {
+      return;
+    }
+
+    if (mediaRecorder.state !== "inactive") {
+      mediaRecorder.stop();
+    }
+
+    setIsRecordingVoice(false);
+  }
+
+  function toggleVoiceRecording() {
+    if (isRecordingVoice) {
+      stopVoiceRecording();
+    } else {
+      startVoiceRecording();
     }
   }
 
@@ -1175,7 +1336,8 @@ export default function Home() {
                     const isMine = message.user_id === user.id;
                     const imageUrl = getMessageImageUrl(message.text);
                     const videoUrl = getMessageVideoUrl(message.text);
-                    const hasAttachment = Boolean(imageUrl || videoUrl);
+                    const audioUrl = getMessageAudioUrl(message.text);
+                    const hasAttachment = Boolean(imageUrl || videoUrl || audioUrl);
 
                     return (
                       <article
@@ -1208,13 +1370,25 @@ export default function Home() {
                               />
                             </button>
                           ) : videoUrl ? (
-                            <video
-                              className="max-h-[420px] w-full rounded-xl bg-black"
+                          <video
+                            className="max-h-[420px] w-full rounded-xl bg-black"
+                            controls
+                            preload="metadata"
+                            src={videoUrl}
+                          />
+                        ) : audioUrl ? (
+                          <div className="rounded-xl bg-black/15 p-2">
+                            <p className="mb-2 text-sm font-semibold opacity-75">
+                              Голосовое сообщение
+                            </p>
+                            <audio
+                              className="w-full min-w-64 max-w-full"
                               controls
                               preload="metadata"
-                              src={videoUrl}
+                              src={audioUrl}
                             />
-                          ) : (
+                          </div>
+                        ) : (
                             <p className="whitespace-pre-wrap break-words text-[15px] leading-6">
                               {message.text}
                             </p>
@@ -1257,7 +1431,7 @@ export default function Home() {
                   <button
                     aria-label="Прикрепить файл"
                     className="grid min-h-12 w-12 shrink-0 place-items-center rounded-lg border border-[#2faea4]/35 bg-[#e3f4f4]/12 text-[#e3f4f4] transition hover:bg-[#e3f4f4]/18 disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={isUploadingAttachment}
+                    disabled={isUploadingAttachment || isRecordingVoice}
                     onClick={() => imageInputRef.current?.click()}
                     type="button"
                   >
@@ -1280,6 +1454,43 @@ export default function Home() {
                       </svg>
                     )}
                   </button>
+                  <button
+                    aria-label={isRecordingVoice ? "Остановить запись" : "Записать голосовое"}
+                    className={`grid min-h-12 w-12 shrink-0 place-items-center rounded-lg border text-[#e3f4f4] transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                      isRecordingVoice
+                        ? "border-red-400/60 bg-red-500/25"
+                        : "border-[#2faea4]/35 bg-[#e3f4f4]/12 hover:bg-[#e3f4f4]/18"
+                    }`}
+                    disabled={isUploadingAttachment}
+                    onClick={toggleVoiceRecording}
+                    type="button"
+                  >
+                    {isRecordingVoice ? (
+                      <span className="h-3.5 w-3.5 rounded-sm bg-red-300" />
+                    ) : (
+                      <svg
+                        aria-hidden="true"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                        />
+                        <path
+                          d="M19 11a7 7 0 0 1-14 0M12 18v3M9 21h6"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                    )}
+                  </button>
                   <input
                     aria-label="Текст сообщения"
                     className="min-h-12 min-w-0 flex-1 rounded-lg border border-transparent bg-[#e3f4f4]/12 px-3 text-base text-[#e3f4f4] outline-none transition placeholder:text-[#8fb7bb]/70 focus:border-[#37c6b8] focus:bg-[#e3f4f4]/18 sm:px-4"
@@ -1290,7 +1501,7 @@ export default function Home() {
                   />
                   <button
                     className="min-h-12 rounded-lg bg-[#37c6b8] px-3 text-sm font-semibold text-[#041012] transition hover:bg-[#65d8cc] disabled:cursor-not-allowed disabled:bg-[#52666a] sm:px-5"
-                    disabled={!messageText.trim() || isUploadingAttachment}
+                    disabled={!messageText.trim() || isUploadingAttachment || isRecordingVoice}
                     type="submit"
                   >
                     Отправить
