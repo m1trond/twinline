@@ -59,6 +59,19 @@ function formatMessageTime(createdAt: string) {
   }).format(new Date(createdAt));
 }
 
+function formatAudioTime(seconds: number) {
+  if (!Number.isFinite(seconds)) {
+    return "0:00";
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60)
+    .toString()
+    .padStart(2, "0");
+
+  return `${minutes}:${remainingSeconds}`;
+}
+
 function getDisplayName(user: User | null) {
   const metadataName = user?.user_metadata?.display_name;
 
@@ -133,6 +146,83 @@ async function fetchIdeas() {
     .from("ideas")
     .select("id, user_id, author, text, created_at")
     .order("created_at", { ascending: false });
+}
+
+function VoiceMessage({ src }: { src: string }) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  function togglePlayback() {
+    const audio = audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    if (audio.paused) {
+      audio.play();
+    } else {
+      audio.pause();
+    }
+  }
+
+  function seekAudio(event: ChangeEvent<HTMLInputElement>) {
+    const audio = audioRef.current;
+    const nextTime = Number(event.target.value);
+
+    if (!audio) {
+      return;
+    }
+
+    audio.currentTime = nextTime;
+    setCurrentTime(nextTime);
+  }
+
+  return (
+    <div className="min-w-[240px] rounded-2xl bg-black/12 p-3">
+      <audio
+        onEnded={() => setIsPlaying(false)}
+        onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)}
+        onPause={() => setIsPlaying(false)}
+        onPlay={() => setIsPlaying(true)}
+        onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
+        preload="metadata"
+        ref={audioRef}
+        src={src}
+      />
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <p className="text-sm font-bold opacity-75">Голосовое</p>
+        <p className="text-xs font-semibold opacity-60">
+          {formatAudioTime(currentTime)} / {formatAudioTime(duration)}
+        </p>
+      </div>
+      <div className="flex items-center gap-3">
+        <button
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#041012] text-[#e3f4f4] transition hover:scale-105"
+          onClick={togglePlayback}
+          type="button"
+        >
+          {isPlaying ? (
+            <span className="h-4 w-3 border-x-4 border-[#e3f4f4]" />
+          ) : (
+            <span className="ml-0.5 h-0 w-0 border-y-[7px] border-l-[11px] border-y-transparent border-l-[#e3f4f4]" />
+          )}
+        </button>
+        <input
+          aria-label="Позиция голосового сообщения"
+          className="h-1.5 min-w-0 flex-1 cursor-pointer appearance-none rounded-full bg-[#041012]/25 accent-[#041012]"
+          max={duration || 0}
+          min="0"
+          onChange={seekAudio}
+          step="0.1"
+          type="range"
+          value={currentTime}
+        />
+      </div>
+    </div>
+  );
 }
 
 export default function Home() {
@@ -1369,25 +1459,16 @@ export default function Home() {
                                 src={imageUrl}
                               />
                             </button>
-                          ) : videoUrl ? (
+                        ) : videoUrl ? (
                           <video
                             className="max-h-[420px] w-full rounded-xl bg-black"
                             controls
+                            controlsList="nodownload"
                             preload="metadata"
                             src={videoUrl}
                           />
                         ) : audioUrl ? (
-                          <div className="rounded-xl bg-black/15 p-2">
-                            <p className="mb-2 text-sm font-semibold opacity-75">
-                              Голосовое сообщение
-                            </p>
-                            <audio
-                              className="w-full min-w-64 max-w-full"
-                              controls
-                              preload="metadata"
-                              src={audioUrl}
-                            />
-                          </div>
+                          <VoiceMessage src={audioUrl} />
                         ) : (
                             <p className="whitespace-pre-wrap break-words text-[15px] leading-6">
                               {message.text}
