@@ -351,6 +351,7 @@ export default function Home() {
   const [callStartedAt, setCallStartedAt] = useState<number | null>(null);
   const [callDuration, setCallDuration] = useState(0);
   const [isChatMenuOpen, setIsChatMenuOpen] = useState(false);
+  const [chatMenuPosition, setChatMenuPosition] = useState({ left: 0, top: 0 });
   const [areNotificationsEnabled, setAreNotificationsEnabled] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -362,6 +363,7 @@ export default function Home() {
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  const chatMenuButtonRef = useRef<HTMLButtonElement | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const remoteCallStreamRef = useRef<MediaStream | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
@@ -1238,6 +1240,22 @@ export default function Home() {
     }
 
     setErrorMessage("");
+  }
+
+  function toggleChatMenu() {
+    const button = chatMenuButtonRef.current;
+
+    if (button) {
+      const rect = button.getBoundingClientRect();
+      const menuWidth = Math.min(280, window.innerWidth - 32);
+
+      setChatMenuPosition({
+        left: Math.max(16, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 16)),
+        top: Math.min(rect.bottom + 10, window.innerHeight - 190),
+      });
+    }
+
+    setIsChatMenuOpen((isOpen) => !isOpen);
   }
 
   async function updateProfileName(event: FormEvent<HTMLFormElement>) {
@@ -2336,7 +2354,8 @@ export default function Home() {
                         aria-expanded={isChatMenuOpen}
                         aria-label="Настройки чата"
                         className="grid min-h-10 w-10 place-items-center rounded-xl border border-[#2faea4]/35 bg-[#e3f4f4]/10 text-[#e3f4f4] transition hover:bg-white/10"
-                        onClick={() => setIsChatMenuOpen((isOpen) => !isOpen)}
+                        onClick={toggleChatMenu}
+                        ref={chatMenuButtonRef}
                         type="button"
                       >
                         <span className="grid gap-1">
@@ -2357,43 +2376,6 @@ export default function Home() {
                       {callStatus === "idle" ? "Позвонить" : callStatusText}
                     </button>
                   </div>
-                  {isChatMenuOpen ? (
-                    <div className="w-full rounded-2xl border border-[#2faea4]/30 bg-[#071216]/74 p-3 shadow-inner shadow-black/20">
-                      <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
-                        <button
-                          className="flex min-h-12 items-center justify-between gap-3 rounded-xl bg-[#e3f4f4]/8 px-3 text-left transition hover:bg-white/10"
-                          onClick={toggleNotifications}
-                          type="button"
-                        >
-                          <span>
-                            <span className="block text-sm font-bold text-[#e3f4f4]">
-                              Уведомления
-                            </span>
-                            <span className="mt-0.5 block text-xs text-[#8fb7bb]">
-                              Сообщения в браузере
-                            </span>
-                          </span>
-                          <span
-                            className={`flex h-6 w-11 shrink-0 items-center rounded-full p-1 transition ${
-                              areNotificationsEnabled
-                                ? "justify-end bg-[#37c6b8]"
-                                : "justify-start bg-[#e3f4f4]/18"
-                            }`}
-                          >
-                            <span className="h-4 w-4 rounded-full bg-[#e3f4f4]" />
-                          </span>
-                        </button>
-
-                        <button
-                          className="min-h-12 rounded-xl border border-red-400/35 bg-red-500/10 px-4 text-sm font-bold text-red-100 transition hover:bg-red-500/18"
-                          onClick={deleteChat}
-                          type="button"
-                        >
-                          Удалить чат
-                        </button>
-                      </div>
-                    </div>
-                  ) : null}
                 </div>
                 <audio autoPlay playsInline ref={remoteAudioRef} />
 
@@ -2709,6 +2691,55 @@ export default function Home() {
             src={selectedImageUrl}
           />
         </button>
+      ) : null}
+      {isChatMenuOpen ? (
+        <>
+          <button
+            aria-label="Закрыть настройки чата"
+            className="fixed inset-0 z-[70] cursor-default bg-transparent"
+            onClick={() => setIsChatMenuOpen(false)}
+            type="button"
+          />
+          <div
+            className="fixed z-[80] w-[min(280px,calc(100vw-32px))] rounded-2xl border border-[#2faea4]/45 bg-[#071216]/98 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.58)] backdrop-blur-xl"
+            style={{
+              left: chatMenuPosition.left,
+              top: chatMenuPosition.top,
+            }}
+          >
+            <button
+              className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl bg-[#e3f4f4]/8 px-3 text-left transition hover:bg-white/10"
+              onClick={toggleNotifications}
+              type="button"
+            >
+              <span>
+                <span className="block text-sm font-bold text-[#e3f4f4]">
+                  Уведомления
+                </span>
+                <span className="mt-0.5 block text-xs text-[#8fb7bb]">
+                  Сообщения в браузере
+                </span>
+              </span>
+              <span
+                className={`flex h-6 w-11 shrink-0 items-center rounded-full p-1 transition ${
+                  areNotificationsEnabled
+                    ? "justify-end bg-[#37c6b8]"
+                    : "justify-start bg-[#e3f4f4]/18"
+                }`}
+              >
+                <span className="h-4 w-4 rounded-full bg-[#e3f4f4]" />
+              </span>
+            </button>
+
+            <button
+              className="mt-2 min-h-12 w-full rounded-xl border border-red-400/35 bg-red-500/10 px-4 text-left text-sm font-bold text-red-100 transition hover:bg-red-500/18"
+              onClick={deleteChat}
+              type="button"
+            >
+              Удалить чат
+            </button>
+          </div>
+        </>
       ) : null}
       {viewedProfile ? (
         <button
