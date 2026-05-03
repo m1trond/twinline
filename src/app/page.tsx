@@ -11,7 +11,7 @@ type MessageRow = {
 };
 
 type Author = "me" | "friend";
-type ActiveView = "profile" | "messages";
+type ActiveView = "profile" | "messages" | "gallery" | "ideas";
 
 const authorLabels: Record<string, string> = {
   me: "Я",
@@ -348,6 +348,28 @@ export default function Home() {
               >
                 Сообщения
               </button>
+              <button
+                className={`rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
+                  activeView === "gallery"
+                    ? "bg-[#f0c45d] text-[#1c1509]"
+                    : "text-[#fff8ea] opacity-80 hover:bg-white/10 hover:opacity-100"
+                }`}
+                onClick={() => setActiveView("gallery")}
+                type="button"
+              >
+                Галерея
+              </button>
+              <button
+                className={`rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
+                  activeView === "ideas"
+                    ? "bg-[#f0c45d] text-[#1c1509]"
+                    : "text-[#fff8ea] opacity-80 hover:bg-white/10 hover:opacity-100"
+                }`}
+                onClick={() => setActiveView("ideas")}
+                type="button"
+              >
+                Идеи
+              </button>
             </nav>
 
           </aside>
@@ -424,6 +446,66 @@ export default function Home() {
                     кто открыл сайт, и переключатель больше не понадобится.
                   </p>
                 </section>
+              </div>
+            </div>
+          ) : activeView === "gallery" ? (
+            <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/78 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md">
+              <div className="mb-5 border-b border-[#e6b85c]/35 pb-5">
+                <p className="text-sm font-medium text-[#d8b875]">Раздел</p>
+                <h2 className="text-3xl font-semibold">Галерея</h2>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <article className="aspect-[4/5] overflow-hidden rounded-2xl border border-[#e6b85c]/35 bg-black/20">
+                  <div
+                    className="h-full bg-cover bg-center"
+                    style={{ backgroundImage: "url('/chat-background.jpg')" }}
+                  />
+                </article>
+                <article className="aspect-[4/5] overflow-hidden rounded-2xl border border-[#e6b85c]/35 bg-black/20">
+                  <div
+                    className="h-full bg-cover bg-center"
+                    style={{ backgroundImage: "url('/chat-background-right.jpg')" }}
+                  />
+                </article>
+                <article className="grid aspect-[4/5] place-items-center rounded-2xl border border-dashed border-[#e6b85c]/45 bg-black/20 p-6 text-center">
+                  <div>
+                    <p className="text-lg font-semibold text-[#fff8ea]">
+                      Новые фото
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-[#d8c7a5]">
+                      Позже подключим загрузку изображений и общую ленту.
+                    </p>
+                  </div>
+                </article>
+              </div>
+            </div>
+          ) : activeView === "ideas" ? (
+            <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/78 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md">
+              <div className="mb-5 border-b border-[#e6b85c]/35 pb-5">
+                <p className="text-sm font-medium text-[#d8b875]">Раздел</p>
+                <h2 className="text-3xl font-semibold">Идеи</h2>
+              </div>
+
+              <div className="grid gap-4">
+                {[
+                  "Добавить вход только для двоих",
+                  "Сделать общую галерею с фото",
+                  "Добавить капсулы времени",
+                  "Сделать реакции на сообщения",
+                ].map((idea) => (
+                  <article
+                    className="rounded-2xl border border-[#e6b85c]/35 bg-black/20 p-4"
+                    key={idea}
+                  >
+                    <p className="text-base font-semibold text-[#fff8ea]">
+                      {idea}
+                    </p>
+                    <p className="mt-2 text-sm text-[#d8c7a5]">
+                      Черновик идеи для развития Twinline.
+                    </p>
+                  </article>
+                ))}
               </div>
             </div>
           ) : (
