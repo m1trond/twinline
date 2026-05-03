@@ -2346,41 +2346,6 @@ export default function Home() {
                         </span>
                       </button>
 
-                      {isChatMenuOpen ? (
-                        <div className="fixed right-4 top-24 z-50 w-[min(280px,calc(100vw-32px))] rounded-2xl border border-[#2faea4]/35 bg-[#071216]/98 p-3 shadow-[0_18px_55px_rgba(0,0,0,0.52)] backdrop-blur-xl sm:right-[max(2rem,calc((100vw-72rem)/2+2rem))] sm:top-40">
-                          <button
-                            className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-white/10"
-                            onClick={toggleNotifications}
-                            type="button"
-                          >
-                            <span>
-                              <span className="block text-sm font-bold text-[#e3f4f4]">
-                                Уведомления
-                              </span>
-                              <span className="mt-0.5 block text-xs text-[#8fb7bb]">
-                                Сообщения в браузере
-                              </span>
-                            </span>
-                            <span
-                              className={`flex h-6 w-11 items-center rounded-full p-1 transition ${
-                                areNotificationsEnabled
-                                  ? "justify-end bg-[#37c6b8]"
-                                  : "justify-start bg-[#e3f4f4]/18"
-                              }`}
-                            >
-                              <span className="h-4 w-4 rounded-full bg-[#e3f4f4]" />
-                            </span>
-                          </button>
-
-                          <button
-                            className="mt-2 w-full rounded-xl border border-red-400/35 bg-red-500/10 px-3 py-3 text-left text-sm font-bold text-red-100 transition hover:bg-red-500/18"
-                            onClick={deleteChat}
-                            type="button"
-                          >
-                            Удалить чат
-                          </button>
-                        </div>
-                      ) : null}
                     </div>
 
                     <button
@@ -2392,6 +2357,43 @@ export default function Home() {
                       {callStatus === "idle" ? "Позвонить" : callStatusText}
                     </button>
                   </div>
+                  {isChatMenuOpen ? (
+                    <div className="w-full rounded-2xl border border-[#2faea4]/30 bg-[#071216]/74 p-3 shadow-inner shadow-black/20">
+                      <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
+                        <button
+                          className="flex min-h-12 items-center justify-between gap-3 rounded-xl bg-[#e3f4f4]/8 px-3 text-left transition hover:bg-white/10"
+                          onClick={toggleNotifications}
+                          type="button"
+                        >
+                          <span>
+                            <span className="block text-sm font-bold text-[#e3f4f4]">
+                              Уведомления
+                            </span>
+                            <span className="mt-0.5 block text-xs text-[#8fb7bb]">
+                              Сообщения в браузере
+                            </span>
+                          </span>
+                          <span
+                            className={`flex h-6 w-11 shrink-0 items-center rounded-full p-1 transition ${
+                              areNotificationsEnabled
+                                ? "justify-end bg-[#37c6b8]"
+                                : "justify-start bg-[#e3f4f4]/18"
+                            }`}
+                          >
+                            <span className="h-4 w-4 rounded-full bg-[#e3f4f4]" />
+                          </span>
+                        </button>
+
+                        <button
+                          className="min-h-12 rounded-xl border border-red-400/35 bg-red-500/10 px-4 text-sm font-bold text-red-100 transition hover:bg-red-500/18"
+                          onClick={deleteChat}
+                          type="button"
+                        >
+                          Удалить чат
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
                 <audio autoPlay playsInline ref={remoteAudioRef} />
 
