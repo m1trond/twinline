@@ -378,13 +378,16 @@ export default function Home() {
   }
 
   return (
-    <main className="relative h-dvh overflow-hidden text-[#fff8ea]">
+    <main className="relative h-dvh overflow-hidden bg-[#070604] text-[#fff8ea]">
       <div
         aria-hidden="true"
-        className="absolute inset-0 h-full w-full bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/site-background.jpg')" }}
+        className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(240,196,93,0.16),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(255,248,234,0.08),transparent_28%),linear-gradient(135deg,#070604_0%,#11100d_46%,#050403_100%)]"
       />
-      <div className="relative h-full overflow-hidden bg-[#090806]/60 backdrop-blur-[2px]">
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(255,248,234,0.45)_1px,transparent_1px),linear-gradient(90deg,rgba(255,248,234,0.45)_1px,transparent_1px)] [background-size:44px_44px]"
+      />
+      <div className="relative h-full overflow-hidden bg-[#090806]/35">
         <div className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden px-3 py-3 sm:px-6 sm:py-4 lg:px-8">
         <header className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/82 px-3 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mb-4 sm:px-4">
           <div className="flex items-center gap-3">
