@@ -350,6 +350,14 @@ export default function Home() {
   const [isCallMicMuted, setIsCallMicMuted] = useState(false);
   const [callStartedAt, setCallStartedAt] = useState<number | null>(null);
   const [callDuration, setCallDuration] = useState(0);
+  const [isChatMenuOpen, setIsChatMenuOpen] = useState(false);
+  const [areNotificationsEnabled, setAreNotificationsEnabled] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.localStorage.getItem("twinline-notifications") === "enabled";
+  });
   const [errorMessage, setErrorMessage] = useState("");
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
@@ -367,6 +375,7 @@ export default function Home() {
   const recordingChunksRef = useRef<BlobPart[]>([]);
   const recordingStreamRef = useRef<MediaStream | null>(null);
   const latestMessageCreatedAtRef = useRef<string | null>(null);
+  const notificationsEnabledRef = useRef(false);
 
   const currentProfile = useMemo(() => {
     return profiles.find((profile) => profile.user_id === user?.id) ?? null;
@@ -450,6 +459,10 @@ export default function Home() {
   useEffect(() => {
     callStatusRef.current = callStatus;
   }, [callStatus]);
+
+  useEffect(() => {
+    notificationsEnabledRef.current = areNotificationsEnabled;
+  }, [areNotificationsEnabled]);
 
   useEffect(() => {
     if (callStatus === "idle") {
@@ -715,6 +728,23 @@ export default function Home() {
           setMessages((currentMessages) =>
             mergeMessages(currentMessages, [newMessage]),
           );
+
+          if (
+            notificationsEnabledRef.current &&
+            newMessage.user_id !== signedInUser.id &&
+            "Notification" in window &&
+            Notification.permission === "granted"
+          ) {
+            new Notification(newMessage.author, {
+              body: newMessage.text.startsWith(imageMessagePrefix)
+                ? "Отправлено изображение"
+                : newMessage.text.startsWith(videoMessagePrefix)
+                  ? "Отправлено видео"
+                  : newMessage.text.startsWith(audioMessagePrefix)
+                    ? "Голосовое сообщение"
+                    : newMessage.text,
+            });
+          }
         },
       )
       .on(
@@ -1163,6 +1193,51 @@ export default function Home() {
     setCallStartedAt(null);
     setCallDuration(0);
     setCallStatus("idle");
+  }
+
+  async function toggleNotifications() {
+    const nextValue = !areNotificationsEnabled;
+
+    if (nextValue && "Notification" in window) {
+      const permission = await Notification.requestPermission();
+
+      if (permission !== "granted") {
+        setErrorMessage("Браузер не разрешил уведомления.");
+        return;
+      }
+    }
+
+    setAreNotificationsEnabled(nextValue);
+    window.localStorage.setItem(
+      "twinline-notifications",
+      nextValue ? "enabled" : "disabled",
+    );
+    setErrorMessage("");
+  }
+
+  async function deleteChat() {
+    const confirmed = window.confirm(
+      "Удалить весь чат для вас обоих? Сообщения пропадут из базы данных.",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const previousMessages = messages;
+
+    setMessages([]);
+    setIsChatMenuOpen(false);
+
+    const { error } = await supabase.from("messages").delete().gt("id", 0);
+
+    if (error) {
+      setMessages(previousMessages);
+      setErrorMessage("Не получилось удалить чат. Возможно, нужно разрешить удаление в Supabase.");
+      return;
+    }
+
+    setErrorMessage("");
   }
 
   async function updateProfileName(event: FormEvent<HTMLFormElement>) {
@@ -2256,6 +2331,58 @@ export default function Home() {
                     </div>
                   </div>
                   <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+                    <div className="relative">
+                      <button
+                        aria-expanded={isChatMenuOpen}
+                        aria-label="Настройки чата"
+                        className="grid min-h-10 w-10 place-items-center rounded-xl border border-[#2faea4]/35 bg-[#e3f4f4]/10 text-[#e3f4f4] transition hover:bg-white/10"
+                        onClick={() => setIsChatMenuOpen((isOpen) => !isOpen)}
+                        type="button"
+                      >
+                        <span className="grid gap-1">
+                          <span className="h-0.5 w-4 rounded-full bg-current" />
+                          <span className="h-0.5 w-4 rounded-full bg-current" />
+                          <span className="h-0.5 w-4 rounded-full bg-current" />
+                        </span>
+                      </button>
+
+                      {isChatMenuOpen ? (
+                        <div className="absolute right-0 top-12 z-30 w-64 rounded-2xl border border-[#2faea4]/35 bg-[#071216]/98 p-3 shadow-[0_18px_55px_rgba(0,0,0,0.42)] backdrop-blur-xl">
+                          <button
+                            className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-white/10"
+                            onClick={toggleNotifications}
+                            type="button"
+                          >
+                            <span>
+                              <span className="block text-sm font-bold text-[#e3f4f4]">
+                                Уведомления
+                              </span>
+                              <span className="mt-0.5 block text-xs text-[#8fb7bb]">
+                                Сообщения в браузере
+                              </span>
+                            </span>
+                            <span
+                              className={`flex h-6 w-11 items-center rounded-full p-1 transition ${
+                                areNotificationsEnabled
+                                  ? "justify-end bg-[#37c6b8]"
+                                  : "justify-start bg-[#e3f4f4]/18"
+                              }`}
+                            >
+                              <span className="h-4 w-4 rounded-full bg-[#e3f4f4]" />
+                            </span>
+                          </button>
+
+                          <button
+                            className="mt-2 w-full rounded-xl border border-red-400/35 bg-red-500/10 px-3 py-3 text-left text-sm font-bold text-red-100 transition hover:bg-red-500/18"
+                            onClick={deleteChat}
+                            type="button"
+                          >
+                            Удалить чат
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+
                     <button
                       className="min-h-10 min-w-28 rounded-xl bg-[#37c6b8] px-4 text-xs font-bold text-[#041012] transition hover:bg-[#65d8cc] disabled:cursor-not-allowed disabled:bg-[#52666a]"
                       disabled={!friendProfile?.userId || callStatus !== "idle"}
