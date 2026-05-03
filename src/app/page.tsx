@@ -66,7 +66,7 @@ export default function Home() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const messagesListRef = useRef<HTMLDivElement | null>(null);
 
   const activeAuthorName = useMemo(() => {
     return authorLabels[author] ?? "Я";
@@ -148,7 +148,16 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const messagesList = messagesListRef.current;
+
+    if (!messagesList) {
+      return;
+    }
+
+    messagesList.scrollTo({
+      top: messagesList.scrollHeight,
+      behavior: "smooth",
+    });
   }, [messages]);
 
   async function sendMessage(event: FormEvent<HTMLFormElement>) {
@@ -206,19 +215,19 @@ export default function Home() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden text-[#fff8ea]">
+    <main className="relative h-dvh overflow-hidden text-[#fff8ea]">
       <div
         aria-hidden="true"
-        className="absolute inset-y-0 left-0 w-1/2 bg-cover bg-center bg-no-repeat"
+        className="absolute inset-y-0 left-0 h-full w-1/2 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/chat-background.jpg')" }}
       />
       <div
         aria-hidden="true"
-        className="absolute inset-y-0 right-0 w-1/2 bg-cover bg-center bg-no-repeat"
+        className="absolute inset-y-0 right-0 h-full w-1/2 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/chat-background-right.jpg')" }}
       />
-      <div className="relative min-h-screen bg-[#090806]/60 backdrop-blur-[2px]">
-        <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-4 sm:px-6 lg:px-8">
+      <div className="relative h-full overflow-hidden bg-[#090806]/60 backdrop-blur-[2px]">
+        <div className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden px-4 py-4 sm:px-6 lg:px-8">
         <header className="mb-4 flex items-center justify-between gap-4 rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/82 px-4 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md">
           <div className="flex items-center gap-3">
             <div className="grid h-11 w-11 place-items-center rounded-xl bg-[#f0c45d] text-lg font-black text-[#1c1509]">
@@ -242,8 +251,8 @@ export default function Home() {
           </div>
         </header>
 
-        <section className="grid flex-1 gap-4 overflow-hidden pb-4 lg:grid-cols-[280px_1fr]">
-          <aside className="hidden rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/78 p-4 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:block">
+        <section className="grid min-h-0 flex-1 gap-4 overflow-hidden pb-4 lg:grid-cols-[280px_1fr]">
+          <aside className="hidden min-h-0 rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/78 p-4 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:block">
             <div className="mb-5">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d8b875]">
                 Меню
@@ -403,7 +412,10 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex min-h-[460px] flex-col gap-3 overflow-y-auto rounded-2xl border border-[#e6b85c]/45 bg-[#100d09]/82 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md">
+          <div
+            className="flex min-h-0 flex-col gap-3 overflow-y-auto rounded-2xl border border-[#e6b85c]/45 bg-[#100d09]/82 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md"
+            ref={messagesListRef}
+          >
             {isLoading ? (
               <p className="text-sm text-[#d8c7a5]">Загружаю сообщения...</p>
             ) : null}
@@ -457,8 +469,6 @@ export default function Home() {
                 </article>
               );
             })}
-
-            <div ref={messagesEndRef} />
           </div>
 
           <form
