@@ -1547,10 +1547,13 @@ export default function Home() {
 
                   <section className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#5bbdb4]">
-                      Твой вход
+                      Email
                     </p>
                     <p className="mt-3 break-words text-lg font-semibold">
-                      Email скрыт от собеседника
+                      {user.email}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-[#8fb7bb]">
+                      Его видишь только ты в своём аккаунте.
                     </p>
                   </section>
 
