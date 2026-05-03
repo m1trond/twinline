@@ -216,8 +216,10 @@ export default function Home() {
         <div className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden px-4 py-4 sm:px-6 lg:px-8">
         <header className="mb-4 flex items-center justify-between gap-4 rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/82 px-4 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md">
           <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-xl bg-[#f0c45d] text-lg font-black text-[#1c1509]">
-              T
+            <div className="relative grid h-11 w-11 place-items-center rounded-xl bg-[#f0c45d] shadow-[0_8px_24px_rgba(240,196,93,0.28)]">
+              <span className="absolute h-6 w-2 rotate-45 rounded-full bg-[#1c1509]" />
+              <span className="absolute h-6 w-2 -rotate-45 rounded-full bg-[#1c1509]" />
+              <span className="h-3 w-3 rounded-full border-2 border-[#1c1509] bg-[#f0c45d]" />
             </div>
             <div>
               <h1 className="text-2xl font-semibold tracking-normal">
@@ -234,10 +236,9 @@ export default function Home() {
         <section className="grid min-h-0 flex-1 gap-4 overflow-hidden pb-4 lg:grid-cols-[280px_1fr]">
           <aside className="hidden min-h-0 rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/78 p-4 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:block">
             <div className="mb-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d8b875]">
+              <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#d8b875]">
                 Меню
               </p>
-              <h2 className="mt-1 text-lg font-semibold">Линия связи</h2>
             </div>
 
             <nav className="grid gap-2">
