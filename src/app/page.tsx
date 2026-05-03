@@ -1,6 +1,13 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ChangeEvent,
+  FormEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { supabase } from "@/lib/supabase";
 
 type MessageRow = {
@@ -25,11 +32,21 @@ const navItems: Array<{ label: string; view: ActiveView }> = [
   { label: "Идеи", view: "ideas" },
 ];
 
+const imageMessagePrefix = "image::";
+
 function formatMessageTime(createdAt: string) {
   return new Intl.DateTimeFormat("ru-RU", {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(createdAt));
+}
+
+function getMessageImageUrl(text: string) {
+  if (!text.startsWith(imageMessagePrefix)) {
+    return null;
+  }
+
+  return text.slice(imageMessagePrefix.length);
 }
 
 function mergeMessages(currentMessages: MessageRow[], nextMessages: MessageRow[]) {
@@ -80,7 +97,9 @@ export default function Home() {
     return savedAuthor === "friend" ? "friend" : "me";
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
   const latestMessageCreatedAtRef = useRef<string | null>(null);
 
   const activeAuthorName = useMemo(() => {
@@ -247,6 +266,92 @@ export default function Home() {
       });
       setErrorMessage("");
     }
+  }
+
+  async function sendImage(file: File) {
+    if (!file.type.startsWith("image/")) {
+      setErrorMessage("Можно отправлять только изображения.");
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      setErrorMessage("Изображение должно быть меньше 8 МБ.");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    setErrorMessage("");
+
+    const fileExtension = file.name.split(".").pop() ?? "jpg";
+    const filePath = `${author}/${Date.now()}-${crypto.randomUUID()}.${fileExtension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("message-images")
+      .upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      setIsUploadingImage(false);
+      setErrorMessage("Не получилось загрузить изображение.");
+      return;
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("message-images")
+      .getPublicUrl(filePath);
+
+    const imageUrl = publicUrlData.publicUrl;
+    const optimisticMessage: MessageRow = {
+      id: -Date.now(),
+      author,
+      text: `${imageMessagePrefix}${imageUrl}`,
+      created_at: new Date().toISOString(),
+    };
+
+    setMessages((currentMessages) =>
+      mergeMessages(currentMessages, [optimisticMessage]),
+    );
+
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        author,
+        text: `${imageMessagePrefix}${imageUrl}`,
+      })
+      .select("id, author, text, created_at")
+      .single();
+
+    setIsUploadingImage(false);
+
+    if (error) {
+      setMessages((currentMessages) =>
+        currentMessages.filter((message) => message.id !== optimisticMessage.id),
+      );
+      setErrorMessage("Не получилось отправить изображение.");
+    } else {
+      setMessages((currentMessages) => {
+        const withoutOptimisticMessage = currentMessages.filter(
+          (message) => message.id !== optimisticMessage.id,
+        );
+
+        return mergeMessages(
+          withoutOptimisticMessage,
+          data ? [data] : [],
+        );
+      });
+    }
+  }
+
+  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (file) {
+      sendImage(file);
+    }
+
+    event.target.value = "";
   }
 
   async function deleteMessage(message: MessageRow) {
@@ -555,6 +660,7 @@ export default function Home() {
 
             {messages.map((message) => {
               const isMine = message.author === author;
+              const imageUrl = getMessageImageUrl(message.text);
 
               return (
                 <article
@@ -571,9 +677,24 @@ export default function Home() {
                     <p className="mb-1 text-xs font-semibold opacity-70">
                       {authorLabels[message.author] ?? message.author}
                     </p>
-                    <p className="whitespace-pre-wrap break-words text-sm leading-6">
-                      {message.text}
-                    </p>
+                    {imageUrl ? (
+                      <a
+                        href={imageUrl}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          alt="Отправленное изображение"
+                          className="max-h-80 w-full rounded-xl object-cover"
+                          src={imageUrl}
+                        />
+                      </a>
+                    ) : (
+                      <p className="whitespace-pre-wrap break-words text-sm leading-6">
+                        {message.text}
+                      </p>
+                    )}
                     <div className="mt-2 flex items-center justify-end gap-3">
                       {isMine ? (
                         <button
@@ -603,6 +724,39 @@ export default function Home() {
             onSubmit={sendMessage}
           >
             <input
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageChange}
+              ref={imageInputRef}
+              type="file"
+            />
+            <button
+              aria-label="Прикрепить изображение"
+              className="grid min-h-12 w-12 shrink-0 place-items-center rounded-lg border border-[#e6b85c]/35 bg-[#fff8ea]/12 text-[#fff8ea] transition hover:bg-[#fff8ea]/18 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isUploadingImage}
+              onClick={() => imageInputRef.current?.click()}
+              type="button"
+            >
+              {isUploadingImage ? (
+                <span className="h-4 w-4 rounded-full border-2 border-[#f0c45d] border-t-transparent" />
+              ) : (
+                <svg
+                  aria-hidden="true"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="m8.5 12.5 5.9-5.9a3.2 3.2 0 0 1 4.5 4.5l-7.1 7.1a5 5 0 0 1-7.1-7.1l7.8-7.8"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                  />
+                </svg>
+              )}
+            </button>
+            <input
               aria-label="Текст сообщения"
               className="min-h-12 min-w-0 flex-1 rounded-lg border border-transparent bg-[#fff8ea]/12 px-3 text-base text-[#fff8ea] outline-none transition placeholder:text-[#d8c7a5]/70 focus:border-[#f0c45d] focus:bg-[#fff8ea]/18 sm:px-4"
               onChange={(event) => setMessageText(event.target.value)}
@@ -612,7 +766,7 @@ export default function Home() {
             />
             <button
               className="min-h-12 rounded-lg bg-[#f0c45d] px-3 text-sm font-semibold text-[#1c1509] transition hover:bg-[#ffd775] disabled:cursor-not-allowed disabled:bg-[#83765d] sm:px-5"
-              disabled={!messageText.trim()}
+              disabled={!messageText.trim() || isUploadingImage}
               type="submit"
             >
               Отправить
