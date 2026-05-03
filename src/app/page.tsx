@@ -2347,7 +2347,7 @@ export default function Home() {
                       </button>
 
                       {isChatMenuOpen ? (
-                        <div className="absolute right-0 top-12 z-30 w-64 rounded-2xl border border-[#2faea4]/35 bg-[#071216]/98 p-3 shadow-[0_18px_55px_rgba(0,0,0,0.42)] backdrop-blur-xl">
+                        <div className="fixed right-4 top-24 z-50 w-[min(280px,calc(100vw-32px))] rounded-2xl border border-[#2faea4]/35 bg-[#071216]/98 p-3 shadow-[0_18px_55px_rgba(0,0,0,0.52)] backdrop-blur-xl sm:right-[max(2rem,calc((100vw-72rem)/2+2rem))] sm:top-40">
                           <button
                             className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-white/10"
                             onClick={toggleNotifications}
