@@ -45,8 +45,20 @@ type ProfileRow = {
   updated_at: string;
 };
 
+type CallSignalType = "offer" | "answer" | "ice" | "end";
+
+type CallSignal = {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  type: CallSignalType;
+  payload: unknown;
+  created_at: string;
+};
+
 type ActiveView = "profile" | "messages" | "gallery" | "ideas";
 type AuthMode = "sign-in" | "sign-up";
+type CallStatus = "idle" | "calling" | "incoming" | "connecting" | "connected";
 
 const navItems: Array<{ label: string; view: ActiveView }> = [
   { label: "Профиль", view: "profile" },
@@ -184,6 +196,31 @@ async function fetchProfiles() {
     .select("user_id, display_name, avatar_url, name_changed_at, updated_at");
 }
 
+function isSessionDescriptionPayload(
+  payload: unknown,
+): payload is RTCSessionDescriptionInit {
+  if (!payload || typeof payload !== "object") {
+    return false;
+  }
+
+  const maybePayload = payload as Record<string, unknown>;
+
+  return (
+    typeof maybePayload.type === "string" &&
+    typeof maybePayload.sdp === "string"
+  );
+}
+
+function isIceCandidatePayload(
+  payload: unknown,
+): payload is RTCIceCandidateInit {
+  if (!payload || typeof payload !== "object") {
+    return false;
+  }
+
+  return typeof (payload as Record<string, unknown>).candidate === "string";
+}
+
 function VoiceMessage({ src }: { src: string }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -288,10 +325,16 @@ export default function Home() {
   const [isUploadingGalleryItem, setIsUploadingGalleryItem] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [callStatus, setCallStatus] = useState<CallStatus>("idle");
+  const [incomingCall, setIncomingCall] = useState<CallSignal | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const callPartnerIdRef = useRef<string | null>(null);
+  const localCallStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingChunksRef = useRef<BlobPart[]>([]);
   const recordingStreamRef = useRef<MediaStream | null>(null);
@@ -325,6 +368,19 @@ export default function Home() {
     currentProfile?.name_changed_at ?? null,
   );
   const profileNameInputValue = profileName || activeUserName;
+  const incomingCallerProfile = incomingCall
+    ? profiles.find((profile) => profile.user_id === incomingCall.sender_id)
+    : null;
+  const callStatusText =
+    callStatus === "calling"
+      ? "Звоню..."
+      : callStatus === "incoming"
+        ? `Звонит ${incomingCallerProfile?.display_name ?? "Друг"}`
+        : callStatus === "connecting"
+          ? "Соединение..."
+          : callStatus === "connected"
+            ? "Звонок идет"
+            : "";
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -356,8 +412,95 @@ export default function Home() {
   useEffect(() => {
     return () => {
       recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
+      localCallStreamRef.current?.getTracks().forEach((track) => track.stop());
+      peerConnectionRef.current?.close();
     };
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const signedInUser = user;
+
+    async function handleCallSignal(signal: CallSignal) {
+      if (signal.sender_id === signedInUser.id) {
+        return;
+      }
+
+      if (signal.type === "offer") {
+        if (!isSessionDescriptionPayload(signal.payload)) {
+          return;
+        }
+
+        if (callStatus !== "idle") {
+          await sendCallSignal(signal.sender_id, "end", { reason: "busy" });
+          return;
+        }
+
+        callPartnerIdRef.current = signal.sender_id;
+        setIncomingCall(signal);
+        setCallStatus("incoming");
+        return;
+      }
+
+      if (signal.type === "answer") {
+        const peerConnection = peerConnectionRef.current;
+
+        if (!peerConnection || !isSessionDescriptionPayload(signal.payload)) {
+          return;
+        }
+
+        await peerConnection.setRemoteDescription(signal.payload);
+        setCallStatus("connected");
+        return;
+      }
+
+      if (signal.type === "ice") {
+        const peerConnection = peerConnectionRef.current;
+
+        if (!peerConnection || !isIceCandidatePayload(signal.payload)) {
+          return;
+        }
+
+        try {
+          await peerConnection.addIceCandidate(signal.payload);
+        } catch {
+          // ICE candidates can arrive before the peer is ready. The next ones usually finish the path.
+        }
+
+        return;
+      }
+
+      if (signal.type === "end") {
+        closeCall(false);
+      }
+    }
+
+    const channel = supabase
+      .channel(`call-signals-${signedInUser.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          filter: `receiver_id=eq.${signedInUser.id}`,
+          schema: "public",
+          table: "call_signals",
+        },
+        (payload) => {
+          handleCallSignal(payload.new as CallSignal);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // The realtime callback needs the latest call status, while call helpers are function declarations below.
+    // Re-subscribing on status/user changes keeps the handler fresh without extra state plumbing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [callStatus, user]);
 
   useEffect(() => {
     if (!user) {
@@ -669,8 +812,174 @@ export default function Home() {
   }
 
   async function signOut() {
+    await closeCall(true);
     await supabase.auth.signOut();
     setActiveView("profile");
+  }
+
+  async function sendCallSignal(
+    receiverId: string,
+    type: CallSignalType,
+    payload: Record<string, unknown> | RTCSessionDescriptionInit | RTCIceCandidateInit | null,
+  ) {
+    if (!user) {
+      return;
+    }
+
+    await supabase.from("call_signals").insert({
+      payload,
+      receiver_id: receiverId,
+      sender_id: user.id,
+      type,
+    });
+  }
+
+  function createPeerConnection(receiverId: string) {
+    const peerConnection = new RTCPeerConnection({
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    });
+
+    peerConnection.onicecandidate = (event) => {
+      if (event.candidate) {
+        sendCallSignal(receiverId, "ice", event.candidate.toJSON());
+      }
+    };
+
+    peerConnection.ontrack = (event) => {
+      const [remoteStream] = event.streams;
+
+      if (remoteAudioRef.current && remoteStream) {
+        remoteAudioRef.current.srcObject = remoteStream;
+        remoteAudioRef.current.play().catch(() => {
+          setErrorMessage("Нажми на страницу, чтобы браузер разрешил звук звонка.");
+        });
+      }
+    };
+
+    peerConnection.onconnectionstatechange = () => {
+      if (peerConnection.connectionState === "connected") {
+        setCallStatus("connected");
+      }
+
+      if (
+        peerConnection.connectionState === "disconnected" ||
+        peerConnection.connectionState === "failed" ||
+        peerConnection.connectionState === "closed"
+      ) {
+        closeCall(false);
+      }
+    };
+
+    peerConnectionRef.current = peerConnection;
+    callPartnerIdRef.current = receiverId;
+
+    return peerConnection;
+  }
+
+  async function getLocalCallStream() {
+    if (localCallStreamRef.current) {
+      return localCallStreamRef.current;
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+      },
+      video: false,
+    });
+
+    localCallStreamRef.current = stream;
+
+    return stream;
+  }
+
+  async function startCall() {
+    if (!user) {
+      return;
+    }
+
+    if (!friendProfile?.userId) {
+      setErrorMessage("Чтобы позвонить, сначала нужен хотя бы один вход друга в чат.");
+      return;
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia || typeof RTCPeerConnection === "undefined") {
+      setErrorMessage("Этот браузер не поддерживает звонки.");
+      return;
+    }
+
+    try {
+      setErrorMessage("");
+      setCallStatus("calling");
+
+      const stream = await getLocalCallStream();
+      const peerConnection = createPeerConnection(friendProfile.userId);
+
+      stream.getTracks().forEach((track) => {
+        peerConnection.addTrack(track, stream);
+      });
+
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+      await sendCallSignal(friendProfile.userId, "offer", offer);
+    } catch {
+      closeCall(false);
+      setErrorMessage("Не получилось начать звонок. Проверь доступ к микрофону.");
+    }
+  }
+
+  async function acceptCall() {
+    if (!incomingCall || !isSessionDescriptionPayload(incomingCall.payload)) {
+      return;
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia || typeof RTCPeerConnection === "undefined") {
+      setErrorMessage("Этот браузер не поддерживает звонки.");
+      return;
+    }
+
+    try {
+      setErrorMessage("");
+      setCallStatus("connecting");
+
+      const stream = await getLocalCallStream();
+      const peerConnection = createPeerConnection(incomingCall.sender_id);
+
+      stream.getTracks().forEach((track) => {
+        peerConnection.addTrack(track, stream);
+      });
+
+      await peerConnection.setRemoteDescription(incomingCall.payload);
+      const answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+      await sendCallSignal(incomingCall.sender_id, "answer", answer);
+      setIncomingCall(null);
+    } catch {
+      closeCall(false);
+      setErrorMessage("Не получилось принять звонок. Проверь доступ к микрофону.");
+    }
+  }
+
+  async function closeCall(notifyPartner: boolean) {
+    const partnerId = callPartnerIdRef.current;
+
+    if (notifyPartner && partnerId) {
+      await sendCallSignal(partnerId, "end", { reason: "ended" });
+    }
+
+    peerConnectionRef.current?.close();
+    peerConnectionRef.current = null;
+    callPartnerIdRef.current = null;
+    localCallStreamRef.current?.getTracks().forEach((track) => track.stop());
+    localCallStreamRef.current = null;
+
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.srcObject = null;
+    }
+
+    setIncomingCall(null);
+    setCallStatus("idle");
   }
 
   async function updateProfileName(event: FormEvent<HTMLFormElement>) {
@@ -1763,7 +2072,50 @@ export default function Home() {
                       </p>
                     </div>
                   </div>
+                  <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+                    {callStatusText ? (
+                      <p className="mr-auto text-xs font-semibold text-[#8fb7bb] sm:mr-2">
+                        {callStatusText}
+                      </p>
+                    ) : null}
+                    {callStatus === "incoming" ? (
+                      <>
+                        <button
+                          className="min-h-10 rounded-xl bg-[#37c6b8] px-4 text-xs font-bold text-[#041012] transition hover:bg-[#65d8cc]"
+                          onClick={acceptCall}
+                          type="button"
+                        >
+                          Принять
+                        </button>
+                        <button
+                          className="min-h-10 rounded-xl border border-[#2faea4]/35 px-4 text-xs font-bold text-[#e3f4f4] transition hover:bg-white/10"
+                          onClick={() => closeCall(true)}
+                          type="button"
+                        >
+                          Сбросить
+                        </button>
+                      </>
+                    ) : callStatus === "idle" ? (
+                      <button
+                        className="min-h-10 rounded-xl bg-[#37c6b8] px-4 text-xs font-bold text-[#041012] transition hover:bg-[#65d8cc] disabled:cursor-not-allowed disabled:bg-[#52666a]"
+                        disabled={!friendProfile?.userId}
+                        onClick={startCall}
+                        type="button"
+                      >
+                        Позвонить
+                      </button>
+                    ) : (
+                      <button
+                        className="min-h-10 rounded-xl border border-red-400/50 bg-red-500/15 px-4 text-xs font-bold text-red-100 transition hover:bg-red-500/25"
+                        onClick={() => closeCall(true)}
+                        type="button"
+                      >
+                        Завершить
+                      </button>
+                    )}
+                  </div>
                 </div>
+                <audio autoPlay ref={remoteAudioRef} />
 
                 <div className="scrollbar-hidden flex min-h-0 flex-col gap-3 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#081216]/82 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-4">
                   {isLoadingMessages ? (
