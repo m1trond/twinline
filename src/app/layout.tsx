@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Montserrat } from "next/font/google";
 import "./globals.css";
 
@@ -14,8 +14,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  applicationName: "Twinline",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Twinline",
+  },
   title: "Twinline",
   description: "Приватное пространство для двоих",
+  icons: {
+    icon: "/icons/twinline-icon.svg",
+    apple: "/icons/twinline-icon.svg",
+  },
+  manifest: "/manifest.webmanifest",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#37c6b8",
 };
 
 export default function RootLayout({
