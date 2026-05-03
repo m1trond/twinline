@@ -92,6 +92,17 @@ function formatAudioTime(seconds: number) {
   return `${minutes}:${remainingSeconds}`;
 }
 
+function formatCallDuration(seconds: number) {
+  const minutes = Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, "0");
+  const remainingSeconds = Math.floor(seconds % 60)
+    .toString()
+    .padStart(2, "0");
+
+  return `${minutes}:${remainingSeconds}`;
+}
+
 function getDisplayName(user: User | null) {
   const metadataName = user?.user_metadata?.display_name;
 
@@ -337,6 +348,9 @@ export default function Home() {
   const [callStatus, setCallStatus] = useState<CallStatus>("idle");
   const [incomingCall, setIncomingCall] = useState<CallSignal | null>(null);
   const [isRemoteAudioReady, setIsRemoteAudioReady] = useState(false);
+  const [isCallMicMuted, setIsCallMicMuted] = useState(false);
+  const [callStartedAt, setCallStartedAt] = useState<number | null>(null);
+  const [callDuration, setCallDuration] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
@@ -396,6 +410,16 @@ export default function Home() {
           : callStatus === "connected"
             ? "Звонок идет"
             : "";
+  const callPanelProfile =
+    callStatus === "incoming"
+      ? {
+          avatarUrl: incomingCallerProfile?.avatar_url ?? null,
+          name: incomingCallerProfile?.display_name ?? "Друг",
+        }
+      : {
+          avatarUrl: friendProfile?.avatarUrl ?? null,
+          name: friendProfile?.name ?? "Друг",
+        };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -427,6 +451,25 @@ export default function Home() {
   useEffect(() => {
     callStatusRef.current = callStatus;
   }, [callStatus]);
+
+  useEffect(() => {
+    if (callStatus === "idle") {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      if (!callStartedAt) {
+        setCallDuration(0);
+        return;
+      }
+
+      setCallDuration(Math.floor((Date.now() - callStartedAt) / 1000));
+    }, 1000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [callStartedAt, callStatus]);
 
   useEffect(() => {
     return () => {
@@ -931,6 +974,17 @@ export default function Home() {
     }
   }
 
+  function setLocalMicrophoneMuted(isMuted: boolean) {
+    localCallStreamRef.current?.getAudioTracks().forEach((track) => {
+      track.enabled = !isMuted;
+    });
+    setIsCallMicMuted(isMuted);
+  }
+
+  function toggleCallMicrophone() {
+    setLocalMicrophoneMuted(!isCallMicMuted);
+  }
+
   function createPeerConnection(receiverId: string) {
     const peerConnection = new RTCPeerConnection({
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
@@ -1021,6 +1075,9 @@ export default function Home() {
       setErrorMessage("");
       setCallStatus("calling");
       setIsRemoteAudioReady(false);
+      setCallDuration(0);
+      setCallStartedAt(Date.now());
+      setIsCallMicMuted(false);
 
       const stream = await getLocalCallStream();
       const peerConnection = createPeerConnection(friendProfile.userId);
@@ -1052,6 +1109,9 @@ export default function Home() {
       setErrorMessage("");
       setCallStatus("connecting");
       setIsRemoteAudioReady(false);
+      setCallDuration(0);
+      setCallStartedAt(Date.now());
+      setIsCallMicMuted(false);
 
       const stream = await getLocalCallStream();
       const peerConnection = createPeerConnection(incomingCall.sender_id);
@@ -1105,6 +1165,9 @@ export default function Home() {
     remoteCallStreamRef.current = null;
     setIncomingCall(null);
     setIsRemoteAudioReady(false);
+    setIsCallMicMuted(false);
+    setCallStartedAt(null);
+    setCallDuration(0);
     setCallStatus("idle");
   }
 
@@ -2251,6 +2314,109 @@ export default function Home() {
                   </div>
                 </div>
                 <audio autoPlay playsInline ref={remoteAudioRef} />
+
+                {callStatus !== "idle" ? (
+                  <aside className="fixed bottom-4 left-4 right-4 z-40 mx-auto w-[min(350px,calc(100vw-32px))] rounded-3xl border border-[#123236]/70 bg-[#071216]/96 p-5 text-center shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:bottom-8 sm:left-auto sm:right-9 sm:mx-0">
+                    <div className="mx-auto mb-4 grid h-24 w-24 place-items-center overflow-hidden rounded-full bg-[#d7dddd] text-4xl font-black text-[#071216]">
+                      {callPanelProfile.avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          alt="Аватар звонка"
+                          className="h-full w-full object-cover"
+                          src={callPanelProfile.avatarUrl}
+                        />
+                      ) : (
+                        callPanelProfile.name[0]?.toUpperCase()
+                      )}
+                    </div>
+
+                    <p className="truncate text-lg font-semibold text-[#e3f4f4]">
+                      {callPanelProfile.name}
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-[#8fb7bb]">
+                      {callStatus === "connected"
+                        ? formatCallDuration(callDuration)
+                        : callStatusText || "00:00"}
+                    </p>
+
+                    <div className="mt-5 flex items-center justify-center gap-3">
+                      {callStatus === "incoming" ? (
+                        <>
+                          <button
+                            className="min-h-11 rounded-xl bg-[#37c6b8] px-5 text-sm font-bold text-[#041012] transition hover:bg-[#65d8cc]"
+                            onClick={acceptCall}
+                            type="button"
+                          >
+                            Принять
+                          </button>
+                          <button
+                            className="min-h-11 rounded-xl border border-red-400/50 bg-red-500/15 px-5 text-sm font-bold text-red-100 transition hover:bg-red-500/25"
+                            onClick={() => closeCall(true)}
+                            type="button"
+                          >
+                            Сбросить
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            aria-label={isCallMicMuted ? "Включить микрофон" : "Выключить микрофон"}
+                            className={`grid h-12 w-12 place-items-center rounded-full border transition ${
+                              isCallMicMuted
+                                ? "border-red-400/55 bg-red-500/20 text-red-100"
+                                : "border-[#2faea4]/45 bg-[#e3f4f4]/12 text-[#e3f4f4] hover:bg-white/10"
+                            }`}
+                            onClick={toggleCallMicrophone}
+                            type="button"
+                          >
+                            <svg
+                              aria-hidden="true"
+                              className="h-5 w-5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z"
+                                stroke="currentColor"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                              />
+                              <path
+                                d="M19 11a7 7 0 0 1-14 0M12 18v3M9 21h6"
+                                stroke="currentColor"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                              />
+                              {isCallMicMuted ? (
+                                <path
+                                  d="M4 4l16 16"
+                                  stroke="currentColor"
+                                  strokeLinecap="round"
+                                  strokeWidth="2"
+                                />
+                              ) : null}
+                            </svg>
+                          </button>
+                          <button
+                            className="min-h-12 rounded-full bg-red-500 px-5 text-sm font-bold text-white transition hover:bg-red-400"
+                            onClick={() => closeCall(true)}
+                            type="button"
+                          >
+                            Завершить
+                          </button>
+                        </>
+                      )}
+                    </div>
+
+                    {callStatus !== "incoming" ? (
+                      <p className="mt-4 text-sm font-medium text-[#8fb7bb]">
+                        {isCallMicMuted ? "Микрофон выключен" : "Микрофон включен"}
+                      </p>
+                    ) : null}
+                  </aside>
+                ) : null}
 
                 <div className="scrollbar-hidden flex min-h-0 flex-col gap-3 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#081216]/82 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-4">
                   {isLoadingMessages ? (
