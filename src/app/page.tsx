@@ -19,6 +19,24 @@ type MessageRow = {
   user_id: string | null;
 };
 
+type GalleryItem = {
+  id: number;
+  user_id: string;
+  author: string;
+  file_url: string;
+  file_type: "image" | "video";
+  caption: string | null;
+  created_at: string;
+};
+
+type IdeaRow = {
+  id: number;
+  user_id: string;
+  author: string;
+  text: string;
+  created_at: string;
+};
+
 type ActiveView = "profile" | "messages" | "gallery" | "ideas";
 type AuthMode = "sign-in" | "sign-up";
 
@@ -96,6 +114,20 @@ async function fetchMessagesAfter(createdAt: string) {
     .order("created_at", { ascending: true });
 }
 
+async function fetchGalleryItems() {
+  return supabase
+    .from("gallery_items")
+    .select("id, user_id, author, file_url, file_type, caption, created_at")
+    .order("created_at", { ascending: false });
+}
+
+async function fetchIdeas() {
+  return supabase
+    .from("ideas")
+    .select("id, user_id, author, text, created_at")
+    .order("created_at", { ascending: false });
+}
+
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -104,13 +136,19 @@ export default function Home() {
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [messages, setMessages] = useState<MessageRow[]>([]);
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
+  const [ideas, setIdeas] = useState<IdeaRow[]>([]);
   const [messageText, setMessageText] = useState("");
+  const [galleryCaption, setGalleryCaption] = useState("");
+  const [ideaText, setIdeaText] = useState("");
   const [activeView, setActiveView] = useState<ActiveView>("profile");
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+  const [isUploadingGalleryItem, setIsUploadingGalleryItem] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const latestMessageCreatedAtRef = useRef<string | null>(null);
 
   const activeUserName = useMemo(() => getDisplayName(user), [user]);
@@ -126,6 +164,8 @@ export default function Home() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setMessages([]);
+      setGalleryItems([]);
+      setIdeas([]);
       latestMessageCreatedAtRef.current = null;
     });
 
@@ -241,6 +281,89 @@ export default function Home() {
       isMounted = false;
       window.clearInterval(newMessagesInterval);
       window.clearInterval(fullSyncInterval);
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    let isMounted = true;
+
+    async function syncSharedSections() {
+      const [galleryResult, ideasResult] = await Promise.all([
+        fetchGalleryItems(),
+        fetchIdeas(),
+      ]);
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (galleryResult.error || ideasResult.error) {
+        setErrorMessage("Не получилось загрузить Галерею или Идеи.");
+        return;
+      }
+
+      setGalleryItems(galleryResult.data ?? []);
+      setIdeas(ideasResult.data ?? []);
+    }
+
+    syncSharedSections();
+
+    const sharedSectionsInterval = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        syncSharedSections();
+      }
+    }, 5000);
+
+    const channel = supabase
+      .channel("shared-sections-channel")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "gallery_items",
+        },
+        (payload) => {
+          const newItem = payload.new as GalleryItem;
+
+          setGalleryItems((currentItems) => {
+            if (currentItems.some((item) => item.id === newItem.id)) {
+              return currentItems;
+            }
+
+            return [newItem, ...currentItems];
+          });
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "ideas",
+        },
+        (payload) => {
+          const newIdea = payload.new as IdeaRow;
+
+          setIdeas((currentIdeas) => {
+            if (currentIdeas.some((idea) => idea.id === newIdea.id)) {
+              return currentIdeas;
+            }
+
+            return [newIdea, ...currentIdeas];
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(sharedSectionsInterval);
       supabase.removeChannel(channel);
     };
   }, [user]);
@@ -429,6 +552,124 @@ export default function Home() {
 
     if (file) {
       sendAttachment(file);
+    }
+
+    event.target.value = "";
+  }
+
+  async function addIdea(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!user) {
+      setErrorMessage("Сначала войди в аккаунт.");
+      return;
+    }
+
+    const trimmedIdea = ideaText.trim();
+
+    if (!trimmedIdea) {
+      return;
+    }
+
+    setIdeaText("");
+
+    const { data, error } = await supabase
+      .from("ideas")
+      .insert({
+        author: activeUserName,
+        text: trimmedIdea,
+        user_id: user.id,
+      })
+      .select("id, user_id, author, text, created_at")
+      .single();
+
+    if (error) {
+      setIdeaText(trimmedIdea);
+      setErrorMessage("Не получилось сохранить идею.");
+      return;
+    }
+
+    if (data) {
+      setIdeas((currentIdeas) => [data, ...currentIdeas]);
+    }
+
+    setErrorMessage("");
+  }
+
+  async function uploadGalleryItem(file: File) {
+    if (!user) {
+      setErrorMessage("Сначала войди в аккаунт.");
+      return;
+    }
+
+    const isImage = file.type.startsWith("image/");
+    const isVideo = file.type.startsWith("video/");
+
+    if (!isImage && !isVideo) {
+      setErrorMessage("В галерею можно загружать только фото и видео.");
+      return;
+    }
+
+    if (file.size > maxAttachmentSize) {
+      setErrorMessage("Файл должен быть меньше 50 МБ.");
+      return;
+    }
+
+    setIsUploadingGalleryItem(true);
+    setErrorMessage("");
+
+    const fileExtension = file.name.split(".").pop() ?? "jpg";
+    const filePath = `gallery/${user.id}/${Date.now()}-${crypto.randomUUID()}.${fileExtension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("message-images")
+      .upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      setIsUploadingGalleryItem(false);
+      setErrorMessage("Не получилось загрузить файл в галерею.");
+      return;
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("message-images")
+      .getPublicUrl(filePath);
+
+    const { data, error } = await supabase
+      .from("gallery_items")
+      .insert({
+        author: activeUserName,
+        caption: galleryCaption.trim() || null,
+        file_type: isVideo ? "video" : "image",
+        file_url: publicUrlData.publicUrl,
+        user_id: user.id,
+      })
+      .select("id, user_id, author, file_url, file_type, caption, created_at")
+      .single();
+
+    setIsUploadingGalleryItem(false);
+
+    if (error) {
+      setErrorMessage("Файл загрузился, но не получилось сохранить его в галерее.");
+      return;
+    }
+
+    if (data) {
+      setGalleryItems((currentItems) => [data, ...currentItems]);
+    }
+
+    setGalleryCaption("");
+    setErrorMessage("");
+  }
+
+  function handleGalleryFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (file) {
+      uploadGalleryItem(file);
     }
 
     event.target.value = "";
@@ -684,49 +925,133 @@ export default function Home() {
               </div>
             ) : activeView === "gallery" ? (
               <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
-                <div className="mb-5 border-b border-[#2faea4]/35 pb-5">
-                  <p className="text-sm font-medium text-[#5bbdb4]">Раздел</p>
-                  <h2 className="text-2xl font-semibold sm:text-3xl">Галерея</h2>
+                <div className="mb-5 flex flex-wrap items-end justify-between gap-4 border-b border-[#2faea4]/35 pb-5">
+                  <div>
+                    <p className="text-sm font-medium text-[#5bbdb4]">Общий раздел</p>
+                    <h2 className="text-2xl font-semibold sm:text-3xl">Галерея</h2>
+                  </div>
+                  <div className="flex w-full gap-2 sm:w-auto">
+                    <input
+                      className="min-h-11 min-w-0 flex-1 rounded-xl border border-transparent bg-[#e3f4f4]/12 px-3 text-sm outline-none placeholder:text-[#8fb7bb]/70 focus:border-[#37c6b8] sm:w-64"
+                      onChange={(event) => setGalleryCaption(event.target.value)}
+                      placeholder="Подпись к фото..."
+                      type="text"
+                      value={galleryCaption}
+                    />
+                    <input
+                      accept="image/*,video/*"
+                      className="hidden"
+                      onChange={handleGalleryFileChange}
+                      ref={galleryInputRef}
+                      type="file"
+                    />
+                    <button
+                      className="min-h-11 rounded-xl bg-[#37c6b8] px-4 text-sm font-bold text-[#041012] transition hover:bg-[#65d8cc] disabled:cursor-not-allowed disabled:bg-[#52666a]"
+                      disabled={isUploadingGalleryItem}
+                      onClick={() => galleryInputRef.current?.click()}
+                      type="button"
+                    >
+                      {isUploadingGalleryItem ? "Загрузка..." : "Добавить"}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-                  <article className="aspect-[16/10] overflow-hidden rounded-2xl border border-[#2faea4]/35 bg-black/20 sm:aspect-[4/5]">
-                    <div
-                      className="h-full bg-cover bg-center"
-                      style={{ backgroundImage: "url('/chat-background.jpg')" }}
-                    />
-                  </article>
-                  <article className="aspect-[16/10] overflow-hidden rounded-2xl border border-[#2faea4]/35 bg-black/20 sm:aspect-[4/5]">
-                    <div
-                      className="h-full bg-cover bg-center"
-                      style={{ backgroundImage: "url('/chat-background-right.jpg')" }}
-                    />
-                  </article>
+                  {galleryItems.length === 0 ? (
+                    <article className="rounded-2xl border border-dashed border-[#2faea4]/45 bg-black/20 p-6 text-center sm:col-span-2 xl:col-span-3">
+                      <p className="text-base font-semibold">Галерея пока пустая</p>
+                      <p className="mt-2 text-sm text-[#8fb7bb]">
+                        Загрузи первое фото или видео, и оно будет видно вам обоим.
+                      </p>
+                    </article>
+                  ) : null}
+
+                  {galleryItems.map((item) => (
+                    <article
+                      className="overflow-hidden rounded-2xl border border-[#2faea4]/35 bg-black/20"
+                      key={item.id}
+                    >
+                      {item.file_type === "image" ? (
+                        <button
+                          className="block aspect-[16/10] w-full overflow-hidden sm:aspect-[4/5]"
+                          onClick={() => setSelectedImageUrl(item.file_url)}
+                          type="button"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            alt={item.caption ?? "Фото из галереи"}
+                            className="h-full w-full object-cover"
+                            src={item.file_url}
+                          />
+                        </button>
+                      ) : (
+                        <video
+                          className="aspect-[16/10] w-full bg-black object-cover sm:aspect-[4/5]"
+                          controls
+                          preload="metadata"
+                          src={item.file_url}
+                        />
+                      )}
+                      <div className="p-3">
+                        <p className="text-sm font-semibold">{item.author}</p>
+                        {item.caption ? (
+                          <p className="mt-1 text-sm text-[#8fb7bb]">{item.caption}</p>
+                        ) : null}
+                        <p className="mt-2 text-xs text-[#5f8185]">
+                          {formatMessageTime(item.created_at)}
+                        </p>
+                      </div>
+                    </article>
+                  ))}
                 </div>
               </div>
             ) : activeView === "ideas" ? (
               <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
                 <div className="mb-5 border-b border-[#2faea4]/35 pb-5">
-                  <p className="text-sm font-medium text-[#5bbdb4]">Раздел</p>
+                  <p className="text-sm font-medium text-[#5bbdb4]">Общий раздел</p>
                   <h2 className="text-2xl font-semibold sm:text-3xl">Идеи</h2>
                 </div>
 
-                <div className="grid gap-4">
-                  {[
-                    "Сделать общую галерею с загрузкой фото",
-                    "Добавить капсулы времени",
-                    "Сделать реакции на сообщения",
-                    "Добавить голосовые звонки",
-                  ].map((idea) => (
+                <form
+                  className="mb-4 flex gap-2 rounded-2xl border border-[#2faea4]/35 bg-black/20 p-2"
+                  onSubmit={addIdea}
+                >
+                  <input
+                    className="min-h-12 min-w-0 flex-1 rounded-xl border border-transparent bg-[#e3f4f4]/12 px-4 text-base outline-none placeholder:text-[#8fb7bb]/70 focus:border-[#37c6b8]"
+                    onChange={(event) => setIdeaText(event.target.value)}
+                    placeholder="Напиши общую идею..."
+                    type="text"
+                    value={ideaText}
+                  />
+                  <button
+                    className="min-h-12 rounded-xl bg-[#37c6b8] px-4 text-sm font-bold text-[#041012] transition hover:bg-[#65d8cc] disabled:cursor-not-allowed disabled:bg-[#52666a]"
+                    disabled={!ideaText.trim()}
+                    type="submit"
+                  >
+                    Добавить
+                  </button>
+                </form>
+
+                <div className="grid gap-3">
+                  {ideas.length === 0 ? (
+                    <article className="rounded-2xl border border-dashed border-[#2faea4]/45 bg-black/20 p-6 text-center">
+                      <p className="text-base font-semibold">Идей пока нет</p>
+                      <p className="mt-2 text-sm text-[#8fb7bb]">
+                        Добавьте первую идею, и она сохранится здесь для вас обоих.
+                      </p>
+                    </article>
+                  ) : null}
+
+                  {ideas.map((idea) => (
                     <article
                       className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4"
-                      key={idea}
+                      key={idea.id}
                     >
                       <p className="text-base font-semibold text-[#e3f4f4]">
-                        {idea}
+                        {idea.text}
                       </p>
-                      <p className="mt-2 text-sm text-[#8fb7bb]">
-                        Черновик идеи для развития Twinline.
+                      <p className="mt-3 text-xs font-semibold text-[#8fb7bb]">
+                        {idea.author} · {formatMessageTime(idea.created_at)}
                       </p>
                     </article>
                   ))}
