@@ -336,11 +336,13 @@ export default function Home() {
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [callStatus, setCallStatus] = useState<CallStatus>("idle");
   const [incomingCall, setIncomingCall] = useState<CallSignal | null>(null);
+  const [isRemoteAudioReady, setIsRemoteAudioReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
+  const remoteCallStreamRef = useRef<MediaStream | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const callStatusRef = useRef<CallStatus>("idle");
   const callPartnerIdRef = useRef<string | null>(null);
@@ -909,6 +911,26 @@ export default function Home() {
     });
   }
 
+  async function playRemoteAudio() {
+    const audioElement = remoteAudioRef.current;
+
+    if (!audioElement) {
+      return;
+    }
+
+    audioElement.muted = false;
+    audioElement.volume = 1;
+
+    try {
+      await audioElement.play();
+      setIsRemoteAudioReady(true);
+      setErrorMessage("");
+    } catch {
+      setIsRemoteAudioReady(false);
+      setErrorMessage("Нажми «Включить звук», чтобы браузер разрешил аудио звонка.");
+    }
+  }
+
   function createPeerConnection(receiverId: string) {
     const peerConnection = new RTCPeerConnection({
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
@@ -921,14 +943,25 @@ export default function Home() {
     };
 
     peerConnection.ontrack = (event) => {
-      const [remoteStream] = event.streams;
+      const remoteStream =
+        event.streams[0] ?? remoteCallStreamRef.current ?? new MediaStream();
+
+      if (event.streams.length === 0) {
+        remoteStream.addTrack(event.track);
+      }
+
+      remoteCallStreamRef.current = remoteStream;
 
       if (remoteAudioRef.current && remoteStream) {
+        remoteAudioRef.current.muted = false;
+        remoteAudioRef.current.volume = 1;
         remoteAudioRef.current.srcObject = remoteStream;
-        remoteAudioRef.current.play().catch(() => {
-          setErrorMessage("Нажми на страницу, чтобы браузер разрешил звук звонка.");
-        });
+        playRemoteAudio();
       }
+
+      event.track.onunmute = () => {
+        playRemoteAudio();
+      };
     };
 
     peerConnection.onconnectionstatechange = () => {
@@ -987,6 +1020,7 @@ export default function Home() {
     try {
       setErrorMessage("");
       setCallStatus("calling");
+      setIsRemoteAudioReady(false);
 
       const stream = await getLocalCallStream();
       const peerConnection = createPeerConnection(friendProfile.userId);
@@ -1017,6 +1051,7 @@ export default function Home() {
     try {
       setErrorMessage("");
       setCallStatus("connecting");
+      setIsRemoteAudioReady(false);
 
       const stream = await getLocalCallStream();
       const peerConnection = createPeerConnection(incomingCall.sender_id);
@@ -1063,10 +1098,13 @@ export default function Home() {
     localCallStreamRef.current = null;
 
     if (remoteAudioRef.current) {
+      remoteAudioRef.current.pause();
       remoteAudioRef.current.srcObject = null;
     }
 
+    remoteCallStreamRef.current = null;
     setIncomingCall(null);
+    setIsRemoteAudioReady(false);
     setCallStatus("idle");
   }
 
@@ -2201,9 +2239,18 @@ export default function Home() {
                         Завершить
                       </button>
                     )}
+                    {callStatus === "connected" && !isRemoteAudioReady ? (
+                      <button
+                        className="min-h-10 rounded-xl border border-[#2faea4]/45 bg-[#e3f4f4]/12 px-4 text-xs font-bold text-[#e3f4f4] transition hover:bg-white/10"
+                        onClick={playRemoteAudio}
+                        type="button"
+                      >
+                        Включить звук
+                      </button>
+                    ) : null}
                   </div>
                 </div>
-                <audio autoPlay ref={remoteAudioRef} />
+                <audio autoPlay playsInline ref={remoteAudioRef} />
 
                 <div className="scrollbar-hidden flex min-h-0 flex-col gap-3 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#081216]/82 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-4">
                   {isLoadingMessages ? (
