@@ -240,6 +240,10 @@ export default function Home() {
   const [ideaText, setIdeaText] = useState("");
   const [activeView, setActiveView] = useState<ActiveView>("profile");
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
+  const [viewedProfile, setViewedProfile] = useState<{
+    name: string;
+    userId: string | null;
+  } | null>(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [isUploadingGalleryItem, setIsUploadingGalleryItem] = useState(false);
@@ -253,6 +257,20 @@ export default function Home() {
   const latestMessageCreatedAtRef = useRef<string | null>(null);
 
   const activeUserName = useMemo(() => getDisplayName(user), [user]);
+  const friendProfile = useMemo(() => {
+    const friendMessage = messages.find((message) => {
+      return message.user_id && message.user_id !== user?.id;
+    });
+
+    if (!friendMessage) {
+      return null;
+    }
+
+    return {
+      name: friendMessage.author,
+      userId: friendMessage.user_id,
+    };
+  }, [messages, user?.id]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -1397,15 +1415,26 @@ export default function Home() {
               <div className="grid min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 px-3 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mb-4 sm:px-4">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="grid h-11 w-11 place-items-center rounded-full bg-[#37c6b8] text-base font-semibold text-[#041012]">
-                      {activeUserName[0]?.toUpperCase()}
-                    </div>
+                    <button
+                      className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#37c6b8] text-base font-semibold text-[#041012] transition hover:scale-105"
+                      onClick={() => {
+                        setViewedProfile(
+                          friendProfile ?? {
+                            name: "Друг",
+                            userId: null,
+                          },
+                        );
+                      }}
+                      type="button"
+                    >
+                      {(friendProfile?.name ?? "Друг")[0]?.toUpperCase()}
+                    </button>
                     <div className="min-w-0">
                       <h2 className="truncate text-base font-semibold">
-                        Приватный чат
+                        {friendProfile?.name ?? "Друг"}
                       </h2>
                       <p className="truncate text-sm text-[#8fb7bb]">
-                        Сейчас пишешь как: {activeUserName}
+                        Приватный профиль собеседника
                       </p>
                     </div>
                   </div>
@@ -1616,6 +1645,60 @@ export default function Home() {
             onClick={(event) => event.stopPropagation()}
             src={selectedImageUrl}
           />
+        </button>
+      ) : null}
+      {viewedProfile ? (
+        <button
+          aria-label="Закрыть профиль"
+          className="fixed inset-0 z-50 grid place-items-center bg-black/58 p-4 backdrop-blur-sm"
+          onClick={() => setViewedProfile(null)}
+          type="button"
+        >
+          <section
+            className="w-full max-w-sm rounded-3xl border border-[#2faea4]/45 bg-[#0d171c]/95 p-5 text-left shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-5 flex items-center gap-4">
+              <div className="grid h-16 w-16 place-items-center rounded-2xl bg-[#37c6b8] text-2xl font-black text-[#041012]">
+                {viewedProfile.name[0]?.toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-[#5bbdb4]">
+                  Профиль
+                </p>
+                <h2 className="truncate text-2xl font-semibold">
+                  {viewedProfile.name}
+                </h2>
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              <div className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#5bbdb4]">
+                  Статус
+                </p>
+                <p className="mt-2 text-sm text-[#e3f4f4]">
+                  Участник вашего приватного пространства.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#5bbdb4]">
+                  Конфиденциальность
+                </p>
+                <p className="mt-2 text-sm leading-6 text-[#8fb7bb]">
+                  Email, технический ID и данные входа здесь не показываются.
+                </p>
+              </div>
+            </div>
+
+            <button
+              className="mt-5 min-h-11 w-full rounded-xl bg-[#37c6b8] px-4 text-sm font-bold text-[#041012]"
+              onClick={() => setViewedProfile(null)}
+              type="button"
+            >
+              Закрыть
+            </button>
+          </section>
         </button>
       ) : null}
     </main>
