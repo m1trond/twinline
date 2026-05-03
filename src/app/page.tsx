@@ -56,7 +56,7 @@ type CallSignal = {
   created_at: string;
 };
 
-type ActiveView = "profile" | "messages" | "gallery" | "ideas";
+type ActiveView = "profile" | "messages" | "gallery" | "ideas" | "settings";
 type AuthMode = "sign-in" | "sign-up";
 type CallStatus = "idle" | "calling" | "incoming" | "connecting" | "connected";
 
@@ -71,6 +71,10 @@ const navItems: Array<{ label: string; view: ActiveView }> = [
   { label: "Галерея", view: "gallery" },
   { label: "Идеи", view: "ideas" },
 ];
+const settingsNavItem: { label: string; view: ActiveView } = {
+  label: "Настройки",
+  view: "settings",
+};
 
 const imageMessagePrefix = "image::";
 const videoMessagePrefix = "video::";
@@ -2269,7 +2273,7 @@ export default function Home() {
           </header>
 
           <nav className="scrollbar-hidden mb-3 flex shrink-0 gap-2 overflow-x-auto rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-2 shadow-[0_14px_45px_rgba(0,0,0,0.24)] backdrop-blur-md lg:hidden">
-            {navItems.map((item) => (
+            {[...navItems, settingsNavItem].map((item) => (
               <button
                 className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
                   activeView === item.view
@@ -2286,7 +2290,7 @@ export default function Home() {
           </nav>
 
           <section className="grid min-h-0 flex-1 gap-3 overflow-hidden pb-3 sm:gap-4 sm:pb-4 lg:grid-cols-[280px_1fr]">
-            <aside className="hidden min-h-0 rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-4 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:block">
+            <aside className="hidden min-h-0 flex-col rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-4 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:flex">
               <div className="mb-5">
                 <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#5bbdb4]">
                   Меню
@@ -2309,6 +2313,17 @@ export default function Home() {
                   </button>
                 ))}
               </nav>
+              <button
+                className={`mt-auto rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
+                  activeView === settingsNavItem.view
+                    ? "bg-[#37c6b8] text-[#041012]"
+                    : "border border-[#2faea4]/25 text-[#e3f4f4] opacity-80 hover:bg-white/10 hover:opacity-100"
+                }`}
+                onClick={() => setActiveView(settingsNavItem.view)}
+                type="button"
+              >
+                {settingsNavItem.label}
+              </button>
             </aside>
 
             {activeView === "profile" ? (
@@ -2567,6 +2582,84 @@ export default function Home() {
                       </p>
                     </article>
                   ))}
+                </div>
+              </div>
+            ) : activeView === "settings" ? (
+              <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
+                <div className="mb-5 border-b border-[#2faea4]/35 pb-5">
+                  <p className="text-sm font-medium text-[#5bbdb4]">
+                    Twinline
+                  </p>
+                  <h2 className="text-2xl font-semibold sm:text-3xl">
+                    Настройки
+                  </h2>
+                </div>
+
+                <div className="grid gap-4">
+                  <section className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-base font-semibold">
+                          Уведомления
+                        </p>
+                        <p className="mt-1 text-sm leading-6 text-[#8fb7bb]">
+                          Показывать новые сообщения в браузере, когда сайт открыт.
+                        </p>
+                      </div>
+                      <button
+                        className={`flex h-8 w-14 shrink-0 items-center rounded-full p-1 transition ${
+                          areNotificationsEnabled
+                            ? "justify-end bg-[#37c6b8]"
+                            : "justify-start bg-[#e3f4f4]/18"
+                        }`}
+                        onClick={toggleNotifications}
+                        type="button"
+                      >
+                        <span className="h-6 w-6 rounded-full bg-[#e3f4f4]" />
+                      </button>
+                    </div>
+                  </section>
+
+                  <section className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-base font-semibold">
+                          Приложение
+                        </p>
+                        <p className="mt-1 text-sm leading-6 text-[#8fb7bb]">
+                          Установи Twinline на телефон или ПК как отдельное приложение.
+                        </p>
+                      </div>
+                      <button
+                        className="min-h-11 rounded-xl bg-[#37c6b8] px-4 text-sm font-bold text-[#041012] transition hover:bg-[#65d8cc] disabled:cursor-not-allowed disabled:bg-[#52666a]"
+                        disabled={isAppInstalled}
+                        onClick={installApp}
+                        type="button"
+                      >
+                        {isAppInstalled ? "Установлено" : "Установить"}
+                      </button>
+                    </div>
+                  </section>
+
+                  <section className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-base font-semibold">
+                          Аккаунт
+                        </p>
+                        <p className="mt-1 text-sm leading-6 text-[#8fb7bb]">
+                          Ты вошёл как {user.email}.
+                        </p>
+                      </div>
+                      <button
+                        className="min-h-11 rounded-xl border border-[#2faea4]/35 px-4 text-sm font-bold text-[#e3f4f4] transition hover:bg-white/10"
+                        onClick={signOut}
+                        type="button"
+                      >
+                        Выйти
+                      </button>
+                    </div>
+                  </section>
                 </div>
               </div>
             ) : (
