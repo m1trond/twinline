@@ -347,7 +347,6 @@ export default function Home() {
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [callStatus, setCallStatus] = useState<CallStatus>("idle");
   const [incomingCall, setIncomingCall] = useState<CallSignal | null>(null);
-  const [isRemoteAudioReady, setIsRemoteAudioReady] = useState(false);
   const [isCallMicMuted, setIsCallMicMuted] = useState(false);
   const [callStartedAt, setCallStartedAt] = useState<number | null>(null);
   const [callDuration, setCallDuration] = useState(0);
@@ -966,10 +965,8 @@ export default function Home() {
 
     try {
       await audioElement.play();
-      setIsRemoteAudioReady(true);
       setErrorMessage("");
     } catch {
-      setIsRemoteAudioReady(false);
       setErrorMessage("Нажми «Включить звук», чтобы браузер разрешил аудио звонка.");
     }
   }
@@ -1074,7 +1071,6 @@ export default function Home() {
     try {
       setErrorMessage("");
       setCallStatus("calling");
-      setIsRemoteAudioReady(false);
       setCallDuration(0);
       setCallStartedAt(Date.now());
       setIsCallMicMuted(false);
@@ -1108,7 +1104,6 @@ export default function Home() {
     try {
       setErrorMessage("");
       setCallStatus("connecting");
-      setIsRemoteAudioReady(false);
       setCallDuration(0);
       setCallStartedAt(Date.now());
       setIsCallMicMuted(false);
@@ -1164,7 +1159,6 @@ export default function Home() {
 
     remoteCallStreamRef.current = null;
     setIncomingCall(null);
-    setIsRemoteAudioReady(false);
     setIsCallMicMuted(false);
     setCallStartedAt(null);
     setCallDuration(0);
@@ -2262,29 +2256,7 @@ export default function Home() {
                     </div>
                   </div>
                   <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
-                    {callStatusText ? (
-                      <p className="mr-auto text-xs font-semibold text-[#8fb7bb] sm:mr-2">
-                        {callStatusText}
-                      </p>
-                    ) : null}
-                    {callStatus === "incoming" ? (
-                      <>
-                        <button
-                          className="min-h-10 rounded-xl bg-[#37c6b8] px-4 text-xs font-bold text-[#041012] transition hover:bg-[#65d8cc]"
-                          onClick={acceptCall}
-                          type="button"
-                        >
-                          Принять
-                        </button>
-                        <button
-                          className="min-h-10 rounded-xl border border-[#2faea4]/35 px-4 text-xs font-bold text-[#e3f4f4] transition hover:bg-white/10"
-                          onClick={() => closeCall(true)}
-                          type="button"
-                        >
-                          Сбросить
-                        </button>
-                      </>
-                    ) : callStatus === "idle" ? (
+                    {callStatus === "idle" ? (
                       <button
                         className="min-h-10 rounded-xl bg-[#37c6b8] px-4 text-xs font-bold text-[#041012] transition hover:bg-[#65d8cc] disabled:cursor-not-allowed disabled:bg-[#52666a]"
                         disabled={!friendProfile?.userId}
@@ -2292,23 +2264,6 @@ export default function Home() {
                         type="button"
                       >
                         Позвонить
-                      </button>
-                    ) : (
-                      <button
-                        className="min-h-10 rounded-xl border border-red-400/50 bg-red-500/15 px-4 text-xs font-bold text-red-100 transition hover:bg-red-500/25"
-                        onClick={() => closeCall(true)}
-                        type="button"
-                      >
-                        Завершить
-                      </button>
-                    )}
-                    {callStatus === "connected" && !isRemoteAudioReady ? (
-                      <button
-                        className="min-h-10 rounded-xl border border-[#2faea4]/45 bg-[#e3f4f4]/12 px-4 text-xs font-bold text-[#e3f4f4] transition hover:bg-white/10"
-                        onClick={playRemoteAudio}
-                        type="button"
-                      >
-                        Включить звук
                       </button>
                     ) : null}
                   </div>
