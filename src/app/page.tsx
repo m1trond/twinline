@@ -33,6 +33,8 @@ const navItems: Array<{ label: string; view: ActiveView }> = [
 ];
 
 const imageMessagePrefix = "image::";
+const videoMessagePrefix = "video::";
+const maxAttachmentSize = 50 * 1024 * 1024;
 
 function formatMessageTime(createdAt: string) {
   return new Intl.DateTimeFormat("ru-RU", {
@@ -47,6 +49,14 @@ function getMessageImageUrl(text: string) {
   }
 
   return text.slice(imageMessagePrefix.length);
+}
+
+function getMessageVideoUrl(text: string) {
+  if (!text.startsWith(videoMessagePrefix)) {
+    return null;
+  }
+
+  return text.slice(videoMessagePrefix.length);
 }
 
 function mergeMessages(currentMessages: MessageRow[], nextMessages: MessageRow[]) {
@@ -269,14 +279,17 @@ export default function Home() {
     }
   }
 
-  async function sendImage(file: File) {
-    if (!file.type.startsWith("image/")) {
-      setErrorMessage("Можно отправлять только изображения.");
+  async function sendAttachment(file: File) {
+    const isImage = file.type.startsWith("image/");
+    const isVideo = file.type.startsWith("video/");
+
+    if (!isImage && !isVideo) {
+      setErrorMessage("Можно отправлять только изображения и видео.");
       return;
     }
 
-    if (file.size > 8 * 1024 * 1024) {
-      setErrorMessage("Изображение должно быть меньше 8 МБ.");
+    if (file.size > maxAttachmentSize) {
+      setErrorMessage("Файл должен быть меньше 50 МБ.");
       return;
     }
 
@@ -303,11 +316,12 @@ export default function Home() {
       .from("message-images")
       .getPublicUrl(filePath);
 
-    const imageUrl = publicUrlData.publicUrl;
+    const attachmentUrl = publicUrlData.publicUrl;
+    const messagePrefix = isVideo ? videoMessagePrefix : imageMessagePrefix;
     const optimisticMessage: MessageRow = {
       id: -Date.now(),
       author,
-      text: `${imageMessagePrefix}${imageUrl}`,
+      text: `${messagePrefix}${attachmentUrl}`,
       created_at: new Date().toISOString(),
     };
 
@@ -319,7 +333,7 @@ export default function Home() {
       .from("messages")
       .insert({
         author,
-        text: `${imageMessagePrefix}${imageUrl}`,
+        text: `${messagePrefix}${attachmentUrl}`,
       })
       .select("id, author, text, created_at")
       .single();
@@ -330,7 +344,7 @@ export default function Home() {
       setMessages((currentMessages) =>
         currentMessages.filter((message) => message.id !== optimisticMessage.id),
       );
-      setErrorMessage("Не получилось отправить изображение.");
+      setErrorMessage("Не получилось отправить файл.");
     } else {
       setMessages((currentMessages) => {
         const withoutOptimisticMessage = currentMessages.filter(
@@ -345,11 +359,11 @@ export default function Home() {
     }
   }
 
-  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
+  function handleAttachmentChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
 
     if (file) {
-      sendImage(file);
+      sendAttachment(file);
     }
 
     event.target.value = "";
@@ -665,6 +679,8 @@ export default function Home() {
             {messages.map((message) => {
               const isMine = message.author === author;
               const imageUrl = getMessageImageUrl(message.text);
+              const videoUrl = getMessageVideoUrl(message.text);
+              const hasAttachment = Boolean(imageUrl || videoUrl);
 
               return (
                 <article
@@ -673,14 +689,14 @@ export default function Home() {
                 >
                   <div
                     className={`max-w-[92%] rounded-2xl shadow-sm sm:max-w-[72%] ${
-                      imageUrl ? "p-2.5" : "px-4 py-3"
+                      hasAttachment ? "p-2.5" : "px-4 py-3"
                     } ${
                       isMine
                         ? "rounded-br-md bg-[#f0c45d] text-[#1c1509]"
                         : "rounded-bl-md bg-[#fff8ea] text-[#21180c]"
                     }`}
                   >
-                    <p className={`${imageUrl ? "mb-2 px-1" : "mb-1"} text-xs font-semibold opacity-70`}>
+                    <p className={`${hasAttachment ? "mb-2 px-1" : "mb-1"} text-xs font-semibold opacity-70`}>
                       {authorLabels[message.author] ?? message.author}
                     </p>
                     {imageUrl ? (
@@ -696,6 +712,13 @@ export default function Home() {
                           src={imageUrl}
                         />
                       </button>
+                    ) : videoUrl ? (
+                      <video
+                        className="max-h-[420px] w-full rounded-xl bg-black"
+                        controls
+                        preload="metadata"
+                        src={videoUrl}
+                      />
                     ) : (
                       <p className="whitespace-pre-wrap break-words text-sm leading-6">
                         {message.text}
@@ -730,9 +753,9 @@ export default function Home() {
             onSubmit={sendMessage}
           >
             <input
-              accept="image/*"
+              accept="image/*,video/*"
               className="hidden"
-              onChange={handleImageChange}
+              onChange={handleAttachmentChange}
               ref={imageInputRef}
               type="file"
             />
