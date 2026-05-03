@@ -413,7 +413,7 @@ export default function Home() {
           </div>
 
           <div
-            className="flex min-h-0 flex-col gap-3 overflow-y-auto rounded-2xl border border-[#e6b85c]/45 bg-[#100d09]/82 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md"
+            className="scrollbar-hidden flex min-h-0 flex-col gap-3 overflow-y-auto rounded-2xl border border-[#e6b85c]/45 bg-[#100d09]/82 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md"
             ref={messagesListRef}
           >
             {isLoading ? (
