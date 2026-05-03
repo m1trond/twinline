@@ -343,6 +343,21 @@ export default function Home() {
       .on(
         "postgres_changes",
         {
+          event: "DELETE",
+          schema: "public",
+          table: "gallery_items",
+        },
+        (payload) => {
+          const deletedItem = payload.old as Pick<GalleryItem, "id">;
+
+          setGalleryItems((currentItems) =>
+            currentItems.filter((item) => item.id !== deletedItem.id),
+          );
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
           event: "INSERT",
           schema: "public",
           table: "ideas",
@@ -357,6 +372,21 @@ export default function Home() {
 
             return [newIdea, ...currentIdeas];
           });
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "ideas",
+        },
+        (payload) => {
+          const deletedIdea = payload.old as Pick<IdeaRow, "id">;
+
+          setIdeas((currentIdeas) =>
+            currentIdeas.filter((idea) => idea.id !== deletedIdea.id),
+          );
         },
       )
       .subscribe();
@@ -673,6 +703,43 @@ export default function Home() {
     }
 
     event.target.value = "";
+  }
+
+  async function deleteGalleryItem(item: GalleryItem) {
+    const previousItems = galleryItems;
+
+    setGalleryItems((currentItems) =>
+      currentItems.filter((currentItem) => currentItem.id !== item.id),
+    );
+
+    const { error } = await supabase
+      .from("gallery_items")
+      .delete()
+      .eq("id", item.id);
+
+    if (error) {
+      setGalleryItems(previousItems);
+      setErrorMessage("Не получилось удалить файл из галереи.");
+    } else {
+      setErrorMessage("");
+    }
+  }
+
+  async function deleteIdea(idea: IdeaRow) {
+    const previousIdeas = ideas;
+
+    setIdeas((currentIdeas) =>
+      currentIdeas.filter((currentIdea) => currentIdea.id !== idea.id),
+    );
+
+    const { error } = await supabase.from("ideas").delete().eq("id", idea.id);
+
+    if (error) {
+      setIdeas(previousIdeas);
+      setErrorMessage("Не получилось удалить идею.");
+    } else {
+      setErrorMessage("");
+    }
   }
 
   async function deleteMessage(message: MessageRow) {
@@ -993,7 +1060,16 @@ export default function Home() {
                         />
                       )}
                       <div className="p-3">
-                        <p className="text-sm font-semibold">{item.author}</p>
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="text-sm font-semibold">{item.author}</p>
+                          <button
+                            className="rounded-lg border border-[#2faea4]/35 px-2 py-1 text-[11px] font-bold text-[#8fb7bb] transition hover:bg-white/10 hover:text-[#e3f4f4]"
+                            onClick={() => deleteGalleryItem(item)}
+                            type="button"
+                          >
+                            Удалить
+                          </button>
+                        </div>
                         {item.caption ? (
                           <p className="mt-1 text-sm text-[#8fb7bb]">{item.caption}</p>
                         ) : null}
@@ -1047,9 +1123,18 @@ export default function Home() {
                       className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4"
                       key={idea.id}
                     >
-                      <p className="text-base font-semibold text-[#e3f4f4]">
-                        {idea.text}
-                      </p>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-base font-semibold text-[#e3f4f4]">
+                          {idea.text}
+                        </p>
+                        <button
+                          className="shrink-0 rounded-lg border border-[#2faea4]/35 px-2 py-1 text-[11px] font-bold text-[#8fb7bb] transition hover:bg-white/10 hover:text-[#e3f4f4]"
+                          onClick={() => deleteIdea(idea)}
+                          type="button"
+                        >
+                          Удалить
+                        </button>
+                      </div>
                       <p className="mt-3 text-xs font-semibold text-[#8fb7bb]">
                         {idea.author} · {formatMessageTime(idea.created_at)}
                       </p>
