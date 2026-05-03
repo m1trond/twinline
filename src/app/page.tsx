@@ -688,15 +688,15 @@ export default function Home() {
                   key={message.id}
                 >
                   <div
-                    className={`max-w-[92%] rounded-2xl shadow-sm sm:max-w-[72%] ${
-                      hasAttachment ? "p-2.5" : "px-4 py-3"
+                    className={`max-w-[92%] rounded-[22px] shadow-[0_10px_30px_rgba(0,0,0,0.18)] sm:max-w-[72%] ${
+                      hasAttachment ? "p-2" : "px-3.5 py-2.5"
                     } ${
                       isMine
-                        ? "rounded-br-md bg-[#37c6b8] text-[#041012]"
-                        : "rounded-bl-md bg-[#e3f4f4] text-[#071316]"
+                        ? "rounded-br-md bg-[#2faea4] text-[#031012]"
+                        : "rounded-bl-md bg-[#eaf6f6] text-[#071316]"
                     }`}
                   >
-                    <p className={`${hasAttachment ? "mb-2 px-1" : "mb-1"} text-xs font-semibold opacity-70`}>
+                    <p className={`${hasAttachment ? "mb-1.5 px-1" : "mb-0.5"} text-[11px] font-bold leading-4 opacity-55`}>
                       {authorLabels[message.author] ?? message.author}
                     </p>
                     {imageUrl ? (
@@ -720,14 +720,14 @@ export default function Home() {
                         src={videoUrl}
                       />
                     ) : (
-                      <p className="whitespace-pre-wrap break-words text-sm leading-6">
+                      <p className="whitespace-pre-wrap break-words text-[15px] leading-6">
                         {message.text}
                       </p>
                     )}
-                    <div className="mt-2 flex items-center justify-end gap-3">
+                    <div className={`${hasAttachment ? "mt-2 px-1" : "mt-1"} flex items-center justify-end gap-3`}>
                       {isMine ? (
                         <button
-                          className="text-xs font-semibold opacity-75 transition hover:opacity-100"
+                          className="text-[11px] font-semibold opacity-55 transition hover:opacity-90"
                           onClick={() => deleteMessage(message)}
                           type="button"
                         >
@@ -735,8 +735,8 @@ export default function Home() {
                         </button>
                       ) : null}
                       <p
-                        className={`text-right text-xs ${
-                          isMine ? "text-[#0a4c49]" : "text-[#5f8185]"
+                        className={`text-right text-[11px] font-medium ${
+                          isMine ? "text-[#0b4643]" : "text-[#6d878a]"
                         }`}
                       >
                         {formatMessageTime(message.created_at)}
