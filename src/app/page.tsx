@@ -552,7 +552,7 @@ export default function Home() {
 
         await peerConnection.setRemoteDescription(signal.payload);
         await flushPendingIceCandidates();
-        setCallStatus("connected");
+        markCallConnected();
         return;
       }
 
@@ -1026,6 +1026,15 @@ export default function Home() {
     setLocalMicrophoneMuted(!isCallMicMuted);
   }
 
+  function markCallConnected() {
+    if (callStatusRef.current !== "connected") {
+      setCallDuration(0);
+      setCallStartedAt(Date.now());
+    }
+
+    setCallStatus("connected");
+  }
+
   function createPeerConnection(receiverId: string) {
     const peerConnection = new RTCPeerConnection({
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
@@ -1061,7 +1070,7 @@ export default function Home() {
 
     peerConnection.onconnectionstatechange = () => {
       if (peerConnection.connectionState === "connected") {
-        setCallStatus("connected");
+        markCallConnected();
       }
 
       if (
@@ -1116,7 +1125,7 @@ export default function Home() {
       setErrorMessage("");
       setCallStatus("calling");
       setCallDuration(0);
-      setCallStartedAt(Date.now());
+      setCallStartedAt(null);
       setIsCallMicMuted(false);
 
       const stream = await getLocalCallStream();
@@ -1149,7 +1158,7 @@ export default function Home() {
       setErrorMessage("");
       setCallStatus("connecting");
       setCallDuration(0);
-      setCallStartedAt(Date.now());
+      setCallStartedAt(null);
       setIsCallMicMuted(false);
 
       const stream = await getLocalCallStream();
@@ -1175,7 +1184,7 @@ export default function Home() {
       await peerConnection.setLocalDescription(answer);
       await sendCallSignal(incomingCall.sender_id, "answer", answer);
       setIncomingCall(null);
-      setCallStatus("connected");
+      markCallConnected();
     } catch {
       closeCall(false);
       setErrorMessage("Не получилось принять звонок. Проверь доступ к микрофону.");
