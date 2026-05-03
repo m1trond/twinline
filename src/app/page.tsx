@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 type MessageRow = {
@@ -51,6 +51,14 @@ async function fetchMessages() {
     .order("created_at", { ascending: true });
 }
 
+async function fetchMessagesAfter(createdAt: string) {
+  return supabase
+    .from("messages")
+    .select("id, author, text, created_at")
+    .gt("created_at", createdAt)
+    .order("created_at", { ascending: true });
+}
+
 export default function Home() {
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [messageText, setMessageText] = useState("");
@@ -66,6 +74,7 @@ export default function Home() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const latestMessageCreatedAtRef = useRef<string | null>(null);
 
   const activeAuthorName = useMemo(() => {
     return authorLabels[author] ?? "Я";
@@ -76,9 +85,14 @@ export default function Home() {
   }, [author]);
 
   useEffect(() => {
+    latestMessageCreatedAtRef.current =
+      messages.filter((message) => message.id > 0).at(-1)?.created_at ?? null;
+  }, [messages]);
+
+  useEffect(() => {
     let isMounted = true;
 
-    async function refreshMessages(showLoading = false) {
+    async function syncAllMessages(showLoading = false) {
       if (showLoading) {
         setIsLoading(true);
       }
@@ -99,11 +113,41 @@ export default function Home() {
       setIsLoading(false);
     }
 
-    refreshMessages(true);
+    async function syncNewMessages() {
+      const latestMessageCreatedAt = latestMessageCreatedAtRef.current;
 
-    const refreshInterval = window.setInterval(() => {
-      refreshMessages();
-    }, 2500);
+      if (!latestMessageCreatedAt) {
+        await syncAllMessages();
+        return;
+      }
+
+      const { data, error } = await fetchMessagesAfter(latestMessageCreatedAt);
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (error) {
+        setErrorMessage("Не получилось загрузить новые сообщения.");
+      } else if (data?.length) {
+        setMessages((currentMessages) => mergeMessages(currentMessages, data));
+        setErrorMessage("");
+      }
+    }
+
+    syncAllMessages(true);
+
+    const newMessagesInterval = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        syncNewMessages();
+      }
+    }, 900);
+
+    const fullSyncInterval = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        syncAllMessages();
+      }
+    }, 10000);
 
     const channel = supabase
       .channel("messages-channel")
@@ -141,7 +185,8 @@ export default function Home() {
 
     return () => {
       isMounted = false;
-      window.clearInterval(refreshInterval);
+      window.clearInterval(newMessagesInterval);
+      window.clearInterval(fullSyncInterval);
       supabase.removeChannel(channel);
     };
   }, []);
@@ -155,7 +200,17 @@ export default function Home() {
       return;
     }
 
+    const optimisticMessage: MessageRow = {
+      id: -Date.now(),
+      author,
+      text: trimmedText,
+      created_at: new Date().toISOString(),
+    };
+
     setMessageText("");
+    setMessages((currentMessages) =>
+      mergeMessages(currentMessages, [optimisticMessage]),
+    );
 
     const { data, error } = await supabase
       .from("messages")
@@ -167,12 +222,22 @@ export default function Home() {
       .single();
 
     if (error) {
+      setMessages((currentMessages) =>
+        currentMessages.filter((message) => message.id !== optimisticMessage.id),
+      );
       setMessageText(trimmedText);
       setErrorMessage("Не получилось отправить сообщение.");
     } else {
-      setMessages((currentMessages) =>
-        mergeMessages(currentMessages, data ? [data] : []),
-      );
+      setMessages((currentMessages) => {
+        const withoutOptimisticMessage = currentMessages.filter(
+          (message) => message.id !== optimisticMessage.id,
+        );
+
+        return mergeMessages(
+          withoutOptimisticMessage,
+          data ? [data] : [],
+        );
+      });
       setErrorMessage("");
     }
   }
