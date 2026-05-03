@@ -269,13 +269,8 @@ export default function Home() {
     <main className="relative h-dvh overflow-hidden text-[#fff8ea]">
       <div
         aria-hidden="true"
-        className="absolute inset-y-0 left-0 h-full w-1/2 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/chat-background.jpg')" }}
-      />
-      <div
-        aria-hidden="true"
-        className="absolute inset-y-0 right-0 h-full w-1/2 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/chat-background-right.jpg')" }}
+        className="absolute inset-0 h-full w-full bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/site-background.jpg')" }}
       />
       <div className="relative h-full overflow-hidden bg-[#090806]/60 backdrop-blur-[2px]">
         <div className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden px-4 py-4 sm:px-6 lg:px-8">
