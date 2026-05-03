@@ -393,7 +393,7 @@ export default function Home() {
   }
 
   return (
-    <main className="relative h-dvh overflow-hidden bg-[#05080a] text-[#eefcff]">
+    <main className="relative h-dvh overflow-hidden bg-[#05080a] text-[#e3f4f4]">
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(240,196,93,0.16),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(255,248,234,0.08),transparent_28%),linear-gradient(135deg,#05080a_0%,#0b1418_46%,#030506_100%)]"
@@ -404,9 +404,9 @@ export default function Home() {
       />
       <div className="relative h-full overflow-hidden bg-[#061014]/35">
         <div className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden px-3 py-3 sm:px-6 sm:py-4 lg:px-8">
-        <header className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-2xl border border-[#42d7c8]/45 bg-[#0d171c]/82 px-3 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mb-4 sm:px-4">
+        <header className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/82 px-3 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mb-4 sm:px-4">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#56f0dc] shadow-[0_8px_24px_rgba(240,196,93,0.28)] sm:h-11 sm:w-11">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#37c6b8] shadow-[0_8px_24px_rgba(240,196,93,0.28)] sm:h-11 sm:w-11">
               <svg
                 aria-hidden="true"
                 className="h-7 w-7 sm:h-8 sm:w-8"
@@ -434,7 +434,7 @@ export default function Home() {
               <h1 className="text-xl font-semibold tracking-normal sm:text-2xl">
                 Twinline
               </h1>
-              <p className="max-w-[210px] truncate text-xs font-medium text-[#a8cfd3] sm:max-w-none sm:text-sm">
+              <p className="max-w-[210px] truncate text-xs font-medium text-[#8fb7bb] sm:max-w-none sm:text-sm">
                 Приватное пространство для двоих
               </p>
             </div>
@@ -442,13 +442,13 @@ export default function Home() {
 
         </header>
 
-        <nav className="scrollbar-hidden mb-3 flex shrink-0 gap-2 overflow-x-auto rounded-2xl border border-[#42d7c8]/45 bg-[#0d171c]/78 p-2 shadow-[0_14px_45px_rgba(0,0,0,0.24)] backdrop-blur-md lg:hidden">
+        <nav className="scrollbar-hidden mb-3 flex shrink-0 gap-2 overflow-x-auto rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-2 shadow-[0_14px_45px_rgba(0,0,0,0.24)] backdrop-blur-md lg:hidden">
           {navItems.map((item) => (
             <button
               className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
                 activeView === item.view
-                  ? "bg-[#56f0dc] text-[#041012]"
-                  : "text-[#eefcff] opacity-80 hover:bg-white/10 hover:opacity-100"
+                  ? "bg-[#37c6b8] text-[#041012]"
+                  : "text-[#e3f4f4] opacity-80 hover:bg-white/10 hover:opacity-100"
               }`}
               key={item.view}
               onClick={() => setActiveView(item.view)}
@@ -460,9 +460,9 @@ export default function Home() {
         </nav>
 
         <section className="grid min-h-0 flex-1 gap-3 overflow-hidden pb-3 sm:gap-4 sm:pb-4 lg:grid-cols-[280px_1fr]">
-          <aside className="hidden min-h-0 rounded-2xl border border-[#42d7c8]/45 bg-[#0d171c]/78 p-4 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:block">
+          <aside className="hidden min-h-0 rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-4 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:block">
             <div className="mb-5">
-              <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#74e4d8]">
+              <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#5bbdb4]">
                 Меню
               </p>
             </div>
@@ -472,8 +472,8 @@ export default function Home() {
                 <button
                   className={`rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
                     activeView === item.view
-                      ? "bg-[#56f0dc] text-[#041012]"
-                      : "text-[#eefcff] opacity-80 hover:bg-white/10 hover:opacity-100"
+                      ? "bg-[#37c6b8] text-[#041012]"
+                      : "text-[#e3f4f4] opacity-80 hover:bg-white/10 hover:opacity-100"
                   }`}
                   key={item.view}
                   onClick={() => setActiveView(item.view)}
@@ -487,14 +487,14 @@ export default function Home() {
           </aside>
 
           {activeView === "profile" ? (
-            <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#42d7c8]/45 bg-[#0d171c]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[#42d7c8]/35 pb-5 sm:mb-6">
+            <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[#2faea4]/35 pb-5 sm:mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[#56f0dc] text-xl font-black text-[#041012] sm:h-16 sm:w-16 sm:text-2xl">
+                  <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[#37c6b8] text-xl font-black text-[#041012] sm:h-16 sm:w-16 sm:text-2xl">
                     {activeAuthorName[0]}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-[#74e4d8]">
+                    <p className="text-sm font-medium text-[#5bbdb4]">
                       Активный профиль
                     </p>
                     <h2 className="text-2xl font-semibold sm:text-3xl">
@@ -503,12 +503,12 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="grid w-full grid-cols-2 rounded-lg border border-[#42d7c8]/45 bg-black/20 p-1 sm:w-auto">
+                <div className="grid w-full grid-cols-2 rounded-lg border border-[#2faea4]/45 bg-black/20 p-1 sm:w-auto">
                   <button
                     className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
                       author === "me"
-                        ? "bg-[#56f0dc] text-[#041012]"
-                        : "text-[#eefcff] hover:bg-white/10"
+                        ? "bg-[#37c6b8] text-[#041012]"
+                        : "text-[#e3f4f4] hover:bg-white/10"
                     }`}
                     onClick={() => setAuthor("me")}
                     type="button"
@@ -518,8 +518,8 @@ export default function Home() {
                   <button
                     className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
                       author === "friend"
-                        ? "bg-[#56f0dc] text-[#041012]"
-                        : "text-[#eefcff] hover:bg-white/10"
+                        ? "bg-[#37c6b8] text-[#041012]"
+                        : "text-[#e3f4f4] hover:bg-white/10"
                     }`}
                     onClick={() => setAuthor("friend")}
                     type="button"
@@ -530,8 +530,8 @@ export default function Home() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <section className="rounded-2xl border border-[#42d7c8]/35 bg-black/20 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#74e4d8]">
+                <section className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#5bbdb4]">
                     Twinline ID
                   </p>
                   <p className="mt-3 text-lg font-semibold">
@@ -539,8 +539,8 @@ export default function Home() {
                   </p>
                 </section>
 
-                <section className="rounded-2xl border border-[#42d7c8]/35 bg-black/20 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#74e4d8]">
+                <section className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#5bbdb4]">
                     Роль
                   </p>
                   <p className="mt-3 text-lg font-semibold">
@@ -548,11 +548,11 @@ export default function Home() {
                   </p>
                 </section>
 
-                <section className="rounded-2xl border border-[#42d7c8]/35 bg-black/20 p-4 sm:col-span-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#74e4d8]">
+                <section className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4 sm:col-span-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#5bbdb4]">
                     О профиле
                   </p>
-                  <p className="mt-3 max-w-2xl text-sm leading-6 text-[#eefcff]">
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-[#e3f4f4]">
                     Этот экран пока управляет тем, от чьего имени ты пишешь.
                     Когда подключим настоящий вход, Twinline будет сам понимать,
                     кто открыл сайт, и переключатель больше не понадобится.
@@ -561,31 +561,31 @@ export default function Home() {
               </div>
             </div>
           ) : activeView === "gallery" ? (
-            <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#42d7c8]/45 bg-[#0d171c]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
-              <div className="mb-5 border-b border-[#42d7c8]/35 pb-5">
-                <p className="text-sm font-medium text-[#74e4d8]">Раздел</p>
+            <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
+              <div className="mb-5 border-b border-[#2faea4]/35 pb-5">
+                <p className="text-sm font-medium text-[#5bbdb4]">Раздел</p>
                 <h2 className="text-2xl font-semibold sm:text-3xl">Галерея</h2>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-                <article className="aspect-[16/10] overflow-hidden rounded-2xl border border-[#42d7c8]/35 bg-black/20 sm:aspect-[4/5]">
+                <article className="aspect-[16/10] overflow-hidden rounded-2xl border border-[#2faea4]/35 bg-black/20 sm:aspect-[4/5]">
                   <div
                     className="h-full bg-cover bg-center"
                     style={{ backgroundImage: "url('/chat-background.jpg')" }}
                   />
                 </article>
-                <article className="aspect-[16/10] overflow-hidden rounded-2xl border border-[#42d7c8]/35 bg-black/20 sm:aspect-[4/5]">
+                <article className="aspect-[16/10] overflow-hidden rounded-2xl border border-[#2faea4]/35 bg-black/20 sm:aspect-[4/5]">
                   <div
                     className="h-full bg-cover bg-center"
                     style={{ backgroundImage: "url('/chat-background-right.jpg')" }}
                   />
                 </article>
-                <article className="grid aspect-[16/10] place-items-center rounded-2xl border border-dashed border-[#42d7c8]/45 bg-black/20 p-6 text-center sm:aspect-[4/5]">
+                <article className="grid aspect-[16/10] place-items-center rounded-2xl border border-dashed border-[#2faea4]/45 bg-black/20 p-6 text-center sm:aspect-[4/5]">
                   <div>
-                    <p className="text-lg font-semibold text-[#eefcff]">
+                    <p className="text-lg font-semibold text-[#e3f4f4]">
                       Новые фото
                     </p>
-                    <p className="mt-2 text-sm leading-6 text-[#a8cfd3]">
+                    <p className="mt-2 text-sm leading-6 text-[#8fb7bb]">
                       Позже подключим загрузку изображений и общую ленту.
                     </p>
                   </div>
@@ -593,9 +593,9 @@ export default function Home() {
               </div>
             </div>
           ) : activeView === "ideas" ? (
-            <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#42d7c8]/45 bg-[#0d171c]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
-              <div className="mb-5 border-b border-[#42d7c8]/35 pb-5">
-                <p className="text-sm font-medium text-[#74e4d8]">Раздел</p>
+            <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
+              <div className="mb-5 border-b border-[#2faea4]/35 pb-5">
+                <p className="text-sm font-medium text-[#5bbdb4]">Раздел</p>
                 <h2 className="text-2xl font-semibold sm:text-3xl">Идеи</h2>
               </div>
 
@@ -607,13 +607,13 @@ export default function Home() {
                   "Сделать реакции на сообщения",
                 ].map((idea) => (
                   <article
-                    className="rounded-2xl border border-[#42d7c8]/35 bg-black/20 p-4"
+                    className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4"
                     key={idea}
                   >
-                    <p className="text-base font-semibold text-[#eefcff]">
+                    <p className="text-base font-semibold text-[#e3f4f4]">
                       {idea}
                     </p>
-                    <p className="mt-2 text-sm text-[#a8cfd3]">
+                    <p className="mt-2 text-sm text-[#8fb7bb]">
                       Черновик идеи для развития Twinline.
                     </p>
                   </article>
@@ -622,27 +622,27 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#42d7c8]/45 bg-[#0d171c]/78 px-3 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mb-4 sm:px-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 px-3 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mb-4 sm:px-4">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-full bg-[#56f0dc] text-base font-semibold text-[#041012]">
+              <div className="grid h-11 w-11 place-items-center rounded-full bg-[#37c6b8] text-base font-semibold text-[#041012]">
                 {activeAuthorName[0]}
               </div>
               <div className="min-w-0">
                 <h2 className="truncate text-base font-semibold">
                   Приватный чат
                 </h2>
-                <p className="truncate text-sm text-[#a8cfd3]">
+                <p className="truncate text-sm text-[#8fb7bb]">
                   Сейчас пишешь как: {activeAuthorName}
                 </p>
               </div>
             </div>
 
-            <div className="grid w-full grid-cols-2 rounded-lg border border-[#42d7c8]/45 bg-black/20 p-1 sm:w-auto">
+            <div className="grid w-full grid-cols-2 rounded-lg border border-[#2faea4]/45 bg-black/20 p-1 sm:w-auto">
               <button
                 className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
                   author === "me"
-                    ? "bg-[#56f0dc] text-[#041012]"
-                    : "text-[#eefcff] hover:bg-white/10"
+                    ? "bg-[#37c6b8] text-[#041012]"
+                    : "text-[#e3f4f4] hover:bg-white/10"
                 }`}
                 onClick={() => setAuthor("me")}
                 type="button"
@@ -652,8 +652,8 @@ export default function Home() {
               <button
                 className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
                   author === "friend"
-                    ? "bg-[#56f0dc] text-[#041012]"
-                    : "text-[#eefcff] hover:bg-white/10"
+                    ? "bg-[#37c6b8] text-[#041012]"
+                    : "text-[#e3f4f4] hover:bg-white/10"
                 }`}
                 onClick={() => setAuthor("friend")}
                 type="button"
@@ -664,14 +664,14 @@ export default function Home() {
           </div>
 
           <div
-            className="scrollbar-hidden flex min-h-0 flex-col gap-3 overflow-y-auto rounded-2xl border border-[#42d7c8]/45 bg-[#081216]/82 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-4"
+            className="scrollbar-hidden flex min-h-0 flex-col gap-3 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#081216]/82 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-4"
           >
             {isLoading ? (
-              <p className="text-sm text-[#a8cfd3]">Загружаю сообщения...</p>
+              <p className="text-sm text-[#8fb7bb]">Загружаю сообщения...</p>
             ) : null}
 
             {!isLoading && messages.length === 0 ? (
-              <p className="text-sm text-[#a8cfd3]">
+              <p className="text-sm text-[#8fb7bb]">
                 Сообщений пока нет. Напиши первое.
               </p>
             ) : null}
@@ -692,8 +692,8 @@ export default function Home() {
                       hasAttachment ? "p-2.5" : "px-4 py-3"
                     } ${
                       isMine
-                        ? "rounded-br-md bg-[#56f0dc] text-[#041012]"
-                        : "rounded-bl-md bg-[#eefcff] text-[#071316]"
+                        ? "rounded-br-md bg-[#37c6b8] text-[#041012]"
+                        : "rounded-bl-md bg-[#e3f4f4] text-[#071316]"
                     }`}
                   >
                     <p className={`${hasAttachment ? "mb-2 px-1" : "mb-1"} text-xs font-semibold opacity-70`}>
@@ -736,7 +736,7 @@ export default function Home() {
                       ) : null}
                       <p
                         className={`text-right text-xs ${
-                          isMine ? "text-[#0b5d58]" : "text-[#5f8185]"
+                          isMine ? "text-[#0a4c49]" : "text-[#5f8185]"
                         }`}
                       >
                         {formatMessageTime(message.created_at)}
@@ -749,7 +749,7 @@ export default function Home() {
           </div>
 
           <form
-            className="mt-3 flex gap-2 rounded-2xl border border-[#42d7c8]/45 bg-[#0d171c]/82 p-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mt-4"
+            className="mt-3 flex gap-2 rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/82 p-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mt-4"
             onSubmit={sendMessage}
           >
             <input
@@ -761,13 +761,13 @@ export default function Home() {
             />
             <button
               aria-label="Прикрепить изображение"
-              className="grid min-h-12 w-12 shrink-0 place-items-center rounded-lg border border-[#42d7c8]/35 bg-[#eefcff]/12 text-[#eefcff] transition hover:bg-[#eefcff]/18 disabled:cursor-not-allowed disabled:opacity-50"
+              className="grid min-h-12 w-12 shrink-0 place-items-center rounded-lg border border-[#2faea4]/35 bg-[#e3f4f4]/12 text-[#e3f4f4] transition hover:bg-[#e3f4f4]/18 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isUploadingImage}
               onClick={() => imageInputRef.current?.click()}
               type="button"
             >
               {isUploadingImage ? (
-                <span className="h-4 w-4 rounded-full border-2 border-[#56f0dc] border-t-transparent" />
+                <span className="h-4 w-4 rounded-full border-2 border-[#37c6b8] border-t-transparent" />
               ) : (
                 <svg
                   aria-hidden="true"
@@ -787,14 +787,14 @@ export default function Home() {
             </button>
             <input
               aria-label="Текст сообщения"
-              className="min-h-12 min-w-0 flex-1 rounded-lg border border-transparent bg-[#eefcff]/12 px-3 text-base text-[#eefcff] outline-none transition placeholder:text-[#a8cfd3]/70 focus:border-[#56f0dc] focus:bg-[#eefcff]/18 sm:px-4"
+              className="min-h-12 min-w-0 flex-1 rounded-lg border border-transparent bg-[#e3f4f4]/12 px-3 text-base text-[#e3f4f4] outline-none transition placeholder:text-[#8fb7bb]/70 focus:border-[#37c6b8] focus:bg-[#e3f4f4]/18 sm:px-4"
               onChange={(event) => setMessageText(event.target.value)}
               placeholder="Напиши сообщение..."
               type="text"
               value={messageText}
             />
             <button
-              className="min-h-12 rounded-lg bg-[#56f0dc] px-3 text-sm font-semibold text-[#041012] transition hover:bg-[#8ff8ee] disabled:cursor-not-allowed disabled:bg-[#52666a] sm:px-5"
+              className="min-h-12 rounded-lg bg-[#37c6b8] px-3 text-sm font-semibold text-[#041012] transition hover:bg-[#65d8cc] disabled:cursor-not-allowed disabled:bg-[#52666a] sm:px-5"
               disabled={!messageText.trim() || isUploadingImage}
               type="submit"
             >
@@ -819,13 +819,13 @@ export default function Home() {
           onClick={() => setSelectedImageUrl(null)}
           type="button"
         >
-          <span className="absolute right-4 top-4 rounded-full border border-[#42d7c8]/45 bg-[#0d171c]/90 px-4 py-2 text-sm font-semibold text-[#eefcff]">
+          <span className="absolute right-4 top-4 rounded-full border border-[#2faea4]/45 bg-[#0d171c]/90 px-4 py-2 text-sm font-semibold text-[#e3f4f4]">
             Закрыть
           </span>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             alt="Просмотр изображения"
-            className="max-h-[76dvh] max-w-[82vw] rounded-2xl border border-[#42d7c8]/35 object-contain shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
+            className="max-h-[76dvh] max-w-[82vw] rounded-2xl border border-[#2faea4]/35 object-contain shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
             onClick={(event) => event.stopPropagation()}
             src={selectedImageUrl}
           />
