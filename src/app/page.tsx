@@ -18,6 +18,13 @@ const authorLabels: Record<string, string> = {
   friend: "Друг",
 };
 
+const navItems: Array<{ label: string; view: ActiveView }> = [
+  { label: "Профиль", view: "profile" },
+  { label: "Сообщения", view: "messages" },
+  { label: "Галерея", view: "gallery" },
+  { label: "Идеи", view: "ideas" },
+];
+
 function formatMessageTime(createdAt: string) {
   return new Intl.DateTimeFormat("ru-RU", {
     hour: "2-digit",
@@ -273,13 +280,13 @@ export default function Home() {
         style={{ backgroundImage: "url('/site-background.jpg')" }}
       />
       <div className="relative h-full overflow-hidden bg-[#090806]/60 backdrop-blur-[2px]">
-        <div className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden px-4 py-4 sm:px-6 lg:px-8">
-        <header className="mb-4 flex items-center justify-between gap-4 rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/82 px-4 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md">
+        <div className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden px-3 py-3 sm:px-6 sm:py-4 lg:px-8">
+        <header className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/82 px-3 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mb-4 sm:px-4">
           <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-xl bg-[#f0c45d] shadow-[0_8px_24px_rgba(240,196,93,0.28)]">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#f0c45d] shadow-[0_8px_24px_rgba(240,196,93,0.28)] sm:h-11 sm:w-11">
               <svg
                 aria-hidden="true"
-                className="h-8 w-8"
+                className="h-7 w-7 sm:h-8 sm:w-8"
                 fill="none"
                 viewBox="0 0 40 40"
               >
@@ -301,10 +308,10 @@ export default function Home() {
               </svg>
             </div>
             <div>
-              <h1 className="text-2xl font-semibold tracking-normal">
+              <h1 className="text-xl font-semibold tracking-normal sm:text-2xl">
                 Twinline
               </h1>
-              <p className="text-sm font-medium text-[#d8c7a5]">
+              <p className="max-w-[210px] truncate text-xs font-medium text-[#d8c7a5] sm:max-w-none sm:text-sm">
                 Приватное пространство для двоих
               </p>
             </div>
@@ -312,7 +319,24 @@ export default function Home() {
 
         </header>
 
-        <section className="grid min-h-0 flex-1 gap-4 overflow-hidden pb-4 lg:grid-cols-[280px_1fr]">
+        <nav className="scrollbar-hidden mb-3 flex shrink-0 gap-2 overflow-x-auto rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/78 p-2 shadow-[0_14px_45px_rgba(0,0,0,0.24)] backdrop-blur-md lg:hidden">
+          {navItems.map((item) => (
+            <button
+              className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                activeView === item.view
+                  ? "bg-[#f0c45d] text-[#1c1509]"
+                  : "text-[#fff8ea] opacity-80 hover:bg-white/10 hover:opacity-100"
+              }`}
+              key={item.view}
+              onClick={() => setActiveView(item.view)}
+              type="button"
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <section className="grid min-h-0 flex-1 gap-3 overflow-hidden pb-3 sm:gap-4 sm:pb-4 lg:grid-cols-[280px_1fr]">
           <aside className="hidden min-h-0 rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/78 p-4 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:block">
             <div className="mb-5">
               <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#d8b875]">
@@ -321,72 +345,42 @@ export default function Home() {
             </div>
 
             <nav className="grid gap-2">
-              <button
-                className={`rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
-                  activeView === "profile"
-                    ? "bg-[#f0c45d] text-[#1c1509]"
-                    : "text-[#fff8ea] opacity-80 hover:bg-white/10 hover:opacity-100"
-                }`}
-                onClick={() => setActiveView("profile")}
-                type="button"
-              >
-                Профиль
-              </button>
-              <button
-                className={`rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
-                  activeView === "messages"
-                    ? "bg-[#f0c45d] text-[#1c1509]"
-                    : "text-[#fff8ea] opacity-80 hover:bg-white/10 hover:opacity-100"
-                }`}
-                onClick={() => setActiveView("messages")}
-                type="button"
-              >
-                Сообщения
-              </button>
-              <button
-                className={`rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
-                  activeView === "gallery"
-                    ? "bg-[#f0c45d] text-[#1c1509]"
-                    : "text-[#fff8ea] opacity-80 hover:bg-white/10 hover:opacity-100"
-                }`}
-                onClick={() => setActiveView("gallery")}
-                type="button"
-              >
-                Галерея
-              </button>
-              <button
-                className={`rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
-                  activeView === "ideas"
-                    ? "bg-[#f0c45d] text-[#1c1509]"
-                    : "text-[#fff8ea] opacity-80 hover:bg-white/10 hover:opacity-100"
-                }`}
-                onClick={() => setActiveView("ideas")}
-                type="button"
-              >
-                Идеи
-              </button>
+              {navItems.map((item) => (
+                <button
+                  className={`rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
+                    activeView === item.view
+                      ? "bg-[#f0c45d] text-[#1c1509]"
+                      : "text-[#fff8ea] opacity-80 hover:bg-white/10 hover:opacity-100"
+                  }`}
+                  key={item.view}
+                  onClick={() => setActiveView(item.view)}
+                  type="button"
+                >
+                  {item.label}
+                </button>
+              ))}
             </nav>
 
           </aside>
 
           {activeView === "profile" ? (
-            <div className="min-h-0 overflow-hidden rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/78 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md">
-              <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-[#e6b85c]/35 pb-5">
+            <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[#e6b85c]/35 pb-5 sm:mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="grid h-16 w-16 place-items-center rounded-2xl bg-[#f0c45d] text-2xl font-black text-[#1c1509]">
+                  <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[#f0c45d] text-xl font-black text-[#1c1509] sm:h-16 sm:w-16 sm:text-2xl">
                     {activeAuthorName[0]}
                   </div>
                   <div>
                     <p className="text-sm font-medium text-[#d8b875]">
                       Активный профиль
                     </p>
-                    <h2 className="text-3xl font-semibold">
+                    <h2 className="text-2xl font-semibold sm:text-3xl">
                       {activeAuthorName}
                     </h2>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 rounded-lg border border-[#e6b85c]/45 bg-black/20 p-1">
+                <div className="grid w-full grid-cols-2 rounded-lg border border-[#e6b85c]/45 bg-black/20 p-1 sm:w-auto">
                   <button
                     className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
                       author === "me"
@@ -444,26 +438,26 @@ export default function Home() {
               </div>
             </div>
           ) : activeView === "gallery" ? (
-            <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/78 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md">
+            <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
               <div className="mb-5 border-b border-[#e6b85c]/35 pb-5">
                 <p className="text-sm font-medium text-[#d8b875]">Раздел</p>
-                <h2 className="text-3xl font-semibold">Галерея</h2>
+                <h2 className="text-2xl font-semibold sm:text-3xl">Галерея</h2>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                <article className="aspect-[4/5] overflow-hidden rounded-2xl border border-[#e6b85c]/35 bg-black/20">
+              <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+                <article className="aspect-[16/10] overflow-hidden rounded-2xl border border-[#e6b85c]/35 bg-black/20 sm:aspect-[4/5]">
                   <div
                     className="h-full bg-cover bg-center"
                     style={{ backgroundImage: "url('/chat-background.jpg')" }}
                   />
                 </article>
-                <article className="aspect-[4/5] overflow-hidden rounded-2xl border border-[#e6b85c]/35 bg-black/20">
+                <article className="aspect-[16/10] overflow-hidden rounded-2xl border border-[#e6b85c]/35 bg-black/20 sm:aspect-[4/5]">
                   <div
                     className="h-full bg-cover bg-center"
                     style={{ backgroundImage: "url('/chat-background-right.jpg')" }}
                   />
                 </article>
-                <article className="grid aspect-[4/5] place-items-center rounded-2xl border border-dashed border-[#e6b85c]/45 bg-black/20 p-6 text-center">
+                <article className="grid aspect-[16/10] place-items-center rounded-2xl border border-dashed border-[#e6b85c]/45 bg-black/20 p-6 text-center sm:aspect-[4/5]">
                   <div>
                     <p className="text-lg font-semibold text-[#fff8ea]">
                       Новые фото
@@ -476,10 +470,10 @@ export default function Home() {
               </div>
             </div>
           ) : activeView === "ideas" ? (
-            <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/78 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md">
+            <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
               <div className="mb-5 border-b border-[#e6b85c]/35 pb-5">
                 <p className="text-sm font-medium text-[#d8b875]">Раздел</p>
-                <h2 className="text-3xl font-semibold">Идеи</h2>
+                <h2 className="text-2xl font-semibold sm:text-3xl">Идеи</h2>
               </div>
 
               <div className="grid gap-4">
@@ -505,7 +499,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/78 px-4 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/78 px-3 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mb-4 sm:px-4">
             <div className="flex min-w-0 items-center gap-3">
               <div className="grid h-11 w-11 place-items-center rounded-full bg-[#f0c45d] text-base font-semibold text-[#1c1509]">
                 {activeAuthorName[0]}
@@ -520,7 +514,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 rounded-lg border border-[#e6b85c]/45 bg-black/20 p-1">
+            <div className="grid w-full grid-cols-2 rounded-lg border border-[#e6b85c]/45 bg-black/20 p-1 sm:w-auto">
               <button
                 className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
                   author === "me"
@@ -547,7 +541,7 @@ export default function Home() {
           </div>
 
           <div
-            className="scrollbar-hidden flex min-h-0 flex-col gap-3 overflow-y-auto rounded-2xl border border-[#e6b85c]/45 bg-[#100d09]/82 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md"
+            className="scrollbar-hidden flex min-h-0 flex-col gap-3 overflow-y-auto rounded-2xl border border-[#e6b85c]/45 bg-[#100d09]/82 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-4"
           >
             {isLoading ? (
               <p className="text-sm text-[#d8c7a5]">Загружаю сообщения...</p>
@@ -568,7 +562,7 @@ export default function Home() {
                   key={message.id}
                 >
                   <div
-                    className={`max-w-[78%] rounded-2xl px-4 py-3 shadow-sm sm:max-w-[62%] ${
+                    className={`max-w-[86%] rounded-2xl px-4 py-3 shadow-sm sm:max-w-[62%] ${
                       isMine
                         ? "rounded-br-md bg-[#f0c45d] text-[#1c1509]"
                         : "rounded-bl-md border border-[#e6b85c]/35 bg-[#fff8ea] text-[#21180c]"
@@ -605,19 +599,19 @@ export default function Home() {
           </div>
 
           <form
-            className="mt-4 flex gap-2 rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/82 p-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md"
+            className="mt-3 flex gap-2 rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/82 p-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mt-4"
             onSubmit={sendMessage}
           >
             <input
               aria-label="Текст сообщения"
-              className="min-h-12 flex-1 rounded-lg border border-transparent bg-[#fff8ea]/12 px-4 text-base text-[#fff8ea] outline-none transition placeholder:text-[#d8c7a5]/70 focus:border-[#f0c45d] focus:bg-[#fff8ea]/18"
+              className="min-h-12 min-w-0 flex-1 rounded-lg border border-transparent bg-[#fff8ea]/12 px-3 text-base text-[#fff8ea] outline-none transition placeholder:text-[#d8c7a5]/70 focus:border-[#f0c45d] focus:bg-[#fff8ea]/18 sm:px-4"
               onChange={(event) => setMessageText(event.target.value)}
               placeholder="Напиши сообщение..."
               type="text"
               value={messageText}
             />
             <button
-              className="min-h-12 rounded-lg bg-[#f0c45d] px-5 text-sm font-semibold text-[#1c1509] transition hover:bg-[#ffd775] disabled:cursor-not-allowed disabled:bg-[#83765d]"
+              className="min-h-12 rounded-lg bg-[#f0c45d] px-3 text-sm font-semibold text-[#1c1509] transition hover:bg-[#ffd775] disabled:cursor-not-allowed disabled:bg-[#83765d] sm:px-5"
               disabled={!messageText.trim()}
               type="submit"
             >
