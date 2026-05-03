@@ -2256,16 +2256,14 @@ export default function Home() {
                     </div>
                   </div>
                   <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
-                    {callStatus === "idle" ? (
-                      <button
-                        className="min-h-10 rounded-xl bg-[#37c6b8] px-4 text-xs font-bold text-[#041012] transition hover:bg-[#65d8cc] disabled:cursor-not-allowed disabled:bg-[#52666a]"
-                        disabled={!friendProfile?.userId}
-                        onClick={startCall}
-                        type="button"
-                      >
-                        Позвонить
-                      </button>
-                    ) : null}
+                    <button
+                      className="min-h-10 min-w-28 rounded-xl bg-[#37c6b8] px-4 text-xs font-bold text-[#041012] transition hover:bg-[#65d8cc] disabled:cursor-not-allowed disabled:bg-[#52666a]"
+                      disabled={!friendProfile?.userId || callStatus !== "idle"}
+                      onClick={startCall}
+                      type="button"
+                    >
+                      {callStatus === "idle" ? "Позвонить" : callStatusText}
+                    </button>
                   </div>
                 </div>
                 <audio autoPlay playsInline ref={remoteAudioRef} />
