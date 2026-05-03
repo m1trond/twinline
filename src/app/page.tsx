@@ -229,12 +229,6 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 rounded-full border border-[#e6b85c]/55 bg-[#fff8ea]/10 px-4 py-2">
-            <span className="h-2.5 w-2.5 rounded-full bg-[#f0c45d]" />
-            <span className="text-sm font-medium text-[#fff8ea]">
-              Live
-            </span>
-          </div>
         </header>
 
         <section className="grid min-h-0 flex-1 gap-4 overflow-hidden pb-4 lg:grid-cols-[280px_1fr]">
@@ -271,14 +265,6 @@ export default function Home() {
               </button>
             </nav>
 
-            <div className="mt-6 rounded-2xl border border-[#e6b85c]/35 bg-black/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d8b875]">
-                Статус
-              </p>
-              <p className="mt-2 text-sm leading-6 text-[#fff8ea]">
-                Сообщения сохраняются в Supabase и появляются автоматически.
-              </p>
-            </div>
           </aside>
 
           {activeView === "profile" ? (
