@@ -87,6 +87,7 @@ export default function Home() {
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [messageText, setMessageText] = useState("");
   const [activeView, setActiveView] = useState<ActiveView>("profile");
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const [author, setAuthor] = useState<Author>(() => {
     if (typeof window === "undefined") {
       return "me";
@@ -671,28 +672,30 @@ export default function Home() {
                   key={message.id}
                 >
                   <div
-                    className={`max-w-[86%] rounded-2xl px-4 py-3 shadow-sm sm:max-w-[62%] ${
+                    className={`max-w-[92%] rounded-2xl shadow-sm sm:max-w-[72%] ${
+                      imageUrl ? "p-2.5" : "px-4 py-3"
+                    } ${
                       isMine
                         ? "rounded-br-md bg-[#f0c45d] text-[#1c1509]"
-                        : "rounded-bl-md border border-[#e6b85c]/35 bg-[#fff8ea] text-[#21180c]"
+                        : "rounded-bl-md bg-[#fff8ea] text-[#21180c]"
                     }`}
                   >
-                    <p className="mb-1 text-xs font-semibold opacity-70">
+                    <p className={`${imageUrl ? "mb-2 px-1" : "mb-1"} text-xs font-semibold opacity-70`}>
                       {authorLabels[message.author] ?? message.author}
                     </p>
                     {imageUrl ? (
-                      <a
-                        href={imageUrl}
-                        rel="noreferrer"
-                        target="_blank"
+                      <button
+                        className="block w-full overflow-hidden rounded-xl"
+                        onClick={() => setSelectedImageUrl(imageUrl)}
+                        type="button"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           alt="Отправленное изображение"
-                          className="max-h-80 w-full rounded-xl object-cover"
+                          className="max-h-[420px] w-full object-cover"
                           src={imageUrl}
                         />
-                      </a>
+                      </button>
                     ) : (
                       <p className="whitespace-pre-wrap break-words text-sm leading-6">
                         {message.text}
@@ -786,6 +789,25 @@ export default function Home() {
         </section>
         </div>
       </div>
+      {selectedImageUrl ? (
+        <button
+          aria-label="Закрыть изображение"
+          className="fixed inset-0 z-50 grid place-items-center bg-black/88 p-4 backdrop-blur-md"
+          onClick={() => setSelectedImageUrl(null)}
+          type="button"
+        >
+          <span className="absolute right-4 top-4 rounded-full border border-[#e6b85c]/45 bg-[#15120d]/90 px-4 py-2 text-sm font-semibold text-[#fff8ea]">
+            Закрыть
+          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            alt="Просмотр изображения"
+            className="max-h-[92dvh] max-w-[94vw] rounded-2xl object-contain shadow-[0_24px_80px_rgba(0,0,0,0.5)]"
+            onClick={(event) => event.stopPropagation()}
+            src={selectedImageUrl}
+          />
+        </button>
+      ) : null}
     </main>
   );
 }
