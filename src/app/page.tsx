@@ -792,7 +792,7 @@ export default function Home() {
       {selectedImageUrl ? (
         <button
           aria-label="Закрыть изображение"
-          className="fixed inset-0 z-50 grid place-items-center bg-black/88 p-4 backdrop-blur-md"
+          className="fixed inset-0 z-50 grid place-items-center bg-black/58 p-4 backdrop-blur-sm"
           onClick={() => setSelectedImageUrl(null)}
           type="button"
         >
@@ -802,7 +802,7 @@ export default function Home() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             alt="Просмотр изображения"
-            className="max-h-[92dvh] max-w-[94vw] rounded-2xl object-contain shadow-[0_24px_80px_rgba(0,0,0,0.5)]"
+            className="max-h-[76dvh] max-w-[82vw] rounded-2xl border border-[#e6b85c]/35 object-contain shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
             onClick={(event) => event.stopPropagation()}
             src={selectedImageUrl}
           />
