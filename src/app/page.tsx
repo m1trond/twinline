@@ -368,6 +368,7 @@ export default function Home() {
   const [callDuration, setCallDuration] = useState(0);
   const [isChatMenuOpen, setIsChatMenuOpen] = useState(false);
   const [chatMenuPosition, setChatMenuPosition] = useState({ left: 0, top: 0 });
+  const [isDeletingChat, setIsDeletingChat] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isAppInstalled, setIsAppInstalled] = useState(() => {
     if (typeof window === "undefined") {
@@ -1378,6 +1379,10 @@ export default function Home() {
   }
 
   async function deleteChat() {
+    if (isDeletingChat) {
+      return;
+    }
+
     const confirmed = window.confirm(
       "Удалить весь чат для вас обоих? Сообщения пропадут из базы данных.",
     );
@@ -1388,17 +1393,20 @@ export default function Home() {
 
     const previousMessages = messages;
 
+    setIsDeletingChat(true);
     setMessages([]);
-    setIsChatMenuOpen(false);
 
-    const { error } = await supabase.from("messages").delete().gt("id", 0);
+    const { error } = await supabase.from("messages").delete().gte("id", 0);
 
     if (error) {
       setMessages(previousMessages);
+      setIsDeletingChat(false);
       setErrorMessage("Не получилось удалить чат. Возможно, нужно разрешить удаление в Supabase.");
       return;
     }
 
+    setIsDeletingChat(false);
+    setIsChatMenuOpen(false);
     setErrorMessage("");
   }
 
@@ -2909,6 +2917,8 @@ export default function Home() {
           />
           <div
             className="fixed z-[80] w-[min(280px,calc(100vw-32px))] rounded-2xl border border-[#2faea4]/45 bg-[#071216]/98 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.58)] backdrop-blur-xl"
+            onClick={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
             style={{
               left: chatMenuPosition.left,
               top: chatMenuPosition.top,
@@ -2939,11 +2949,15 @@ export default function Home() {
             </button>
 
             <button
-              className="mt-2 min-h-12 w-full rounded-xl border border-red-400/35 bg-red-500/10 px-4 text-left text-sm font-bold text-red-100 transition hover:bg-red-500/18"
-              onClick={deleteChat}
+              className="mt-2 min-h-12 w-full rounded-xl border border-red-400/35 bg-red-500/10 px-4 text-left text-sm font-bold text-red-100 transition hover:bg-red-500/18 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isDeletingChat}
+              onClick={(event) => {
+                event.stopPropagation();
+                deleteChat();
+              }}
               type="button"
             >
-              Удалить чат
+              {isDeletingChat ? "Удаляю..." : "Удалить чат"}
             </button>
           </div>
         </>
