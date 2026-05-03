@@ -216,10 +216,29 @@ export default function Home() {
         <div className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden px-4 py-4 sm:px-6 lg:px-8">
         <header className="mb-4 flex items-center justify-between gap-4 rounded-2xl border border-[#e6b85c]/45 bg-[#15120d]/82 px-4 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md">
           <div className="flex items-center gap-3">
-            <div className="relative grid h-11 w-11 place-items-center rounded-xl bg-[#f0c45d] shadow-[0_8px_24px_rgba(240,196,93,0.28)]">
-              <span className="absolute h-6 w-2 rotate-45 rounded-full bg-[#1c1509]" />
-              <span className="absolute h-6 w-2 -rotate-45 rounded-full bg-[#1c1509]" />
-              <span className="h-3 w-3 rounded-full border-2 border-[#1c1509] bg-[#f0c45d]" />
+            <div className="grid h-11 w-11 place-items-center rounded-xl bg-[#f0c45d] shadow-[0_8px_24px_rgba(240,196,93,0.28)]">
+              <svg
+                aria-hidden="true"
+                className="h-8 w-8"
+                fill="none"
+                viewBox="0 0 40 40"
+              >
+                <path
+                  d="M9.5 22.2c0-5.1 5.6-9.2 10.5-3.1 4.9-6.1 10.5-2 10.5 3.1 0 4.4-4.7 7.4-9.1 2.5L20 23.1l-1.4 1.6c-4.4 4.9-9.1 1.9-9.1-2.5Z"
+                  stroke="#1c1509"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="3.2"
+                />
+                <path
+                  d="M14.2 16.4 20 10.5l5.8 5.9"
+                  stroke="#1c1509"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="3.2"
+                />
+                <circle cx="20" cy="10.5" fill="#1c1509" r="2" />
+              </svg>
             </div>
             <div>
               <h1 className="text-2xl font-semibold tracking-normal">
