@@ -386,6 +386,18 @@ export default function Home() {
     return currentProfile?.display_name ?? getDisplayName(user);
   }, [currentProfile?.display_name, user]);
   const friendProfile = useMemo(() => {
+    const profileFriend = profiles.find((profile) => {
+      return profile.user_id !== user?.id;
+    });
+
+    if (profileFriend) {
+      return {
+        avatarUrl: profileFriend.avatar_url,
+        name: profileFriend.display_name,
+        userId: profileFriend.user_id,
+      };
+    }
+
     const friendMessage = messages.find((message) => {
       return message.user_id && message.user_id !== user?.id;
     });
