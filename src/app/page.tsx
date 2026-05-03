@@ -37,6 +37,14 @@ type IdeaRow = {
   created_at: string;
 };
 
+type ProfileRow = {
+  user_id: string;
+  display_name: string;
+  avatar_url: string | null;
+  name_changed_at: string | null;
+  updated_at: string;
+};
+
 type ActiveView = "profile" | "messages" | "gallery" | "ideas";
 type AuthMode = "sign-in" | "sign-up";
 
@@ -80,6 +88,28 @@ function getDisplayName(user: User | null) {
   }
 
   return user?.email?.split("@")[0] ?? "Гость";
+}
+
+function canChangeName(nameChangedAt: string | null) {
+  if (!nameChangedAt) {
+    return true;
+  }
+
+  const nextChangeTime = new Date(nameChangedAt).getTime() + 30 * 24 * 60 * 60 * 1000;
+
+  return Date.now() >= nextChangeTime;
+}
+
+function getNextNameChangeDate(nameChangedAt: string | null) {
+  if (!nameChangedAt) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(new Date(nameChangedAt).getTime() + 30 * 24 * 60 * 60 * 1000));
 }
 
 function getMessageImageUrl(text: string) {
@@ -146,6 +176,12 @@ async function fetchIdeas() {
     .from("ideas")
     .select("id, user_id, author, text, created_at")
     .order("created_at", { ascending: false });
+}
+
+async function fetchProfiles() {
+  return supabase
+    .from("profiles")
+    .select("user_id, display_name, avatar_url, name_changed_at, updated_at");
 }
 
 function VoiceMessage({ src }: { src: string }) {
@@ -235,28 +271,38 @@ export default function Home() {
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [ideas, setIdeas] = useState<IdeaRow[]>([]);
+  const [profiles, setProfiles] = useState<ProfileRow[]>([]);
+  const [profileName, setProfileName] = useState("");
   const [messageText, setMessageText] = useState("");
   const [galleryCaption, setGalleryCaption] = useState("");
   const [ideaText, setIdeaText] = useState("");
   const [activeView, setActiveView] = useState<ActiveView>("profile");
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const [viewedProfile, setViewedProfile] = useState<{
+    avatarUrl: string | null;
     name: string;
     userId: string | null;
   } | null>(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [isUploadingGalleryItem, setIsUploadingGalleryItem] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingChunksRef = useRef<BlobPart[]>([]);
   const recordingStreamRef = useRef<MediaStream | null>(null);
   const latestMessageCreatedAtRef = useRef<string | null>(null);
 
-  const activeUserName = useMemo(() => getDisplayName(user), [user]);
+  const currentProfile = useMemo(() => {
+    return profiles.find((profile) => profile.user_id === user?.id) ?? null;
+  }, [profiles, user?.id]);
+  const activeUserName = useMemo(() => {
+    return currentProfile?.display_name ?? getDisplayName(user);
+  }, [currentProfile?.display_name, user]);
   const friendProfile = useMemo(() => {
     const friendMessage = messages.find((message) => {
       return message.user_id && message.user_id !== user?.id;
@@ -266,11 +312,19 @@ export default function Home() {
       return null;
     }
 
+    const profile = profiles.find((item) => item.user_id === friendMessage.user_id);
+
     return {
-      name: friendMessage.author,
+      avatarUrl: profile?.avatar_url ?? null,
+      name: profile?.display_name ?? friendMessage.author,
       userId: friendMessage.user_id,
     };
-  }, [messages, user?.id]);
+  }, [messages, profiles, user?.id]);
+  const isNameChangeAllowed = canChangeName(currentProfile?.name_changed_at ?? null);
+  const nextNameChangeDate = getNextNameChangeDate(
+    currentProfile?.name_changed_at ?? null,
+  );
+  const profileNameInputValue = profileName || activeUserName;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -285,6 +339,7 @@ export default function Home() {
       setMessages([]);
       setGalleryItems([]);
       setIdeas([]);
+      setProfiles([]);
       latestMessageCreatedAtRef.current = null;
     });
 
@@ -309,7 +364,21 @@ export default function Home() {
       return;
     }
 
+    const signedInUser = user;
     let isMounted = true;
+
+    async function ensureCurrentProfile() {
+      await supabase.from("profiles").upsert(
+        {
+          display_name: getDisplayName(signedInUser),
+          user_id: signedInUser.id,
+        },
+        {
+          onConflict: "user_id",
+          ignoreDuplicates: true,
+        },
+      );
+    }
 
     async function syncAllMessages(showLoading = false) {
       if (showLoading) {
@@ -354,6 +423,7 @@ export default function Home() {
       }
     }
 
+    ensureCurrentProfile();
     syncAllMessages(true);
 
     const newMessagesInterval = window.setInterval(() => {
@@ -418,22 +488,24 @@ export default function Home() {
     let isMounted = true;
 
     async function syncSharedSections() {
-      const [galleryResult, ideasResult] = await Promise.all([
+      const [galleryResult, ideasResult, profilesResult] = await Promise.all([
         fetchGalleryItems(),
         fetchIdeas(),
+        fetchProfiles(),
       ]);
 
       if (!isMounted) {
         return;
       }
 
-      if (galleryResult.error || ideasResult.error) {
-        setErrorMessage("Не получилось загрузить Галерею или Идеи.");
+      if (galleryResult.error || ideasResult.error || profilesResult.error) {
+        setErrorMessage("Не получилось загрузить общие разделы.");
         return;
       }
 
       setGalleryItems(galleryResult.data ?? []);
       setIdeas(ideasResult.data ?? []);
+      setProfiles(profilesResult.data ?? []);
     }
 
     syncSharedSections();
@@ -514,6 +586,44 @@ export default function Home() {
           );
         },
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "profiles",
+        },
+        (payload) => {
+          const nextProfile = payload.new as ProfileRow;
+
+          setProfiles((currentProfiles) => {
+            const withoutProfile = currentProfiles.filter(
+              (profile) => profile.user_id !== nextProfile.user_id,
+            );
+
+            return [...withoutProfile, nextProfile];
+          });
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+        },
+        (payload) => {
+          const nextProfile = payload.new as ProfileRow;
+
+          setProfiles((currentProfiles) => {
+            const withoutProfile = currentProfiles.filter(
+              (profile) => profile.user_id !== nextProfile.user_id,
+            );
+
+            return [...withoutProfile, nextProfile];
+          });
+        },
+      )
       .subscribe();
 
     return () => {
@@ -561,6 +671,154 @@ export default function Home() {
   async function signOut() {
     await supabase.auth.signOut();
     setActiveView("profile");
+  }
+
+  async function updateProfileName(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!user) {
+      return;
+    }
+
+    const nextName = profileName.trim();
+
+    if (!nextName || nextName === activeUserName) {
+      return;
+    }
+
+    if (nextName.length < 2 || nextName.length > 24) {
+      setErrorMessage("Имя должно быть от 2 до 24 символов.");
+      return;
+    }
+
+    if (!isNameChangeAllowed) {
+      setErrorMessage(
+        `Имя можно будет снова изменить ${nextNameChangeDate ?? "позже"}.`,
+      );
+      return;
+    }
+
+    const updatedAt = new Date().toISOString();
+    const { data, error } = await supabase
+      .from("profiles")
+      .upsert({
+        avatar_url: currentProfile?.avatar_url ?? null,
+        display_name: nextName,
+        name_changed_at: updatedAt,
+        updated_at: updatedAt,
+        user_id: user.id,
+      })
+      .select("user_id, display_name, avatar_url, name_changed_at, updated_at")
+      .single();
+
+    if (error) {
+      setErrorMessage("Не получилось изменить имя.");
+      return;
+    }
+
+    if (data) {
+      setProfiles((currentProfiles) => {
+        const withoutProfile = currentProfiles.filter(
+          (profile) => profile.user_id !== data.user_id,
+        );
+
+        return [...withoutProfile, data];
+      });
+    }
+
+    await supabase.auth.updateUser({
+      data: {
+        display_name: nextName,
+      },
+    });
+
+    setMessages((currentMessages) =>
+      currentMessages.map((message) =>
+        message.user_id === user.id ? { ...message, author: nextName } : message,
+      ),
+    );
+    setProfileName("");
+    setErrorMessage("");
+  }
+
+  async function updateAvatar(file: File) {
+    if (!user) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setErrorMessage("Аватаркой может быть только изображение.");
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      setErrorMessage("Аватарка должна быть меньше 8 МБ.");
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    setErrorMessage("");
+
+    const fileExtension = file.name.split(".").pop() ?? "jpg";
+    const filePath = `${user.id}/avatars/${Date.now()}-${crypto.randomUUID()}.${fileExtension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("message-images")
+      .upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      setIsUploadingAvatar(false);
+      setErrorMessage("Не получилось загрузить аватарку.");
+      return;
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("message-images")
+      .getPublicUrl(filePath);
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .upsert({
+        avatar_url: publicUrlData.publicUrl,
+        display_name: activeUserName,
+        name_changed_at: currentProfile?.name_changed_at ?? null,
+        updated_at: new Date().toISOString(),
+        user_id: user.id,
+      })
+      .select("user_id, display_name, avatar_url, name_changed_at, updated_at")
+      .single();
+
+    setIsUploadingAvatar(false);
+
+    if (error) {
+      setErrorMessage("Не получилось сохранить аватарку.");
+      return;
+    }
+
+    if (data) {
+      setProfiles((currentProfiles) => {
+        const withoutProfile = currentProfiles.filter(
+          (profile) => profile.user_id !== data.user_id,
+        );
+
+        return [...withoutProfile, data];
+      });
+    }
+
+    setErrorMessage("");
+  }
+
+  function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (file) {
+      updateAvatar(file);
+    }
+
+    event.target.value = "";
   }
 
   async function sendMessage(event: FormEvent<HTMLFormElement>) {
@@ -1214,8 +1472,17 @@ export default function Home() {
               <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
                 <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[#2faea4]/35 pb-5 sm:mb-6">
                   <div className="flex items-center gap-4">
-                    <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[#37c6b8] text-xl font-black text-[#041012] sm:h-16 sm:w-16 sm:text-2xl">
-                      {activeUserName[0]?.toUpperCase()}
+                    <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-[#37c6b8] text-2xl font-black text-[#041012] sm:h-20 sm:w-20 sm:text-3xl">
+                      {currentProfile?.avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          alt="Твоя аватарка"
+                          className="h-full w-full object-cover"
+                          src={currentProfile.avatar_url}
+                        />
+                      ) : (
+                        activeUserName[0]?.toUpperCase()
+                      )}
                     </div>
                     <div>
                       <p className="text-sm font-medium text-[#5bbdb4]">
@@ -1224,26 +1491,66 @@ export default function Home() {
                       <h2 className="text-2xl font-semibold sm:text-3xl">
                         {activeUserName}
                       </h2>
+                      <input
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleAvatarChange}
+                        ref={avatarInputRef}
+                        type="file"
+                      />
+                      <button
+                        className="mt-3 rounded-xl border border-[#2faea4]/35 px-3 py-2 text-xs font-bold text-[#e3f4f4] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={isUploadingAvatar}
+                        onClick={() => avatarInputRef.current?.click()}
+                        type="button"
+                      >
+                        {isUploadingAvatar ? "Загружаю..." : "Изменить аватарку"}
+                      </button>
                     </div>
                   </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <section className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4">
+                  <section className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4 sm:col-span-2">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#5bbdb4]">
-                      Email
+                      Имя профиля
                     </p>
-                    <p className="mt-3 break-words text-lg font-semibold">
-                      {user.email}
+                    <form className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]" onSubmit={updateProfileName}>
+                      <input
+                        className="min-h-12 rounded-xl border border-transparent bg-[#e3f4f4]/12 px-4 text-base outline-none placeholder:text-[#8fb7bb]/70 focus:border-[#37c6b8] disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={!isNameChangeAllowed}
+                        maxLength={24}
+                        minLength={2}
+                        onChange={(event) => setProfileName(event.target.value)}
+                        placeholder="Новое имя"
+                        type="text"
+                        value={profileNameInputValue}
+                      />
+                      <button
+                        className="min-h-12 rounded-xl bg-[#37c6b8] px-4 text-sm font-bold text-[#041012] transition hover:bg-[#65d8cc] disabled:cursor-not-allowed disabled:bg-[#52666a]"
+                        disabled={
+                          !isNameChangeAllowed ||
+                          !profileName.trim() ||
+                          profileName.trim() === activeUserName
+                        }
+                        type="submit"
+                      >
+                        Сохранить имя
+                      </button>
+                    </form>
+                    <p className="mt-3 text-sm leading-6 text-[#8fb7bb]">
+                      {isNameChangeAllowed
+                        ? "Имя можно менять один раз в месяц. Аватарку можно обновлять когда угодно."
+                        : `Имя снова можно будет изменить ${nextNameChangeDate ?? "позже"}.`}
                     </p>
                   </section>
 
                   <section className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#5bbdb4]">
-                      Доступ
+                      Твой вход
                     </p>
-                    <p className="mt-3 text-lg font-semibold">
-                      Авторизован
+                    <p className="mt-3 break-words text-lg font-semibold">
+                      Email скрыт от собеседника
                     </p>
                   </section>
 
@@ -1330,7 +1637,10 @@ export default function Home() {
                       )}
                       <div className="p-3">
                         <div className="flex items-start justify-between gap-3">
-                          <p className="text-sm font-semibold">{item.author}</p>
+                          <p className="text-sm font-semibold">
+                            {profiles.find((profile) => profile.user_id === item.user_id)
+                              ?.display_name ?? item.author}
+                          </p>
                           <button
                             className="rounded-lg border border-[#2faea4]/35 px-2 py-1 text-[11px] font-bold text-[#8fb7bb] transition hover:bg-white/10 hover:text-[#e3f4f4]"
                             onClick={() => deleteGalleryItem(item)}
@@ -1405,7 +1715,9 @@ export default function Home() {
                         </button>
                       </div>
                       <p className="mt-3 text-xs font-semibold text-[#8fb7bb]">
-                        {idea.author} · {formatMessageTime(idea.created_at)}
+                        {profiles.find((profile) => profile.user_id === idea.user_id)
+                          ?.display_name ?? idea.author}{" "}
+                        · {formatMessageTime(idea.created_at)}
                       </p>
                     </article>
                   ))}
@@ -1416,10 +1728,11 @@ export default function Home() {
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 px-3 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mb-4 sm:px-4">
                   <div className="flex min-w-0 items-center gap-3">
                     <button
-                      className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#37c6b8] text-base font-semibold text-[#041012] transition hover:scale-105"
+                      className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-[#37c6b8] text-base font-semibold text-[#041012] transition hover:scale-105"
                       onClick={() => {
                         setViewedProfile(
                           friendProfile ?? {
+                            avatarUrl: null,
                             name: "Друг",
                             userId: null,
                           },
@@ -1427,7 +1740,16 @@ export default function Home() {
                       }}
                       type="button"
                     >
-                      {(friendProfile?.name ?? "Друг")[0]?.toUpperCase()}
+                      {friendProfile?.avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          alt="Аватар собеседника"
+                          className="h-full w-full object-cover"
+                          src={friendProfile.avatarUrl}
+                        />
+                      ) : (
+                        (friendProfile?.name ?? "Друг")[0]?.toUpperCase()
+                      )}
                     </button>
                     <div className="min-w-0">
                       <h2 className="truncate text-base font-semibold">
@@ -1453,6 +1775,9 @@ export default function Home() {
 
                   {messages.map((message) => {
                     const isMine = message.user_id === user.id;
+                    const messageAuthor =
+                      profiles.find((profile) => profile.user_id === message.user_id)
+                        ?.display_name ?? message.author;
                     const imageUrl = getMessageImageUrl(message.text);
                     const videoUrl = getMessageVideoUrl(message.text);
                     const audioUrl = getMessageAudioUrl(message.text);
@@ -1473,7 +1798,7 @@ export default function Home() {
                           }`}
                         >
                           <p className={`${hasAttachment ? "mb-1.5 px-1" : "mb-0.5"} text-[11px] font-bold leading-4 opacity-55`}>
-                            {message.author}
+                            {messageAuthor}
                           </p>
                           {imageUrl ? (
                             <button
@@ -1659,8 +1984,17 @@ export default function Home() {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-5 flex items-center gap-4">
-              <div className="grid h-16 w-16 place-items-center rounded-2xl bg-[#37c6b8] text-2xl font-black text-[#041012]">
-                {viewedProfile.name[0]?.toUpperCase()}
+              <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-2xl bg-[#37c6b8] text-2xl font-black text-[#041012]">
+                {viewedProfile.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    alt="Аватар профиля"
+                    className="h-full w-full object-cover"
+                    src={viewedProfile.avatarUrl}
+                  />
+                ) : (
+                  viewedProfile.name[0]?.toUpperCase()
+                )}
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-[#5bbdb4]">
