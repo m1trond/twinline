@@ -70,6 +70,7 @@ const navItems: Array<{ label: string; view: ActiveView }> = [
 const imageMessagePrefix = "image::";
 const videoMessagePrefix = "video::";
 const audioMessagePrefix = "audio::";
+const callMessagePrefix = "call::";
 const maxAttachmentSize = 50 * 1024 * 1024;
 
 function formatMessageTime(createdAt: string) {
@@ -151,6 +152,16 @@ function getMessageAudioUrl(text: string) {
   return text.startsWith(audioMessagePrefix)
     ? text.slice(audioMessagePrefix.length)
     : null;
+}
+
+function getMessageCallDuration(text: string) {
+  if (!text.startsWith(callMessagePrefix)) {
+    return null;
+  }
+
+  const duration = Number(text.slice(callMessagePrefix.length));
+
+  return Number.isFinite(duration) ? duration : 0;
 }
 
 function mergeMessages(currentMessages: MessageRow[], nextMessages: MessageRow[]) {
@@ -370,6 +381,8 @@ export default function Home() {
   const callStatusRef = useRef<CallStatus>("idle");
   const callPartnerIdRef = useRef<string | null>(null);
   const localCallStreamRef = useRef<MediaStream | null>(null);
+  const callStartedAtRef = useRef<number | null>(null);
+  const hasSavedCallSummaryRef = useRef(false);
   const pendingIceCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   const processedCallSignalIdsRef = useRef<Set<string>>(new Set());
   const latestCallSignalCreatedAtRef = useRef<string>("1970-01-01T00:00:00.000Z");
@@ -756,7 +769,9 @@ export default function Home() {
                   ? "Отправлено видео"
                   : newMessage.text.startsWith(audioMessagePrefix)
                     ? "Голосовое сообщение"
-                    : newMessage.text,
+                    : newMessage.text.startsWith(callMessagePrefix)
+                      ? "Звонок завершен"
+                      : newMessage.text,
             });
           }
         },
@@ -1028,10 +1043,15 @@ export default function Home() {
 
   function markCallConnected() {
     if (callStatusRef.current !== "connected") {
+      const startedAt = Date.now();
+
       setCallDuration(0);
-      setCallStartedAt(Date.now());
+      setCallStartedAt(startedAt);
+      callStartedAtRef.current = startedAt;
+      hasSavedCallSummaryRef.current = false;
     }
 
+    callStatusRef.current = "connected";
     setCallStatus("connected");
   }
 
@@ -1123,9 +1143,12 @@ export default function Home() {
 
     try {
       setErrorMessage("");
+      callStatusRef.current = "calling";
       setCallStatus("calling");
       setCallDuration(0);
       setCallStartedAt(null);
+      callStartedAtRef.current = null;
+      hasSavedCallSummaryRef.current = false;
       setIsCallMicMuted(false);
 
       const stream = await getLocalCallStream();
@@ -1156,9 +1179,12 @@ export default function Home() {
 
     try {
       setErrorMessage("");
+      callStatusRef.current = "connecting";
       setCallStatus("connecting");
       setCallDuration(0);
       setCallStartedAt(null);
+      callStartedAtRef.current = null;
+      hasSavedCallSummaryRef.current = false;
       setIsCallMicMuted(false);
 
       const stream = await getLocalCallStream();
@@ -1191,8 +1217,64 @@ export default function Home() {
     }
   }
 
+  async function saveCallSummaryMessage() {
+    if (!user || hasSavedCallSummaryRef.current || !callStartedAtRef.current) {
+      return;
+    }
+
+    const duration = Math.max(
+      1,
+      Math.floor((Date.now() - callStartedAtRef.current) / 1000),
+    );
+
+    hasSavedCallSummaryRef.current = true;
+
+    const optimisticMessage: MessageRow = {
+      id: -Date.now(),
+      author: activeUserName,
+      text: `${callMessagePrefix}${duration}`,
+      created_at: new Date().toISOString(),
+      user_id: user.id,
+    };
+
+    setMessages((currentMessages) =>
+      mergeMessages(currentMessages, [optimisticMessage]),
+    );
+
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        author: activeUserName,
+        text: `${callMessagePrefix}${duration}`,
+        user_id: user.id,
+      })
+      .select("id, author, text, created_at, user_id")
+      .single();
+
+    if (error) {
+      setMessages((currentMessages) =>
+        currentMessages.filter((message) => message.id !== optimisticMessage.id),
+      );
+      hasSavedCallSummaryRef.current = false;
+      setErrorMessage("Не получилось сохранить запись о звонке.");
+      return;
+    }
+
+    setMessages((currentMessages) => {
+      const withoutOptimisticMessage = currentMessages.filter(
+        (message) => message.id !== optimisticMessage.id,
+      );
+
+      return mergeMessages(withoutOptimisticMessage, data ? [data] : []);
+    });
+  }
+
   async function closeCall(notifyPartner: boolean) {
     const partnerId = callPartnerIdRef.current;
+
+    if (notifyPartner && callStatusRef.current === "connected") {
+      await saveCallSummaryMessage();
+    }
 
     if (notifyPartner && partnerId) {
       await sendCallSignal(partnerId, "end", { reason: "ended" });
@@ -1214,7 +1296,9 @@ export default function Home() {
     setIncomingCall(null);
     setIsCallMicMuted(false);
     setCallStartedAt(null);
+    callStartedAtRef.current = null;
     setCallDuration(0);
+    callStatusRef.current = "idle";
     setCallStatus("idle");
   }
 
@@ -2522,7 +2606,10 @@ export default function Home() {
                     const imageUrl = getMessageImageUrl(message.text);
                     const videoUrl = getMessageVideoUrl(message.text);
                     const audioUrl = getMessageAudioUrl(message.text);
-                    const hasAttachment = Boolean(imageUrl || videoUrl || audioUrl);
+                    const callDurationSeconds = getMessageCallDuration(message.text);
+                    const hasAttachment = Boolean(
+                      imageUrl || videoUrl || audioUrl || callDurationSeconds !== null,
+                    );
 
                     return (
                       <article
@@ -2564,6 +2651,39 @@ export default function Home() {
                           />
                         ) : audioUrl ? (
                           <VoiceMessage src={audioUrl} />
+                        ) : callDurationSeconds !== null ? (
+                          <div className="min-w-[220px] rounded-2xl bg-black/12 p-3">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${
+                                  isMine ? "bg-[#041012] text-[#e3f4f4]" : "bg-[#071316] text-[#eaf6f6]"
+                                }`}
+                              >
+                                <svg
+                                  aria-hidden="true"
+                                  className="h-5 w-5"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.7.6 2.5a2 2 0 0 1-.5 2.1L8 9.5a16 16 0 0 0 6.5 6.5l1.2-1.2a2 2 0 0 1 2.1-.5c.8.3 1.6.5 2.5.6A2 2 0 0 1 22 16.9Z"
+                                    stroke="currentColor"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                  />
+                                </svg>
+                              </div>
+                              <div>
+                                <p className="text-sm font-bold opacity-75">
+                                  Звонок
+                                </p>
+                                <p className="text-xs font-semibold opacity-60">
+                                  Разговор {formatCallDuration(callDurationSeconds)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
                         ) : (
                             <p className="whitespace-pre-wrap break-words text-[15px] leading-6">
                               {message.text}
