@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
 type MessageRow = {
@@ -15,15 +16,11 @@ type MessageRow = {
   author: string;
   text: string;
   created_at: string;
+  user_id: string | null;
 };
 
-type Author = "me" | "friend";
 type ActiveView = "profile" | "messages" | "gallery" | "ideas";
-
-const authorLabels: Record<string, string> = {
-  me: "Я",
-  friend: "Друг",
-};
+type AuthMode = "sign-in" | "sign-up";
 
 const navItems: Array<{ label: string; view: ActiveView }> = [
   { label: "Профиль", view: "profile" },
@@ -43,20 +40,26 @@ function formatMessageTime(createdAt: string) {
   }).format(new Date(createdAt));
 }
 
-function getMessageImageUrl(text: string) {
-  if (!text.startsWith(imageMessagePrefix)) {
-    return null;
+function getDisplayName(user: User | null) {
+  const metadataName = user?.user_metadata?.display_name;
+
+  if (typeof metadataName === "string" && metadataName.trim()) {
+    return metadataName.trim();
   }
 
-  return text.slice(imageMessagePrefix.length);
+  return user?.email?.split("@")[0] ?? "Гость";
+}
+
+function getMessageImageUrl(text: string) {
+  return text.startsWith(imageMessagePrefix)
+    ? text.slice(imageMessagePrefix.length)
+    : null;
 }
 
 function getMessageVideoUrl(text: string) {
-  if (!text.startsWith(videoMessagePrefix)) {
-    return null;
-  }
-
-  return text.slice(videoMessagePrefix.length);
+  return text.startsWith(videoMessagePrefix)
+    ? text.slice(videoMessagePrefix.length)
+    : null;
 }
 
 function mergeMessages(currentMessages: MessageRow[], nextMessages: MessageRow[]) {
@@ -81,45 +84,55 @@ function mergeMessages(currentMessages: MessageRow[], nextMessages: MessageRow[]
 async function fetchMessages() {
   return supabase
     .from("messages")
-    .select("id, author, text, created_at")
+    .select("id, author, text, created_at, user_id")
     .order("created_at", { ascending: true });
 }
 
 async function fetchMessagesAfter(createdAt: string) {
   return supabase
     .from("messages")
-    .select("id, author, text, created_at")
+    .select("id, author, text, created_at, user_id")
     .gt("created_at", createdAt)
     .order("created_at", { ascending: true });
 }
 
 export default function Home() {
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [authMode, setAuthMode] = useState<AuthMode>("sign-in");
+  const [authName, setAuthName] = useState("");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [messageText, setMessageText] = useState("");
   const [activeView, setActiveView] = useState<ActiveView>("profile");
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
-  const [author, setAuthor] = useState<Author>(() => {
-    if (typeof window === "undefined") {
-      return "me";
-    }
-
-    const savedAuthor = window.localStorage.getItem("chat-author");
-
-    return savedAuthor === "friend" ? "friend" : "me";
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const latestMessageCreatedAtRef = useRef<string | null>(null);
 
-  const activeAuthorName = useMemo(() => {
-    return authorLabels[author] ?? "Я";
-  }, [author]);
+  const activeUserName = useMemo(() => getDisplayName(user), [user]);
 
   useEffect(() => {
-    window.localStorage.setItem("chat-author", author);
-  }, [author]);
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user ?? null);
+      setIsAuthLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setMessages([]);
+      latestMessageCreatedAtRef.current = null;
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     latestMessageCreatedAtRef.current =
@@ -127,11 +140,15 @@ export default function Home() {
   }, [messages]);
 
   useEffect(() => {
+    if (!user) {
+      return;
+    }
+
     let isMounted = true;
 
     async function syncAllMessages(showLoading = false) {
       if (showLoading) {
-        setIsLoading(true);
+        setIsLoadingMessages(true);
       }
 
       const { data, error } = await fetchMessages();
@@ -147,7 +164,7 @@ export default function Home() {
         setErrorMessage("");
       }
 
-      setIsLoading(false);
+      setIsLoadingMessages(false);
     }
 
     async function syncNewMessages() {
@@ -226,10 +243,55 @@ export default function Home() {
       window.clearInterval(fullSyncInterval);
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user]);
+
+  async function handleAuth(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setErrorMessage("");
+
+    if (authMode === "sign-up") {
+      const { error } = await supabase.auth.signUp({
+        email: authEmail.trim(),
+        password: authPassword,
+        options: {
+          data: {
+            display_name: authName.trim() || authEmail.trim().split("@")[0],
+          },
+        },
+      });
+
+      if (error) {
+        setErrorMessage("Не получилось зарегистрироваться.");
+      } else {
+        setErrorMessage("Аккаунт создан. Если Supabase попросит, подтверди email.");
+        setAuthMode("sign-in");
+      }
+
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: authEmail.trim(),
+      password: authPassword,
+    });
+
+    if (error) {
+      setErrorMessage("Не получилось войти. Проверь email и пароль.");
+    }
+  }
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    setActiveView("profile");
+  }
 
   async function sendMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!user) {
+      setErrorMessage("Сначала войди в аккаунт.");
+      return;
+    }
 
     const trimmedText = messageText.trim();
 
@@ -239,9 +301,10 @@ export default function Home() {
 
     const optimisticMessage: MessageRow = {
       id: -Date.now(),
-      author,
+      author: activeUserName,
       text: trimmedText,
       created_at: new Date().toISOString(),
+      user_id: user.id,
     };
 
     setMessageText("");
@@ -252,10 +315,11 @@ export default function Home() {
     const { data, error } = await supabase
       .from("messages")
       .insert({
-        author,
+        author: activeUserName,
         text: trimmedText,
+        user_id: user.id,
       })
-      .select("id, author, text, created_at")
+      .select("id, author, text, created_at, user_id")
       .single();
 
     if (error) {
@@ -270,16 +334,18 @@ export default function Home() {
           (message) => message.id !== optimisticMessage.id,
         );
 
-        return mergeMessages(
-          withoutOptimisticMessage,
-          data ? [data] : [],
-        );
+        return mergeMessages(withoutOptimisticMessage, data ? [data] : []);
       });
       setErrorMessage("");
     }
   }
 
   async function sendAttachment(file: File) {
+    if (!user) {
+      setErrorMessage("Сначала войди в аккаунт.");
+      return;
+    }
+
     const isImage = file.type.startsWith("image/");
     const isVideo = file.type.startsWith("video/");
 
@@ -293,11 +359,11 @@ export default function Home() {
       return;
     }
 
-    setIsUploadingImage(true);
+    setIsUploadingAttachment(true);
     setErrorMessage("");
 
     const fileExtension = file.name.split(".").pop() ?? "jpg";
-    const filePath = `${author}/${Date.now()}-${crypto.randomUUID()}.${fileExtension}`;
+    const filePath = `${user.id}/${Date.now()}-${crypto.randomUUID()}.${fileExtension}`;
 
     const { error: uploadError } = await supabase.storage
       .from("message-images")
@@ -307,8 +373,8 @@ export default function Home() {
       });
 
     if (uploadError) {
-      setIsUploadingImage(false);
-      setErrorMessage("Не получилось загрузить изображение.");
+      setIsUploadingAttachment(false);
+      setErrorMessage("Не получилось загрузить файл.");
       return;
     }
 
@@ -320,9 +386,10 @@ export default function Home() {
     const messagePrefix = isVideo ? videoMessagePrefix : imageMessagePrefix;
     const optimisticMessage: MessageRow = {
       id: -Date.now(),
-      author,
+      author: activeUserName,
       text: `${messagePrefix}${attachmentUrl}`,
       created_at: new Date().toISOString(),
+      user_id: user.id,
     };
 
     setMessages((currentMessages) =>
@@ -332,13 +399,14 @@ export default function Home() {
     const { data, error } = await supabase
       .from("messages")
       .insert({
-        author,
+        author: activeUserName,
         text: `${messagePrefix}${attachmentUrl}`,
+        user_id: user.id,
       })
-      .select("id, author, text, created_at")
+      .select("id, author, text, created_at, user_id")
       .single();
 
-    setIsUploadingImage(false);
+    setIsUploadingAttachment(false);
 
     if (error) {
       setMessages((currentMessages) =>
@@ -351,10 +419,7 @@ export default function Home() {
           (message) => message.id !== optimisticMessage.id,
         );
 
-        return mergeMessages(
-          withoutOptimisticMessage,
-          data ? [data] : [],
-        );
+        return mergeMessages(withoutOptimisticMessage, data ? [data] : []);
       });
     }
   }
@@ -370,6 +435,11 @@ export default function Home() {
   }
 
   async function deleteMessage(message: MessageRow) {
+    if (!user || message.user_id !== user.id) {
+      setErrorMessage("Можно удалять только свои сообщения.");
+      return;
+    }
+
     const previousMessages = messages;
 
     setMessages((currentMessages) =>
@@ -380,7 +450,7 @@ export default function Home() {
       .from("messages")
       .delete()
       .eq("id", message.id)
-      .eq("author", author)
+      .eq("user_id", user.id)
       .select("id")
       .maybeSingle();
 
@@ -392,424 +462,439 @@ export default function Home() {
     }
   }
 
-  return (
-    <main className="relative h-dvh overflow-hidden bg-[#05080a] text-[#e3f4f4]">
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(240,196,93,0.16),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(255,248,234,0.08),transparent_28%),linear-gradient(135deg,#05080a_0%,#0b1418_46%,#030506_100%)]"
-      />
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(255,248,234,0.45)_1px,transparent_1px),linear-gradient(90deg,rgba(255,248,234,0.45)_1px,transparent_1px)] [background-size:44px_44px]"
-      />
-      <div className="relative h-full overflow-hidden bg-[#061014]/35">
-        <div className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden px-3 py-3 sm:px-6 sm:py-4 lg:px-8">
-        <header className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/82 px-3 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mb-4 sm:px-4">
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#37c6b8] shadow-[0_8px_24px_rgba(240,196,93,0.28)] sm:h-11 sm:w-11">
-              <svg
-                aria-hidden="true"
-                className="h-7 w-7 sm:h-8 sm:w-8"
-                fill="none"
-                viewBox="0 0 40 40"
-              >
-                <path
-                  d="M9.5 22.2c0-5.1 5.6-9.2 10.5-3.1 4.9-6.1 10.5-2 10.5 3.1 0 4.4-4.7 7.4-9.1 2.5L20 23.1l-1.4 1.6c-4.4 4.9-9.1 1.9-9.1-2.5Z"
-                  stroke="#041012"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="3.2"
-                />
-                <path
-                  d="M14.2 16.4 20 10.5l5.8 5.9"
-                  stroke="#041012"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="3.2"
-                />
-                <circle cx="20" cy="10.5" fill="#041012" r="2" />
-              </svg>
+  if (isAuthLoading) {
+    return (
+      <main className="grid h-dvh place-items-center bg-[#05080a] text-[#e3f4f4]">
+        <p className="text-sm font-semibold text-[#8fb7bb]">Загружаю Twinline...</p>
+      </main>
+    );
+  }
+
+  if (!user) {
+    return (
+      <main className="relative grid h-dvh place-items-center overflow-hidden bg-[#05080a] px-4 text-[#e3f4f4]">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(47,174,164,0.2),transparent_32%),linear-gradient(135deg,#05080a_0%,#0b1418_48%,#030506_100%)]"
+        />
+        <section className="relative w-full max-w-md rounded-3xl border border-[#2faea4]/45 bg-[#0d171c]/86 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-md">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="grid h-11 w-11 place-items-center rounded-xl bg-[#37c6b8]">
+              <span className="text-xl font-black text-[#041012]">T</span>
             </div>
             <div>
-              <h1 className="text-xl font-semibold tracking-normal sm:text-2xl">
-                Twinline
-              </h1>
-              <p className="max-w-[210px] truncate text-xs font-medium text-[#8fb7bb] sm:max-w-none sm:text-sm">
-                Приватное пространство для двоих
-              </p>
+              <h1 className="text-2xl font-semibold">Twinline</h1>
+              <p className="text-sm text-[#8fb7bb]">Вход в приватное пространство</p>
             </div>
           </div>
 
-        </header>
-
-        <nav className="scrollbar-hidden mb-3 flex shrink-0 gap-2 overflow-x-auto rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-2 shadow-[0_14px_45px_rgba(0,0,0,0.24)] backdrop-blur-md lg:hidden">
-          {navItems.map((item) => (
+          <div className="mb-4 grid grid-cols-2 rounded-xl border border-[#2faea4]/35 bg-black/20 p-1">
             <button
-              className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
-                activeView === item.view
+              className={`rounded-lg px-4 py-2 text-sm font-semibold ${
+                authMode === "sign-in"
                   ? "bg-[#37c6b8] text-[#041012]"
-                  : "text-[#e3f4f4] opacity-80 hover:bg-white/10 hover:opacity-100"
+                  : "text-[#e3f4f4]"
               }`}
-              key={item.view}
-              onClick={() => setActiveView(item.view)}
+              onClick={() => setAuthMode("sign-in")}
               type="button"
             >
-              {item.label}
+              Вход
             </button>
-          ))}
-        </nav>
-
-        <section className="grid min-h-0 flex-1 gap-3 overflow-hidden pb-3 sm:gap-4 sm:pb-4 lg:grid-cols-[280px_1fr]">
-          <aside className="hidden min-h-0 rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-4 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:block">
-            <div className="mb-5">
-              <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#5bbdb4]">
-                Меню
-              </p>
-            </div>
-
-            <nav className="grid gap-2">
-              {navItems.map((item) => (
-                <button
-                  className={`rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
-                    activeView === item.view
-                      ? "bg-[#37c6b8] text-[#041012]"
-                      : "text-[#e3f4f4] opacity-80 hover:bg-white/10 hover:opacity-100"
-                  }`}
-                  key={item.view}
-                  onClick={() => setActiveView(item.view)}
-                  type="button"
-                >
-                  {item.label}
-                </button>
-              ))}
-            </nav>
-
-          </aside>
-
-          {activeView === "profile" ? (
-            <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[#2faea4]/35 pb-5 sm:mb-6">
-                <div className="flex items-center gap-4">
-                  <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[#37c6b8] text-xl font-black text-[#041012] sm:h-16 sm:w-16 sm:text-2xl">
-                    {activeAuthorName[0]}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-[#5bbdb4]">
-                      Активный профиль
-                    </p>
-                    <h2 className="text-2xl font-semibold sm:text-3xl">
-                      {activeAuthorName}
-                    </h2>
-                  </div>
-                </div>
-
-                <div className="grid w-full grid-cols-2 rounded-lg border border-[#2faea4]/45 bg-black/20 p-1 sm:w-auto">
-                  <button
-                    className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
-                      author === "me"
-                        ? "bg-[#37c6b8] text-[#041012]"
-                        : "text-[#e3f4f4] hover:bg-white/10"
-                    }`}
-                    onClick={() => setAuthor("me")}
-                    type="button"
-                  >
-                    Я
-                  </button>
-                  <button
-                    className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
-                      author === "friend"
-                        ? "bg-[#37c6b8] text-[#041012]"
-                        : "text-[#e3f4f4] hover:bg-white/10"
-                    }`}
-                    onClick={() => setAuthor("friend")}
-                    type="button"
-                  >
-                    Друг
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <section className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#5bbdb4]">
-                    Twinline ID
-                  </p>
-                  <p className="mt-3 text-lg font-semibold">
-                    {author === "me" ? "@me" : "@friend"}
-                  </p>
-                </section>
-
-                <section className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#5bbdb4]">
-                    Роль
-                  </p>
-                  <p className="mt-3 text-lg font-semibold">
-                    {author === "me" ? "Владелец пространства" : "Участник"}
-                  </p>
-                </section>
-
-                <section className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4 sm:col-span-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#5bbdb4]">
-                    О профиле
-                  </p>
-                  <p className="mt-3 max-w-2xl text-sm leading-6 text-[#e3f4f4]">
-                    Этот экран пока управляет тем, от чьего имени ты пишешь.
-                    Когда подключим настоящий вход, Twinline будет сам понимать,
-                    кто открыл сайт, и переключатель больше не понадобится.
-                  </p>
-                </section>
-              </div>
-            </div>
-          ) : activeView === "gallery" ? (
-            <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
-              <div className="mb-5 border-b border-[#2faea4]/35 pb-5">
-                <p className="text-sm font-medium text-[#5bbdb4]">Раздел</p>
-                <h2 className="text-2xl font-semibold sm:text-3xl">Галерея</h2>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-                <article className="aspect-[16/10] overflow-hidden rounded-2xl border border-[#2faea4]/35 bg-black/20 sm:aspect-[4/5]">
-                  <div
-                    className="h-full bg-cover bg-center"
-                    style={{ backgroundImage: "url('/chat-background.jpg')" }}
-                  />
-                </article>
-                <article className="aspect-[16/10] overflow-hidden rounded-2xl border border-[#2faea4]/35 bg-black/20 sm:aspect-[4/5]">
-                  <div
-                    className="h-full bg-cover bg-center"
-                    style={{ backgroundImage: "url('/chat-background-right.jpg')" }}
-                  />
-                </article>
-                <article className="grid aspect-[16/10] place-items-center rounded-2xl border border-dashed border-[#2faea4]/45 bg-black/20 p-6 text-center sm:aspect-[4/5]">
-                  <div>
-                    <p className="text-lg font-semibold text-[#e3f4f4]">
-                      Новые фото
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-[#8fb7bb]">
-                      Позже подключим загрузку изображений и общую ленту.
-                    </p>
-                  </div>
-                </article>
-              </div>
-            </div>
-          ) : activeView === "ideas" ? (
-            <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
-              <div className="mb-5 border-b border-[#2faea4]/35 pb-5">
-                <p className="text-sm font-medium text-[#5bbdb4]">Раздел</p>
-                <h2 className="text-2xl font-semibold sm:text-3xl">Идеи</h2>
-              </div>
-
-              <div className="grid gap-4">
-                {[
-                  "Добавить вход только для двоих",
-                  "Сделать общую галерею с фото",
-                  "Добавить капсулы времени",
-                  "Сделать реакции на сообщения",
-                ].map((idea) => (
-                  <article
-                    className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4"
-                    key={idea}
-                  >
-                    <p className="text-base font-semibold text-[#e3f4f4]">
-                      {idea}
-                    </p>
-                    <p className="mt-2 text-sm text-[#8fb7bb]">
-                      Черновик идеи для развития Twinline.
-                    </p>
-                  </article>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="grid min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 px-3 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mb-4 sm:px-4">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-full bg-[#37c6b8] text-base font-semibold text-[#041012]">
-                {activeAuthorName[0]}
-              </div>
-              <div className="min-w-0">
-                <h2 className="truncate text-base font-semibold">
-                  Приватный чат
-                </h2>
-                <p className="truncate text-sm text-[#8fb7bb]">
-                  Сейчас пишешь как: {activeAuthorName}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid w-full grid-cols-2 rounded-lg border border-[#2faea4]/45 bg-black/20 p-1 sm:w-auto">
-              <button
-                className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
-                  author === "me"
-                    ? "bg-[#37c6b8] text-[#041012]"
-                    : "text-[#e3f4f4] hover:bg-white/10"
-                }`}
-                onClick={() => setAuthor("me")}
-                type="button"
-              >
-                Я
-              </button>
-              <button
-                className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
-                  author === "friend"
-                    ? "bg-[#37c6b8] text-[#041012]"
-                    : "text-[#e3f4f4] hover:bg-white/10"
-                }`}
-                onClick={() => setAuthor("friend")}
-                type="button"
-              >
-                Друг
-              </button>
-            </div>
-          </div>
-
-          <div
-            className="scrollbar-hidden flex min-h-0 flex-col gap-3 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#081216]/82 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-4"
-          >
-            {isLoading ? (
-              <p className="text-sm text-[#8fb7bb]">Загружаю сообщения...</p>
-            ) : null}
-
-            {!isLoading && messages.length === 0 ? (
-              <p className="text-sm text-[#8fb7bb]">
-                Сообщений пока нет. Напиши первое.
-              </p>
-            ) : null}
-
-            {messages.map((message) => {
-              const isMine = message.author === author;
-              const imageUrl = getMessageImageUrl(message.text);
-              const videoUrl = getMessageVideoUrl(message.text);
-              const hasAttachment = Boolean(imageUrl || videoUrl);
-
-              return (
-                <article
-                  className={`flex ${isMine ? "justify-end" : "justify-start"}`}
-                  key={message.id}
-                >
-                  <div
-                    className={`max-w-[92%] rounded-[22px] shadow-[0_10px_30px_rgba(0,0,0,0.18)] sm:max-w-[72%] ${
-                      hasAttachment ? "p-2" : "px-3.5 py-2.5"
-                    } ${
-                      isMine
-                        ? "rounded-br-md bg-[#2faea4] text-[#031012]"
-                        : "rounded-bl-md bg-[#eaf6f6] text-[#071316]"
-                    }`}
-                  >
-                    <p className={`${hasAttachment ? "mb-1.5 px-1" : "mb-0.5"} text-[11px] font-bold leading-4 opacity-55`}>
-                      {authorLabels[message.author] ?? message.author}
-                    </p>
-                    {imageUrl ? (
-                      <button
-                        className="block w-full overflow-hidden rounded-xl"
-                        onClick={() => setSelectedImageUrl(imageUrl)}
-                        type="button"
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          alt="Отправленное изображение"
-                          className="max-h-[420px] w-full object-cover"
-                          src={imageUrl}
-                        />
-                      </button>
-                    ) : videoUrl ? (
-                      <video
-                        className="max-h-[420px] w-full rounded-xl bg-black"
-                        controls
-                        preload="metadata"
-                        src={videoUrl}
-                      />
-                    ) : (
-                      <p className="whitespace-pre-wrap break-words text-[15px] leading-6">
-                        {message.text}
-                      </p>
-                    )}
-                    <div className={`${hasAttachment ? "mt-2 px-1" : "mt-1"} flex items-center justify-end gap-3`}>
-                      {isMine ? (
-                        <button
-                          className="text-[11px] font-semibold opacity-55 transition hover:opacity-90"
-                          onClick={() => deleteMessage(message)}
-                          type="button"
-                        >
-                          Удалить
-                        </button>
-                      ) : null}
-                      <p
-                        className={`text-right text-[11px] font-medium ${
-                          isMine ? "text-[#0b4643]" : "text-[#6d878a]"
-                        }`}
-                      >
-                        {formatMessageTime(message.created_at)}
-                      </p>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-
-          <form
-            className="mt-3 flex gap-2 rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/82 p-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mt-4"
-            onSubmit={sendMessage}
-          >
-            <input
-              accept="image/*,video/*"
-              className="hidden"
-              onChange={handleAttachmentChange}
-              ref={imageInputRef}
-              type="file"
-            />
             <button
-              aria-label="Прикрепить изображение"
-              className="grid min-h-12 w-12 shrink-0 place-items-center rounded-lg border border-[#2faea4]/35 bg-[#e3f4f4]/12 text-[#e3f4f4] transition hover:bg-[#e3f4f4]/18 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={isUploadingImage}
-              onClick={() => imageInputRef.current?.click()}
+              className={`rounded-lg px-4 py-2 text-sm font-semibold ${
+                authMode === "sign-up"
+                  ? "bg-[#37c6b8] text-[#041012]"
+                  : "text-[#e3f4f4]"
+              }`}
+              onClick={() => setAuthMode("sign-up")}
               type="button"
             >
-              {isUploadingImage ? (
-                <span className="h-4 w-4 rounded-full border-2 border-[#37c6b8] border-t-transparent" />
-              ) : (
-                <svg
-                  aria-hidden="true"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="m8.5 12.5 5.9-5.9a3.2 3.2 0 0 1 4.5 4.5l-7.1 7.1a5 5 0 0 1-7.1-7.1l7.8-7.8"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                  />
-                </svg>
-              )}
+              Регистрация
             </button>
+          </div>
+
+          <form className="grid gap-3" onSubmit={handleAuth}>
+            {authMode === "sign-up" ? (
+              <input
+                className="min-h-12 rounded-xl border border-transparent bg-[#e3f4f4]/12 px-4 text-base outline-none placeholder:text-[#8fb7bb]/70 focus:border-[#37c6b8]"
+                onChange={(event) => setAuthName(event.target.value)}
+                placeholder="Имя в Twinline"
+                type="text"
+                value={authName}
+              />
+            ) : null}
             <input
-              aria-label="Текст сообщения"
-              className="min-h-12 min-w-0 flex-1 rounded-lg border border-transparent bg-[#e3f4f4]/12 px-3 text-base text-[#e3f4f4] outline-none transition placeholder:text-[#8fb7bb]/70 focus:border-[#37c6b8] focus:bg-[#e3f4f4]/18 sm:px-4"
-              onChange={(event) => setMessageText(event.target.value)}
-              placeholder="Напиши сообщение..."
-              type="text"
-              value={messageText}
+              className="min-h-12 rounded-xl border border-transparent bg-[#e3f4f4]/12 px-4 text-base outline-none placeholder:text-[#8fb7bb]/70 focus:border-[#37c6b8]"
+              onChange={(event) => setAuthEmail(event.target.value)}
+              placeholder="Email"
+              type="email"
+              value={authEmail}
+            />
+            <input
+              className="min-h-12 rounded-xl border border-transparent bg-[#e3f4f4]/12 px-4 text-base outline-none placeholder:text-[#8fb7bb]/70 focus:border-[#37c6b8]"
+              onChange={(event) => setAuthPassword(event.target.value)}
+              placeholder="Пароль"
+              type="password"
+              value={authPassword}
             />
             <button
-              className="min-h-12 rounded-lg bg-[#37c6b8] px-3 text-sm font-semibold text-[#041012] transition hover:bg-[#65d8cc] disabled:cursor-not-allowed disabled:bg-[#52666a] sm:px-5"
-              disabled={!messageText.trim() || isUploadingImage}
+              className="min-h-12 rounded-xl bg-[#37c6b8] px-4 text-sm font-bold text-[#041012] transition hover:bg-[#65d8cc]"
               type="submit"
             >
-              Отправить
+              {authMode === "sign-in" ? "Войти" : "Создать аккаунт"}
             </button>
           </form>
 
           {errorMessage ? (
-            <p className="mt-2 text-sm font-medium text-red-700">
+            <p className="mt-4 text-sm font-semibold text-[#65d8cc]">
               {errorMessage}
             </p>
           ) : null}
-            </div>
-          )}
         </section>
+      </main>
+    );
+  }
+
+  return (
+    <main className="relative h-dvh overflow-hidden bg-[#05080a] text-[#e3f4f4]">
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(47,174,164,0.16),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(227,244,244,0.08),transparent_28%),linear-gradient(135deg,#05080a_0%,#0b1418_46%,#030506_100%)]"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(227,244,244,0.45)_1px,transparent_1px),linear-gradient(90deg,rgba(227,244,244,0.45)_1px,transparent_1px)] [background-size:44px_44px]"
+      />
+      <div className="relative h-full overflow-hidden bg-[#061014]/35">
+        <div className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden px-3 py-3 sm:px-6 sm:py-4 lg:px-8">
+          <header className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/82 px-3 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mb-4 sm:px-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#37c6b8] shadow-[0_8px_24px_rgba(47,174,164,0.24)] sm:h-11 sm:w-11">
+                <span className="text-xl font-black text-[#041012]">T</span>
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-xl font-semibold tracking-normal sm:text-2xl">
+                  Twinline
+                </h1>
+                <p className="max-w-[210px] truncate text-xs font-medium text-[#8fb7bb] sm:max-w-none sm:text-sm">
+                  Приватное пространство для двоих
+                </p>
+              </div>
+            </div>
+            <button
+              className="shrink-0 rounded-xl border border-[#2faea4]/35 px-3 py-2 text-xs font-bold text-[#e3f4f4] transition hover:bg-white/10 sm:text-sm"
+              onClick={signOut}
+              type="button"
+            >
+              Выйти
+            </button>
+          </header>
+
+          <nav className="scrollbar-hidden mb-3 flex shrink-0 gap-2 overflow-x-auto rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-2 shadow-[0_14px_45px_rgba(0,0,0,0.24)] backdrop-blur-md lg:hidden">
+            {navItems.map((item) => (
+              <button
+                className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                  activeView === item.view
+                    ? "bg-[#37c6b8] text-[#041012]"
+                    : "text-[#e3f4f4] opacity-80 hover:bg-white/10 hover:opacity-100"
+                }`}
+                key={item.view}
+                onClick={() => setActiveView(item.view)}
+                type="button"
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
+          <section className="grid min-h-0 flex-1 gap-3 overflow-hidden pb-3 sm:gap-4 sm:pb-4 lg:grid-cols-[280px_1fr]">
+            <aside className="hidden min-h-0 rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-4 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:block">
+              <div className="mb-5">
+                <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#5bbdb4]">
+                  Меню
+                </p>
+              </div>
+
+              <nav className="grid gap-2">
+                {navItems.map((item) => (
+                  <button
+                    className={`rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
+                      activeView === item.view
+                        ? "bg-[#37c6b8] text-[#041012]"
+                        : "text-[#e3f4f4] opacity-80 hover:bg-white/10 hover:opacity-100"
+                    }`}
+                    key={item.view}
+                    onClick={() => setActiveView(item.view)}
+                    type="button"
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </nav>
+            </aside>
+
+            {activeView === "profile" ? (
+              <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[#2faea4]/35 pb-5 sm:mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[#37c6b8] text-xl font-black text-[#041012] sm:h-16 sm:w-16 sm:text-2xl">
+                      {activeUserName[0]?.toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-[#5bbdb4]">
+                        Активный профиль
+                      </p>
+                      <h2 className="text-2xl font-semibold sm:text-3xl">
+                        {activeUserName}
+                      </h2>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <section className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#5bbdb4]">
+                      Email
+                    </p>
+                    <p className="mt-3 break-words text-lg font-semibold">
+                      {user.email}
+                    </p>
+                  </section>
+
+                  <section className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#5bbdb4]">
+                      Доступ
+                    </p>
+                    <p className="mt-3 text-lg font-semibold">
+                      Авторизован
+                    </p>
+                  </section>
+
+                  <section className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4 sm:col-span-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#5bbdb4]">
+                      О профиле
+                    </p>
+                    <p className="mt-3 max-w-2xl text-sm leading-6 text-[#e3f4f4]">
+                      Теперь Twinline понимает, кто открыл сайт. Сообщения и
+                      файлы привязаны к твоему аккаунту, а удалять можно только
+                      свои сообщения.
+                    </p>
+                  </section>
+                </div>
+              </div>
+            ) : activeView === "gallery" ? (
+              <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
+                <div className="mb-5 border-b border-[#2faea4]/35 pb-5">
+                  <p className="text-sm font-medium text-[#5bbdb4]">Раздел</p>
+                  <h2 className="text-2xl font-semibold sm:text-3xl">Галерея</h2>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+                  <article className="aspect-[16/10] overflow-hidden rounded-2xl border border-[#2faea4]/35 bg-black/20 sm:aspect-[4/5]">
+                    <div
+                      className="h-full bg-cover bg-center"
+                      style={{ backgroundImage: "url('/chat-background.jpg')" }}
+                    />
+                  </article>
+                  <article className="aspect-[16/10] overflow-hidden rounded-2xl border border-[#2faea4]/35 bg-black/20 sm:aspect-[4/5]">
+                    <div
+                      className="h-full bg-cover bg-center"
+                      style={{ backgroundImage: "url('/chat-background-right.jpg')" }}
+                    />
+                  </article>
+                </div>
+              </div>
+            ) : activeView === "ideas" ? (
+              <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
+                <div className="mb-5 border-b border-[#2faea4]/35 pb-5">
+                  <p className="text-sm font-medium text-[#5bbdb4]">Раздел</p>
+                  <h2 className="text-2xl font-semibold sm:text-3xl">Идеи</h2>
+                </div>
+
+                <div className="grid gap-4">
+                  {[
+                    "Сделать общую галерею с загрузкой фото",
+                    "Добавить капсулы времени",
+                    "Сделать реакции на сообщения",
+                    "Добавить голосовые звонки",
+                  ].map((idea) => (
+                    <article
+                      className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4"
+                      key={idea}
+                    >
+                      <p className="text-base font-semibold text-[#e3f4f4]">
+                        {idea}
+                      </p>
+                      <p className="mt-2 text-sm text-[#8fb7bb]">
+                        Черновик идеи для развития Twinline.
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="grid min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 px-3 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mb-4 sm:px-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="grid h-11 w-11 place-items-center rounded-full bg-[#37c6b8] text-base font-semibold text-[#041012]">
+                      {activeUserName[0]?.toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <h2 className="truncate text-base font-semibold">
+                        Приватный чат
+                      </h2>
+                      <p className="truncate text-sm text-[#8fb7bb]">
+                        Сейчас пишешь как: {activeUserName}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="scrollbar-hidden flex min-h-0 flex-col gap-3 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#081216]/82 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-4">
+                  {isLoadingMessages ? (
+                    <p className="text-sm text-[#8fb7bb]">Загружаю сообщения...</p>
+                  ) : null}
+
+                  {!isLoadingMessages && messages.length === 0 ? (
+                    <p className="text-sm text-[#8fb7bb]">
+                      Сообщений пока нет. Напиши первое.
+                    </p>
+                  ) : null}
+
+                  {messages.map((message) => {
+                    const isMine = message.user_id === user.id;
+                    const imageUrl = getMessageImageUrl(message.text);
+                    const videoUrl = getMessageVideoUrl(message.text);
+                    const hasAttachment = Boolean(imageUrl || videoUrl);
+
+                    return (
+                      <article
+                        className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+                        key={message.id}
+                      >
+                        <div
+                          className={`max-w-[92%] rounded-[22px] shadow-[0_10px_30px_rgba(0,0,0,0.18)] sm:max-w-[72%] ${
+                            hasAttachment ? "p-2" : "px-3.5 py-2.5"
+                          } ${
+                            isMine
+                              ? "rounded-br-md bg-[#2faea4] text-[#031012]"
+                              : "rounded-bl-md bg-[#eaf6f6] text-[#071316]"
+                          }`}
+                        >
+                          <p className={`${hasAttachment ? "mb-1.5 px-1" : "mb-0.5"} text-[11px] font-bold leading-4 opacity-55`}>
+                            {message.author}
+                          </p>
+                          {imageUrl ? (
+                            <button
+                              className="block w-full overflow-hidden rounded-xl"
+                              onClick={() => setSelectedImageUrl(imageUrl)}
+                              type="button"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                alt="Отправленное изображение"
+                                className="max-h-[420px] w-full object-cover"
+                                src={imageUrl}
+                              />
+                            </button>
+                          ) : videoUrl ? (
+                            <video
+                              className="max-h-[420px] w-full rounded-xl bg-black"
+                              controls
+                              preload="metadata"
+                              src={videoUrl}
+                            />
+                          ) : (
+                            <p className="whitespace-pre-wrap break-words text-[15px] leading-6">
+                              {message.text}
+                            </p>
+                          )}
+                          <div className={`${hasAttachment ? "mt-2 px-1" : "mt-1"} flex items-center justify-end gap-3`}>
+                            {isMine ? (
+                              <button
+                                className="text-[11px] font-semibold opacity-55 transition hover:opacity-90"
+                                onClick={() => deleteMessage(message)}
+                                type="button"
+                              >
+                                Удалить
+                              </button>
+                            ) : null}
+                            <p
+                              className={`text-right text-[11px] font-medium ${
+                                isMine ? "text-[#0b4643]" : "text-[#6d878a]"
+                              }`}
+                            >
+                              {formatMessageTime(message.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+
+                <form
+                  className="mt-3 flex gap-2 rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/82 p-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mt-4"
+                  onSubmit={sendMessage}
+                >
+                  <input
+                    accept="image/*,video/*"
+                    className="hidden"
+                    onChange={handleAttachmentChange}
+                    ref={imageInputRef}
+                    type="file"
+                  />
+                  <button
+                    aria-label="Прикрепить файл"
+                    className="grid min-h-12 w-12 shrink-0 place-items-center rounded-lg border border-[#2faea4]/35 bg-[#e3f4f4]/12 text-[#e3f4f4] transition hover:bg-[#e3f4f4]/18 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={isUploadingAttachment}
+                    onClick={() => imageInputRef.current?.click()}
+                    type="button"
+                  >
+                    {isUploadingAttachment ? (
+                      <span className="h-4 w-4 rounded-full border-2 border-[#37c6b8] border-t-transparent" />
+                    ) : (
+                      <svg
+                        aria-hidden="true"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="m8.5 12.5 5.9-5.9a3.2 3.2 0 0 1 4.5 4.5l-7.1 7.1a5 5 0 0 1-7.1-7.1l7.8-7.8"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                  <input
+                    aria-label="Текст сообщения"
+                    className="min-h-12 min-w-0 flex-1 rounded-lg border border-transparent bg-[#e3f4f4]/12 px-3 text-base text-[#e3f4f4] outline-none transition placeholder:text-[#8fb7bb]/70 focus:border-[#37c6b8] focus:bg-[#e3f4f4]/18 sm:px-4"
+                    onChange={(event) => setMessageText(event.target.value)}
+                    placeholder="Напиши сообщение..."
+                    type="text"
+                    value={messageText}
+                  />
+                  <button
+                    className="min-h-12 rounded-lg bg-[#37c6b8] px-3 text-sm font-semibold text-[#041012] transition hover:bg-[#65d8cc] disabled:cursor-not-allowed disabled:bg-[#52666a] sm:px-5"
+                    disabled={!messageText.trim() || isUploadingAttachment}
+                    type="submit"
+                  >
+                    Отправить
+                  </button>
+                </form>
+
+                {errorMessage ? (
+                  <p className="mt-2 text-sm font-medium text-[#65d8cc]">
+                    {errorMessage}
+                  </p>
+                ) : null}
+              </div>
+            )}
+          </section>
         </div>
       </div>
       {selectedImageUrl ? (
