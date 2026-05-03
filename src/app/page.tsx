@@ -196,6 +196,15 @@ async function fetchProfiles() {
     .select("user_id, display_name, avatar_url, name_changed_at, updated_at");
 }
 
+async function fetchCallSignalsAfter(receiverId: string, createdAt: string) {
+  return supabase
+    .from("call_signals")
+    .select("id, sender_id, receiver_id, type, payload, created_at")
+    .eq("receiver_id", receiverId)
+    .gt("created_at", createdAt)
+    .order("created_at", { ascending: true });
+}
+
 function isSessionDescriptionPayload(
   payload: unknown,
 ): payload is RTCSessionDescriptionInit {
@@ -333,8 +342,12 @@ export default function Home() {
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const callStatusRef = useRef<CallStatus>("idle");
   const callPartnerIdRef = useRef<string | null>(null);
   const localCallStreamRef = useRef<MediaStream | null>(null);
+  const pendingIceCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
+  const processedCallSignalIdsRef = useRef<Set<string>>(new Set());
+  const latestCallSignalCreatedAtRef = useRef<string>("1970-01-01T00:00:00.000Z");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingChunksRef = useRef<BlobPart[]>([]);
   const recordingStreamRef = useRef<MediaStream | null>(null);
@@ -410,6 +423,10 @@ export default function Home() {
   }, [messages]);
 
   useEffect(() => {
+    callStatusRef.current = callStatus;
+  }, [callStatus]);
+
+  useEffect(() => {
     return () => {
       recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
       localCallStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -423,8 +440,18 @@ export default function Home() {
     }
 
     const signedInUser = user;
+    let isMounted = true;
+
+    latestCallSignalCreatedAtRef.current = new Date().toISOString();
 
     async function handleCallSignal(signal: CallSignal) {
+      if (processedCallSignalIdsRef.current.has(signal.id)) {
+        return;
+      }
+
+      processedCallSignalIdsRef.current.add(signal.id);
+      latestCallSignalCreatedAtRef.current = signal.created_at;
+
       if (signal.sender_id === signedInUser.id) {
         return;
       }
@@ -434,7 +461,7 @@ export default function Home() {
           return;
         }
 
-        if (callStatus !== "idle") {
+        if (callStatusRef.current !== "idle") {
           await sendCallSignal(signal.sender_id, "end", { reason: "busy" });
           return;
         }
@@ -453,6 +480,7 @@ export default function Home() {
         }
 
         await peerConnection.setRemoteDescription(signal.payload);
+        await flushPendingIceCandidates();
         setCallStatus("connected");
         return;
       }
@@ -460,16 +488,16 @@ export default function Home() {
       if (signal.type === "ice") {
         const peerConnection = peerConnectionRef.current;
 
-        if (!peerConnection || !isIceCandidatePayload(signal.payload)) {
+        if (!isIceCandidatePayload(signal.payload)) {
           return;
         }
 
-        try {
-          await peerConnection.addIceCandidate(signal.payload);
-        } catch {
-          // ICE candidates can arrive before the peer is ready. The next ones usually finish the path.
+        if (!peerConnection || !peerConnection.remoteDescription) {
+          pendingIceCandidatesRef.current.push(signal.payload);
+          return;
         }
 
+        await addIceCandidate(signal.payload);
         return;
       }
 
@@ -477,6 +505,52 @@ export default function Home() {
         closeCall(false);
       }
     }
+
+    async function addIceCandidate(candidate: RTCIceCandidateInit) {
+      const peerConnection = peerConnectionRef.current;
+
+      if (!peerConnection) {
+        pendingIceCandidatesRef.current.push(candidate);
+        return;
+      }
+
+      try {
+        await peerConnection.addIceCandidate(candidate);
+      } catch {
+        pendingIceCandidatesRef.current.push(candidate);
+      }
+    }
+
+    async function flushPendingIceCandidates() {
+      const pendingCandidates = pendingIceCandidatesRef.current;
+
+      pendingIceCandidatesRef.current = [];
+
+      for (const candidate of pendingCandidates) {
+        await addIceCandidate(candidate);
+      }
+    }
+
+    async function syncMissedCallSignals() {
+      const { data } = await fetchCallSignalsAfter(
+        signedInUser.id,
+        latestCallSignalCreatedAtRef.current,
+      );
+
+      if (!isMounted || !data) {
+        return;
+      }
+
+      for (const signal of data as CallSignal[]) {
+        await handleCallSignal(signal);
+      }
+    }
+
+    syncMissedCallSignals();
+
+    const callSignalsInterval = window.setInterval(() => {
+      syncMissedCallSignals();
+    }, 1800);
 
     const channel = supabase
       .channel(`call-signals-${signedInUser.id}`)
@@ -495,12 +569,13 @@ export default function Home() {
       .subscribe();
 
     return () => {
+      isMounted = false;
+      window.clearInterval(callSignalsInterval);
       supabase.removeChannel(channel);
     };
-    // The realtime callback needs the latest call status, while call helpers are function declarations below.
-    // Re-subscribing on status/user changes keeps the handler fresh without extra state plumbing.
+    // Call helpers are function declarations below; refs keep this realtime handler fresh.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [callStatus, user]);
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -951,10 +1026,22 @@ export default function Home() {
       });
 
       await peerConnection.setRemoteDescription(incomingCall.payload);
+      const pendingCandidates = pendingIceCandidatesRef.current;
+      pendingIceCandidatesRef.current = [];
+
+      for (const candidate of pendingCandidates) {
+        try {
+          await peerConnection.addIceCandidate(candidate);
+        } catch {
+          pendingIceCandidatesRef.current.push(candidate);
+        }
+      }
+
       const answer = await peerConnection.createAnswer();
       await peerConnection.setLocalDescription(answer);
       await sendCallSignal(incomingCall.sender_id, "answer", answer);
       setIncomingCall(null);
+      setCallStatus("connected");
     } catch {
       closeCall(false);
       setErrorMessage("Не получилось принять звонок. Проверь доступ к микрофону.");
@@ -971,6 +1058,7 @@ export default function Home() {
     peerConnectionRef.current?.close();
     peerConnectionRef.current = null;
     callPartnerIdRef.current = null;
+    pendingIceCandidatesRef.current = [];
     localCallStreamRef.current?.getTracks().forEach((track) => track.stop());
     localCallStreamRef.current = null;
 
