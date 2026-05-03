@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 type MessageRow = {
@@ -66,7 +66,6 @@ export default function Home() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
-  const messagesListRef = useRef<HTMLDivElement | null>(null);
 
   const activeAuthorName = useMemo(() => {
     return authorLabels[author] ?? "Я";
@@ -146,19 +145,6 @@ export default function Home() {
       supabase.removeChannel(channel);
     };
   }, []);
-
-  useEffect(() => {
-    const messagesList = messagesListRef.current;
-
-    if (!messagesList) {
-      return;
-    }
-
-    messagesList.scrollTo({
-      top: messagesList.scrollHeight,
-      behavior: "smooth",
-    });
-  }, [messages]);
 
   async function sendMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -414,7 +400,6 @@ export default function Home() {
 
           <div
             className="scrollbar-hidden flex min-h-0 flex-col gap-3 overflow-y-auto rounded-2xl border border-[#e6b85c]/45 bg-[#100d09]/82 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md"
-            ref={messagesListRef}
           >
             {isLoading ? (
               <p className="text-sm text-[#d8c7a5]">Загружаю сообщения...</p>
