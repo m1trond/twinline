@@ -76,7 +76,9 @@ const imageMessagePrefix = "image::";
 const videoMessagePrefix = "video::";
 const audioMessagePrefix = "audio::";
 const callMessagePrefix = "call::";
+const stickerMessagePrefix = "sticker::";
 const maxAttachmentSize = 50 * 1024 * 1024;
+const stickerOptions = ["😂", "❤️", "🔥", "🤝", "😎", "😭", "🥱", "😡", "🫡", "💀", "🥳", "🤯", "👍", "👎", "🍻", "✨"];
 
 function formatMessageTime(createdAt: string) {
   return new Intl.DateTimeFormat("ru-RU", {
@@ -167,6 +169,12 @@ function getMessageCallDuration(text: string) {
   const duration = Number(text.slice(callMessagePrefix.length));
 
   return Number.isFinite(duration) ? duration : 0;
+}
+
+function getMessageSticker(text: string) {
+  return text.startsWith(stickerMessagePrefix)
+    ? text.slice(stickerMessagePrefix.length)
+    : null;
 }
 
 function mergeMessages(currentMessages: MessageRow[], nextMessages: MessageRow[]) {
@@ -369,6 +377,8 @@ export default function Home() {
   const [isChatMenuOpen, setIsChatMenuOpen] = useState(false);
   const [chatMenuPosition, setChatMenuPosition] = useState({ left: 0, top: 0 });
   const [isDeletingChat, setIsDeletingChat] = useState(false);
+  const [isStickerPickerOpen, setIsStickerPickerOpen] = useState(false);
+  const [stickerPickerPosition, setStickerPickerPosition] = useState({ left: 0, top: 0 });
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isAppInstalled, setIsAppInstalled] = useState(() => {
     if (typeof window === "undefined") {
@@ -389,6 +399,7 @@ export default function Home() {
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const chatMenuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const stickerButtonRef = useRef<HTMLButtonElement | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const remoteCallStreamRef = useRef<MediaStream | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
@@ -811,7 +822,9 @@ export default function Home() {
                     ? "Голосовое сообщение"
                     : newMessage.text.startsWith(callMessagePrefix)
                       ? "Звонок завершен"
-                      : newMessage.text,
+                      : newMessage.text.startsWith(stickerMessagePrefix)
+                        ? "Стикер"
+                        : newMessage.text,
             });
           }
         },
@@ -1412,6 +1425,7 @@ export default function Home() {
 
   function toggleChatMenu() {
     const button = chatMenuButtonRef.current;
+    setIsStickerPickerOpen(false);
 
     if (button) {
       const rect = button.getBoundingClientRect();
@@ -1424,6 +1438,23 @@ export default function Home() {
     }
 
     setIsChatMenuOpen((isOpen) => !isOpen);
+  }
+
+  function toggleStickerPicker() {
+    const button = stickerButtonRef.current;
+    setIsChatMenuOpen(false);
+
+    if (button) {
+      const rect = button.getBoundingClientRect();
+      const pickerWidth = Math.min(300, window.innerWidth - 32);
+
+      setStickerPickerPosition({
+        left: Math.max(16, Math.min(rect.left, window.innerWidth - pickerWidth - 16)),
+        top: Math.max(16, rect.top - 236),
+      });
+    }
+
+    setIsStickerPickerOpen((isOpen) => !isOpen);
   }
 
   async function updateProfileName(event: FormEvent<HTMLFormElement>) {
@@ -1627,6 +1658,54 @@ export default function Home() {
       });
       setErrorMessage("");
     }
+  }
+
+  async function sendSticker(sticker: string) {
+    if (!user) {
+      setErrorMessage("Сначала войди в аккаунт.");
+      return;
+    }
+
+    const stickerText = `${stickerMessagePrefix}${sticker}`;
+    const optimisticMessage: MessageRow = {
+      id: -Date.now(),
+      author: activeUserName,
+      text: stickerText,
+      created_at: new Date().toISOString(),
+      user_id: user.id,
+    };
+
+    setIsStickerPickerOpen(false);
+    setMessages((currentMessages) =>
+      mergeMessages(currentMessages, [optimisticMessage]),
+    );
+
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        author: activeUserName,
+        text: stickerText,
+        user_id: user.id,
+      })
+      .select("id, author, text, created_at, user_id")
+      .single();
+
+    if (error) {
+      setMessages((currentMessages) =>
+        currentMessages.filter((message) => message.id !== optimisticMessage.id),
+      );
+      setErrorMessage("Не получилось отправить стикер.");
+      return;
+    }
+
+    setMessages((currentMessages) => {
+      const withoutOptimisticMessage = currentMessages.filter(
+        (message) => message.id !== optimisticMessage.id,
+      );
+
+      return mergeMessages(withoutOptimisticMessage, data ? [data] : []);
+    });
+    setErrorMessage("");
   }
 
   async function sendAttachment(file: File) {
@@ -2681,8 +2760,9 @@ export default function Home() {
                     const videoUrl = getMessageVideoUrl(message.text);
                     const audioUrl = getMessageAudioUrl(message.text);
                     const callDurationSeconds = getMessageCallDuration(message.text);
+                    const sticker = getMessageSticker(message.text);
                     const hasAttachment = Boolean(
-                      imageUrl || videoUrl || audioUrl || callDurationSeconds !== null,
+                      imageUrl || videoUrl || audioUrl || callDurationSeconds !== null || sticker,
                     );
 
                     return (
@@ -2758,6 +2838,10 @@ export default function Home() {
                               </div>
                             </div>
                           </div>
+                        ) : sticker ? (
+                          <div className="grid min-h-24 min-w-24 place-items-center rounded-2xl bg-black/10 px-5 py-4">
+                            <span className="text-6xl leading-none">{sticker}</span>
+                          </div>
                         ) : (
                             <p className="whitespace-pre-wrap break-words text-[15px] leading-6">
                               {message.text}
@@ -2823,6 +2907,36 @@ export default function Home() {
                         />
                       </svg>
                     )}
+                  </button>
+                  <button
+                    aria-label="Стикеры"
+                    className="grid min-h-12 w-12 shrink-0 place-items-center rounded-lg border border-[#2faea4]/35 bg-[#e3f4f4]/12 text-[#e3f4f4] transition hover:bg-[#e3f4f4]/18 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={isUploadingAttachment || isRecordingVoice}
+                    onClick={toggleStickerPicker}
+                    ref={stickerButtonRef}
+                    type="button"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="9"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                      <path
+                        d="M9 10h.01M15 10h.01M8.8 14.5c1.8 1.7 4.6 1.7 6.4 0"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                      />
+                    </svg>
                   </button>
                   <button
                     aria-label={isRecordingVoice ? "Остановить запись" : "Записать голосовое"}
@@ -2959,6 +3073,50 @@ export default function Home() {
             >
               {isDeletingChat ? "Удаляю..." : "Удалить чат"}
             </button>
+          </div>
+        </>
+      ) : null}
+      {isStickerPickerOpen ? (
+        <>
+          <button
+            aria-label="Закрыть стикеры"
+            className="fixed inset-0 z-[70] cursor-default bg-transparent"
+            onClick={() => setIsStickerPickerOpen(false)}
+            type="button"
+          />
+          <div
+            className="fixed z-[80] w-[min(300px,calc(100vw-32px))] rounded-2xl border border-[#2faea4]/45 bg-[#071216]/98 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.58)] backdrop-blur-xl"
+            onClick={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            style={{
+              left: stickerPickerPosition.left,
+              top: stickerPickerPosition.top,
+            }}
+          >
+            <div className="flex items-center justify-between gap-3 px-1">
+              <p className="text-sm font-black uppercase tracking-[0.16em] text-[#5bbdb4]">
+                Стикеры
+              </p>
+              <button
+                className="rounded-full px-2 py-1 text-xs font-bold text-[#8fb7bb] transition hover:bg-white/10 hover:text-[#e3f4f4]"
+                onClick={() => setIsStickerPickerOpen(false)}
+                type="button"
+              >
+                Закрыть
+              </button>
+            </div>
+            <div className="mt-3 grid grid-cols-4 gap-2">
+              {stickerOptions.map((sticker) => (
+                <button
+                  className="grid h-14 place-items-center rounded-xl bg-[#e3f4f4]/10 text-3xl leading-none transition hover:scale-[1.03] hover:bg-[#e3f4f4]/18 active:scale-95"
+                  key={sticker}
+                  onClick={() => sendSticker(sticker)}
+                  type="button"
+                >
+                  {sticker}
+                </button>
+              ))}
+            </div>
           </div>
         </>
       ) : null}
