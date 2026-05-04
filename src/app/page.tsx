@@ -240,6 +240,21 @@ function createReplyMessageText(replyTarget: MessageRow, body: string) {
   )}`;
 }
 
+function updateReplyMessageBody(text: string, body: string) {
+  const reply = getMessageReply(text);
+
+  if (!reply) {
+    return body;
+  }
+
+  return `${replyMessagePrefix}${encodeURIComponent(
+    JSON.stringify({
+      ...reply,
+      body,
+    } satisfies ReplyMessagePayload),
+  )}`;
+}
+
 function clampPanelPosition(
   position: { left: number; top: number },
   isCollapsed: boolean,
@@ -1886,9 +1901,10 @@ export default function Home() {
 
     if (editingMessage) {
       const previousMessages = messages;
+      const editedText = updateReplyMessageBody(editingMessage.text, trimmedText);
       const updatedMessage: MessageRow = {
         ...editingMessage,
-        text: trimmedText,
+        text: editedText,
       };
 
       setMessages((currentMessages) =>
@@ -1904,7 +1920,7 @@ export default function Home() {
 
       const { data, error } = await supabase
         .from("messages")
-        .update({ text: trimmedText })
+        .update({ text: editedText })
         .eq("id", editingMessage.id)
         .eq("user_id", user.id)
         .select("id, author, text, created_at, user_id")
