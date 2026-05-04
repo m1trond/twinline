@@ -517,6 +517,8 @@ export default function Home() {
   const [isUploadingGalleryItem, setIsUploadingGalleryItem] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [voiceRecordingDuration, setVoiceRecordingDuration] = useState(0);
+  const [voiceRecordingStartedAt, setVoiceRecordingStartedAt] = useState<number | null>(null);
   const [callStatus, setCallStatus] = useState<CallStatus>("idle");
   const [incomingCall, setIncomingCall] = useState<CallSignal | null>(null);
   const [isCallMicMuted, setIsCallMicMuted] = useState(false);
@@ -566,6 +568,7 @@ export default function Home() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingChunksRef = useRef<BlobPart[]>([]);
   const recordingStreamRef = useRef<MediaStream | null>(null);
+  const shouldDiscardRecordingRef = useRef(false);
   const latestMessageCreatedAtRef = useRef<string | null>(null);
   const notificationsEnabledRef = useRef(false);
   const isDeletingChatRef = useRef(false);
@@ -811,6 +814,22 @@ export default function Home() {
       window.clearInterval(interval);
     };
   }, [callStartedAt, callStatus]);
+
+  useEffect(() => {
+    if (!isRecordingVoice || !voiceRecordingStartedAt) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setVoiceRecordingDuration(
+        Math.floor((Date.now() - voiceRecordingStartedAt) / 1000),
+      );
+    }, 250);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [isRecordingVoice, voiceRecordingStartedAt]);
 
   useEffect(() => {
     if (!messageContextMenu) {
@@ -2434,6 +2453,7 @@ export default function Home() {
       recordingChunksRef.current = [];
       recordingStreamRef.current = stream;
       mediaRecorderRef.current = mediaRecorder;
+      shouldDiscardRecordingRef.current = false;
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -2450,14 +2470,20 @@ export default function Home() {
         recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
         recordingStreamRef.current = null;
         mediaRecorderRef.current = null;
+        setVoiceRecordingStartedAt(null);
+        setVoiceRecordingDuration(0);
 
-        if (audioBlob.size > 0) {
+        if (!shouldDiscardRecordingRef.current && audioBlob.size > 0) {
           sendVoiceMessage(audioBlob);
         }
+
+        shouldDiscardRecordingRef.current = false;
       };
 
       mediaRecorder.start();
       setIsRecordingVoice(true);
+      setVoiceRecordingStartedAt(Date.now());
+      setVoiceRecordingDuration(0);
       setErrorMessage("");
     } catch {
       setErrorMessage("Не получилось получить доступ к микрофону.");
@@ -2476,6 +2502,27 @@ export default function Home() {
     }
 
     setIsRecordingVoice(false);
+  }
+
+  function cancelVoiceRecording() {
+    const mediaRecorder = mediaRecorderRef.current;
+
+    shouldDiscardRecordingRef.current = true;
+
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      mediaRecorder.stop();
+    } else {
+      recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
+      recordingStreamRef.current = null;
+      mediaRecorderRef.current = null;
+      recordingChunksRef.current = [];
+      shouldDiscardRecordingRef.current = false;
+    }
+
+    setIsRecordingVoice(false);
+    setVoiceRecordingStartedAt(null);
+    setVoiceRecordingDuration(0);
+    setErrorMessage("");
   }
 
   function toggleVoiceRecording() {
@@ -3480,55 +3527,94 @@ export default function Home() {
                       </svg>
                     )}
                   </button>
-                  <input
-                    aria-label="Текст сообщения"
-                    className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#eef1ff]/12 px-3 text-sm text-[#eef1ff] outline-none transition placeholder:text-[#9aa3bd]/70 focus:border-[#7c8cff] focus:bg-[#eef1ff]/18 sm:px-4"
-                    onChange={(event) => setMessageText(event.target.value)}
-                    placeholder={
-                      editingMessage
-                        ? "Измени сообщение..."
-                        : replyTarget
-                          ? "Ответь на сообщение..."
-                          : "Напиши сообщение..."
-                    }
-                    type="text"
-                    value={messageText}
-                  />
-                  <button
-                    aria-label="Стикеры"
-                    className="grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#5561a8]/35 bg-[#eef1ff]/12 text-[#eef1ff] transition hover:bg-[#eef1ff]/18 disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={isUploadingAttachment || isRecordingVoice}
-                    onClick={toggleStickerPicker}
-                    ref={stickerButtonRef}
-                    type="button"
-                  >
-                    <svg
-                      aria-hidden="true"
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="9"
-                        stroke="currentColor"
-                        strokeWidth="2"
+                  {isRecordingVoice ? (
+                    <div className="flex min-h-10 min-w-0 flex-1 items-center gap-3 rounded-lg border border-red-400/35 bg-red-500/10 px-3 text-sm text-[#eef1ff]">
+                      <span className="relative flex h-3 w-3 shrink-0">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-300 opacity-60" />
+                        <span className="relative inline-flex h-3 w-3 rounded-full bg-red-300" />
+                      </span>
+                      <span className="w-14 font-semibold tabular-nums text-red-100">
+                        {formatAudioTime(voiceRecordingDuration)}
+                      </span>
+                      <div
+                        aria-hidden="true"
+                        className="hidden min-w-0 flex-1 items-center gap-1 sm:flex"
+                      >
+                        {[12, 20, 15, 26, 18, 30, 14, 24, 16, 22, 13, 28].map(
+                          (height, index) => (
+                            <span
+                              className="w-1 rounded-full bg-[#7c8cff]/80 opacity-80"
+                              key={`${height}-${index}`}
+                              style={{
+                                animation: "voice-wave 900ms ease-in-out infinite",
+                                animationDelay: `${index * 70}ms`,
+                                height,
+                              }}
+                            />
+                          ),
+                        )}
+                      </div>
+                      <button
+                        className="ml-auto shrink-0 rounded-lg px-3 py-2 text-xs font-bold text-[#a8b2ff] transition hover:bg-white/10 hover:text-[#eef1ff]"
+                        onClick={cancelVoiceRecording}
+                        type="button"
+                      >
+                        Отмена
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <input
+                        aria-label="Текст сообщения"
+                        className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#eef1ff]/12 px-3 text-sm text-[#eef1ff] outline-none transition placeholder:text-[#9aa3bd]/70 focus:border-[#7c8cff] focus:bg-[#eef1ff]/18 sm:px-4"
+                        onChange={(event) => setMessageText(event.target.value)}
+                        placeholder={
+                          editingMessage
+                            ? "Измени сообщение..."
+                            : replyTarget
+                              ? "Ответь на сообщение..."
+                              : "Напиши сообщение..."
+                        }
+                        type="text"
+                        value={messageText}
                       />
-                      <path
-                        d="M9 10h.01M15 10h.01M8.8 14.5c1.8 1.7 4.6 1.7 6.4 0"
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                      />
-                    </svg>
-                  </button>
+                      <button
+                        aria-label="Стикеры"
+                        className="grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#5561a8]/35 bg-[#eef1ff]/12 text-[#eef1ff] transition hover:bg-[#eef1ff]/18 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isUploadingAttachment}
+                        onClick={toggleStickerPicker}
+                        ref={stickerButtonRef}
+                        type="button"
+                      >
+                        <svg
+                          aria-hidden="true"
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            cx="12"
+                            cy="12"
+                            r="9"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          />
+                          <path
+                            d="M9 10h.01M15 10h.01M8.8 14.5c1.8 1.7 4.6 1.7 6.4 0"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                          />
+                        </svg>
+                      </button>
+                    </>
+                  )}
                   <button
-                    aria-label={isRecordingVoice ? "Остановить запись" : "Записать голосовое"}
+                    aria-label={isRecordingVoice ? "Отправить голосовое" : "Записать голосовое"}
                     className={`grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border text-[#eef1ff] transition disabled:cursor-not-allowed disabled:opacity-50 ${
                       isRecordingVoice
-                        ? "border-red-400/60 bg-red-500/25"
+                        ? "border-red-400/60 bg-red-500/85 text-white hover:bg-red-400"
                         : "border-[#5561a8]/35 bg-[#eef1ff]/12 hover:bg-[#eef1ff]/18"
                     }`}
                     disabled={isUploadingAttachment}
@@ -3536,7 +3622,14 @@ export default function Home() {
                     type="button"
                   >
                     {isRecordingVoice ? (
-                      <span className="h-3.5 w-3.5 rounded-sm bg-red-300" />
+                      <svg
+                        aria-hidden="true"
+                        className="h-5 w-5"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M5 12 19 4l-3.8 16-3.6-6.1L5 12Z" />
+                      </svg>
                     ) : (
                       <svg
                         aria-hidden="true"
@@ -3561,6 +3654,18 @@ export default function Home() {
                       </svg>
                     )}
                   </button>
+                  <style jsx>{`
+                    @keyframes voice-wave {
+                      0%,
+                      100% {
+                        transform: scaleY(0.45);
+                      }
+
+                      50% {
+                        transform: scaleY(1);
+                      }
+                    }
+                  `}</style>
                 </form>
 
                 {replyTarget || editingMessage ? (
