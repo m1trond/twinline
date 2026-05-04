@@ -1799,6 +1799,13 @@ export default function Home() {
     setErrorMessage("");
   }
 
+  function requestUnpinPinnedMessage(message: MessageRow) {
+    setMessagePinTarget(message);
+    setShouldPinForBoth(sharedPinnedMessage?.id === message.id);
+    setMessageContextMenu(null);
+    setErrorMessage("");
+  }
+
   async function confirmPinnedMessage() {
     if (!messagePinTarget) {
       return;
@@ -3250,26 +3257,45 @@ export default function Home() {
                   </div>
                 </div>
                 {activePinnedMessage ? (
-                  <button
-                    className="mb-3 flex shrink-0 items-center gap-3 rounded-2xl border border-[#5561a8]/45 bg-[#11131c]/82 px-4 py-3 text-left shadow-[0_14px_45px_rgba(0,0,0,0.22)] backdrop-blur-md"
-                    onClick={() => setPinnedMessage(null)}
-                    type="button"
-                  >
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#7c8cff]/18 text-[#9aa7ff]">
-                      <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                        <path d="m14.5 4.5 5 5-3.4 1.1-4.8 4.8.7 3.6-7-7 3.6.7 4.8-4.8 1.1-3.4Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                        <path d="m9.5 14.5-4 4" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+                  <article className="mb-3 flex shrink-0 items-center gap-3 rounded-2xl border border-[#5561a8]/45 bg-[#11131c]/82 px-4 py-3 text-left shadow-[0_14px_45px_rgba(0,0,0,0.22)] backdrop-blur-md">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#7c8cff]/18 text-[#9aa7ff]">
+                      <svg
+                        aria-hidden="true"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="m14.5 4.5 5 5-3.4 1.1-4.8 4.8.7 3.6-7-7 3.6.7 4.8-4.8 1.1-3.4Z"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                        />
+                        <path
+                          d="m9.5 14.5-4 4"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeWidth="2"
+                        />
                       </svg>
-                    </span>
-                    <span className="min-w-0">
+                    </div>
+                    <div className="min-w-0 flex-1">
                       <span className="block text-xs font-black uppercase tracking-[0.16em] text-[#a8b2ff]">
                         Закреплено
                       </span>
                       <span className="mt-0.5 block truncate text-sm font-semibold text-[#eef1ff]">
                         {getReadableMessageText(activePinnedMessage.text)}
                       </span>
-                    </span>
-                  </button>
+                    </div>
+                    <button
+                      className="min-h-10 shrink-0 rounded-xl border border-[#5561a8]/35 px-3 text-xs font-bold text-[#eef1ff] transition hover:bg-white/10 sm:px-4"
+                      onClick={() => requestUnpinPinnedMessage(activePinnedMessage)}
+                      type="button"
+                    >
+                      Открепить
+                    </button>
+                  </article>
                 ) : null}
 
                 <div className="scrollbar-hidden flex min-h-0 flex-col gap-3 overflow-y-auto rounded-2xl border border-[#5561a8]/45 bg-[#0a0c13]/82 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-4">
@@ -3921,7 +3947,7 @@ export default function Home() {
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-[#9aa3bd]">
                   {activePinnedMessage?.id === messagePinTarget.id
-                    ? "Выберите, открепить сообщение только у себя или убрать общее закрепление у обоих участников переписки."
+                    ? "Вы желаете открепить это сообщение? Если закрепление общее, можно убрать его сразу у обоих участников переписки."
                     : "Выберите, закрепить сообщение только у себя или сделать его общим для обоих участников переписки."}
                 </p>
               </div>
