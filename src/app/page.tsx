@@ -451,7 +451,7 @@ function VoiceMessage({ src }: { src: string }) {
   }
 
   return (
-    <div className="min-w-[min(320px,70vw)] rounded-2xl bg-black/12 px-3 py-2">
+    <div className="min-w-[min(320px,70vw)] px-1 py-0.5">
       <audio
         onEnded={() => setIsPlaying(false)}
         onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)}
