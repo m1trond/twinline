@@ -2819,14 +2819,14 @@ export default function Home() {
         className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(227,244,244,0.45)_1px,transparent_1px),linear-gradient(90deg,rgba(227,244,244,0.45)_1px,transparent_1px)] [background-size:44px_44px]"
       />
       <div className="relative h-full overflow-hidden bg-[#090b12]/35">
-        <div className="flex h-full w-full flex-col overflow-hidden px-2 py-2 sm:px-4 sm:py-4 lg:px-5 xl:px-7">
-          <header className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-2xl border border-[#5561a8]/45 bg-[#11131c]/82 px-3 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mb-4 sm:px-4">
+        <div className="flex h-full w-full flex-col overflow-hidden px-2 py-2 sm:px-3 sm:py-3 lg:px-4 xl:px-5">
+          <header className="mb-2 flex shrink-0 items-center justify-between gap-3 rounded-2xl border border-[#5561a8]/45 bg-[#11131c]/82 px-3 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-4">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#7c8cff] shadow-[0_8px_24px_rgba(124,140,255,0.24)] sm:h-11 sm:w-11">
-                <span className="text-xl font-black text-[#07080d]">T</span>
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#7c8cff] shadow-[0_8px_24px_rgba(124,140,255,0.24)] sm:h-10 sm:w-10">
+                <span className="text-lg font-black text-[#07080d]">T</span>
               </div>
               <div className="min-w-0">
-                <h1 className="text-xl font-semibold tracking-normal sm:text-2xl">
+                <h1 className="text-lg font-semibold tracking-normal sm:text-xl">
                   Twinline
                 </h1>
                 <p className="max-w-[210px] truncate text-xs font-medium text-[#9aa3bd] sm:max-w-none sm:text-sm">
@@ -2853,9 +2853,9 @@ export default function Home() {
             ))}
           </nav>
 
-          <section className="grid min-h-0 flex-1 gap-3 overflow-hidden pb-2 sm:gap-4 sm:pb-4 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
-            <aside className="hidden min-h-0 flex-col rounded-2xl border border-[#5561a8]/45 bg-[#11131c]/78 p-4 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:flex">
-              <div className="mb-5">
+          <section className="grid min-h-0 flex-1 gap-2 overflow-hidden pb-1 sm:gap-2 lg:grid-cols-[250px_minmax(0,1fr)] xl:grid-cols-[270px_minmax(0,1fr)]">
+            <aside className="hidden min-h-0 flex-col rounded-2xl border border-[#5561a8]/45 bg-[#11131c]/78 p-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:flex">
+              <div className="mb-4">
                 <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#a8b2ff]">
                   Меню
                 </p>
@@ -2864,7 +2864,7 @@ export default function Home() {
               <nav className="grid gap-2">
                 {navItems.map((item) => (
                   <button
-                    className={`rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
+                    className={`rounded-xl px-4 py-2.5 text-left text-sm font-semibold transition ${
                       activeView === item.view
                         ? "bg-[#7c8cff] text-[#07080d]"
                         : "text-[#eef1ff] opacity-80 hover:bg-white/10 hover:opacity-100"
@@ -2878,7 +2878,7 @@ export default function Home() {
                 ))}
               </nav>
               <button
-                className={`mt-auto rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
+                className={`mt-auto rounded-xl px-4 py-2.5 text-left text-sm font-semibold transition ${
                   activeView === settingsNavItem.view
                     ? "bg-[#7c8cff] text-[#07080d]"
                     : "border border-[#5561a8]/25 text-[#eef1ff] opacity-80 hover:bg-white/10 hover:opacity-100"
@@ -3178,10 +3178,10 @@ export default function Home() {
               </div>
             ) : (
               <div className="grid min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#5561a8]/45 bg-[#11131c]/78 px-3 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mb-4 sm:px-4">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#5561a8]/45 bg-[#11131c]/78 px-3 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-4">
                   <div className="flex min-w-0 items-center gap-3">
                     <button
-                      className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-[#7c8cff] text-base font-semibold text-[#07080d] transition hover:scale-105"
+                      className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#7c8cff] text-base font-semibold text-[#07080d] transition hover:scale-105"
                       onClick={() => {
                         setViewedProfile(
                           friendProfile ?? {
@@ -3205,10 +3205,10 @@ export default function Home() {
                       )}
                     </button>
                     <div className="min-w-0">
-                      <h2 className="truncate text-base font-semibold">
+                      <h2 className="truncate text-sm font-semibold sm:text-base">
                         {friendProfile?.name ?? "Друг"}
                       </h2>
-                      <p className="truncate text-sm text-[#9aa3bd]">
+                      <p className="truncate text-xs text-[#9aa3bd] sm:text-sm">
                         Приватный профиль собеседника
                       </p>
                     </div>
@@ -3241,7 +3241,7 @@ export default function Home() {
                       )}
                     </button>
                     <button
-                      className="min-h-10 min-w-28 rounded-xl bg-[#7c8cff] px-4 text-xs font-bold text-[#07080d] transition hover:bg-[#9aa7ff] disabled:cursor-not-allowed disabled:bg-[#555d76]"
+                      className="min-h-9 min-w-28 rounded-xl bg-[#7c8cff] px-4 text-xs font-bold text-[#07080d] transition hover:bg-[#9aa7ff] disabled:cursor-not-allowed disabled:bg-[#555d76]"
                       disabled={!friendProfile?.userId || callStatus !== "idle"}
                       onClick={startCall}
                       type="button"
@@ -3444,7 +3444,7 @@ export default function Home() {
                 </div>
 
                 <form
-                  className="mt-3 flex gap-2 rounded-2xl border border-[#5561a8]/45 bg-[#11131c]/82 p-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mt-4"
+                  className="mt-2 flex gap-2 rounded-2xl border border-[#5561a8]/45 bg-[#11131c]/82 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md"
                   onSubmit={sendMessage}
                 >
                   <input
@@ -3456,7 +3456,7 @@ export default function Home() {
                   />
                   <button
                     aria-label="Прикрепить файл"
-                    className="grid min-h-12 w-12 shrink-0 place-items-center rounded-lg border border-[#5561a8]/35 bg-[#eef1ff]/12 text-[#eef1ff] transition hover:bg-[#eef1ff]/18 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#5561a8]/35 bg-[#eef1ff]/12 text-[#eef1ff] transition hover:bg-[#eef1ff]/18 disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={isUploadingAttachment || isRecordingVoice}
                     onClick={() => imageInputRef.current?.click()}
                     type="button"
@@ -3482,7 +3482,7 @@ export default function Home() {
                   </button>
                   <button
                     aria-label="Стикеры"
-                    className="grid min-h-12 w-12 shrink-0 place-items-center rounded-lg border border-[#5561a8]/35 bg-[#eef1ff]/12 text-[#eef1ff] transition hover:bg-[#eef1ff]/18 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#5561a8]/35 bg-[#eef1ff]/12 text-[#eef1ff] transition hover:bg-[#eef1ff]/18 disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={isUploadingAttachment || isRecordingVoice}
                     onClick={toggleStickerPicker}
                     ref={stickerButtonRef}
@@ -3512,7 +3512,7 @@ export default function Home() {
                   </button>
                   <button
                     aria-label={isRecordingVoice ? "Остановить запись" : "Записать голосовое"}
-                    className={`grid min-h-12 w-12 shrink-0 place-items-center rounded-lg border text-[#eef1ff] transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                    className={`grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border text-[#eef1ff] transition disabled:cursor-not-allowed disabled:opacity-50 ${
                       isRecordingVoice
                         ? "border-red-400/60 bg-red-500/25"
                         : "border-[#5561a8]/35 bg-[#eef1ff]/12 hover:bg-[#eef1ff]/18"
@@ -3549,7 +3549,7 @@ export default function Home() {
                   </button>
                   <input
                     aria-label="Текст сообщения"
-                    className="min-h-12 min-w-0 flex-1 rounded-lg border border-transparent bg-[#eef1ff]/12 px-3 text-base text-[#eef1ff] outline-none transition placeholder:text-[#9aa3bd]/70 focus:border-[#7c8cff] focus:bg-[#eef1ff]/18 sm:px-4"
+                    className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#eef1ff]/12 px-3 text-sm text-[#eef1ff] outline-none transition placeholder:text-[#9aa3bd]/70 focus:border-[#7c8cff] focus:bg-[#eef1ff]/18 sm:px-4"
                     onChange={(event) => setMessageText(event.target.value)}
                     placeholder={
                       editingMessage
@@ -3562,7 +3562,7 @@ export default function Home() {
                     value={messageText}
                   />
                   <button
-                    className="min-h-12 rounded-lg bg-[#7c8cff] px-3 text-sm font-semibold text-[#07080d] transition hover:bg-[#9aa7ff] disabled:cursor-not-allowed disabled:bg-[#555d76] sm:px-5"
+                    className="min-h-10 rounded-lg bg-[#7c8cff] px-3 text-sm font-semibold text-[#07080d] transition hover:bg-[#9aa7ff] disabled:cursor-not-allowed disabled:bg-[#555d76] sm:px-5"
                     disabled={!messageText.trim() || isUploadingAttachment || isRecordingVoice}
                     type="submit"
                   >
