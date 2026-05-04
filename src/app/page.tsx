@@ -418,6 +418,11 @@ function VoiceMessage({ src }: { src: string }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const progress = duration ? Math.min(1, currentTime / duration) : 0;
+  const waveBars = [
+    12, 18, 10, 24, 32, 22, 30, 16, 26, 20, 34, 28, 14, 24, 18, 30, 22, 16,
+    26, 20, 32, 18, 24, 14, 28, 22, 30, 18, 12, 20, 16, 24, 14, 18,
+  ];
 
   function togglePlayback() {
     const audio = audioRef.current;
@@ -446,7 +451,7 @@ function VoiceMessage({ src }: { src: string }) {
   }
 
   return (
-    <div className="min-w-[240px] rounded-2xl bg-black/12 p-3">
+    <div className="min-w-[min(320px,70vw)] rounded-2xl bg-black/12 px-3 py-2">
       <audio
         onEnded={() => setIsPlaying(false)}
         onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)}
@@ -457,34 +462,54 @@ function VoiceMessage({ src }: { src: string }) {
         ref={audioRef}
         src={src}
       />
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <p className="text-sm font-bold opacity-75">Голосовое</p>
-        <p className="text-xs font-semibold opacity-60">
-          {formatAudioTime(currentTime)} / {formatAudioTime(duration)}
-        </p>
-      </div>
       <div className="flex items-center gap-3">
         <button
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#07080d] text-[#eef1ff] transition hover:scale-105"
+          aria-label={isPlaying ? "Пауза" : "Воспроизвести голосовое"}
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#7c8cff] text-[#07080d] shadow-[0_10px_24px_rgba(0,0,0,0.22)] transition hover:scale-105"
           onClick={togglePlayback}
           type="button"
         >
           {isPlaying ? (
-            <span className="h-4 w-3 border-x-4 border-[#eef1ff]" />
+            <span className="h-4 w-3 border-x-4 border-[#07080d]" />
           ) : (
-            <span className="ml-0.5 h-0 w-0 border-y-[7px] border-l-[11px] border-y-transparent border-l-[#eef1ff]" />
+            <span className="ml-0.5 h-0 w-0 border-y-[7px] border-l-[11px] border-y-transparent border-l-[#07080d]" />
           )}
         </button>
-        <input
-          aria-label="Позиция голосового сообщения"
-          className="h-1.5 min-w-0 flex-1 cursor-pointer appearance-none rounded-full bg-[#07080d]/25 accent-[#07080d]"
-          max={duration || 0}
-          min="0"
-          onChange={seekAudio}
-          step="0.1"
-          type="range"
-          value={currentTime}
-        />
+        <div className="min-w-0 flex-1">
+          <div className="relative h-8">
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 flex items-center gap-[2px] overflow-hidden"
+            >
+              {waveBars.map((height, index) => {
+                const isPlayed = index / waveBars.length <= progress;
+
+                return (
+                  <span
+                    className={`w-[3px] rounded-full transition-colors ${
+                      isPlayed ? "bg-[#eef1ff]" : "bg-[#eef1ff]/38"
+                    }`}
+                    key={`${height}-${index}`}
+                    style={{ height }}
+                  />
+                );
+              })}
+            </div>
+            <input
+              aria-label="Позиция голосового сообщения"
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              max={duration || 0}
+              min="0"
+              onChange={seekAudio}
+              step="0.1"
+              type="range"
+              value={currentTime}
+            />
+          </div>
+          <p className="mt-0.5 text-xs font-semibold tabular-nums opacity-65">
+            {formatAudioTime(currentTime || duration)}
+          </p>
+        </div>
       </div>
     </div>
   );
