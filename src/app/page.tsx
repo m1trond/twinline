@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { flushSync } from "react-dom";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
@@ -404,6 +405,7 @@ export default function Home() {
   const recordingStreamRef = useRef<MediaStream | null>(null);
   const latestMessageCreatedAtRef = useRef<string | null>(null);
   const notificationsEnabledRef = useRef(false);
+  const isDeletingChatRef = useRef(false);
 
   const currentProfile = useMemo(() => {
     return profiles.find((profile) => profile.user_id === user?.id) ?? null;
@@ -696,13 +698,19 @@ export default function Home() {
     }
 
     async function syncAllMessages(showLoading = false) {
+      if (isDeletingChatRef.current) {
+        setIsLoadingMessages(false);
+        return;
+      }
+
       if (showLoading) {
         setIsLoadingMessages(true);
       }
 
       const { data, error } = await fetchMessages();
 
-      if (!isMounted) {
+      if (!isMounted || isDeletingChatRef.current) {
+        setIsLoadingMessages(false);
         return;
       }
 
@@ -717,6 +725,10 @@ export default function Home() {
     }
 
     async function syncNewMessages() {
+      if (isDeletingChatRef.current) {
+        return;
+      }
+
       const latestMessageCreatedAt = latestMessageCreatedAtRef.current;
 
       if (!latestMessageCreatedAt) {
@@ -726,7 +738,7 @@ export default function Home() {
 
       const { data, error } = await fetchMessagesAfter(latestMessageCreatedAt);
 
-      if (!isMounted) {
+      if (!isMounted || isDeletingChatRef.current) {
         return;
       }
 
@@ -764,6 +776,10 @@ export default function Home() {
         },
         (payload) => {
           const newMessage = payload.new as MessageRow;
+
+          if (isDeletingChatRef.current) {
+            return;
+          }
 
           setMessages((currentMessages) =>
             mergeMessages(currentMessages, [newMessage]),
@@ -1352,19 +1368,29 @@ export default function Home() {
 
     const previousMessages = messages;
 
-    setIsDeletingChat(true);
-    setMessages([]);
+    isDeletingChatRef.current = true;
+    latestMessageCreatedAtRef.current = null;
+    flushSync(() => {
+      setIsDeletingChat(true);
+      setMessages([]);
+    });
 
     const { error } = await supabase.from("messages").delete().gte("id", 0);
 
     if (error) {
-      setMessages(previousMessages);
-      setIsDeletingChat(false);
+      isDeletingChatRef.current = false;
+      flushSync(() => {
+        setMessages(previousMessages);
+        setIsDeletingChat(false);
+      });
       setErrorMessage("Не получилось удалить чат. Возможно, нужно разрешить удаление в Supabase.");
       return;
     }
 
+    latestMessageCreatedAtRef.current = null;
+    setMessages([]);
     setIsDeletingChat(false);
+    isDeletingChatRef.current = false;
     setErrorMessage("");
   }
 
