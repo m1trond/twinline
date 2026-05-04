@@ -2853,7 +2853,7 @@ export default function Home() {
                   <aside
                     className={`fixed z-40 cursor-move touch-none rounded-3xl border border-[#123236]/70 bg-[#071216]/96 text-center shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-xl ${
                       isCallPanelCollapsed
-                        ? "w-[min(260px,calc(100vw-24px))] p-3"
+                        ? "w-[min(286px,calc(100vw-24px))] border-[#2faea4]/35 bg-[#081418]/94 p-2.5 shadow-[0_18px_55px_rgba(0,0,0,0.42)]"
                         : "w-[min(350px,calc(100vw-24px))] p-4 sm:p-5"
                     }`}
                     onPointerDown={startCallPanelDrag}
@@ -2866,7 +2866,11 @@ export default function Home() {
                   >
                     <button
                       aria-label={isCallPanelCollapsed ? "Развернуть звонок" : "Свернуть звонок"}
-                      className="absolute right-3 top-3 grid h-8 w-8 cursor-pointer place-items-center rounded-full bg-white/[0.06] text-[#e3f4f4] transition hover:bg-white/12"
+                      className={`absolute grid cursor-pointer place-items-center rounded-full text-[#e3f4f4] transition ${
+                        isCallPanelCollapsed
+                          ? "right-12 top-1/2 h-9 w-9 -translate-y-1/2 bg-white/[0.06] text-[#8fb7bb] hover:bg-white/12 hover:text-[#e3f4f4]"
+                          : "right-3 top-3 h-8 w-8 bg-white/[0.06] hover:bg-white/12"
+                      }`}
                       onClick={(event) => {
                         event.stopPropagation();
                         setIsCallPanelCollapsed((isCollapsed) => !isCollapsed);
@@ -2900,8 +2904,8 @@ export default function Home() {
                     </button>
 
                     {isCallPanelCollapsed ? (
-                      <div className="flex items-center gap-3 pr-8 text-left">
-                        <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-[#d7dddd] text-lg font-black text-[#071216]">
+                      <div className="flex items-center gap-3 pr-[84px] text-left">
+                        <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-[#d7dddd] text-lg font-black text-[#071216] shadow-[0_8px_22px_rgba(0,0,0,0.32)] ring-2 ring-[#37c6b8]/25">
                           {callPanelProfile.avatarUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
@@ -2914,7 +2918,7 @@ export default function Home() {
                           )}
                         </div>
                         <button
-                          className="min-w-0 flex-1 cursor-pointer text-left"
+                          className="min-w-0 flex-1 cursor-pointer rounded-2xl py-1 text-left"
                           onClick={() => setIsCallPanelCollapsed(false)}
                           onPointerDown={(event) => event.stopPropagation()}
                           type="button"
@@ -2922,7 +2926,8 @@ export default function Home() {
                           <p className="truncate text-sm font-bold text-[#e3f4f4]">
                             {callPanelProfile.name}
                           </p>
-                          <p className="mt-0.5 truncate text-xs font-semibold text-[#8fb7bb]">
+                          <p className="mt-1 flex items-center gap-1.5 truncate text-xs font-semibold text-[#8fb7bb]">
+                            <span className="h-1.5 w-1.5 rounded-full bg-[#37c6b8] shadow-[0_0_10px_rgba(55,198,184,0.75)]" />
                             {callStatus === "connected"
                               ? formatCallDuration(callDuration)
                               : callStatusText || "00:00"}
@@ -2930,7 +2935,7 @@ export default function Home() {
                         </button>
                         <button
                           aria-label="Завершить звонок"
-                          className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full bg-red-500 text-white transition hover:bg-red-400"
+                          className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 cursor-pointer place-items-center rounded-full bg-red-500 text-white shadow-[0_10px_24px_rgba(239,68,68,0.32)] transition hover:bg-red-400"
                           onClick={() => closeCall(true)}
                           onPointerDown={(event) => event.stopPropagation()}
                           type="button"
