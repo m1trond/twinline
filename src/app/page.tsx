@@ -2875,6 +2875,11 @@ export default function Home() {
                               ? "rounded-br-md bg-[#2faea4] text-[#031012]"
                               : "rounded-bl-md bg-[#eaf6f6] text-[#071316]"
                           }`}
+                          onContextMenu={
+                            isMine && !hasAttachment
+                              ? (event) => openMessageContextMenu(event, message)
+                              : undefined
+                          }
                         >
                           <p className={`${hasAttachment ? "mb-1.5 px-1" : "mb-0.5"} text-[11px] font-bold leading-4 opacity-55`}>
                             {messageAuthor}
@@ -2942,9 +2947,6 @@ export default function Home() {
                         ) : (
                             <p
                               className="whitespace-pre-wrap break-words text-[15px] leading-6"
-                              onContextMenu={(event) =>
-                                openMessageContextMenu(event, message)
-                              }
                             >
                               {message.text}
                             </p>
