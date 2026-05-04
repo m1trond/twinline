@@ -3480,6 +3480,20 @@ export default function Home() {
                       </svg>
                     )}
                   </button>
+                  <input
+                    aria-label="Текст сообщения"
+                    className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#eef1ff]/12 px-3 text-sm text-[#eef1ff] outline-none transition placeholder:text-[#9aa3bd]/70 focus:border-[#7c8cff] focus:bg-[#eef1ff]/18 sm:px-4"
+                    onChange={(event) => setMessageText(event.target.value)}
+                    placeholder={
+                      editingMessage
+                        ? "Измени сообщение..."
+                        : replyTarget
+                          ? "Ответь на сообщение..."
+                          : "Напиши сообщение..."
+                    }
+                    type="text"
+                    value={messageText}
+                  />
                   <button
                     aria-label="Стикеры"
                     className="grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#5561a8]/35 bg-[#eef1ff]/12 text-[#eef1ff] transition hover:bg-[#eef1ff]/18 disabled:cursor-not-allowed disabled:opacity-50"
@@ -3546,27 +3560,6 @@ export default function Home() {
                         />
                       </svg>
                     )}
-                  </button>
-                  <input
-                    aria-label="Текст сообщения"
-                    className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#eef1ff]/12 px-3 text-sm text-[#eef1ff] outline-none transition placeholder:text-[#9aa3bd]/70 focus:border-[#7c8cff] focus:bg-[#eef1ff]/18 sm:px-4"
-                    onChange={(event) => setMessageText(event.target.value)}
-                    placeholder={
-                      editingMessage
-                        ? "Измени сообщение..."
-                        : replyTarget
-                          ? "Ответь на сообщение..."
-                          : "Напиши сообщение..."
-                    }
-                    type="text"
-                    value={messageText}
-                  />
-                  <button
-                    className="min-h-10 rounded-lg bg-[#7c8cff] px-3 text-sm font-semibold text-[#07080d] transition hover:bg-[#9aa7ff] disabled:cursor-not-allowed disabled:bg-[#555d76] sm:px-5"
-                    disabled={!messageText.trim() || isUploadingAttachment || isRecordingVoice}
-                    type="submit"
-                  >
-                    {editingMessage ? "Сохранить" : "Отправить"}
                   </button>
                 </form>
 
