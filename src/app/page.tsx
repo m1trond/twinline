@@ -3920,7 +3920,9 @@ export default function Home() {
                     : "Закрепление сообщения"}
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-[#9aa3bd]">
-                  Выберите, закрепить это сообщение только у себя или сделать его общим для обоих участников переписки.
+                  {activePinnedMessage?.id === messagePinTarget.id
+                    ? "Выберите, открепить сообщение только у себя или убрать общее закрепление у обоих участников переписки."
+                    : "Выберите, закрепить сообщение только у себя или сделать его общим для обоих участников переписки."}
                 </p>
               </div>
             </div>
@@ -3938,7 +3940,11 @@ export default function Home() {
                 onChange={(event) => setShouldPinForBoth(event.target.checked)}
                 type="checkbox"
               />
-              <span>Закрепить для двоих</span>
+              <span>
+                {activePinnedMessage?.id === messagePinTarget.id
+                  ? "Открепить у двоих"
+                  : "Закрепить для двоих"}
+              </span>
             </label>
 
             <div className="mt-5 grid gap-2 sm:grid-cols-2">
