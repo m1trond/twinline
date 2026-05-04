@@ -373,8 +373,6 @@ export default function Home() {
   const [isCallMicMuted, setIsCallMicMuted] = useState(false);
   const [callStartedAt, setCallStartedAt] = useState<number | null>(null);
   const [callDuration, setCallDuration] = useState(0);
-  const [isChatMenuOpen, setIsChatMenuOpen] = useState(false);
-  const [chatMenuPosition, setChatMenuPosition] = useState({ left: 0, top: 0 });
   const [isDeletingChat, setIsDeletingChat] = useState(false);
   const [isStickerPickerOpen, setIsStickerPickerOpen] = useState(false);
   const [stickerPickerPosition, setStickerPickerPosition] = useState({ left: 0, top: 0 });
@@ -389,7 +387,6 @@ export default function Home() {
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
-  const chatMenuButtonRef = useRef<HTMLButtonElement | null>(null);
   const stickerButtonRef = useRef<HTMLButtonElement | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const remoteCallStreamRef = useRef<MediaStream | null>(null);
@@ -1346,7 +1343,7 @@ export default function Home() {
     }
 
     const confirmed = window.confirm(
-      "Удалить весь чат для вас обоих? Сообщения пропадут из базы данных.",
+      "Вы точно хотите удалить переписку у обоих?",
     );
 
     if (!confirmed) {
@@ -1368,30 +1365,11 @@ export default function Home() {
     }
 
     setIsDeletingChat(false);
-    setIsChatMenuOpen(false);
     setErrorMessage("");
-  }
-
-  function toggleChatMenu() {
-    const button = chatMenuButtonRef.current;
-    setIsStickerPickerOpen(false);
-
-    if (button) {
-      const rect = button.getBoundingClientRect();
-      const menuWidth = Math.min(280, window.innerWidth - 32);
-
-      setChatMenuPosition({
-        left: Math.max(16, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 16)),
-        top: Math.min(rect.bottom + 10, window.innerHeight - 190),
-      });
-    }
-
-    setIsChatMenuOpen((isOpen) => !isOpen);
   }
 
   function toggleStickerPicker() {
     const button = stickerButtonRef.current;
-    setIsChatMenuOpen(false);
 
     if (button) {
       const rect = button.getBoundingClientRect();
@@ -2615,24 +2593,32 @@ export default function Home() {
                     </div>
                   </div>
                   <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
-                    <div className="relative">
-                      <button
-                        aria-expanded={isChatMenuOpen}
-                        aria-label="Настройки чата"
-                        className="grid min-h-10 w-10 place-items-center rounded-xl border border-[#2faea4]/35 bg-[#e3f4f4]/10 text-[#e3f4f4] transition hover:bg-white/10"
-                        onClick={toggleChatMenu}
-                        ref={chatMenuButtonRef}
-                        type="button"
-                      >
-                        <span className="grid gap-1">
-                          <span className="h-0.5 w-4 rounded-full bg-current" />
-                          <span className="h-0.5 w-4 rounded-full bg-current" />
-                          <span className="h-0.5 w-4 rounded-full bg-current" />
-                        </span>
-                      </button>
-
-                    </div>
-
+                    <button
+                      aria-label="Удалить переписку"
+                      className="grid min-h-10 w-10 place-items-center rounded-xl border border-red-400/45 bg-red-500/15 text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-55"
+                      disabled={isDeletingChat}
+                      onClick={deleteChat}
+                      type="button"
+                    >
+                      {isDeletingChat ? (
+                        <span className="h-4 w-4 rounded-full border-2 border-red-100 border-t-transparent" />
+                      ) : (
+                        <svg
+                          aria-hidden="true"
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                          />
+                        </svg>
+                      )}
+                    </button>
                     <button
                       className="min-h-10 min-w-28 rounded-xl bg-[#37c6b8] px-4 text-xs font-bold text-[#041012] transition hover:bg-[#65d8cc] disabled:cursor-not-allowed disabled:bg-[#52666a]"
                       disabled={!friendProfile?.userId || callStatus !== "idle"}
@@ -3028,61 +3014,6 @@ export default function Home() {
             src={selectedImageUrl}
           />
         </button>
-      ) : null}
-      {isChatMenuOpen ? (
-        <>
-          <button
-            aria-label="Закрыть настройки чата"
-            className="fixed inset-0 z-[70] cursor-default bg-transparent"
-            onClick={() => setIsChatMenuOpen(false)}
-            type="button"
-          />
-          <div
-            className="fixed z-[80] w-[min(280px,calc(100vw-32px))] rounded-2xl border border-[#2faea4]/45 bg-[#071216]/98 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.58)] backdrop-blur-xl"
-            onClick={(event) => event.stopPropagation()}
-            onPointerDown={(event) => event.stopPropagation()}
-            style={{
-              left: chatMenuPosition.left,
-              top: chatMenuPosition.top,
-            }}
-          >
-            <button
-              className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl bg-[#e3f4f4]/8 px-3 text-left transition hover:bg-white/10"
-              onClick={toggleNotifications}
-              type="button"
-            >
-              <span>
-                <span className="block text-sm font-bold text-[#e3f4f4]">
-                  Уведомления
-                </span>
-                <span className="mt-0.5 block text-xs text-[#8fb7bb]">
-                  Сообщения в браузере
-                </span>
-              </span>
-              <span
-                className={`flex h-6 w-11 shrink-0 items-center rounded-full p-1 transition ${
-                  areNotificationsEnabled
-                    ? "justify-end bg-[#37c6b8]"
-                    : "justify-start bg-[#e3f4f4]/18"
-                }`}
-              >
-                <span className="h-4 w-4 rounded-full bg-[#e3f4f4]" />
-              </span>
-            </button>
-
-            <button
-              className="mt-2 min-h-12 w-full rounded-xl border border-red-400/35 bg-red-500/10 px-4 text-left text-sm font-bold text-red-100 transition hover:bg-red-500/18 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isDeletingChat}
-              onClick={(event) => {
-                event.stopPropagation();
-                deleteChat();
-              }}
-              type="button"
-            >
-              {isDeletingChat ? "Удаляю..." : "Удалить чат"}
-            </button>
-          </div>
-        </>
       ) : null}
       {isStickerPickerOpen ? (
         <>
