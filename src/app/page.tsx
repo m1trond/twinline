@@ -3365,7 +3365,7 @@ export default function Home() {
                                 : ""
                           }`}
                           onContextMenu={
-                            isMine && !hasAttachment
+                            !hasAttachment
                               ? (event) => openMessageContextMenu(event, message)
                               : undefined
                           }
@@ -3855,6 +3855,11 @@ export default function Home() {
       ) : null}
       {messageContextMenu ? (
         <>
+          {(() => {
+            const isContextMessageMine = messageContextMenu.message.user_id === user?.id;
+
+            return (
+              <>
           <button
             aria-label="Закрыть меню сообщения"
             className="fixed inset-0 z-[80] cursor-default bg-transparent"
@@ -3884,16 +3889,18 @@ export default function Home() {
               </svg>
               Ответить
             </button>
-            <button
-              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
-              onClick={() => startEditingMessage(messageContextMenu.message)}
-              type="button"
-            >
-              <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
-                <path d="m16.5 3.5 4 4L8 20H4v-4L16.5 3.5Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-              </svg>
-              Изменить
-            </button>
+            {isContextMessageMine ? (
+              <button
+                className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+                onClick={() => startEditingMessage(messageContextMenu.message)}
+                type="button"
+              >
+                <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+                  <path d="m16.5 3.5 4 4L8 20H4v-4L16.5 3.5Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                </svg>
+                Изменить
+              </button>
+            ) : null}
             <button
               className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
               onClick={() => requestPinnedMessage(messageContextMenu.message)}
@@ -3916,16 +3923,18 @@ export default function Home() {
               </svg>
               Копировать текст
             </button>
-            <button
-              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium text-red-100 transition hover:bg-red-500/18"
-              onClick={() => requestMessageDelete(messageContextMenu.message)}
-              type="button"
-            >
-              <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
-                <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-              </svg>
-              Удалить
-            </button>
+            {isContextMessageMine ? (
+              <button
+                className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium text-red-100 transition hover:bg-red-500/18"
+                onClick={() => requestMessageDelete(messageContextMenu.message)}
+                type="button"
+              >
+                <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+                  <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                </svg>
+                Удалить
+              </button>
+            ) : null}
             <button
               className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
               onClick={() => toggleSelectedMessage(messageContextMenu.message)}
@@ -3939,6 +3948,9 @@ export default function Home() {
                 : "Выделить"}
             </button>
           </div>
+              </>
+            );
+          })()}
         </>
       ) : null}
       {messagePinTarget ? (
