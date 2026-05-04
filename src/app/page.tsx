@@ -3,6 +3,7 @@
 import {
   ChangeEvent,
   FormEvent,
+  MouseEvent,
   useEffect,
   useMemo,
   useRef,
@@ -377,6 +378,11 @@ export default function Home() {
   const [isDeletingChat, setIsDeletingChat] = useState(false);
   const [isStickerPickerOpen, setIsStickerPickerOpen] = useState(false);
   const [stickerPickerPosition, setStickerPickerPosition] = useState({ left: 0, top: 0 });
+  const [messageContextMenu, setMessageContextMenu] = useState<{
+    left: number;
+    message: MessageRow;
+    top: number;
+  } | null>(null);
   const [areNotificationsEnabled, setAreNotificationsEnabled] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -524,6 +530,32 @@ export default function Home() {
       window.clearInterval(interval);
     };
   }, [callStartedAt, callStatus]);
+
+  useEffect(() => {
+    if (!messageContextMenu) {
+      return;
+    }
+
+    function closeMenu() {
+      setMessageContextMenu(null);
+    }
+
+    function closeMenuOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setMessageContextMenu(null);
+      }
+    }
+
+    window.addEventListener("scroll", closeMenu, true);
+    window.addEventListener("resize", closeMenu);
+    window.addEventListener("keydown", closeMenuOnEscape);
+
+    return () => {
+      window.removeEventListener("scroll", closeMenu, true);
+      window.removeEventListener("resize", closeMenu);
+      window.removeEventListener("keydown", closeMenuOnEscape);
+    };
+  }, [messageContextMenu]);
 
   useEffect(() => {
     return () => {
@@ -1410,6 +1442,49 @@ export default function Home() {
     setIsStickerPickerOpen((isOpen) => !isOpen);
   }
 
+  function openMessageContextMenu(
+    event: MouseEvent<HTMLElement>,
+    message: MessageRow,
+  ) {
+    if (!user || message.user_id !== user.id) {
+      return;
+    }
+
+    event.preventDefault();
+    setIsStickerPickerOpen(false);
+
+    const menuWidth = 220;
+    const menuHeight = 306;
+
+    setMessageContextMenu({
+      left: Math.max(
+        8,
+        Math.min(event.clientX, window.innerWidth - menuWidth - 8),
+      ),
+      message,
+      top: Math.max(
+        8,
+        Math.min(event.clientY, window.innerHeight - menuHeight - 8),
+      ),
+    });
+  }
+
+  async function copyMessageText(message: MessageRow) {
+    try {
+      await navigator.clipboard.writeText(message.text);
+      setErrorMessage("");
+    } catch {
+      setErrorMessage("Не получилось скопировать текст.");
+    }
+
+    setMessageContextMenu(null);
+  }
+
+  function showUnavailableContextAction() {
+    setErrorMessage("Эту функцию добавим позже.");
+    setMessageContextMenu(null);
+  }
+
   async function updateProfileName(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -2055,6 +2130,8 @@ export default function Home() {
   }
 
   async function deleteMessage(message: MessageRow) {
+    setMessageContextMenu(null);
+
     if (!user || message.user_id !== user.id) {
       setErrorMessage("Можно удалять только свои сообщения.");
       return;
@@ -2863,7 +2940,12 @@ export default function Home() {
                             <span className="text-6xl leading-none">{sticker}</span>
                           </div>
                         ) : (
-                            <p className="whitespace-pre-wrap break-words text-[15px] leading-6">
+                            <p
+                              className="whitespace-pre-wrap break-words text-[15px] leading-6"
+                              onContextMenu={(event) =>
+                                openMessageContextMenu(event, message)
+                              }
+                            >
                               {message.text}
                             </p>
                           )}
@@ -3040,6 +3122,103 @@ export default function Home() {
             src={selectedImageUrl}
           />
         </button>
+      ) : null}
+      {messageContextMenu ? (
+        <>
+          <button
+            aria-label="Закрыть меню сообщения"
+            className="fixed inset-0 z-[80] cursor-default bg-transparent"
+            onClick={() => setMessageContextMenu(null)}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              setMessageContextMenu(null);
+            }}
+            type="button"
+          />
+          <div
+            className="fixed z-[90] w-[220px] overflow-hidden rounded-lg border border-white/10 bg-[#131f2a] py-1.5 text-[#eef7fb] shadow-[0_18px_60px_rgba(0,0,0,0.55)]"
+            onClick={(event) => event.stopPropagation()}
+            onContextMenu={(event) => event.preventDefault()}
+            style={{
+              left: messageContextMenu.left,
+              top: messageContextMenu.top,
+            }}
+          >
+            <button
+              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+              onClick={showUnavailableContextAction}
+              type="button"
+            >
+              <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+                <path d="M9 14 4 9l5-5M4 9h9a7 7 0 0 1 7 7v3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+              </svg>
+              Ответить
+            </button>
+            <button
+              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+              onClick={showUnavailableContextAction}
+              type="button"
+            >
+              <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+                <path d="m16.5 3.5 4 4L8 20H4v-4L16.5 3.5Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+              </svg>
+              Изменить
+            </button>
+            <button
+              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+              onClick={showUnavailableContextAction}
+              type="button"
+            >
+              <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+                <path d="m14 4 6 6-4 1-4.5 4.5 1 4-8-8 4 1L13 8l1-4Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+              </svg>
+              Закрепить
+            </button>
+            <button
+              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+              onClick={() => copyMessageText(messageContextMenu.message)}
+              type="button"
+            >
+              <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+                <rect height="14" rx="2" stroke="currentColor" strokeWidth="2" width="12" x="8" y="8" />
+                <path d="M4 16V6a2 2 0 0 1 2-2h10" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+              </svg>
+              Копировать текст
+            </button>
+            <button
+              className="relative flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium text-[#b9c8ce] transition hover:bg-white/10"
+              onClick={showUnavailableContextAction}
+              type="button"
+            >
+              <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+                <path d="m14 5 7 7-7 7M21 12H3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+              </svg>
+              <span className="line-through decoration-red-500 decoration-2">
+                Переслать
+              </span>
+            </button>
+            <button
+              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium text-red-100 transition hover:bg-red-500/18"
+              onClick={() => deleteMessage(messageContextMenu.message)}
+              type="button"
+            >
+              <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+                <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+              </svg>
+              Удалить
+            </button>
+            <button
+              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+              onClick={showUnavailableContextAction}
+              type="button"
+            >
+              <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+                <path d="M9 12.5 11 14.5 15.5 9.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+              </svg>
+              Выделить
+            </button>
+          </div>
+        </>
       ) : null}
       {isStickerPickerOpen ? (
         <>
