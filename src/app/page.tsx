@@ -4,6 +4,7 @@ import {
   ChangeEvent,
   FormEvent,
   MouseEvent,
+  PointerEvent,
   useEffect,
   useMemo,
   useRef,
@@ -176,6 +177,23 @@ function getMessageSticker(text: string) {
   return text.startsWith(stickerMessagePrefix)
     ? text.slice(stickerMessagePrefix.length)
     : null;
+}
+
+function clampPanelPosition(
+  position: { left: number; top: number },
+  isCollapsed: boolean,
+) {
+  if (typeof window === "undefined") {
+    return position;
+  }
+
+  const panelWidth = isCollapsed ? 260 : 350;
+  const panelHeight = isCollapsed ? 92 : 310;
+
+  return {
+    left: Math.max(12, Math.min(position.left, window.innerWidth - panelWidth - 12)),
+    top: Math.max(12, Math.min(position.top, window.innerHeight - panelHeight - 12)),
+  };
 }
 
 function mergeMessages(currentMessages: MessageRow[], nextMessages: MessageRow[]) {
@@ -375,6 +393,8 @@ export default function Home() {
   const [isCallMicMuted, setIsCallMicMuted] = useState(false);
   const [callStartedAt, setCallStartedAt] = useState<number | null>(null);
   const [callDuration, setCallDuration] = useState(0);
+  const [isCallPanelCollapsed, setIsCallPanelCollapsed] = useState(false);
+  const [callPanelPosition, setCallPanelPosition] = useState({ left: 0, top: 0 });
   const [isDeletingChat, setIsDeletingChat] = useState(false);
   const [isStickerPickerOpen, setIsStickerPickerOpen] = useState(false);
   const [stickerPickerPosition, setStickerPickerPosition] = useState({ left: 0, top: 0 });
@@ -412,6 +432,13 @@ export default function Home() {
   const latestMessageCreatedAtRef = useRef<string | null>(null);
   const notificationsEnabledRef = useRef(false);
   const isDeletingChatRef = useRef(false);
+  const callPanelDragRef = useRef({
+    left: 0,
+    pointerId: 0,
+    startX: 0,
+    startY: 0,
+    top: 0,
+  });
 
   const currentProfile = useMemo(() => {
     return profiles.find((profile) => profile.user_id === user?.id) ?? null;
@@ -511,6 +538,58 @@ export default function Home() {
   useEffect(() => {
     notificationsEnabledRef.current = areNotificationsEnabled;
   }, [areNotificationsEnabled]);
+
+  useEffect(() => {
+    let frameId = 0;
+
+    if (callStatus === "idle") {
+      frameId = window.requestAnimationFrame(() => {
+        setIsCallPanelCollapsed(false);
+      });
+
+      return () => {
+        window.cancelAnimationFrame(frameId);
+      };
+    }
+
+    frameId = window.requestAnimationFrame(() => {
+      setCallPanelPosition((position) => {
+        if (position.left || position.top) {
+          return clampPanelPosition(position, isCallPanelCollapsed);
+        }
+
+        return clampPanelPosition(
+          {
+            left: window.innerWidth - 374,
+            top: window.innerHeight - 338,
+          },
+          isCallPanelCollapsed,
+        );
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [callStatus, isCallPanelCollapsed]);
+
+  useEffect(() => {
+    if (callStatus === "idle") {
+      return;
+    }
+
+    function keepCallPanelInsideScreen() {
+      setCallPanelPosition((position) =>
+        clampPanelPosition(position, isCallPanelCollapsed),
+      );
+    }
+
+    window.addEventListener("resize", keepCallPanelInsideScreen);
+
+    return () => {
+      window.removeEventListener("resize", keepCallPanelInsideScreen);
+    };
+  }, [callStatus, isCallPanelCollapsed]);
 
   useEffect(() => {
     if (callStatus === "idle") {
@@ -1483,6 +1562,42 @@ export default function Home() {
   function showUnavailableContextAction() {
     setErrorMessage("Эту функцию добавим позже.");
     setMessageContextMenu(null);
+  }
+
+  function startCallPanelDrag(event: PointerEvent<HTMLElement>) {
+    if (event.button !== 0) {
+      return;
+    }
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+    callPanelDragRef.current = {
+      left: callPanelPosition.left,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      top: callPanelPosition.top,
+    };
+  }
+
+  function dragCallPanel(event: PointerEvent<HTMLElement>) {
+    if (callPanelDragRef.current.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const nextPosition = {
+      left: callPanelDragRef.current.left + event.clientX - callPanelDragRef.current.startX,
+      top: callPanelDragRef.current.top + event.clientY - callPanelDragRef.current.startY,
+    };
+
+    setCallPanelPosition(clampPanelPosition(nextPosition, isCallPanelCollapsed));
+  }
+
+  function stopCallPanelDrag(event: PointerEvent<HTMLElement>) {
+    if (callPanelDragRef.current.pointerId !== event.pointerId) {
+      return;
+    }
+
+    callPanelDragRef.current.pointerId = 0;
   }
 
   async function updateProfileName(event: FormEvent<HTMLFormElement>) {
@@ -2735,105 +2850,202 @@ export default function Home() {
                 <audio autoPlay playsInline ref={remoteAudioRef} />
 
                 {callStatus !== "idle" ? (
-                  <aside className="fixed bottom-4 left-4 right-4 z-40 mx-auto w-[min(350px,calc(100vw-32px))] rounded-3xl border border-[#123236]/70 bg-[#071216]/96 p-5 text-center shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:bottom-8 sm:left-auto sm:right-9 sm:mx-0">
-                    <div className="mx-auto mb-4 grid h-24 w-24 place-items-center overflow-hidden rounded-full bg-[#d7dddd] text-4xl font-black text-[#071216]">
-                      {callPanelProfile.avatarUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          alt="Аватар звонка"
-                          className="h-full w-full object-cover"
-                          src={callPanelProfile.avatarUrl}
-                        />
-                      ) : (
-                        callPanelProfile.name[0]?.toUpperCase()
-                      )}
+                  <aside
+                    className={`fixed z-40 touch-none rounded-3xl border border-[#123236]/70 bg-[#071216]/96 text-center shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-xl ${
+                      isCallPanelCollapsed
+                        ? "w-[min(260px,calc(100vw-24px))] p-3"
+                        : "w-[min(350px,calc(100vw-24px))] p-4 sm:p-5"
+                    }`}
+                    style={{
+                      left: callPanelPosition.left,
+                      top: callPanelPosition.top,
+                    }}
+                  >
+                    <div
+                      className="mb-3 flex cursor-move select-none items-center justify-between gap-3 rounded-2xl bg-white/[0.03] px-2 py-1.5 text-[#8fb7bb]"
+                      onPointerDown={startCallPanelDrag}
+                      onPointerMove={dragCallPanel}
+                      onPointerUp={stopCallPanelDrag}
+                    >
+                      <span className="truncate text-xs font-bold uppercase tracking-[0.14em]">
+                        Звонок
+                      </span>
+                      <button
+                        aria-label={isCallPanelCollapsed ? "Развернуть звонок" : "Свернуть звонок"}
+                        className="grid h-7 w-7 place-items-center rounded-full text-[#e3f4f4] transition hover:bg-white/10"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setIsCallPanelCollapsed((isCollapsed) => !isCollapsed);
+                        }}
+                        type="button"
+                      >
+                        <svg
+                          aria-hidden="true"
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          {isCallPanelCollapsed ? (
+                            <path
+                              d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                            />
+                          ) : (
+                            <path
+                              d="M5 12h14"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeWidth="2"
+                            />
+                          )}
+                        </svg>
+                      </button>
                     </div>
 
-                    <p className="truncate text-lg font-semibold text-[#e3f4f4]">
-                      {callPanelProfile.name}
-                    </p>
-                    <p className="mt-1 text-sm font-medium text-[#8fb7bb]">
-                      {callStatus === "connected"
-                        ? formatCallDuration(callDuration)
-                        : callStatusText || "00:00"}
-                    </p>
+                    {isCallPanelCollapsed ? (
+                      <div className="flex items-center gap-3 text-left">
+                        <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-[#d7dddd] text-lg font-black text-[#071216]">
+                          {callPanelProfile.avatarUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              alt="Аватар звонка"
+                              className="h-full w-full object-cover"
+                              src={callPanelProfile.avatarUrl}
+                            />
+                          ) : (
+                            callPanelProfile.name[0]?.toUpperCase()
+                          )}
+                        </div>
+                        <button
+                          className="min-w-0 flex-1 text-left"
+                          onClick={() => setIsCallPanelCollapsed(false)}
+                          type="button"
+                        >
+                          <p className="truncate text-sm font-bold text-[#e3f4f4]">
+                            {callPanelProfile.name}
+                          </p>
+                          <p className="mt-0.5 truncate text-xs font-semibold text-[#8fb7bb]">
+                            {callStatus === "connected"
+                              ? formatCallDuration(callDuration)
+                              : callStatusText || "00:00"}
+                          </p>
+                        </button>
+                        <button
+                          aria-label="Завершить звонок"
+                          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-red-500 text-white transition hover:bg-red-400"
+                          onClick={() => closeCall(true)}
+                          type="button"
+                        >
+                          <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                            <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.7.6 2.5a2 2 0 0 1-.5 2.1L8 9.5a16 16 0 0 0 6.5 6.5l1.2-1.2a2 2 0 0 1 2.1-.5c.8.3 1.6.5 2.5.6A2 2 0 0 1 22 16.9Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="mx-auto mb-4 grid h-24 w-24 place-items-center overflow-hidden rounded-full bg-[#d7dddd] text-4xl font-black text-[#071216]">
+                          {callPanelProfile.avatarUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              alt="Аватар звонка"
+                              className="h-full w-full object-cover"
+                              src={callPanelProfile.avatarUrl}
+                            />
+                          ) : (
+                            callPanelProfile.name[0]?.toUpperCase()
+                          )}
+                        </div>
 
-                    <div className="mt-5 flex items-center justify-center gap-3">
-                      {callStatus === "incoming" ? (
-                        <>
-                          <button
-                            className="min-h-11 rounded-xl bg-[#37c6b8] px-5 text-sm font-bold text-[#041012] transition hover:bg-[#65d8cc]"
-                            onClick={acceptCall}
-                            type="button"
-                          >
-                            Принять
-                          </button>
-                          <button
-                            className="min-h-11 rounded-xl border border-red-400/50 bg-red-500/15 px-5 text-sm font-bold text-red-100 transition hover:bg-red-500/25"
-                            onClick={() => closeCall(true)}
-                            type="button"
-                          >
-                            Сбросить
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            aria-label={isCallMicMuted ? "Включить микрофон" : "Выключить микрофон"}
-                            className={`grid h-12 w-12 place-items-center rounded-full border transition ${
-                              isCallMicMuted
-                                ? "border-red-400/55 bg-red-500/20 text-red-100"
-                                : "border-[#2faea4]/45 bg-[#e3f4f4]/12 text-[#e3f4f4] hover:bg-white/10"
-                            }`}
-                            onClick={toggleCallMicrophone}
-                            type="button"
-                          >
-                            <svg
-                              aria-hidden="true"
-                              className="h-5 w-5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z"
-                                stroke="currentColor"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                              />
-                              <path
-                                d="M19 11a7 7 0 0 1-14 0M12 18v3M9 21h6"
-                                stroke="currentColor"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                              />
-                              {isCallMicMuted ? (
-                                <path
-                                  d="M4 4l16 16"
-                                  stroke="currentColor"
-                                  strokeLinecap="round"
-                                  strokeWidth="2"
-                                />
-                              ) : null}
-                            </svg>
-                          </button>
-                          <button
-                            className="min-h-12 rounded-full bg-red-500 px-5 text-sm font-bold text-white transition hover:bg-red-400"
-                            onClick={() => closeCall(true)}
-                            type="button"
-                          >
-                            Завершить
-                          </button>
-                        </>
-                      )}
-                    </div>
+                        <p className="truncate text-lg font-semibold text-[#e3f4f4]">
+                          {callPanelProfile.name}
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-[#8fb7bb]">
+                          {callStatus === "connected"
+                            ? formatCallDuration(callDuration)
+                            : callStatusText || "00:00"}
+                        </p>
 
-                    {callStatus !== "incoming" ? (
-                      <p className="mt-4 text-sm font-medium text-[#8fb7bb]">
-                        {isCallMicMuted ? "Микрофон выключен" : "Микрофон включен"}
-                      </p>
-                    ) : null}
+                        <div className="mt-5 flex items-center justify-center gap-3">
+                          {callStatus === "incoming" ? (
+                            <>
+                              <button
+                                className="min-h-11 rounded-xl bg-[#37c6b8] px-5 text-sm font-bold text-[#041012] transition hover:bg-[#65d8cc]"
+                                onClick={acceptCall}
+                                type="button"
+                              >
+                                Принять
+                              </button>
+                              <button
+                                className="min-h-11 rounded-xl border border-red-400/50 bg-red-500/15 px-5 text-sm font-bold text-red-100 transition hover:bg-red-500/25"
+                                onClick={() => closeCall(true)}
+                                type="button"
+                              >
+                                Сбросить
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                aria-label={isCallMicMuted ? "Включить микрофон" : "Выключить микрофон"}
+                                className={`grid h-12 w-12 place-items-center rounded-full border transition ${
+                                  isCallMicMuted
+                                    ? "border-red-400/55 bg-red-500/20 text-red-100"
+                                    : "border-[#2faea4]/45 bg-[#e3f4f4]/12 text-[#e3f4f4] hover:bg-white/10"
+                                }`}
+                                onClick={toggleCallMicrophone}
+                                type="button"
+                              >
+                                <svg
+                                  aria-hidden="true"
+                                  className="h-5 w-5"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z"
+                                    stroke="currentColor"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                  />
+                                  <path
+                                    d="M19 11a7 7 0 0 1-14 0M12 18v3M9 21h6"
+                                    stroke="currentColor"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                  />
+                                  {isCallMicMuted ? (
+                                    <path
+                                      d="M4 4l16 16"
+                                      stroke="currentColor"
+                                      strokeLinecap="round"
+                                      strokeWidth="2"
+                                    />
+                                  ) : null}
+                                </svg>
+                              </button>
+                              <button
+                                className="min-h-12 rounded-full bg-red-500 px-5 text-sm font-bold text-white transition hover:bg-red-400"
+                                onClick={() => closeCall(true)}
+                                type="button"
+                              >
+                                Завершить
+                              </button>
+                            </>
+                          )}
+                        </div>
+
+                        {callStatus !== "incoming" ? (
+                          <p className="mt-4 text-sm font-medium text-[#8fb7bb]">
+                            {isCallMicMuted ? "Микрофон выключен" : "Микрофон включен"}
+                          </p>
+                        ) : null}
+                      </>
+                    )}
                   </aside>
                 ) : null}
 
