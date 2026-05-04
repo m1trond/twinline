@@ -308,6 +308,23 @@ function clampPanelPosition(
   };
 }
 
+function getCenteredCallPanelPosition(isCollapsed: boolean) {
+  if (typeof window === "undefined") {
+    return { left: 0, top: 0 };
+  }
+
+  const panelWidth = isCollapsed ? 260 : 350;
+  const panelHeight = isCollapsed ? 92 : 310;
+
+  return clampPanelPosition(
+    {
+      left: (window.innerWidth - panelWidth) / 2,
+      top: (window.innerHeight - panelHeight) / 2,
+    },
+    isCollapsed,
+  );
+}
+
 function mergeMessages(currentMessages: MessageRow[], nextMessages: MessageRow[]) {
   const messagesById = new Map<number, MessageRow>();
 
@@ -747,10 +764,7 @@ export default function Home() {
         }
 
         return clampPanelPosition(
-          {
-            left: window.innerWidth - 374,
-            top: window.innerHeight - 338,
-          },
+          getCenteredCallPanelPosition(isCallPanelCollapsed),
           isCallPanelCollapsed,
         );
       });
@@ -865,6 +879,8 @@ export default function Home() {
         }
 
         callPartnerIdRef.current = signal.sender_id;
+        setIsCallPanelCollapsed(false);
+        setCallPanelPosition(getCenteredCallPanelPosition(false));
         setIncomingCall(signal);
         setCallStatus("incoming");
         return;
@@ -1342,12 +1358,6 @@ export default function Home() {
     }
   }
 
-  async function signOut() {
-    await closeCall(true);
-    await supabase.auth.signOut();
-    setActiveView("profile");
-  }
-
   async function sendCallSignal(
     receiverId: string,
     type: CallSignalType,
@@ -1497,6 +1507,8 @@ export default function Home() {
     try {
       setErrorMessage("");
       callStatusRef.current = "calling";
+      setIsCallPanelCollapsed(false);
+      setCallPanelPosition(getCenteredCallPanelPosition(false));
       setCallStatus("calling");
       setCallDuration(0);
       setCallStartedAt(null);
@@ -1533,6 +1545,8 @@ export default function Home() {
     try {
       setErrorMessage("");
       callStatusRef.current = "connecting";
+      setIsCallPanelCollapsed(false);
+      setCallPanelPosition(getCenteredCallPanelPosition(false));
       setCallStatus("connecting");
       setCallDuration(0);
       setCallStartedAt(null);
@@ -2820,15 +2834,6 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <button
-                className="rounded-xl border border-[#5561a8]/35 px-3 py-2 text-xs font-bold text-[#eef1ff] transition hover:bg-white/10 sm:text-sm"
-                onClick={signOut}
-                type="button"
-              >
-                Выйти
-              </button>
-            </div>
           </header>
 
           <nav className="scrollbar-hidden mb-3 flex shrink-0 gap-2 overflow-x-auto rounded-2xl border border-[#5561a8]/45 bg-[#11131c]/78 p-2 shadow-[0_14px_45px_rgba(0,0,0,0.24)] backdrop-blur-md lg:hidden">
@@ -2957,7 +2962,7 @@ export default function Home() {
                     </form>
                     <p className="mt-3 text-sm leading-6 text-[#9aa3bd]">
                       {isNameChangeAllowed
-                        ? "Имя можно менять один раз в месяц. Аватарку можно обновлять когда угодно."
+                        ? "Имя можно менять один раз в месяц."
                         : `Имя снова можно будет изменить ${nextNameChangeDate ?? "позже"}.`}
                     </p>
                   </section>
@@ -2974,16 +2979,6 @@ export default function Home() {
                     </p>
                   </section>
 
-                  <section className="rounded-2xl border border-[#5561a8]/35 bg-black/20 p-4 sm:col-span-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#a8b2ff]">
-                      О профиле
-                    </p>
-                    <p className="mt-3 max-w-2xl text-sm leading-6 text-[#eef1ff]">
-                      Теперь Twinline понимает, кто открыл сайт. Сообщения и
-                      файлы привязаны к твоему аккаунту, а удалять можно только
-                      свои сообщения.
-                    </p>
-                  </section>
                 </div>
               </div>
             ) : activeView === "gallery" ? (
@@ -3179,25 +3174,6 @@ export default function Home() {
                     </div>
                   </section>
 
-                  <section className="rounded-2xl border border-[#5561a8]/35 bg-black/20 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className="text-base font-semibold">
-                          Аккаунт
-                        </p>
-                        <p className="mt-1 text-sm leading-6 text-[#9aa3bd]">
-                          Ты вошёл как {user.email}.
-                        </p>
-                      </div>
-                      <button
-                        className="min-h-11 rounded-xl border border-[#5561a8]/35 px-4 text-sm font-bold text-[#eef1ff] transition hover:bg-white/10"
-                        onClick={signOut}
-                        type="button"
-                      >
-                        Выйти
-                      </button>
-                    </div>
-                  </section>
                 </div>
               </div>
             ) : (
