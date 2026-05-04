@@ -65,6 +65,11 @@ type ReplyMessagePayload = {
   text: string;
 };
 
+type PinMessagePayload = {
+  action: "pin" | "unpin";
+  messageId: number;
+};
+
 type ActiveView = "profile" | "messages" | "gallery" | "ideas" | "settings";
 type AuthMode = "sign-in" | "sign-up";
 type CallStatus = "idle" | "calling" | "incoming" | "connecting" | "connected";
@@ -86,6 +91,7 @@ const audioMessagePrefix = "audio::";
 const callMessagePrefix = "call::";
 const stickerMessagePrefix = "sticker::";
 const replyMessagePrefix = "reply::";
+const pinMessagePrefix = "pin::";
 const maxAttachmentSize = 50 * 1024 * 1024;
 const stickerOptions = ["😂", "❤️", "🔥", "🤝", "😎", "😭", "🥱", "😡", "🫡", "💀", "🥳", "🤯", "👍", "👎", "🍻", "✨"];
 
@@ -200,11 +206,41 @@ function getMessageReply(text: string): ReplyMessagePayload | null {
   }
 }
 
+function createPinMessageText(messageId: number, action: PinMessagePayload["action"]) {
+  return `${pinMessagePrefix}${JSON.stringify({ action, messageId })}`;
+}
+
+function getPinMessagePayload(text: string): PinMessagePayload | null {
+  if (!text.startsWith(pinMessagePrefix)) {
+    return null;
+  }
+
+  try {
+    const parsedPayload = JSON.parse(text.slice(pinMessagePrefix.length));
+
+    if (
+      parsedPayload &&
+      (parsedPayload.action === "pin" || parsedPayload.action === "unpin") &&
+      Number.isInteger(parsedPayload.messageId)
+    ) {
+      return parsedPayload;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 function getReadableMessageText(text: string) {
   const reply = getMessageReply(text);
 
   if (reply) {
     return reply.body;
+  }
+
+  if (getPinMessagePayload(text)) {
+    return "Служебное закрепление";
   }
 
   if (text.startsWith(imageMessagePrefix)) {
@@ -482,6 +518,8 @@ export default function Home() {
   const [replyTarget, setReplyTarget] = useState<MessageRow | null>(null);
   const [editingMessage, setEditingMessage] = useState<MessageRow | null>(null);
   const [pinnedMessage, setPinnedMessage] = useState<MessageRow | null>(null);
+  const [messagePinTarget, setMessagePinTarget] = useState<MessageRow | null>(null);
+  const [shouldPinForBoth, setShouldPinForBoth] = useState(false);
   const [selectedMessageIds, setSelectedMessageIds] = useState<number[]>([]);
   const [hiddenMessageIds, setHiddenMessageIds] = useState<number[]>([]);
   const [messageDeleteTarget, setMessageDeleteTarget] = useState<MessageRow | null>(null);
@@ -528,8 +566,32 @@ export default function Home() {
   const activeUserName = useMemo(() => {
     return currentProfile?.display_name ?? getDisplayName(user);
   }, [currentProfile?.display_name, user]);
+  const sharedPinnedMessage = useMemo(() => {
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      const pinPayload = getPinMessagePayload(messages[index].text);
+
+      if (!pinPayload) {
+        continue;
+      }
+
+      if (pinPayload.action === "unpin") {
+        return null;
+      }
+
+      return (
+        messages.find((message) => {
+          return message.id === pinPayload.messageId && !getPinMessagePayload(message.text);
+        }) ?? null
+      );
+    }
+
+    return null;
+  }, [messages]);
+  const activePinnedMessage = pinnedMessage ?? sharedPinnedMessage;
   const visibleMessages = useMemo(() => {
-    return messages.filter((message) => !hiddenMessageIds.includes(message.id));
+    return messages.filter((message) => {
+      return !hiddenMessageIds.includes(message.id) && !getPinMessagePayload(message.text);
+    });
   }, [hiddenMessageIds, messages]);
   const friendProfile = useMemo(() => {
     const profileFriend = profiles.find((profile) => {
@@ -1024,6 +1086,7 @@ export default function Home() {
 
           if (
             notificationsEnabledRef.current &&
+            !getPinMessagePayload(newMessage.text) &&
             newMessage.user_id !== signedInUser.id &&
             "Notification" in window &&
             Notification.permission === "granted"
@@ -1729,11 +1792,72 @@ export default function Home() {
     setErrorMessage("");
   }
 
-  function togglePinnedMessage(message: MessageRow) {
-    setPinnedMessage((currentPinnedMessage) =>
-      currentPinnedMessage?.id === message.id ? null : message,
-    );
+  function requestPinnedMessage(message: MessageRow) {
+    setMessagePinTarget(message);
+    setShouldPinForBoth(false);
     setMessageContextMenu(null);
+    setErrorMessage("");
+  }
+
+  async function confirmPinnedMessage() {
+    if (!messagePinTarget) {
+      return;
+    }
+
+    const isSharedPinned = sharedPinnedMessage?.id === messagePinTarget.id;
+    const isPinned = activePinnedMessage?.id === messagePinTarget.id;
+
+    if (!shouldPinForBoth) {
+      setPinnedMessage(isPinned && pinnedMessage?.id === messagePinTarget.id ? null : messagePinTarget);
+      setMessagePinTarget(null);
+      setErrorMessage("");
+      return;
+    }
+
+    if (!user) {
+      setErrorMessage("Сначала войди в аккаунт.");
+      return;
+    }
+
+    const action: PinMessagePayload["action"] = isSharedPinned ? "unpin" : "pin";
+    const optimisticMessage: MessageRow = {
+      id: -Date.now(),
+      author: activeUserName,
+      text: createPinMessageText(messagePinTarget.id, action),
+      created_at: new Date().toISOString(),
+      user_id: user.id,
+    };
+
+    setPinnedMessage(null);
+    setMessagePinTarget(null);
+    setMessages((currentMessages) =>
+      mergeMessages(currentMessages, [optimisticMessage]),
+    );
+
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        author: activeUserName,
+        text: optimisticMessage.text,
+        user_id: user.id,
+      })
+      .select("id, author, text, created_at, user_id")
+      .single();
+
+    if (error || !data) {
+      setMessages((currentMessages) =>
+        currentMessages.filter((message) => message.id !== optimisticMessage.id),
+      );
+      setErrorMessage("Не получилось сохранить закрепление для двоих.");
+      return;
+    }
+
+    setMessages((currentMessages) =>
+      mergeMessages(
+        currentMessages.filter((message) => message.id !== optimisticMessage.id),
+        [data],
+      ),
+    );
     setErrorMessage("");
   }
 
@@ -3125,7 +3249,7 @@ export default function Home() {
                     </button>
                   </div>
                 </div>
-                {pinnedMessage ? (
+                {activePinnedMessage ? (
                   <button
                     className="mb-3 flex shrink-0 items-center gap-3 rounded-2xl border border-[#5561a8]/45 bg-[#11131c]/82 px-4 py-3 text-left shadow-[0_14px_45px_rgba(0,0,0,0.22)] backdrop-blur-md"
                     onClick={() => setPinnedMessage(null)}
@@ -3142,7 +3266,7 @@ export default function Home() {
                         Закреплено
                       </span>
                       <span className="mt-0.5 block truncate text-sm font-semibold text-[#eef1ff]">
-                        {getReadableMessageText(pinnedMessage.text)}
+                        {getReadableMessageText(activePinnedMessage.text)}
                       </span>
                     </span>
                   </button>
@@ -3162,7 +3286,7 @@ export default function Home() {
                   {visibleMessages.map((message) => {
                     const isMine = message.user_id === user.id;
                     const isSelected = selectedMessageIds.includes(message.id);
-                    const isPinned = pinnedMessage?.id === message.id;
+                    const isPinned = activePinnedMessage?.id === message.id;
                     const messageAuthor =
                       profiles.find((profile) => profile.user_id === message.user_id)
                         ?.display_name ?? message.author;
@@ -3728,14 +3852,14 @@ export default function Home() {
             </button>
             <button
               className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
-              onClick={() => togglePinnedMessage(messageContextMenu.message)}
+              onClick={() => requestPinnedMessage(messageContextMenu.message)}
               type="button"
             >
               <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
                 <path d="m14.5 4.5 5 5-3.4 1.1-4.8 4.8.7 3.6-7-7 3.6.7 4.8-4.8 1.1-3.4Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                 <path d="m9.5 14.5-4 4" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
               </svg>
-              {pinnedMessage?.id === messageContextMenu.message.id ? "Открепить" : "Закрепить"}
+              {activePinnedMessage?.id === messageContextMenu.message.id ? "Открепить" : "Закрепить"}
             </button>
             <button
               className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
@@ -3771,6 +3895,69 @@ export default function Home() {
                 : "Выделить"}
             </button>
           </div>
+        </>
+      ) : null}
+      {messagePinTarget ? (
+        <>
+          <button
+            aria-label="Закрыть окно закрепления сообщения"
+            className="fixed inset-0 z-[95] bg-black/58 backdrop-blur-sm"
+            onClick={() => setMessagePinTarget(null)}
+            type="button"
+          />
+          <section className="fixed left-1/2 top-1/2 z-[96] w-[min(448px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-[#5561a8]/45 bg-[#11131c]/96 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.58)]">
+            <div className="mb-4 flex items-start gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#7c8cff]/18 text-[#a8b2ff]">
+                <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <path d="m14.5 4.5 5 5-3.4 1.1-4.8 4.8.7 3.6-7-7 3.6.7 4.8-4.8 1.1-3.4Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                  <path d="m9.5 14.5-4 4" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+                </svg>
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-lg font-bold text-[#eef1ff]">
+                  {activePinnedMessage?.id === messagePinTarget.id
+                    ? "Открепление сообщения"
+                    : "Закрепление сообщения"}
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-[#9aa3bd]">
+                  Выберите, закрепить это сообщение только у себя или сделать его общим для обоих участников переписки.
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-[#5561a8]/35 bg-black/20 p-3">
+              <p className="line-clamp-3 text-sm font-semibold text-[#eef1ff]">
+                {getReadableMessageText(messagePinTarget.text)}
+              </p>
+            </div>
+
+            <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-2xl border border-[#5561a8]/35 bg-[#eef1ff]/8 p-3 text-sm font-semibold text-[#eef1ff]">
+              <input
+                checked={shouldPinForBoth}
+                className="h-5 w-5 accent-[#7c8cff]"
+                onChange={(event) => setShouldPinForBoth(event.target.checked)}
+                type="checkbox"
+              />
+              <span>Закрепить для двоих</span>
+            </label>
+
+            <div className="mt-5 grid gap-2 sm:grid-cols-2">
+              <button
+                className="min-h-12 rounded-xl bg-[#7c8cff] px-4 text-sm font-bold text-[#07080d] transition hover:bg-[#9aa7ff]"
+                onClick={confirmPinnedMessage}
+                type="button"
+              >
+                {activePinnedMessage?.id === messagePinTarget.id ? "Открепить" : "Закрепить"}
+              </button>
+              <button
+                className="min-h-12 rounded-xl border border-[#5561a8]/35 px-4 text-sm font-bold text-[#eef1ff] transition hover:bg-white/10"
+                onClick={() => setMessagePinTarget(null)}
+                type="button"
+              >
+                Отмена
+              </button>
+            </div>
+          </section>
         </>
       ) : null}
       {messageDeleteTarget ? (
