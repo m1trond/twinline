@@ -60,11 +60,6 @@ type ActiveView = "profile" | "messages" | "gallery" | "ideas" | "settings";
 type AuthMode = "sign-in" | "sign-up";
 type CallStatus = "idle" | "calling" | "incoming" | "connecting" | "connected";
 
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
-};
-
 const navItems: Array<{ label: string; view: ActiveView }> = [
   { label: "Профиль", view: "profile" },
   { label: "Сообщения", view: "messages" },
@@ -383,14 +378,6 @@ export default function Home() {
   const [isDeletingChat, setIsDeletingChat] = useState(false);
   const [isStickerPickerOpen, setIsStickerPickerOpen] = useState(false);
   const [stickerPickerPosition, setStickerPickerPosition] = useState({ left: 0, top: 0 });
-  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isAppInstalled, setIsAppInstalled] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-
-    return window.matchMedia("(display-mode: standalone)").matches;
-  });
   const [areNotificationsEnabled, setAreNotificationsEnabled] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -504,32 +491,6 @@ export default function Home() {
 
     return () => {
       subscription.unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {
-        setErrorMessage("Не получилось подготовить установку приложения.");
-      });
-    }
-
-    function handleBeforeInstallPrompt(event: Event) {
-      event.preventDefault();
-      setInstallPrompt(event as BeforeInstallPromptEvent);
-    }
-
-    function handleAppInstalled() {
-      setIsAppInstalled(true);
-      setInstallPrompt(null);
-    }
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    window.addEventListener("appinstalled", handleAppInstalled);
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-      window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);
 
@@ -1050,22 +1011,6 @@ export default function Home() {
     await closeCall(true);
     await supabase.auth.signOut();
     setActiveView("profile");
-  }
-
-  async function installApp() {
-    if (!installPrompt) {
-      setErrorMessage("Если кнопка установки не сработала, открой меню браузера и выбери «Установить приложение».");
-      return;
-    }
-
-    await installPrompt.prompt();
-    const choice = await installPrompt.userChoice;
-
-    if (choice.outcome === "accepted") {
-      setIsAppInstalled(true);
-    }
-
-    setInstallPrompt(null);
   }
 
   async function sendCallSignal(
@@ -2253,15 +2198,6 @@ export default function Home() {
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              {!isAppInstalled ? (
-                <button
-                  className="rounded-xl bg-[#37c6b8] px-3 py-2 text-xs font-bold text-[#041012] transition hover:bg-[#65d8cc] sm:text-sm"
-                  onClick={installApp}
-                  type="button"
-                >
-                  Установить
-                </button>
-              ) : null}
               <button
                 className="rounded-xl border border-[#2faea4]/35 px-3 py-2 text-xs font-bold text-[#e3f4f4] transition hover:bg-white/10 sm:text-sm"
                 onClick={signOut}
@@ -2616,27 +2552,6 @@ export default function Home() {
                         type="button"
                       >
                         <span className="h-6 w-6 rounded-full bg-[#e3f4f4]" />
-                      </button>
-                    </div>
-                  </section>
-
-                  <section className="rounded-2xl border border-[#2faea4]/35 bg-black/20 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className="text-base font-semibold">
-                          Приложение
-                        </p>
-                        <p className="mt-1 text-sm leading-6 text-[#8fb7bb]">
-                          Установи Twinline на телефон или ПК как отдельное приложение.
-                        </p>
-                      </div>
-                      <button
-                        className="min-h-11 rounded-xl bg-[#37c6b8] px-4 text-sm font-bold text-[#041012] transition hover:bg-[#65d8cc] disabled:cursor-not-allowed disabled:bg-[#52666a]"
-                        disabled={isAppInstalled}
-                        onClick={installApp}
-                        type="button"
-                      >
-                        {isAppInstalled ? "Установлено" : "Установить"}
                       </button>
                     </div>
                   </section>

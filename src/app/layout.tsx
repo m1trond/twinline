@@ -14,19 +14,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  applicationName: "Twinline",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Twinline",
-  },
   title: "Twinline",
   description: "Приватное пространство для двоих",
   icons: {
     icon: "/icons/twinline-icon.svg",
-    apple: "/icons/twinline-icon.svg",
   },
-  manifest: "/manifest.webmanifest",
 };
 
 export const viewport: Viewport = {

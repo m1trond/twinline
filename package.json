@@ -1,40 +1,14 @@
 {
   "name": "chat-for-two",
   "version": "0.1.0",
-  "description": "Twinline desktop app",
+  "description": "Twinline private website",
   "author": "m1trond",
   "private": true,
-  "main": "electron/main.mjs",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "desktop:dev": "electron .",
-    "desktop:dist": "electron-builder --win nsis"
-  },
-  "build": {
-    "appId": "app.twinline.desktop",
-    "productName": "Twinline",
-    "directories": {
-      "output": "dist"
-    },
-    "files": [
-      "electron/**/*",
-      "public/icons/**/*",
-      "package.json"
-    ],
-    "win": {
-      "target": "nsis",
-      "signAndEditExecutable": false
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "Twinline"
-    }
+    "lint": "eslint"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.1",
@@ -47,8 +21,6 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "electron": "^41.5.0",
-    "electron-builder": "^26.8.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
