@@ -2950,15 +2950,6 @@ export default function Home() {
                             </p>
                           )}
                           <div className={`${hasAttachment ? "mt-2 px-1" : "mt-1"} flex items-center justify-end gap-3`}>
-                            {isMine ? (
-                              <button
-                                className="text-[11px] font-semibold opacity-55 transition hover:opacity-90"
-                                onClick={() => deleteMessage(message)}
-                                type="button"
-                              >
-                                Удалить
-                              </button>
-                            ) : null}
                             <p
                               className={`text-right text-[11px] font-medium ${
                                 isMine ? "text-[#0b4643]" : "text-[#6d878a]"
@@ -3184,18 +3175,6 @@ export default function Home() {
                 <path d="M4 16V6a2 2 0 0 1 2-2h10" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
               </svg>
               Копировать текст
-            </button>
-            <button
-              className="relative flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium text-[#b9c8ce] transition hover:bg-white/10"
-              onClick={showUnavailableContextAction}
-              type="button"
-            >
-              <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
-                <path d="m14 5 7 7-7 7M21 12H3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-              </svg>
-              <span className="line-through decoration-red-500 decoration-2">
-                Переслать
-              </span>
             </button>
             <button
               className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium text-red-100 transition hover:bg-red-500/18"
