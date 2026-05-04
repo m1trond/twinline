@@ -3339,7 +3339,7 @@ export default function Home() {
                   </article>
                 ) : null}
 
-                <div className="scrollbar-hidden flex min-h-0 flex-col gap-3 overflow-y-auto rounded-2xl border border-[#5561a8]/45 bg-[#0a0c13]/82 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-4">
+                <div className="scrollbar-hidden flex min-h-0 flex-col overflow-y-auto rounded-2xl border border-[#5561a8]/45 bg-[#0a0c13]/82 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-4">
                   {isLoadingMessages ? (
                     <p className="text-sm text-[#9aa3bd]">Загружаю сообщения...</p>
                   ) : null}
@@ -3350,13 +3350,20 @@ export default function Home() {
                     </p>
                   ) : null}
 
-                  {visibleMessages.map((message) => {
+                  {visibleMessages.map((message, messageIndex) => {
                     const isMine = message.user_id === user.id;
+                    const previousMessage = visibleMessages[messageIndex - 1];
+                    const nextMessage = visibleMessages[messageIndex + 1];
+                    const isPreviousSameAuthor =
+                      previousMessage?.user_id === message.user_id;
+                    const isNextSameAuthor = nextMessage?.user_id === message.user_id;
                     const isSelected = selectedMessageIds.includes(message.id);
                     const isPinned = activePinnedMessage?.id === message.id;
-                    const messageAuthor =
-                      profiles.find((profile) => profile.user_id === message.user_id)
-                        ?.display_name ?? message.author;
+                    const messageProfile = profiles.find(
+                      (profile) => profile.user_id === message.user_id,
+                    );
+                    const messageAuthor = messageProfile?.display_name ?? message.author;
+                    const shouldShowFriendAvatar = !isMine && !isNextSameAuthor;
                     const reply = getMessageReply(message.text);
                     const displayText = reply?.body ?? message.text;
                     const imageUrl = getMessageImageUrl(displayText);
@@ -3370,16 +3377,50 @@ export default function Home() {
 
                     return (
                       <article
-                        className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+                        className={`flex items-end gap-2 ${
+                          isPreviousSameAuthor ? "mt-1" : "mt-3"
+                        } ${isMine ? "justify-end" : "justify-start"}`}
                         key={message.id}
                       >
+                        {!isMine ? (
+                          shouldShowFriendAvatar ? (
+                            <button
+                              className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#7c8cff] text-xs font-bold text-[#07080d] transition hover:scale-105"
+                              onClick={() =>
+                                setViewedProfile({
+                                  avatarUrl: messageProfile?.avatar_url ?? null,
+                                  name: messageAuthor,
+                                  userId: message.user_id,
+                                })
+                              }
+                              type="button"
+                            >
+                              {messageProfile?.avatar_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  alt="Аватар собеседника"
+                                  className="h-full w-full object-cover"
+                                  src={messageProfile.avatar_url}
+                                />
+                              ) : (
+                                messageAuthor[0]?.toUpperCase()
+                              )}
+                            </button>
+                          ) : (
+                            <span className="h-8 w-8 shrink-0" />
+                          )
+                        ) : null}
                         <div
-                          className={`max-w-[92%] rounded-[22px] shadow-[0_10px_30px_rgba(0,0,0,0.18)] sm:max-w-[72%] ${
+                          className={`max-w-[92%] rounded-[20px] shadow-[0_10px_30px_rgba(0,0,0,0.18)] sm:max-w-[72%] ${
                             hasAttachment ? "p-2" : "px-3.5 py-2.5"
                           } ${
                             isMine
-                              ? "rounded-br-md bg-[#5561a8] text-[#080a12]"
-                              : "rounded-bl-md bg-[#d9def0] text-[#0b0d13]"
+                              ? `bg-[#5561a8] text-[#080a12] ${
+                                  isPreviousSameAuthor ? "rounded-tr-lg" : ""
+                                } ${isNextSameAuthor ? "rounded-br-lg" : "rounded-br-md"}`
+                              : `bg-[#d9def0] text-[#0b0d13] ${
+                                  isPreviousSameAuthor ? "rounded-tl-lg" : ""
+                                } ${isNextSameAuthor ? "rounded-bl-lg" : "rounded-bl-md"}`
                           } ${
                             isSelected
                               ? "ring-2 ring-[#eef1ff]/80"
@@ -3389,9 +3430,11 @@ export default function Home() {
                           }`}
                           onContextMenu={(event) => openMessageContextMenu(event, message)}
                         >
-                          <p className={`${hasAttachment ? "mb-1.5 px-1" : "mb-0.5"} text-[11px] font-bold leading-4 opacity-55`}>
-                            {messageAuthor}
-                          </p>
+                          {!isMine && !isPreviousSameAuthor ? (
+                            <p className={`${hasAttachment ? "mb-1.5 px-1" : "mb-0.5"} text-[11px] font-bold leading-4 opacity-55`}>
+                              {messageAuthor}
+                            </p>
+                          ) : null}
                           {reply ? (
                             <div
                               className={`mb-2 rounded-xl border-l-4 px-3 py-2 text-left ${
