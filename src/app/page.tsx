@@ -2263,7 +2263,7 @@ export default function Home() {
         className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(227,244,244,0.45)_1px,transparent_1px),linear-gradient(90deg,rgba(227,244,244,0.45)_1px,transparent_1px)] [background-size:44px_44px]"
       />
       <div className="relative h-full overflow-hidden bg-[#061014]/35">
-        <div className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden px-3 py-3 sm:px-6 sm:py-4 lg:px-8">
+        <div className="flex h-full w-full flex-col overflow-hidden px-2 py-2 sm:px-4 sm:py-4 lg:px-5 xl:px-7">
           <header className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/82 px-3 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:mb-4 sm:px-4">
             <div className="flex min-w-0 items-center gap-3">
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#37c6b8] shadow-[0_8px_24px_rgba(47,174,164,0.24)] sm:h-11 sm:w-11">
@@ -2306,7 +2306,7 @@ export default function Home() {
             ))}
           </nav>
 
-          <section className="grid min-h-0 flex-1 gap-3 overflow-hidden pb-3 sm:gap-4 sm:pb-4 lg:grid-cols-[280px_1fr]">
+          <section className="grid min-h-0 flex-1 gap-3 overflow-hidden pb-2 sm:gap-4 sm:pb-4 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
             <aside className="hidden min-h-0 flex-col rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/78 p-4 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:flex">
               <div className="mb-5">
                 <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#5bbdb4]">
