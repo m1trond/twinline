@@ -59,6 +59,12 @@ type CallSignal = {
   created_at: string;
 };
 
+type ReplyMessagePayload = {
+  author: string;
+  body: string;
+  text: string;
+};
+
 type ActiveView = "profile" | "messages" | "gallery" | "ideas" | "settings";
 type AuthMode = "sign-in" | "sign-up";
 type CallStatus = "idle" | "calling" | "incoming" | "connecting" | "connected";
@@ -79,6 +85,7 @@ const videoMessagePrefix = "video::";
 const audioMessagePrefix = "audio::";
 const callMessagePrefix = "call::";
 const stickerMessagePrefix = "sticker::";
+const replyMessagePrefix = "reply::";
 const maxAttachmentSize = 50 * 1024 * 1024;
 const stickerOptions = ["😂", "❤️", "🔥", "🤝", "😎", "😭", "🥱", "😡", "🫡", "💀", "🥳", "🤯", "👍", "👎", "🍻", "✨"];
 
@@ -177,6 +184,60 @@ function getMessageSticker(text: string) {
   return text.startsWith(stickerMessagePrefix)
     ? text.slice(stickerMessagePrefix.length)
     : null;
+}
+
+function getMessageReply(text: string): ReplyMessagePayload | null {
+  if (!text.startsWith(replyMessagePrefix)) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(
+      decodeURIComponent(text.slice(replyMessagePrefix.length)),
+    ) as ReplyMessagePayload;
+  } catch {
+    return null;
+  }
+}
+
+function getReadableMessageText(text: string) {
+  const reply = getMessageReply(text);
+
+  if (reply) {
+    return reply.body;
+  }
+
+  if (text.startsWith(imageMessagePrefix)) {
+    return "Изображение";
+  }
+
+  if (text.startsWith(videoMessagePrefix)) {
+    return "Видео";
+  }
+
+  if (text.startsWith(audioMessagePrefix)) {
+    return "Голосовое сообщение";
+  }
+
+  if (text.startsWith(callMessagePrefix)) {
+    return "Звонок";
+  }
+
+  if (text.startsWith(stickerMessagePrefix)) {
+    return getMessageSticker(text) ?? "Стикер";
+  }
+
+  return text;
+}
+
+function createReplyMessageText(replyTarget: MessageRow, body: string) {
+  return `${replyMessagePrefix}${encodeURIComponent(
+    JSON.stringify({
+      author: replyTarget.author,
+      body,
+      text: getReadableMessageText(replyTarget.text).slice(0, 140),
+    } satisfies ReplyMessagePayload),
+  )}`;
 }
 
 function clampPanelPosition(
@@ -403,6 +464,10 @@ export default function Home() {
     message: MessageRow;
     top: number;
   } | null>(null);
+  const [replyTarget, setReplyTarget] = useState<MessageRow | null>(null);
+  const [editingMessage, setEditingMessage] = useState<MessageRow | null>(null);
+  const [pinnedMessage, setPinnedMessage] = useState<MessageRow | null>(null);
+  const [selectedMessageIds, setSelectedMessageIds] = useState<number[]>([]);
   const [areNotificationsEnabled, setAreNotificationsEnabled] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -1550,7 +1615,7 @@ export default function Home() {
 
   async function copyMessageText(message: MessageRow) {
     try {
-      await navigator.clipboard.writeText(message.text);
+      await navigator.clipboard.writeText(getReadableMessageText(message.text));
       setErrorMessage("");
     } catch {
       setErrorMessage("Не получилось скопировать текст.");
@@ -1559,9 +1624,44 @@ export default function Home() {
     setMessageContextMenu(null);
   }
 
-  function showUnavailableContextAction() {
-    setErrorMessage("Эту функцию добавим позже.");
+  function replyToMessage(message: MessageRow) {
+    setReplyTarget(message);
+    setEditingMessage(null);
+    setMessageText("");
     setMessageContextMenu(null);
+    setErrorMessage("");
+  }
+
+  function startEditingMessage(message: MessageRow) {
+    if (!user || message.user_id !== user.id) {
+      setErrorMessage("Можно изменять только свои сообщения.");
+      setMessageContextMenu(null);
+      return;
+    }
+
+    setEditingMessage(message);
+    setReplyTarget(null);
+    setMessageText(getReadableMessageText(message.text));
+    setMessageContextMenu(null);
+    setErrorMessage("");
+  }
+
+  function togglePinnedMessage(message: MessageRow) {
+    setPinnedMessage((currentPinnedMessage) =>
+      currentPinnedMessage?.id === message.id ? null : message,
+    );
+    setMessageContextMenu(null);
+    setErrorMessage("");
+  }
+
+  function toggleSelectedMessage(message: MessageRow) {
+    setSelectedMessageIds((currentIds) =>
+      currentIds.includes(message.id)
+        ? currentIds.filter((id) => id !== message.id)
+        : [...currentIds, message.id],
+    );
+    setMessageContextMenu(null);
+    setErrorMessage("");
   }
 
   function startCallPanelDrag(event: PointerEvent<HTMLElement>) {
@@ -1762,15 +1862,59 @@ export default function Home() {
       return;
     }
 
+    if (editingMessage) {
+      const previousMessages = messages;
+      const updatedMessage: MessageRow = {
+        ...editingMessage,
+        text: trimmedText,
+      };
+
+      setMessages((currentMessages) =>
+        currentMessages.map((message) =>
+          message.id === editingMessage.id ? updatedMessage : message,
+        ),
+      );
+      setPinnedMessage((currentPinnedMessage) =>
+        currentPinnedMessage?.id === editingMessage.id ? updatedMessage : currentPinnedMessage,
+      );
+      setEditingMessage(null);
+      setMessageText("");
+
+      const { error } = await supabase
+        .from("messages")
+        .update({ text: trimmedText })
+        .eq("id", editingMessage.id)
+        .eq("user_id", user.id);
+
+      if (error) {
+        setMessages(previousMessages);
+        setPinnedMessage((currentPinnedMessage) =>
+          currentPinnedMessage?.id === editingMessage.id ? editingMessage : currentPinnedMessage,
+        );
+        setEditingMessage(editingMessage);
+        setMessageText(trimmedText);
+        setErrorMessage("Не получилось изменить сообщение.");
+      } else {
+        setErrorMessage("");
+      }
+
+      return;
+    }
+
+    const outgoingText = replyTarget
+      ? createReplyMessageText(replyTarget, trimmedText)
+      : trimmedText;
+
     const optimisticMessage: MessageRow = {
       id: -Date.now(),
       author: activeUserName,
-      text: trimmedText,
+      text: outgoingText,
       created_at: new Date().toISOString(),
       user_id: user.id,
     };
 
     setMessageText("");
+    setReplyTarget(null);
     setMessages((currentMessages) =>
       mergeMessages(currentMessages, [optimisticMessage]),
     );
@@ -1779,7 +1923,7 @@ export default function Home() {
       .from("messages")
       .insert({
         author: activeUserName,
-        text: trimmedText,
+        text: outgoingText,
         user_id: user.id,
       })
       .select("id, author, text, created_at, user_id")
@@ -1790,6 +1934,7 @@ export default function Home() {
         currentMessages.filter((message) => message.id !== optimisticMessage.id),
       );
       setMessageText(trimmedText);
+      setReplyTarget(replyTarget);
       setErrorMessage("Не получилось отправить сообщение.");
     } else {
       setMessages((currentMessages) => {
@@ -2270,6 +2415,12 @@ export default function Home() {
       setMessages(previousMessages);
       setErrorMessage("Не получилось удалить сообщение из базы.");
     } else {
+      setPinnedMessage((currentPinnedMessage) =>
+        currentPinnedMessage?.id === message.id ? null : currentPinnedMessage,
+      );
+      setSelectedMessageIds((currentIds) =>
+        currentIds.filter((id) => id !== message.id),
+      );
       setErrorMessage("");
     }
   }
@@ -3051,6 +3202,28 @@ export default function Home() {
                   </aside>
                 ) : null}
 
+                {pinnedMessage ? (
+                  <button
+                    className="mb-3 flex shrink-0 items-center gap-3 rounded-2xl border border-[#2faea4]/45 bg-[#0d171c]/82 px-4 py-3 text-left shadow-[0_14px_45px_rgba(0,0,0,0.22)] backdrop-blur-md"
+                    onClick={() => setPinnedMessage(null)}
+                    type="button"
+                  >
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#37c6b8]/18 text-[#65d8cc]">
+                      <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                        <path d="m14 4 6 6-4 1-4.5 4.5 1 4-8-8 4 1L13 8l1-4Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                      </svg>
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-xs font-black uppercase tracking-[0.16em] text-[#5bbdb4]">
+                        Закреплено
+                      </span>
+                      <span className="mt-0.5 block truncate text-sm font-semibold text-[#e3f4f4]">
+                        {getReadableMessageText(pinnedMessage.text)}
+                      </span>
+                    </span>
+                  </button>
+                ) : null}
+
                 <div className="scrollbar-hidden flex min-h-0 flex-col gap-3 overflow-y-auto rounded-2xl border border-[#2faea4]/45 bg-[#081216]/82 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-4">
                   {isLoadingMessages ? (
                     <p className="text-sm text-[#8fb7bb]">Загружаю сообщения...</p>
@@ -3064,14 +3237,18 @@ export default function Home() {
 
                   {messages.map((message) => {
                     const isMine = message.user_id === user.id;
+                    const isSelected = selectedMessageIds.includes(message.id);
+                    const isPinned = pinnedMessage?.id === message.id;
                     const messageAuthor =
                       profiles.find((profile) => profile.user_id === message.user_id)
                         ?.display_name ?? message.author;
-                    const imageUrl = getMessageImageUrl(message.text);
-                    const videoUrl = getMessageVideoUrl(message.text);
-                    const audioUrl = getMessageAudioUrl(message.text);
-                    const callDurationSeconds = getMessageCallDuration(message.text);
-                    const sticker = getMessageSticker(message.text);
+                    const reply = getMessageReply(message.text);
+                    const displayText = reply?.body ?? message.text;
+                    const imageUrl = getMessageImageUrl(displayText);
+                    const videoUrl = getMessageVideoUrl(displayText);
+                    const audioUrl = getMessageAudioUrl(displayText);
+                    const callDurationSeconds = getMessageCallDuration(displayText);
+                    const sticker = getMessageSticker(displayText);
                     const hasAttachment = Boolean(
                       imageUrl || videoUrl || audioUrl || callDurationSeconds !== null || sticker,
                     );
@@ -3088,6 +3265,12 @@ export default function Home() {
                             isMine
                               ? "rounded-br-md bg-[#2faea4] text-[#031012]"
                               : "rounded-bl-md bg-[#eaf6f6] text-[#071316]"
+                          } ${
+                            isSelected
+                              ? "ring-2 ring-[#e3f4f4]/80"
+                              : isPinned
+                                ? "ring-2 ring-[#f5c85b]/75"
+                                : ""
                           }`}
                           onContextMenu={
                             isMine && !hasAttachment
@@ -3098,6 +3281,22 @@ export default function Home() {
                           <p className={`${hasAttachment ? "mb-1.5 px-1" : "mb-0.5"} text-[11px] font-bold leading-4 opacity-55`}>
                             {messageAuthor}
                           </p>
+                          {reply ? (
+                            <div
+                              className={`mb-2 rounded-xl border-l-4 px-3 py-2 text-left ${
+                                isMine
+                                  ? "border-[#041012]/45 bg-[#041012]/12"
+                                  : "border-[#37c6b8]/55 bg-black/8"
+                              }`}
+                            >
+                              <p className="text-[11px] font-black uppercase tracking-[0.12em] opacity-55">
+                                {reply.author}
+                              </p>
+                              <p className="mt-0.5 line-clamp-2 text-xs font-semibold opacity-70">
+                                {reply.text}
+                              </p>
+                            </div>
+                          ) : null}
                           {imageUrl ? (
                             <button
                               className="block w-full overflow-hidden rounded-xl"
@@ -3162,7 +3361,7 @@ export default function Home() {
                             <p
                               className="whitespace-pre-wrap break-words text-[15px] leading-6"
                             >
-                              {message.text}
+                              {displayText}
                             </p>
                           )}
                           <div className={`${hasAttachment ? "mt-2 px-1" : "mt-1"} flex items-center justify-end gap-3`}>
@@ -3288,7 +3487,13 @@ export default function Home() {
                     aria-label="Текст сообщения"
                     className="min-h-12 min-w-0 flex-1 rounded-lg border border-transparent bg-[#e3f4f4]/12 px-3 text-base text-[#e3f4f4] outline-none transition placeholder:text-[#8fb7bb]/70 focus:border-[#37c6b8] focus:bg-[#e3f4f4]/18 sm:px-4"
                     onChange={(event) => setMessageText(event.target.value)}
-                    placeholder="Напиши сообщение..."
+                    placeholder={
+                      editingMessage
+                        ? "Измени сообщение..."
+                        : replyTarget
+                          ? "Ответь на сообщение..."
+                          : "Напиши сообщение..."
+                    }
                     type="text"
                     value={messageText}
                   />
@@ -3297,9 +3502,33 @@ export default function Home() {
                     disabled={!messageText.trim() || isUploadingAttachment || isRecordingVoice}
                     type="submit"
                   >
-                    Отправить
+                    {editingMessage ? "Сохранить" : "Отправить"}
                   </button>
                 </form>
+
+                {replyTarget || editingMessage ? (
+                  <div className="mt-2 flex items-center justify-between gap-3 rounded-2xl border border-[#2faea4]/35 bg-[#0d171c]/82 px-4 py-3 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md">
+                    <div className="min-w-0">
+                      <p className="text-xs font-black uppercase tracking-[0.14em] text-[#5bbdb4]">
+                        {editingMessage ? "Редактирование" : "Ответ"}
+                      </p>
+                      <p className="mt-1 truncate font-semibold text-[#e3f4f4]">
+                        {getReadableMessageText((editingMessage ?? replyTarget)?.text ?? "")}
+                      </p>
+                    </div>
+                    <button
+                      className="shrink-0 rounded-xl border border-[#2faea4]/35 px-3 py-2 text-xs font-bold text-[#e3f4f4] transition hover:bg-white/10"
+                      onClick={() => {
+                        setReplyTarget(null);
+                        setEditingMessage(null);
+                        setMessageText("");
+                      }}
+                      type="button"
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                ) : null}
 
                 {errorMessage ? (
                   <p className="mt-2 text-sm font-medium text-[#65d8cc]">
@@ -3353,7 +3582,7 @@ export default function Home() {
           >
             <button
               className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
-              onClick={showUnavailableContextAction}
+              onClick={() => replyToMessage(messageContextMenu.message)}
               type="button"
             >
               <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
@@ -3363,7 +3592,7 @@ export default function Home() {
             </button>
             <button
               className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
-              onClick={showUnavailableContextAction}
+              onClick={() => startEditingMessage(messageContextMenu.message)}
               type="button"
             >
               <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
@@ -3373,13 +3602,13 @@ export default function Home() {
             </button>
             <button
               className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
-              onClick={showUnavailableContextAction}
+              onClick={() => togglePinnedMessage(messageContextMenu.message)}
               type="button"
             >
               <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
                 <path d="m14 4 6 6-4 1-4.5 4.5 1 4-8-8 4 1L13 8l1-4Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
               </svg>
-              Закрепить
+              {pinnedMessage?.id === messageContextMenu.message.id ? "Открепить" : "Закрепить"}
             </button>
             <button
               className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
@@ -3404,13 +3633,15 @@ export default function Home() {
             </button>
             <button
               className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
-              onClick={showUnavailableContextAction}
+              onClick={() => toggleSelectedMessage(messageContextMenu.message)}
               type="button"
             >
               <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
                 <path d="M9 12.5 11 14.5 15.5 9.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
               </svg>
-              Выделить
+              {selectedMessageIds.includes(messageContextMenu.message.id)
+                ? "Снять выделение"
+                : "Выделить"}
             </button>
           </div>
         </>
