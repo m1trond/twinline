@@ -2910,6 +2910,7 @@ export default function Home() {
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                               alt="Аватар звонка"
+                              draggable={false}
                               className="h-full w-full object-cover"
                               src={callPanelProfile.avatarUrl}
                             />
@@ -2917,12 +2918,7 @@ export default function Home() {
                             callPanelProfile.name[0]?.toUpperCase()
                           )}
                         </div>
-                        <button
-                          className="min-w-0 flex-1 cursor-pointer rounded-2xl py-1 text-left"
-                          onClick={() => setIsCallPanelCollapsed(false)}
-                          onPointerDown={(event) => event.stopPropagation()}
-                          type="button"
-                        >
+                        <div className="min-w-0 flex-1 select-none rounded-2xl py-1 text-left">
                           <p className="truncate text-sm font-bold text-[#e3f4f4]">
                             {callPanelProfile.name}
                           </p>
@@ -2932,7 +2928,7 @@ export default function Home() {
                               ? formatCallDuration(callDuration)
                               : callStatusText || "00:00"}
                           </p>
-                        </button>
+                        </div>
                         <button
                           aria-label="Завершить звонок"
                           className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 cursor-pointer place-items-center rounded-full bg-red-500 text-white shadow-[0_10px_24px_rgba(239,68,68,0.32)] transition hover:bg-red-400"
@@ -2952,6 +2948,7 @@ export default function Home() {
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                               alt="Аватар звонка"
+                              draggable={false}
                               className="h-full w-full object-cover"
                               src={callPanelProfile.avatarUrl}
                             />
