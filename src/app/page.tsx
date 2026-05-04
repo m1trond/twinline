@@ -413,7 +413,15 @@ function isIceCandidatePayload(
   return typeof (payload as Record<string, unknown>).candidate === "string";
 }
 
-function VoiceMessage({ src }: { src: string }) {
+function VoiceMessage({
+  isMine,
+  sentAt,
+  src,
+}: {
+  isMine: boolean;
+  sentAt: string;
+  src: string;
+}) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -451,7 +459,11 @@ function VoiceMessage({ src }: { src: string }) {
   }
 
   return (
-    <div className="min-w-[min(320px,70vw)] px-1 py-0.5">
+    <div
+      className={`min-w-[min(320px,70vw)] rounded-2xl px-3 py-2 ${
+        isMine ? "bg-[#4d5ca8] text-[#eef1ff]" : "bg-[#20283f] text-[#eef1ff]"
+      }`}
+    >
       <audio
         onEnded={() => setIsPlaying(false)}
         onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)}
@@ -506,8 +518,9 @@ function VoiceMessage({ src }: { src: string }) {
               value={currentTime}
             />
           </div>
-          <p className="mt-0.5 text-xs font-semibold tabular-nums opacity-65">
-            {formatAudioTime(currentTime || duration)}
+          <p className="mt-0.5 flex items-center justify-between gap-3 text-xs font-semibold tabular-nums opacity-65">
+            <span>{formatAudioTime(currentTime || duration)}</span>
+            <span>{formatMessageTime(sentAt)}</span>
           </p>
         </div>
       </div>
@@ -3436,14 +3449,20 @@ export default function Home() {
                           )
                         ) : null}
                         <div
-                          className={`max-w-[92%] rounded-[20px] shadow-[0_10px_30px_rgba(0,0,0,0.18)] sm:max-w-[72%] ${
-                            hasAttachment ? "p-2" : "px-3.5 py-2.5"
+                          className={`max-w-[92%] rounded-[20px] sm:max-w-[72%] ${
+                            audioUrl
+                              ? "bg-transparent p-0 shadow-none"
+                              : `shadow-[0_10px_30px_rgba(0,0,0,0.18)] ${
+                                  hasAttachment ? "p-2" : "px-3.5 py-2.5"
+                                }`
                           } ${
-                            isMine
-                              ? `bg-[#5561a8] text-[#080a12] ${
+                            audioUrl
+                              ? "text-[#eef1ff]"
+                              : isMine
+                                ? `bg-[#5561a8] text-[#080a12] ${
                                   isPreviousSameAuthor ? "rounded-tr-lg" : ""
                                 } ${isNextSameAuthor ? "rounded-br-lg" : "rounded-br-md"}`
-                              : `bg-[#d9def0] text-[#0b0d13] ${
+                                : `bg-[#d9def0] text-[#0b0d13] ${
                                   isPreviousSameAuthor ? "rounded-tl-lg" : ""
                                 } ${isNextSameAuthor ? "rounded-bl-lg" : "rounded-bl-md"}`
                           } ${
@@ -3498,7 +3517,11 @@ export default function Home() {
                             src={videoUrl}
                           />
                         ) : audioUrl ? (
-                          <VoiceMessage src={audioUrl} />
+                          <VoiceMessage
+                            isMine={isMine}
+                            sentAt={message.created_at}
+                            src={audioUrl}
+                          />
                         ) : callDurationSeconds !== null ? (
                           <div className="min-w-[220px] rounded-2xl bg-black/12 p-3">
                             <div className="flex items-center gap-3">
@@ -3543,6 +3566,7 @@ export default function Home() {
                               {displayText}
                             </p>
                           )}
+                          {!audioUrl ? (
                           <div className={`${hasAttachment ? "mt-2 px-1" : "mt-1"} flex items-center justify-end gap-3`}>
                             <p
                               className={`text-right text-[11px] font-medium ${
@@ -3552,6 +3576,7 @@ export default function Home() {
                               {formatMessageTime(message.created_at)}
                             </p>
                           </div>
+                          ) : null}
                         </div>
                       </article>
                     );
