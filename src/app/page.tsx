@@ -1736,7 +1736,7 @@ export default function Home() {
     event: MouseEvent<HTMLElement>,
     message: MessageRow,
   ) {
-    if (!user || message.user_id !== user.id) {
+    if (!user) {
       return;
     }
 
@@ -3364,11 +3364,7 @@ export default function Home() {
                                 ? "ring-2 ring-[#f5c85b]/75"
                                 : ""
                           }`}
-                          onContextMenu={
-                            !hasAttachment
-                              ? (event) => openMessageContextMenu(event, message)
-                              : undefined
-                          }
+                          onContextMenu={(event) => openMessageContextMenu(event, message)}
                         >
                           <p className={`${hasAttachment ? "mb-1.5 px-1" : "mb-0.5"} text-[11px] font-bold leading-4 opacity-55`}>
                             {messageAuthor}
