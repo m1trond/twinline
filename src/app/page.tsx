@@ -998,6 +998,28 @@ export default function Home() {
           );
         },
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages",
+        },
+        (payload) => {
+          const updatedMessage = payload.new as MessageRow;
+
+          setMessages((currentMessages) =>
+            currentMessages.map((message) =>
+              message.id === updatedMessage.id ? updatedMessage : message,
+            ),
+          );
+          setPinnedMessage((currentPinnedMessage) =>
+            currentPinnedMessage?.id === updatedMessage.id
+              ? updatedMessage
+              : currentPinnedMessage,
+          );
+        },
+      )
       .subscribe();
 
     return () => {
@@ -1880,21 +1902,31 @@ export default function Home() {
       setEditingMessage(null);
       setMessageText("");
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("messages")
         .update({ text: trimmedText })
         .eq("id", editingMessage.id)
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .select("id, author, text, created_at, user_id")
+        .maybeSingle();
 
-      if (error) {
+      if (error || !data) {
         setMessages(previousMessages);
         setPinnedMessage((currentPinnedMessage) =>
           currentPinnedMessage?.id === editingMessage.id ? editingMessage : currentPinnedMessage,
         );
         setEditingMessage(editingMessage);
         setMessageText(trimmedText);
-        setErrorMessage("Не получилось изменить сообщение.");
+        setErrorMessage("Не получилось изменить сообщение. Возможно, нужно разрешить UPDATE в Supabase.");
       } else {
+        setMessages((currentMessages) =>
+          currentMessages.map((message) =>
+            message.id === data.id ? data : message,
+          ),
+        );
+        setPinnedMessage((currentPinnedMessage) =>
+          currentPinnedMessage?.id === data.id ? data : currentPinnedMessage,
+        );
         setErrorMessage("");
       }
 
@@ -3210,7 +3242,8 @@ export default function Home() {
                   >
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#37c6b8]/18 text-[#65d8cc]">
                       <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                        <path d="m14 4 6 6-4 1-4.5 4.5 1 4-8-8 4 1L13 8l1-4Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                        <path d="m14.5 4.5 5 5-3.4 1.1-4.8 4.8.7 3.6-7-7 3.6.7 4.8-4.8 1.1-3.4Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                        <path d="m9.5 14.5-4 4" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
                       </svg>
                     </span>
                     <span className="min-w-0">
@@ -3606,7 +3639,8 @@ export default function Home() {
               type="button"
             >
               <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
-                <path d="m14 4 6 6-4 1-4.5 4.5 1 4-8-8 4 1L13 8l1-4Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                <path d="m14.5 4.5 5 5-3.4 1.1-4.8 4.8.7 3.6-7-7 3.6.7 4.8-4.8 1.1-3.4Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                <path d="m9.5 14.5-4 4" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
               </svg>
               {pinnedMessage?.id === messageContextMenu.message.id ? "Открепить" : "Закрепить"}
             </button>
