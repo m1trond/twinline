@@ -1569,7 +1569,7 @@ export default function Home() {
       return;
     }
 
-    event.currentTarget.setPointerCapture(event.pointerId);
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
     callPanelDragRef.current = {
       left: callPanelPosition.left,
       pointerId: event.pointerId,
@@ -2851,62 +2851,56 @@ export default function Home() {
 
                 {callStatus !== "idle" ? (
                   <aside
-                    className={`fixed z-40 touch-none rounded-3xl border border-[#123236]/70 bg-[#071216]/96 text-center shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-xl ${
+                    className={`fixed z-40 cursor-move touch-none rounded-3xl border border-[#123236]/70 bg-[#071216]/96 text-center shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-xl ${
                       isCallPanelCollapsed
                         ? "w-[min(260px,calc(100vw-24px))] p-3"
                         : "w-[min(350px,calc(100vw-24px))] p-4 sm:p-5"
                     }`}
+                    onPointerDown={startCallPanelDrag}
+                    onPointerMove={dragCallPanel}
+                    onPointerUp={stopCallPanelDrag}
                     style={{
                       left: callPanelPosition.left,
                       top: callPanelPosition.top,
                     }}
                   >
-                    <div
-                      className="mb-3 flex cursor-move select-none items-center justify-between gap-3 rounded-2xl bg-white/[0.03] px-2 py-1.5 text-[#8fb7bb]"
-                      onPointerDown={startCallPanelDrag}
-                      onPointerMove={dragCallPanel}
-                      onPointerUp={stopCallPanelDrag}
+                    <button
+                      aria-label={isCallPanelCollapsed ? "Развернуть звонок" : "Свернуть звонок"}
+                      className="absolute right-3 top-3 grid h-8 w-8 cursor-pointer place-items-center rounded-full bg-white/[0.06] text-[#e3f4f4] transition hover:bg-white/12"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setIsCallPanelCollapsed((isCollapsed) => !isCollapsed);
+                      }}
+                      onPointerDown={(event) => event.stopPropagation()}
+                      type="button"
                     >
-                      <span className="truncate text-xs font-bold uppercase tracking-[0.14em]">
-                        Звонок
-                      </span>
-                      <button
-                        aria-label={isCallPanelCollapsed ? "Развернуть звонок" : "Свернуть звонок"}
-                        className="grid h-7 w-7 place-items-center rounded-full text-[#e3f4f4] transition hover:bg-white/10"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setIsCallPanelCollapsed((isCollapsed) => !isCollapsed);
-                        }}
-                        type="button"
+                      <svg
+                        aria-hidden="true"
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
                       >
-                        <svg
-                          aria-hidden="true"
-                          className="h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          {isCallPanelCollapsed ? (
-                            <path
-                              d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"
-                              stroke="currentColor"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                            />
-                          ) : (
-                            <path
-                              d="M5 12h14"
-                              stroke="currentColor"
-                              strokeLinecap="round"
-                              strokeWidth="2"
-                            />
-                          )}
-                        </svg>
-                      </button>
-                    </div>
+                        {isCallPanelCollapsed ? (
+                          <path
+                            d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                          />
+                        ) : (
+                          <path
+                            d="M5 12h14"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeWidth="2"
+                          />
+                        )}
+                      </svg>
+                    </button>
 
                     {isCallPanelCollapsed ? (
-                      <div className="flex items-center gap-3 text-left">
+                      <div className="flex items-center gap-3 pr-8 text-left">
                         <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-[#d7dddd] text-lg font-black text-[#071216]">
                           {callPanelProfile.avatarUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
@@ -2920,8 +2914,9 @@ export default function Home() {
                           )}
                         </div>
                         <button
-                          className="min-w-0 flex-1 text-left"
+                          className="min-w-0 flex-1 cursor-pointer text-left"
                           onClick={() => setIsCallPanelCollapsed(false)}
+                          onPointerDown={(event) => event.stopPropagation()}
                           type="button"
                         >
                           <p className="truncate text-sm font-bold text-[#e3f4f4]">
@@ -2935,8 +2930,9 @@ export default function Home() {
                         </button>
                         <button
                           aria-label="Завершить звонок"
-                          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-red-500 text-white transition hover:bg-red-400"
+                          className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full bg-red-500 text-white transition hover:bg-red-400"
                           onClick={() => closeCall(true)}
+                          onPointerDown={(event) => event.stopPropagation()}
                           type="button"
                         >
                           <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
@@ -2974,6 +2970,7 @@ export default function Home() {
                               <button
                                 className="min-h-11 rounded-xl bg-[#37c6b8] px-5 text-sm font-bold text-[#041012] transition hover:bg-[#65d8cc]"
                                 onClick={acceptCall}
+                                onPointerDown={(event) => event.stopPropagation()}
                                 type="button"
                               >
                                 Принять
@@ -2981,6 +2978,7 @@ export default function Home() {
                               <button
                                 className="min-h-11 rounded-xl border border-red-400/50 bg-red-500/15 px-5 text-sm font-bold text-red-100 transition hover:bg-red-500/25"
                                 onClick={() => closeCall(true)}
+                                onPointerDown={(event) => event.stopPropagation()}
                                 type="button"
                               >
                                 Сбросить
@@ -2996,6 +2994,7 @@ export default function Home() {
                                     : "border-[#2faea4]/45 bg-[#e3f4f4]/12 text-[#e3f4f4] hover:bg-white/10"
                                 }`}
                                 onClick={toggleCallMicrophone}
+                                onPointerDown={(event) => event.stopPropagation()}
                                 type="button"
                               >
                                 <svg
@@ -3031,6 +3030,7 @@ export default function Home() {
                               <button
                                 className="min-h-12 rounded-full bg-red-500 px-5 text-sm font-bold text-white transition hover:bg-red-400"
                                 onClick={() => closeCall(true)}
+                                onPointerDown={(event) => event.stopPropagation()}
                                 type="button"
                               >
                                 Завершить
