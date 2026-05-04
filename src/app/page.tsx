@@ -1806,6 +1806,24 @@ export default function Home() {
     setErrorMessage("");
   }
 
+  async function confirmUnpinPinnedMessage() {
+    if (!messagePinTarget) {
+      return;
+    }
+
+    const wasSharedPinned = sharedPinnedMessage?.id === messagePinTarget.id;
+
+    if (!wasSharedPinned) {
+      setPinnedMessage(null);
+      setMessagePinTarget(null);
+      setErrorMessage("");
+      return;
+    }
+
+    setShouldPinForBoth(true);
+    await confirmPinnedMessage();
+  }
+
   async function confirmPinnedMessage() {
     if (!messagePinTarget) {
       return;
@@ -3947,46 +3965,50 @@ export default function Home() {
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-[#9aa3bd]">
                   {activePinnedMessage?.id === messagePinTarget.id
-                    ? "Вы желаете открепить это сообщение? Если закрепление общее, можно убрать его сразу у обоих участников переписки."
+                    ? "Желаете открепить сообщение?"
                     : "Выберите, закрепить сообщение только у себя или сделать его общим для обоих участников переписки."}
                 </p>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-[#5561a8]/35 bg-black/20 p-3">
-              <p className="line-clamp-3 text-sm font-semibold text-[#eef1ff]">
-                {getReadableMessageText(messagePinTarget.text)}
-              </p>
-            </div>
+            {activePinnedMessage?.id !== messagePinTarget.id ? (
+              <>
+                <div className="rounded-2xl border border-[#5561a8]/35 bg-black/20 p-3">
+                  <p className="line-clamp-3 text-sm font-semibold text-[#eef1ff]">
+                    {getReadableMessageText(messagePinTarget.text)}
+                  </p>
+                </div>
 
-            <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-2xl border border-[#5561a8]/35 bg-[#eef1ff]/8 p-3 text-sm font-semibold text-[#eef1ff]">
-              <input
-                checked={shouldPinForBoth}
-                className="h-5 w-5 accent-[#7c8cff]"
-                onChange={(event) => setShouldPinForBoth(event.target.checked)}
-                type="checkbox"
-              />
-              <span>
-                {activePinnedMessage?.id === messagePinTarget.id
-                  ? "Открепить у двоих"
-                  : "Закрепить для двоих"}
-              </span>
-            </label>
+                <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-2xl border border-[#5561a8]/35 bg-[#eef1ff]/8 p-3 text-sm font-semibold text-[#eef1ff]">
+                  <input
+                    checked={shouldPinForBoth}
+                    className="h-5 w-5 accent-[#7c8cff]"
+                    onChange={(event) => setShouldPinForBoth(event.target.checked)}
+                    type="checkbox"
+                  />
+                  <span>Закрепить для двоих</span>
+                </label>
+              </>
+            ) : null}
 
             <div className="mt-5 grid gap-2 sm:grid-cols-2">
               <button
                 className="min-h-12 rounded-xl bg-[#7c8cff] px-4 text-sm font-bold text-[#07080d] transition hover:bg-[#9aa7ff]"
-                onClick={confirmPinnedMessage}
+                onClick={
+                  activePinnedMessage?.id === messagePinTarget.id
+                    ? confirmUnpinPinnedMessage
+                    : confirmPinnedMessage
+                }
                 type="button"
               >
-                {activePinnedMessage?.id === messagePinTarget.id ? "Открепить" : "Закрепить"}
+                {activePinnedMessage?.id === messagePinTarget.id ? "Да" : "Закрепить"}
               </button>
               <button
                 className="min-h-12 rounded-xl border border-[#5561a8]/35 px-4 text-sm font-bold text-[#eef1ff] transition hover:bg-white/10"
                 onClick={() => setMessagePinTarget(null)}
                 type="button"
               >
-                Отмена
+                {activePinnedMessage?.id === messagePinTarget.id ? "Нет" : "Отмена"}
               </button>
             </div>
           </section>
