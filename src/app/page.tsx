@@ -483,6 +483,8 @@ export default function Home() {
   const [editingMessage, setEditingMessage] = useState<MessageRow | null>(null);
   const [pinnedMessage, setPinnedMessage] = useState<MessageRow | null>(null);
   const [selectedMessageIds, setSelectedMessageIds] = useState<number[]>([]);
+  const [hiddenMessageIds, setHiddenMessageIds] = useState<number[]>([]);
+  const [messageDeleteTarget, setMessageDeleteTarget] = useState<MessageRow | null>(null);
   const [areNotificationsEnabled, setAreNotificationsEnabled] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -526,6 +528,9 @@ export default function Home() {
   const activeUserName = useMemo(() => {
     return currentProfile?.display_name ?? getDisplayName(user);
   }, [currentProfile?.display_name, user]);
+  const visibleMessages = useMemo(() => {
+    return messages.filter((message) => !hiddenMessageIds.includes(message.id));
+  }, [hiddenMessageIds, messages]);
   const friendProfile = useMemo(() => {
     const profileFriend = profiles.find((profile) => {
       return profile.user_id !== user?.id;
@@ -539,7 +544,7 @@ export default function Home() {
       };
     }
 
-    const friendMessage = messages.find((message) => {
+    const friendMessage = visibleMessages.find((message) => {
       return message.user_id && message.user_id !== user?.id;
     });
 
@@ -554,7 +559,7 @@ export default function Home() {
       name: profile?.display_name ?? friendMessage.author,
       userId: friendMessage.user_id,
     };
-  }, [messages, profiles, user?.id]);
+  }, [profiles, user?.id, visibleMessages]);
   const isNameChangeAllowed = canChangeName(currentProfile?.name_changed_at ?? null);
   const nextNameChangeDate = getNextNameChangeDate(
     currentProfile?.name_changed_at ?? null,
@@ -614,6 +619,47 @@ export default function Home() {
   useEffect(() => {
     callStatusRef.current = callStatus;
   }, [callStatus]);
+
+  useEffect(() => {
+    let frameId = 0;
+
+    if (!user) {
+      frameId = window.requestAnimationFrame(() => {
+        setHiddenMessageIds([]);
+      });
+
+      return () => {
+        window.cancelAnimationFrame(frameId);
+      };
+    }
+
+    frameId = window.requestAnimationFrame(() => {
+      const storedHiddenMessageIds = window.localStorage.getItem(
+        `twinline-hidden-messages-${user.id}`,
+      );
+
+      if (!storedHiddenMessageIds) {
+        setHiddenMessageIds([]);
+        return;
+      }
+
+      try {
+        const parsedHiddenMessageIds = JSON.parse(storedHiddenMessageIds);
+
+        setHiddenMessageIds(
+          Array.isArray(parsedHiddenMessageIds)
+            ? parsedHiddenMessageIds.filter((id) => Number.isInteger(id))
+            : [],
+        );
+      } catch {
+        setHiddenMessageIds([]);
+      }
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [user]);
 
   useEffect(() => {
     notificationsEnabledRef.current = areNotificationsEnabled;
@@ -1701,6 +1747,11 @@ export default function Home() {
     setErrorMessage("");
   }
 
+  function requestMessageDelete(message: MessageRow) {
+    setMessageDeleteTarget(message);
+    setMessageContextMenu(null);
+  }
+
   function startCallPanelDrag(event: PointerEvent<HTMLElement>) {
     if (event.button !== 0) {
       return;
@@ -2439,6 +2490,7 @@ export default function Home() {
 
   async function deleteMessage(message: MessageRow) {
     setMessageContextMenu(null);
+    setMessageDeleteTarget(null);
 
     if (!user || message.user_id !== user.id) {
       setErrorMessage("Можно удалять только свои сообщения.");
@@ -2471,6 +2523,33 @@ export default function Home() {
       );
       setErrorMessage("");
     }
+  }
+
+  function hideMessageForMe(message: MessageRow) {
+    if (!user) {
+      return;
+    }
+
+    setHiddenMessageIds((currentIds) => {
+      const nextIds = currentIds.includes(message.id)
+        ? currentIds
+        : [...currentIds, message.id];
+
+      window.localStorage.setItem(
+        `twinline-hidden-messages-${user.id}`,
+        JSON.stringify(nextIds),
+      );
+
+      return nextIds;
+    });
+    setMessageDeleteTarget(null);
+    setPinnedMessage((currentPinnedMessage) =>
+      currentPinnedMessage?.id === message.id ? null : currentPinnedMessage,
+    );
+    setSelectedMessageIds((currentIds) =>
+      currentIds.filter((id) => id !== message.id),
+    );
+    setErrorMessage("");
   }
 
   if (isAuthLoading) {
@@ -3278,13 +3357,13 @@ export default function Home() {
                     <p className="text-sm text-[#9aa3bd]">Загружаю сообщения...</p>
                   ) : null}
 
-                  {!isLoadingMessages && messages.length === 0 ? (
+                  {!isLoadingMessages && visibleMessages.length === 0 ? (
                     <p className="text-sm text-[#9aa3bd]">
                       Сообщений пока нет. Напиши первое.
                     </p>
                   ) : null}
 
-                  {messages.map((message) => {
+                  {visibleMessages.map((message) => {
                     const isMine = message.user_id === user.id;
                     const isSelected = selectedMessageIds.includes(message.id);
                     const isPinned = pinnedMessage?.id === message.id;
@@ -3673,7 +3752,7 @@ export default function Home() {
             </button>
             <button
               className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium text-red-100 transition hover:bg-red-500/18"
-              onClick={() => deleteMessage(messageContextMenu.message)}
+              onClick={() => requestMessageDelete(messageContextMenu.message)}
               type="button"
             >
               <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
@@ -3694,6 +3773,66 @@ export default function Home() {
                 : "Выделить"}
             </button>
           </div>
+        </>
+      ) : null}
+      {messageDeleteTarget ? (
+        <>
+          <button
+            aria-label="Закрыть окно удаления сообщения"
+            className="fixed inset-0 z-[95] bg-black/58 backdrop-blur-sm"
+            onClick={() => setMessageDeleteTarget(null)}
+            type="button"
+          />
+          <section
+            className="fixed left-1/2 top-1/2 z-[96] w-[min(448px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-[#5561a8]/45 bg-[#11131c]/96 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.58)]"
+          >
+            <div className="mb-4 flex items-start gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-red-500/14 text-red-100">
+                <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                </svg>
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-lg font-bold text-[#eef1ff]">
+                  Удаление сообщения
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-[#9aa3bd]">
+                  Выберите, удалить сообщение только у себя или у обоих участников переписки.
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-[#5561a8]/35 bg-black/20 p-3">
+              <p className="line-clamp-3 text-sm font-semibold text-[#eef1ff]">
+                {getReadableMessageText(messageDeleteTarget.text)}
+              </p>
+            </div>
+
+            <div className="mt-5 grid gap-2 sm:grid-cols-2">
+              <button
+                className="min-h-12 rounded-xl border border-[#5561a8]/35 px-4 text-sm font-bold text-[#eef1ff] transition hover:bg-white/10"
+                onClick={() => hideMessageForMe(messageDeleteTarget)}
+                type="button"
+              >
+                Только у себя
+              </button>
+              <button
+                className="min-h-12 rounded-xl bg-red-500 px-4 text-sm font-bold text-white transition hover:bg-red-400"
+                onClick={() => deleteMessage(messageDeleteTarget)}
+                type="button"
+              >
+                У обоих
+              </button>
+            </div>
+
+            <button
+              className="mt-3 min-h-11 w-full rounded-xl px-4 text-sm font-bold text-[#9aa3bd] transition hover:bg-white/10 hover:text-[#eef1ff]"
+              onClick={() => setMessageDeleteTarget(null)}
+              type="button"
+            >
+              Отмена
+            </button>
+          </section>
         </>
       ) : null}
       {isStickerPickerOpen ? (
