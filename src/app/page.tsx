@@ -2800,9 +2800,9 @@ export default function Home() {
         }
 
         const volume = Math.sqrt(sum / dataArray.length);
-        const nextLevel = Math.min(1, Math.max(0, (volume - 0.015) * 8));
+        const nextLevel = Math.min(1, Math.max(0, (volume - 0.004) * 22));
 
-        if (Math.abs(nextLevel - lastLevel) > 0.03) {
+        if (Math.abs(nextLevel - lastLevel) > 0.012) {
           lastLevel = nextLevel;
           setVoiceInputLevel(nextLevel);
         }
@@ -4095,8 +4095,8 @@ export default function Home() {
                     style={
                       isRecordingVoice
                         ? {
-                            boxShadow: `0 0 ${12 + voiceInputLevel * 30}px rgba(248,113,113,${0.24 + voiceInputLevel * 0.46})`,
-                            transform: `scale(${1 + voiceInputLevel * 0.08})`,
+                            boxShadow: `0 0 ${16 + voiceInputLevel * 46}px rgba(248,113,113,${0.34 + voiceInputLevel * 0.58})`,
+                            transform: `scale(${1 + voiceInputLevel * 0.14})`,
                           }
                         : undefined
                     }
@@ -4106,10 +4106,18 @@ export default function Home() {
                       <>
                         <span
                           aria-hidden="true"
+                          className="absolute inset-0 rounded-lg border border-white/40 transition duration-75"
+                          style={{
+                            opacity: 0.22 + voiceInputLevel * 0.58,
+                            transform: `scale(${0.82 + voiceInputLevel * 0.34})`,
+                          }}
+                        />
+                        <span
+                          aria-hidden="true"
                           className="absolute inset-1 rounded-md bg-white/18 transition-transform duration-75"
                           style={{
-                            transform: `scale(${0.55 + voiceInputLevel * 0.42})`,
-                            opacity: 0.18 + voiceInputLevel * 0.38,
+                            transform: `scale(${0.42 + voiceInputLevel * 0.72})`,
+                            opacity: 0.24 + voiceInputLevel * 0.58,
                           }}
                         />
                         <svg
