@@ -334,6 +334,36 @@ function getReadableMessageText(text: string) {
   return text;
 }
 
+function getNotificationMessageText(text: string) {
+  const reply = getMessageReply(text);
+
+  if (reply) {
+    return `Ответ: ${reply.body}`;
+  }
+
+  if (text.startsWith(imageMessagePrefix)) {
+    return "Отправлено изображение";
+  }
+
+  if (text.startsWith(videoMessagePrefix)) {
+    return "Отправлено видео";
+  }
+
+  if (text.startsWith(audioMessagePrefix)) {
+    return "Голосовое сообщение";
+  }
+
+  if (text.startsWith(callMessagePrefix)) {
+    return "Звонок завершен";
+  }
+
+  if (text.startsWith(stickerMessagePrefix)) {
+    return "Стикер";
+  }
+
+  return text.length > 120 ? `${text.slice(0, 120)}...` : text;
+}
+
 function createReplyMessageText(replyTarget: MessageRow, body: string) {
   return `${replyMessagePrefix}${encodeURIComponent(
     JSON.stringify({
@@ -620,6 +650,7 @@ export default function Home() {
   const [isDeletingChat, setIsDeletingChat] = useState(false);
   const [isStickerPickerOpen, setIsStickerPickerOpen] = useState(false);
   const [highlightedMessageId, setHighlightedMessageId] = useState<number | null>(null);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [stickerPickerPosition, setStickerPickerPosition] = useState({ left: 0, top: 0 });
   const [messageContextMenu, setMessageContextMenu] = useState<{
     left: number;
@@ -670,6 +701,10 @@ export default function Home() {
   const typingSentAtRef = useRef(0);
   const latestMessageCreatedAtRef = useRef<string | null>(null);
   const notificationsEnabledRef = useRef(false);
+  const activeViewRef = useRef<ActiveView>("profile");
+  const selectedChatUserIdRef = useRef<string | null>(null);
+  const notifiedMessageIdsRef = useRef<Set<number>>(new Set());
+  const originalPageTitleRef = useRef("Twinline");
   const isDeletingChatRef = useRef(false);
   const callPanelDragRef = useRef({
     left: 0,
@@ -982,6 +1017,43 @@ export default function Home() {
   }, [areNotificationsEnabled]);
 
   useEffect(() => {
+    activeViewRef.current = activeView;
+    selectedChatUserIdRef.current = selectedChatUserId;
+  }, [activeView, selectedChatUserId]);
+
+  useEffect(() => {
+    originalPageTitleRef.current = document.title || "Twinline";
+  }, []);
+
+  useEffect(() => {
+    if (unreadMessageCount > 0) {
+      document.title = `(${unreadMessageCount}) Twinline`;
+      return;
+    }
+
+    document.title = originalPageTitleRef.current;
+  }, [unreadMessageCount]);
+
+  useEffect(() => {
+    function resetUnreadWhenDialogVisible() {
+      if (
+        document.visibilityState === "visible" &&
+        activeViewRef.current === "messages" &&
+        selectedChatUserIdRef.current !== null
+      ) {
+        setUnreadMessageCount(0);
+      }
+    }
+
+    resetUnreadWhenDialogVisible();
+    document.addEventListener("visibilitychange", resetUnreadWhenDialogVisible);
+
+    return () => {
+      document.removeEventListener("visibilitychange", resetUnreadWhenDialogVisible);
+    };
+  }, [activeView, selectedChatUserId]);
+
+  useEffect(() => {
     let frameId = 0;
 
     if (callStatus === "idle") {
@@ -1266,6 +1338,54 @@ export default function Home() {
       );
     }
 
+    function handleIncomingNotifications(incomingMessages: MessageRow[]) {
+      for (const newMessage of incomingMessages) {
+        if (
+          newMessage.id <= 0 ||
+          notifiedMessageIdsRef.current.has(newMessage.id) ||
+          isServiceMessage(newMessage.text) ||
+          newMessage.user_id === signedInUser.id
+        ) {
+          continue;
+        }
+
+        notifiedMessageIdsRef.current.add(newMessage.id);
+
+        const isDialogVisible =
+          document.visibilityState === "visible" &&
+          activeViewRef.current === "messages" &&
+          selectedChatUserIdRef.current !== null;
+
+        if (!isDialogVisible) {
+          setUnreadMessageCount((currentCount) => currentCount + 1);
+        }
+
+        if (
+          !isDialogVisible &&
+          notificationsEnabledRef.current &&
+          "Notification" in window &&
+          Notification.permission === "granted"
+        ) {
+          const notification = new Notification(newMessage.author, {
+            body: getNotificationMessageText(newMessage.text),
+            tag: `twinline-message-${newMessage.id}`,
+          });
+
+          notification.onclick = () => {
+            window.focus();
+            setActiveView("messages");
+
+            if (newMessage.user_id) {
+              setSelectedChatUserId(newMessage.user_id);
+            }
+
+            setUnreadMessageCount(0);
+            notification.close();
+          };
+        }
+      }
+    }
+
     async function syncAllMessages(showLoading = false) {
       if (isDeletingChatRef.current) {
         setIsLoadingMessages(false);
@@ -1315,6 +1435,7 @@ export default function Home() {
         setErrorMessage("Не получилось загрузить новые сообщения.");
       } else if (data?.length) {
         setMessages((currentMessages) => mergeMessages(currentMessages, data));
+        handleIncomingNotifications(data);
         setErrorMessage("");
       }
     }
@@ -1353,28 +1474,7 @@ export default function Home() {
           setMessages((currentMessages) =>
             mergeMessages(currentMessages, [newMessage]),
           );
-
-          if (
-            notificationsEnabledRef.current &&
-            !isServiceMessage(newMessage.text) &&
-            newMessage.user_id !== signedInUser.id &&
-            "Notification" in window &&
-            Notification.permission === "granted"
-          ) {
-            new Notification(newMessage.author, {
-              body: newMessage.text.startsWith(imageMessagePrefix)
-                ? "Отправлено изображение"
-                : newMessage.text.startsWith(videoMessagePrefix)
-                  ? "Отправлено видео"
-                  : newMessage.text.startsWith(audioMessagePrefix)
-                    ? "Голосовое сообщение"
-                    : newMessage.text.startsWith(callMessagePrefix)
-                      ? "Звонок завершен"
-                      : newMessage.text.startsWith(stickerMessagePrefix)
-        ? "Стикер"
-        : newMessage.text,
-            });
-          }
+          handleIncomingNotifications([newMessage]);
         },
       )
       .on(
@@ -3091,7 +3191,18 @@ export default function Home() {
                 }}
                 type="button"
               >
-                {item.label}
+                <span className="inline-flex items-center gap-2">
+                  {item.label}
+                  {item.view === "messages" && unreadMessageCount > 0 ? (
+                    <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[11px] font-black ${
+                      activeView === item.view
+                        ? "bg-[#050505] text-[#f4f4f5]"
+                        : "bg-[#f4f4f5] text-[#050505]"
+                    }`}>
+                      {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+                    </span>
+                  ) : null}
+                </span>
               </button>
             ))}
           </nav>
@@ -3122,7 +3233,18 @@ export default function Home() {
                     }}
                     type="button"
                   >
-                    {item.label}
+                    <span className="flex items-center justify-between gap-3">
+                      <span>{item.label}</span>
+                      {item.view === "messages" && unreadMessageCount > 0 ? (
+                        <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[11px] font-black ${
+                          activeView === item.view
+                            ? "bg-[#050505] text-[#f4f4f5]"
+                            : "bg-[#f4f4f5] text-[#050505]"
+                        }`}>
+                          {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+                        </span>
+                      ) : null}
+                    </span>
                   </button>
                 ))}
               </nav>
@@ -3249,10 +3371,15 @@ export default function Home() {
                           Уведомления
                         </p>
                         <p className="mt-1 text-sm leading-6 text-[#a1a1aa]">
-                          Показывать новые сообщения в браузере, когда сайт открыт.
+                          Показывать новые сообщения в браузере, если диалог не открыт.
+                          Непрочитанные также появятся в названии вкладки.
+                        </p>
+                        <p className="mt-2 text-xs font-semibold text-[#e5e5e5]/70">
+                          Сейчас непрочитанных: {unreadMessageCount}
                         </p>
                       </div>
                       <button
+                        aria-label="Переключить уведомления"
                         className={`flex h-8 w-14 shrink-0 items-center rounded-full p-1 transition ${
                           areNotificationsEnabled
                             ? "justify-end bg-[#f4f4f5]"
@@ -3261,7 +3388,9 @@ export default function Home() {
                         onClick={toggleNotifications}
                         type="button"
                       >
-                        <span className="h-6 w-6 rounded-full bg-[#f4f4f5]" />
+                        <span className={`h-6 w-6 rounded-full transition ${
+                          areNotificationsEnabled ? "bg-[#050505]" : "bg-[#f4f4f5]"
+                        }`} />
                       </button>
                     </div>
                   </section>
