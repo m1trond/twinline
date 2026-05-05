@@ -3607,9 +3607,9 @@ export default function Home() {
                     const isPinned = activePinnedMessage?.id === message.id;
                     const receiptStatus =
                       isMine && message.id > 0
-                        ? messageReceiptStatuses.get(message.id)
-                        : message.id < 0
-                          ? "sent"
+                        ? messageReceiptStatuses.get(message.id) ?? "delivered"
+                        : isMine && message.id < 0
+                          ? "delivered"
                           : null;
                     const messageProfile = profiles.find(
                       (profile) => profile.user_id === message.user_id,
@@ -3792,31 +3792,32 @@ export default function Home() {
                             >
                               {formatMessageTime(message.created_at)}
                             </p>
-                            {receiptStatus === "delivered" || receiptStatus === "read" ? (
+                            {receiptStatus ? (
                               <span
                                 aria-label={
                                   receiptStatus === "read" ? "Прочитано" : "Доставлено"
                                 }
-                                className="flex items-center text-[#262626]"
+                                className="inline-flex items-center text-[#262626]"
                               >
-                                <svg
-                                  aria-hidden="true"
-                                  className="h-3.5 w-3.5"
-                                  fill="none"
-                                  viewBox="0 0 16 16"
-                                >
-                                  <path
-                                    d="m3 8 3 3 7-7"
-                                    stroke="currentColor"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                  />
-                                </svg>
                                 {receiptStatus === "read" ? (
                                   <svg
                                     aria-hidden="true"
-                                    className="-ml-1 h-3.5 w-3.5"
+                                    className="h-3.5 w-[18px]"
+                                    fill="none"
+                                    viewBox="0 0 18 16"
+                                  >
+                                    <path
+                                      d="m2 8 3 3 7-7M7 11l7-7"
+                                      stroke="currentColor"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2"
+                                    />
+                                  </svg>
+                                ) : (
+                                  <svg
+                                    aria-hidden="true"
+                                    className="h-3.5 w-3.5"
                                     fill="none"
                                     viewBox="0 0 16 16"
                                   >
@@ -3828,7 +3829,7 @@ export default function Home() {
                                       strokeWidth="2"
                                     />
                                   </svg>
-                                ) : null}
+                                )}
                               </span>
                             ) : null}
                           </div>
