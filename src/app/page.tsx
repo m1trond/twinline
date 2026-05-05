@@ -3703,7 +3703,9 @@ export default function Home() {
                     const hasAttachment = Boolean(
                       imageUrl || videoUrl || audioUrl || callDurationSeconds !== null || sticker,
                     );
-                    const hasStandaloneBubble = Boolean(audioUrl || callDurationSeconds !== null);
+                    const hasStandaloneBubble = Boolean(
+                      audioUrl || callDurationSeconds !== null || sticker,
+                    );
 
                     return (
                       <article
@@ -3766,7 +3768,7 @@ export default function Home() {
                           }`}
                           onContextMenu={(event) => openMessageContextMenu(event, message)}
                         >
-                          {!isMine && !isPreviousSameAuthor ? (
+                          {!hasStandaloneBubble && !isMine && !isPreviousSameAuthor ? (
                             <p className={`${hasAttachment ? "mb-1.5 px-1" : "mb-0.5"} text-[11px] font-bold leading-4 opacity-55`}>
                               {messageAuthor}
                             </p>
@@ -3850,8 +3852,10 @@ export default function Home() {
                             </div>
                           </div>
                         ) : sticker ? (
-                          <div className="grid min-h-24 min-w-24 place-items-center rounded-2xl bg-black/10 px-5 py-4">
-                            <span className="text-6xl leading-none">{sticker}</span>
+                          <div className="px-1 py-0.5">
+                            <span className="block text-7xl leading-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.25)]">
+                              {sticker}
+                            </span>
                           </div>
                         ) : (
                             <p
