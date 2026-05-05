@@ -45,6 +45,7 @@ type CallSignal = {
 type ReplyMessagePayload = {
   author: string;
   body: string;
+  messageId?: number;
   text: string;
 };
 
@@ -338,6 +339,7 @@ function createReplyMessageText(replyTarget: MessageRow, body: string) {
     JSON.stringify({
       author: replyTarget.author,
       body,
+      messageId: replyTarget.id,
       text: getReadableMessageText(replyTarget.text).slice(0, 140),
     } satisfies ReplyMessagePayload),
   )}`;
@@ -617,6 +619,7 @@ export default function Home() {
   const [callPanelPosition, setCallPanelPosition] = useState({ left: 0, top: 0 });
   const [isDeletingChat, setIsDeletingChat] = useState(false);
   const [isStickerPickerOpen, setIsStickerPickerOpen] = useState(false);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<number | null>(null);
   const [stickerPickerPosition, setStickerPickerPosition] = useState({ left: 0, top: 0 });
   const [messageContextMenu, setMessageContextMenu] = useState<{
     left: number;
@@ -641,8 +644,10 @@ export default function Home() {
   const [errorMessage, setErrorMessage] = useState("");
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  const messageInputRef = useRef<HTMLInputElement | null>(null);
   const messagesListRef = useRef<HTMLDivElement | null>(null);
   const stickerButtonRef = useRef<HTMLButtonElement | null>(null);
+  const highlightedMessageTimeoutRef = useRef<number | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const remoteCallStreamRef = useRef<MediaStream | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
@@ -918,6 +923,14 @@ export default function Home() {
       window.cancelAnimationFrame(frameId);
     };
   }, [activeView, isLoadingMessages, selectedChatUserId, visibleMessages.length]);
+
+  useEffect(() => {
+    return () => {
+      if (highlightedMessageTimeoutRef.current !== null) {
+        window.clearTimeout(highlightedMessageTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     callStatusRef.current = callStatus;
@@ -2024,6 +2037,38 @@ export default function Home() {
     setMessageText("");
     setMessageContextMenu(null);
     setErrorMessage("");
+
+    window.requestAnimationFrame(() => {
+      messageInputRef.current?.focus();
+    });
+  }
+
+  function scrollToReplyMessage(reply: ReplyMessagePayload) {
+    if (!reply.messageId) {
+      setErrorMessage("К этому старому ответу нельзя перейти: он был создан до привязки сообщений.");
+      return;
+    }
+
+    const targetMessage = messagesListRef.current?.querySelector<HTMLElement>(
+      `[data-message-id="${reply.messageId}"]`,
+    );
+
+    if (!targetMessage) {
+      setErrorMessage("Исходное сообщение не найдено.");
+      return;
+    }
+
+    if (highlightedMessageTimeoutRef.current !== null) {
+      window.clearTimeout(highlightedMessageTimeoutRef.current);
+    }
+
+    targetMessage.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightedMessageId(reply.messageId);
+    setErrorMessage("");
+    highlightedMessageTimeoutRef.current = window.setTimeout(() => {
+      setHighlightedMessageId(null);
+      highlightedMessageTimeoutRef.current = null;
+    }, 1200);
   }
 
   function startEditingMessage(message: MessageRow) {
@@ -3473,9 +3518,14 @@ export default function Home() {
 
                     return (
                       <article
-                        className={`flex items-end gap-2 ${
+                        className={`-mx-1 flex items-end gap-2 rounded-2xl px-1 py-1 transition-[background-color,box-shadow] duration-300 ${
+                          highlightedMessageId === message.id
+                            ? "bg-[#f4f4f5]/12 shadow-[0_0_0_2px_rgba(244,244,245,0.26),0_0_38px_rgba(244,244,245,0.12)]"
+                            : "shadow-[0_0_0_0_rgba(244,244,245,0)]"
+                        } ${
                           isPreviousSameAuthor ? "mt-1" : "mt-3"
                         } ${isMine ? "justify-end" : "justify-start"}`}
+                        data-message-id={message.id}
                         key={message.id}
                       >
                         {!isMine ? (
@@ -3538,12 +3588,14 @@ export default function Home() {
                             </p>
                           ) : null}
                           {reply ? (
-                            <div
-                              className={`mb-2 rounded-xl border-l-4 px-3 py-2 text-left ${
+                            <button
+                              className={`mb-2 block w-full rounded-xl border-l-4 px-3 py-2 text-left transition hover:scale-[1.01] ${
                                 isMine
-                                  ? "border-[#050505]/45 bg-[#050505]/12"
-                                  : "border-[#f4f4f5]/45 bg-white/8"
+                                  ? "border-[#050505]/45 bg-[#050505]/12 hover:bg-[#050505]/18"
+                                  : "border-[#f4f4f5]/45 bg-white/8 hover:bg-white/12"
                               }`}
+                              onClick={() => scrollToReplyMessage(reply)}
+                              type="button"
                             >
                               <p className="text-[11px] font-black uppercase tracking-[0.12em] opacity-55">
                                 {reply.author}
@@ -3551,7 +3603,7 @@ export default function Home() {
                               <p className="mt-0.5 line-clamp-2 text-xs font-semibold opacity-70">
                                 {reply.text}
                               </p>
-                            </div>
+                            </button>
                           ) : null}
                           {imageUrl ? (
                             <button
@@ -3828,6 +3880,7 @@ export default function Home() {
                               ? "Ответь на сообщение..."
                               : "Напиши сообщение..."
                         }
+                        ref={messageInputRef}
                         type="text"
                         value={messageText}
                       />
