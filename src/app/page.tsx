@@ -594,6 +594,7 @@ export default function Home() {
   const [messageText, setMessageText] = useState("");
   const [typingNow, setTypingNow] = useState(() => Date.now());
   const [activeView, setActiveView] = useState<ActiveView>("profile");
+  const [selectedChatUserId, setSelectedChatUserId] = useState<string | null>(null);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const [viewedProfile, setViewedProfile] = useState<{
     avatarUrl: string | null;
@@ -805,10 +806,17 @@ export default function Home() {
       return !hiddenMessageIds.includes(message.id) && !isServiceMessage(message.text);
     });
   }, [hiddenMessageIds, messages]);
+  const chatProfiles = useMemo(() => {
+    return profiles
+      .filter((profile) => profile.user_id !== user?.id)
+      .sort((firstProfile, secondProfile) =>
+        firstProfile.display_name.localeCompare(secondProfile.display_name, "ru"),
+      );
+  }, [profiles, user?.id]);
   const friendProfile = useMemo(() => {
-    const profileFriend = profiles.find((profile) => {
-      return profile.user_id !== user?.id;
-    });
+    const profileFriend =
+      chatProfiles.find((profile) => profile.user_id === selectedChatUserId) ??
+      chatProfiles[0];
 
     if (profileFriend) {
       return {
@@ -833,7 +841,8 @@ export default function Home() {
       name: profile?.display_name ?? friendMessage.author,
       userId: friendMessage.user_id,
     };
-  }, [profiles, user?.id, visibleMessages]);
+  }, [chatProfiles, profiles, selectedChatUserId, user?.id, visibleMessages]);
+  const latestVisibleMessage = visibleMessages.at(-1);
   const isNameChangeAllowed = canChangeName(currentProfile?.name_changed_at ?? null);
   const nextNameChangeDate = getNextNameChangeDate(
     currentProfile?.name_changed_at ?? null,
@@ -875,6 +884,7 @@ export default function Home() {
       setUser(session?.user ?? null);
       setMessages([]);
       setProfiles([]);
+      setSelectedChatUserId(null);
       latestMessageCreatedAtRef.current = null;
     });
 
@@ -1436,6 +1446,7 @@ export default function Home() {
 
       if (
         activeView === "messages" &&
+        selectedChatUserId !== null &&
         document.visibilityState === "visible" &&
         !hasSentReadReceipt &&
         !sentReadReceiptIdsRef.current.has(message.id)
@@ -1444,7 +1455,7 @@ export default function Home() {
         void sendServiceMessage(createReceiptMessageText(message.id, "read"));
       }
     }
-  }, [activeView, messages, sendServiceMessage, user, visibleMessages]);
+  }, [activeView, messages, selectedChatUserId, sendServiceMessage, user, visibleMessages]);
 
   useEffect(() => {
     if (!user) {
@@ -3005,7 +3016,13 @@ export default function Home() {
                     : "text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
                 }`}
                 key={item.view}
-                onClick={() => setActiveView(item.view)}
+                onClick={() => {
+                  setActiveView(item.view);
+
+                  if (item.view === "messages") {
+                    setSelectedChatUserId(null);
+                  }
+                }}
                 type="button"
               >
                 {item.label}
@@ -3030,7 +3047,13 @@ export default function Home() {
                         : "text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
                     }`}
                     key={item.view}
-                    onClick={() => setActiveView(item.view)}
+                    onClick={() => {
+                      setActiveView(item.view);
+
+                      if (item.view === "messages") {
+                        setSelectedChatUserId(null);
+                      }
+                    }}
                     type="button"
                   >
                     {item.label}
@@ -3180,9 +3203,92 @@ export default function Home() {
                 </div>
               </div>
             ) : (
+              selectedChatUserId === null ? (
+              <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
+                <div className="mb-4 border-b border-[#3f3f46]/35 pb-4">
+                  <p className="text-sm font-medium text-[#e5e5e5]">Twinline</p>
+                  <h2 className="text-2xl font-semibold sm:text-3xl">Сообщения</h2>
+                </div>
+
+                <div className="grid gap-2">
+                  {chatProfiles.length === 0 ? (
+                    <article className="rounded-2xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-6 text-center">
+                      <p className="text-base font-semibold">Диалогов пока нет</p>
+                      <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
+                        Когда появятся другие пользователи, их чаты будут здесь.
+                      </p>
+                    </article>
+                  ) : null}
+
+                  {chatProfiles.map((profile) => {
+                    const previewText = latestVisibleMessage
+                      ? getReadableMessageText(latestVisibleMessage.text)
+                      : "Открыть переписку";
+
+                    return (
+                      <button
+                        className="flex w-full items-center gap-3 rounded-2xl border border-transparent bg-[#050505]/52 p-3 text-left transition hover:border-[#3f3f46]/55 hover:bg-[#f4f4f5]/8"
+                        key={profile.user_id}
+                        onClick={() => setSelectedChatUserId(profile.user_id)}
+                        type="button"
+                      >
+                        <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-base font-bold text-[#050505]">
+                          {profile.avatar_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              alt={`Аватар ${profile.display_name}`}
+                              className="h-full w-full object-cover"
+                              src={profile.avatar_url}
+                            />
+                          ) : (
+                            profile.display_name[0]?.toUpperCase()
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="truncate text-base font-semibold text-[#f4f4f5]">
+                              {profile.display_name}
+                            </p>
+                            {latestVisibleMessage ? (
+                              <span className="shrink-0 text-xs font-medium text-[#a1a1aa]">
+                                {formatMessageTime(latestVisibleMessage.created_at)}
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="mt-1 truncate text-sm text-[#a1a1aa]">
+                            {previewText}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              ) : (
               <div className="grid min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 px-3 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-4">
                   <div className="flex min-w-0 items-center gap-3">
+                    <button
+                      aria-label="Назад к чатам"
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[#3f3f46]/35 text-[#f4f4f5] transition hover:bg-white/10"
+                      onClick={() => setSelectedChatUserId(null)}
+                      type="button"
+                    >
+                      <svg
+                        aria-hidden="true"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="m15 18-6-6 6-6"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                    </button>
                     <button
                       className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-base font-semibold text-[#050505] transition hover:scale-105"
                       onClick={() => {
@@ -3835,6 +3941,7 @@ export default function Home() {
                   </p>
                 ) : null}
               </div>
+              )
             )}
           </section>
         </div>
