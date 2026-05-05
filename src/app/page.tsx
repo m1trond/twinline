@@ -3713,12 +3713,14 @@ export default function Home() {
                             src={audioUrl}
                           />
                         ) : callDurationSeconds !== null ? (
-                          <div className="min-w-[220px] rounded-2xl bg-black/12 p-3">
+                          <div
+                            className={`min-w-[min(260px,70vw)] rounded-2xl px-3 py-2 ${
+                              isMine ? "bg-[#2f2f2f]" : "bg-[#262626]"
+                            }`}
+                          >
                             <div className="flex items-center gap-3">
                               <div
-                                className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${
-                                  isMine ? "bg-[#050505] text-[#f4f4f5]" : "bg-[#0b0d13] text-[#e5e5e5]"
-                                }`}
+                                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#f4f4f5] text-[#050505]"
                               >
                                 <svg
                                   aria-hidden="true"
