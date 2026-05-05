@@ -3802,12 +3802,12 @@ export default function Home() {
                                 {receiptStatus === "read" ? (
                                   <svg
                                     aria-hidden="true"
-                                    className="h-3.5 w-[18px]"
+                                    className="h-3.5 w-5"
                                     fill="none"
-                                    viewBox="0 0 18 16"
+                                    viewBox="0 0 20 16"
                                   >
                                     <path
-                                      d="m2 8 3 3 7-7M7 11l7-7"
+                                      d="m2 8 3 3 7-7M8 11l8-8"
                                       stroke="currentColor"
                                       strokeLinecap="round"
                                       strokeLinejoin="round"
