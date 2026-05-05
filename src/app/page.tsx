@@ -645,6 +645,7 @@ export default function Home() {
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [voiceRecordingDuration, setVoiceRecordingDuration] = useState(0);
   const [voiceRecordingStartedAt, setVoiceRecordingStartedAt] = useState<number | null>(null);
+  const [voiceInputLevel, setVoiceInputLevel] = useState(0);
   const [callStatus, setCallStatus] = useState<CallStatus>("idle");
   const [incomingCall, setIncomingCall] = useState<CallSignal | null>(null);
   const [isCallMicMuted, setIsCallMicMuted] = useState(false);
@@ -695,6 +696,8 @@ export default function Home() {
   const recordingChunksRef = useRef<BlobPart[]>([]);
   const recordingStreamRef = useRef<MediaStream | null>(null);
   const shouldDiscardRecordingRef = useRef(false);
+  const recordingAudioContextRef = useRef<AudioContext | null>(null);
+  const recordingAnimationFrameRef = useRef<number | null>(null);
   const sentDeliveryReceiptIdsRef = useRef<Set<number>>(new Set());
   const sentReadReceiptIdsRef = useRef<Set<number>>(new Set());
   const typingSentAtRef = useRef(0);
@@ -1088,6 +1091,7 @@ export default function Home() {
 
   useEffect(() => {
     return () => {
+      stopVoiceInputMeter();
       recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
       localCallStreamRef.current?.getTracks().forEach((track) => track.stop());
       peerConnectionRef.current?.close();
@@ -2758,6 +2762,60 @@ export default function Home() {
     }
   }
 
+  function stopVoiceInputMeter() {
+    if (recordingAnimationFrameRef.current !== null) {
+      window.cancelAnimationFrame(recordingAnimationFrameRef.current);
+      recordingAnimationFrameRef.current = null;
+    }
+
+    void recordingAudioContextRef.current?.close();
+    recordingAudioContextRef.current = null;
+    setVoiceInputLevel(0);
+  }
+
+  function startVoiceInputMeter(stream: MediaStream) {
+    stopVoiceInputMeter();
+
+    try {
+      const AudioContextClass = window.AudioContext;
+      const audioContext = new AudioContextClass();
+      const analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaStreamSource(stream);
+      let lastLevel = 0;
+
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.72;
+      const dataArray = new Uint8Array(analyser.fftSize);
+      source.connect(analyser);
+      recordingAudioContextRef.current = audioContext;
+
+      const tick = () => {
+        analyser.getByteTimeDomainData(dataArray);
+
+        let sum = 0;
+
+        for (const value of dataArray) {
+          const normalized = (value - 128) / 128;
+          sum += normalized * normalized;
+        }
+
+        const volume = Math.sqrt(sum / dataArray.length);
+        const nextLevel = Math.min(1, Math.max(0, (volume - 0.015) * 8));
+
+        if (Math.abs(nextLevel - lastLevel) > 0.03) {
+          lastLevel = nextLevel;
+          setVoiceInputLevel(nextLevel);
+        }
+
+        recordingAnimationFrameRef.current = window.requestAnimationFrame(tick);
+      };
+
+      tick();
+    } catch {
+      setVoiceInputLevel(0);
+    }
+  }
+
   async function startVoiceRecording() {
     if (!user) {
       setErrorMessage("Сначала войди в аккаунт.");
@@ -2785,6 +2843,7 @@ export default function Home() {
       };
 
       mediaRecorder.onstop = () => {
+        stopVoiceInputMeter();
         const audioBlob = new Blob(recordingChunksRef.current, {
           type: mediaRecorder.mimeType || "audio/webm",
         });
@@ -2804,6 +2863,7 @@ export default function Home() {
       };
 
       mediaRecorder.start();
+      startVoiceInputMeter(stream);
       setIsRecordingVoice(true);
       setVoiceRecordingStartedAt(Date.now());
       setVoiceRecordingDuration(0);
@@ -2835,6 +2895,7 @@ export default function Home() {
     if (mediaRecorder && mediaRecorder.state !== "inactive") {
       mediaRecorder.stop();
     } else {
+      stopVoiceInputMeter();
       recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
       recordingStreamRef.current = null;
       mediaRecorderRef.current = null;
@@ -3959,34 +4020,15 @@ export default function Home() {
                     )}
                   </button>
                   {isRecordingVoice ? (
-                    <div className="flex min-h-10 min-w-0 flex-1 items-center gap-3 rounded-lg border border-red-400/35 bg-red-500/10 px-3 text-sm text-[#f4f4f5]">
-                      <span className="relative flex h-3 w-3 shrink-0">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-300 opacity-60" />
-                        <span className="relative inline-flex h-3 w-3 rounded-full bg-red-300" />
-                      </span>
-                      <span className="w-14 font-semibold tabular-nums text-red-100">
-                        {formatAudioTime(voiceRecordingDuration)}
-                      </span>
-                      <div
-                        aria-hidden="true"
-                        className="hidden min-w-0 flex-1 items-center gap-1 sm:flex"
-                      >
-                        {[12, 20, 15, 26, 18, 30, 14, 24, 16, 22, 13, 28].map(
-                          (height, index) => (
-                            <span
-                              className="w-1 rounded-full bg-[#f4f4f5]/80 opacity-80"
-                              key={`${height}-${index}`}
-                              style={{
-                                animation: "voice-wave 900ms ease-in-out infinite",
-                                animationDelay: `${index * 70}ms`,
-                                height,
-                              }}
-                            />
-                          ),
-                        )}
+                    <div className="relative flex min-h-10 min-w-0 flex-1 items-center rounded-lg border border-red-400/35 bg-red-500/10 px-3 text-sm text-[#f4f4f5]">
+                      <div className="flex min-w-[86px] items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full bg-red-300 shadow-[0_0_14px_rgba(252,165,165,0.65)]" />
+                        <span className="font-semibold tabular-nums text-red-100">
+                          {formatAudioTime(voiceRecordingDuration)}
+                        </span>
                       </div>
                       <button
-                        className="ml-auto shrink-0 rounded-lg px-3 py-2 text-xs font-bold text-[#e5e5e5] transition hover:bg-white/10 hover:text-[#f4f4f5]"
+                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg px-4 py-2 text-xs font-bold text-[#e5e5e5] transition hover:bg-white/10 hover:text-[#f4f4f5]"
                         onClick={cancelVoiceRecording}
                         type="button"
                       >
@@ -4043,24 +4085,42 @@ export default function Home() {
                   )}
                   <button
                     aria-label={isRecordingVoice ? "Отправить голосовое" : "Записать голосовое"}
-                    className={`grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border text-[#f4f4f5] transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                    className={`relative grid min-h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg border text-[#f4f4f5] transition disabled:cursor-not-allowed disabled:opacity-50 ${
                       isRecordingVoice
                         ? "border-red-400/60 bg-red-500/85 text-white hover:bg-red-400"
                         : "border-[#3f3f46]/35 bg-[#f4f4f5]/12 hover:bg-[#f4f4f5]/18"
                     }`}
                     disabled={isUploadingAttachment}
                     onClick={toggleVoiceRecording}
+                    style={
+                      isRecordingVoice
+                        ? {
+                            boxShadow: `0 0 ${12 + voiceInputLevel * 30}px rgba(248,113,113,${0.24 + voiceInputLevel * 0.46})`,
+                            transform: `scale(${1 + voiceInputLevel * 0.08})`,
+                          }
+                        : undefined
+                    }
                     type="button"
                   >
                     {isRecordingVoice ? (
-                      <svg
-                        aria-hidden="true"
-                        className="h-5 w-5"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M5 12 19 4l-3.8 16-3.6-6.1L5 12Z" />
-                      </svg>
+                      <>
+                        <span
+                          aria-hidden="true"
+                          className="absolute inset-1 rounded-md bg-white/18 transition-transform duration-75"
+                          style={{
+                            transform: `scale(${0.55 + voiceInputLevel * 0.42})`,
+                            opacity: 0.18 + voiceInputLevel * 0.38,
+                          }}
+                        />
+                        <svg
+                          aria-hidden="true"
+                          className="relative h-5 w-5"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M5 12 19 4l-3.8 16-3.6-6.1L5 12Z" />
+                        </svg>
+                      </>
                     ) : (
                       <svg
                         aria-hidden="true"
@@ -4085,18 +4145,6 @@ export default function Home() {
                       </svg>
                     )}
                   </button>
-                  <style jsx>{`
-                    @keyframes voice-wave {
-                      0%,
-                      100% {
-                        transform: scaleY(0.45);
-                      }
-
-                      50% {
-                        transform: scaleY(1);
-                      }
-                    }
-                  `}</style>
                 </form>
 
                 {replyTarget || editingMessage ? (
