@@ -79,7 +79,7 @@ type ReceiptMessagePayload = {
 type TypingMessagePayload = {
   action?: "start" | "stop";
   eventAt?: string;
-  expiresAt: string;
+  expiresAt?: string;
 };
 
 type ActiveView = "profile" | "messages" | "gallery" | "ideas" | "settings";
@@ -279,7 +279,6 @@ function createTypingMessageText(action: "start" | "stop", eventAt: string) {
   return `${typingMessagePrefix}${JSON.stringify({
     action,
     eventAt,
-    expiresAt: action === "start" ? new Date(Date.now() + 2500).toISOString() : eventAt,
   } satisfies TypingMessagePayload)}`;
 }
 
@@ -293,11 +292,12 @@ function getTypingMessagePayload(text: string): TypingMessagePayload | null {
 
     if (
       parsedPayload &&
-      typeof parsedPayload.expiresAt === "string" &&
-      Number.isFinite(new Date(parsedPayload.expiresAt).getTime()) &&
       (!parsedPayload.action ||
         parsedPayload.action === "start" ||
         parsedPayload.action === "stop") &&
+      (!parsedPayload.expiresAt ||
+        (typeof parsedPayload.expiresAt === "string" &&
+          Number.isFinite(new Date(parsedPayload.expiresAt).getTime()))) &&
       (!parsedPayload.eventAt ||
         (typeof parsedPayload.eventAt === "string" &&
           Number.isFinite(new Date(parsedPayload.eventAt).getTime())))
@@ -737,11 +737,15 @@ export default function Home() {
 
       const eventAt = new Date().toISOString();
 
-      await supabase.from("messages").insert({
+      const { error } = await supabase.from("messages").insert({
         author: activeUserName,
         text: createTypingMessageText(action, eventAt),
         user_id: user.id,
       });
+
+      if (error) {
+        console.error("Twinline typing state failed:", error.message);
+      }
     },
     [activeUserName, user],
   );
@@ -791,7 +795,7 @@ export default function Home() {
       return 0;
     }
 
-    let latestFriendTypingEventAt = 0;
+    let latestFriendTypingCreatedAt = 0;
     let latestFriendTypingExpiresAt = 0;
     let latestFriendRealMessageCreatedAt = 0;
 
@@ -804,14 +808,12 @@ export default function Home() {
       const typingPayload = getTypingMessagePayload(message.text);
 
       if (typingPayload) {
-        const eventAt = new Date(typingPayload.eventAt ?? message.created_at).getTime();
-
-        if (eventAt >= latestFriendTypingEventAt) {
-          latestFriendTypingEventAt = eventAt;
+        if (createdAt >= latestFriendTypingCreatedAt) {
+          latestFriendTypingCreatedAt = createdAt;
           latestFriendTypingExpiresAt =
             typingPayload.action === "stop"
               ? 0
-              : new Date(typingPayload.expiresAt).getTime();
+              : createdAt + 4500;
         }
 
         continue;
@@ -827,7 +829,7 @@ export default function Home() {
 
     if (
       !latestFriendTypingExpiresAt ||
-      latestFriendTypingEventAt <= latestFriendRealMessageCreatedAt
+      latestFriendTypingCreatedAt <= latestFriendRealMessageCreatedAt
     ) {
       return 0;
     }
