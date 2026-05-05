@@ -3601,6 +3601,7 @@ export default function Home() {
                     const hasAttachment = Boolean(
                       imageUrl || videoUrl || audioUrl || callDurationSeconds !== null || sticker,
                     );
+                    const hasStandaloneBubble = Boolean(audioUrl || callDurationSeconds !== null);
 
                     return (
                       <article
@@ -3639,13 +3640,13 @@ export default function Home() {
                         ) : null}
                         <div
                           className={`max-w-[92%] rounded-[20px] sm:max-w-[72%] ${
-                            audioUrl
+                            hasStandaloneBubble
                               ? "bg-transparent p-0 shadow-none"
                               : `shadow-[0_10px_30px_rgba(0,0,0,0.18)] ${
                                   hasAttachment ? "p-2" : "px-3.5 py-2.5"
                                 }`
                           } ${
-                            audioUrl
+                            hasStandaloneBubble
                               ? "text-[#f4f4f5]"
                               : isMine
                                 ? `bg-[#f4f4f5] text-[#050505] ${
@@ -3755,7 +3756,7 @@ export default function Home() {
                               {displayText}
                             </p>
                           )}
-                          {!audioUrl ? (
+                          {!hasStandaloneBubble ? (
                           <div className={`${hasAttachment ? "mt-2 px-1" : "mt-1"} flex items-center justify-end gap-3`}>
                             <p
                               className={`text-right text-[11px] font-medium ${
