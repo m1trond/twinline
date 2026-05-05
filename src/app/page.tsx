@@ -5,6 +5,7 @@ import {
   FormEvent,
   MouseEvent,
   PointerEvent,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -70,6 +71,15 @@ type PinMessagePayload = {
   messageId: number;
 };
 
+type ReceiptMessagePayload = {
+  messageId: number;
+  status: "delivered" | "read";
+};
+
+type TypingMessagePayload = {
+  expiresAt: string;
+};
+
 type ActiveView = "profile" | "messages" | "gallery" | "ideas" | "settings";
 type AuthMode = "sign-in" | "sign-up";
 type CallStatus = "idle" | "calling" | "incoming" | "connecting" | "connected";
@@ -92,6 +102,8 @@ const callMessagePrefix = "call::";
 const stickerMessagePrefix = "sticker::";
 const replyMessagePrefix = "reply::";
 const pinMessagePrefix = "pin::";
+const receiptMessagePrefix = "receipt::";
+const typingMessagePrefix = "typing::";
 const maxAttachmentSize = 50 * 1024 * 1024;
 const stickerOptions = ["😂", "❤️", "🔥", "🤝", "😎", "😭", "🥱", "😡", "🫡", "💀", "🥳", "🤯", "👍", "👎", "🍻", "✨"];
 
@@ -232,6 +244,67 @@ function getPinMessagePayload(text: string): PinMessagePayload | null {
   return null;
 }
 
+function createReceiptMessageText(
+  messageId: number,
+  status: ReceiptMessagePayload["status"],
+) {
+  return `${receiptMessagePrefix}${JSON.stringify({ messageId, status })}`;
+}
+
+function getReceiptMessagePayload(text: string): ReceiptMessagePayload | null {
+  if (!text.startsWith(receiptMessagePrefix)) {
+    return null;
+  }
+
+  try {
+    const parsedPayload = JSON.parse(text.slice(receiptMessagePrefix.length));
+
+    if (
+      parsedPayload &&
+      Number.isInteger(parsedPayload.messageId) &&
+      (parsedPayload.status === "delivered" || parsedPayload.status === "read")
+    ) {
+      return parsedPayload;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function createTypingMessageText() {
+  return `${typingMessagePrefix}${JSON.stringify({
+    expiresAt: new Date(Date.now() + 3500).toISOString(),
+  } satisfies TypingMessagePayload)}`;
+}
+
+function getTypingMessagePayload(text: string): TypingMessagePayload | null {
+  if (!text.startsWith(typingMessagePrefix)) {
+    return null;
+  }
+
+  try {
+    const parsedPayload = JSON.parse(text.slice(typingMessagePrefix.length));
+
+    if (parsedPayload && typeof parsedPayload.expiresAt === "string") {
+      return parsedPayload;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function isServiceMessage(text: string) {
+  return Boolean(
+    getPinMessagePayload(text) ||
+      getReceiptMessagePayload(text) ||
+      getTypingMessagePayload(text),
+  );
+}
+
 function getReadableMessageText(text: string) {
   const reply = getMessageReply(text);
 
@@ -239,8 +312,8 @@ function getReadableMessageText(text: string) {
     return reply.body;
   }
 
-  if (getPinMessagePayload(text)) {
-    return "Служебное закрепление";
+  if (isServiceMessage(text)) {
+    return "Служебное событие";
   }
 
   if (text.startsWith(imageMessagePrefix)) {
@@ -541,6 +614,7 @@ export default function Home() {
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [profileName, setProfileName] = useState("");
   const [messageText, setMessageText] = useState("");
+  const [typingNow, setTypingNow] = useState(() => Date.now());
   const [galleryCaption, setGalleryCaption] = useState("");
   const [ideaText, setIdeaText] = useState("");
   const [activeView, setActiveView] = useState<ActiveView>("profile");
@@ -607,6 +681,9 @@ export default function Home() {
   const recordingChunksRef = useRef<BlobPart[]>([]);
   const recordingStreamRef = useRef<MediaStream | null>(null);
   const shouldDiscardRecordingRef = useRef(false);
+  const sentDeliveryReceiptIdsRef = useRef<Set<number>>(new Set());
+  const sentReadReceiptIdsRef = useRef<Set<number>>(new Set());
+  const typingSentAtRef = useRef(0);
   const latestMessageCreatedAtRef = useRef<string | null>(null);
   const notificationsEnabledRef = useRef(false);
   const isDeletingChatRef = useRef(false);
@@ -624,6 +701,20 @@ export default function Home() {
   const activeUserName = useMemo(() => {
     return currentProfile?.display_name ?? getDisplayName(user);
   }, [currentProfile?.display_name, user]);
+  const sendServiceMessage = useCallback(
+    async (text: string) => {
+      if (!user) {
+        return;
+      }
+
+      await supabase.from("messages").insert({
+        author: activeUserName,
+        text,
+        user_id: user.id,
+      });
+    },
+    [activeUserName, user],
+  );
   const sharedPinnedMessage = useMemo(() => {
     for (let index = messages.length - 1; index >= 0; index -= 1) {
       const pinPayload = getPinMessagePayload(messages[index].text);
@@ -646,9 +737,40 @@ export default function Home() {
     return null;
   }, [messages]);
   const activePinnedMessage = pinnedMessage ?? sharedPinnedMessage;
+  const messageReceiptStatuses = useMemo(() => {
+    const statuses = new Map<number, ReceiptMessagePayload["status"]>();
+
+    for (const message of messages) {
+      const receiptPayload = getReceiptMessagePayload(message.text);
+
+      if (!receiptPayload || message.user_id === user?.id) {
+        continue;
+      }
+
+      const currentStatus = statuses.get(receiptPayload.messageId);
+
+      if (receiptPayload.status === "read" || currentStatus !== "read") {
+        statuses.set(receiptPayload.messageId, receiptPayload.status);
+      }
+    }
+
+    return statuses;
+  }, [messages, user?.id]);
+  const friendTypingUntil = useMemo(() => {
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      const typingPayload = getTypingMessagePayload(messages[index].text);
+
+      if (typingPayload && messages[index].user_id !== user?.id) {
+        return new Date(typingPayload.expiresAt).getTime();
+      }
+    }
+
+    return 0;
+  }, [messages, user?.id]);
+  const isFriendTyping = friendTypingUntil > typingNow;
   const visibleMessages = useMemo(() => {
     return messages.filter((message) => {
-      return !hiddenMessageIds.includes(message.id) && !getPinMessagePayload(message.text);
+      return !hiddenMessageIds.includes(message.id) && !isServiceMessage(message.text);
     });
   }, [hiddenMessageIds, messages]);
   const friendProfile = useMemo(() => {
@@ -1159,7 +1281,7 @@ export default function Home() {
 
           if (
             notificationsEnabledRef.current &&
-            !getPinMessagePayload(newMessage.text) &&
+            !isServiceMessage(newMessage.text) &&
             newMessage.user_id !== signedInUser.id &&
             "Notification" in window &&
             Notification.permission === "granted"
@@ -1174,8 +1296,8 @@ export default function Home() {
                     : newMessage.text.startsWith(callMessagePrefix)
                       ? "Звонок завершен"
                       : newMessage.text.startsWith(stickerMessagePrefix)
-                        ? "Стикер"
-                        : newMessage.text,
+        ? "Стикер"
+        : newMessage.text,
             });
           }
         },
@@ -1226,6 +1348,62 @@ export default function Home() {
       supabase.removeChannel(channel);
     };
   }, [user]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setTypingNow(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const friendMessages = visibleMessages.filter((message) => {
+      return message.id > 0 && message.user_id && message.user_id !== user.id;
+    });
+
+    for (const message of friendMessages) {
+      const hasSentDeliveredReceipt = messages.some((currentMessage) => {
+        const receiptPayload = getReceiptMessagePayload(currentMessage.text);
+
+        return (
+          currentMessage.user_id === user.id &&
+          receiptPayload?.messageId === message.id &&
+          (receiptPayload.status === "delivered" || receiptPayload.status === "read")
+        );
+      });
+      const hasSentReadReceipt = messages.some((currentMessage) => {
+        const receiptPayload = getReceiptMessagePayload(currentMessage.text);
+
+        return (
+          currentMessage.user_id === user.id &&
+          receiptPayload?.messageId === message.id &&
+          receiptPayload.status === "read"
+        );
+      });
+
+      if (!hasSentDeliveredReceipt && !sentDeliveryReceiptIdsRef.current.has(message.id)) {
+        sentDeliveryReceiptIdsRef.current.add(message.id);
+        void sendServiceMessage(createReceiptMessageText(message.id, "delivered"));
+      }
+
+      if (
+        activeView === "messages" &&
+        document.visibilityState === "visible" &&
+        !hasSentReadReceipt &&
+        !sentReadReceiptIdsRef.current.has(message.id)
+      ) {
+        sentReadReceiptIdsRef.current.add(message.id);
+        void sendServiceMessage(createReceiptMessageText(message.id, "read"));
+      }
+    }
+  }, [activeView, messages, sendServiceMessage, user, visibleMessages]);
 
   useEffect(() => {
     if (!user) {
@@ -2144,6 +2322,23 @@ export default function Home() {
     }
 
     setErrorMessage("");
+  }
+
+  function handleMessageTextChange(event: ChangeEvent<HTMLInputElement>) {
+    setMessageText(event.target.value);
+
+    if (!user || !event.target.value.trim() || editingMessage) {
+      return;
+    }
+
+    const now = Date.now();
+
+    if (now - typingSentAtRef.current < 1800) {
+      return;
+    }
+
+    typingSentAtRef.current = now;
+    void sendServiceMessage(createTypingMessageText());
   }
 
   function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
@@ -3294,7 +3489,7 @@ export default function Home() {
                         {friendProfile?.name ?? "Друг"}
                       </h2>
                       <p className="truncate text-xs text-[#a1a1aa] sm:text-sm">
-                        Приватный профиль собеседника
+                        {isFriendTyping ? "печатает..." : "Приватный профиль собеседника"}
                       </p>
                     </div>
                   </div>
@@ -3397,6 +3592,12 @@ export default function Home() {
                     const isNextSameAuthor = nextMessage?.user_id === message.user_id;
                     const isSelected = selectedMessageIds.includes(message.id);
                     const isPinned = activePinnedMessage?.id === message.id;
+                    const receiptStatus =
+                      isMine && message.id > 0
+                        ? messageReceiptStatuses.get(message.id)
+                        : message.id < 0
+                          ? "sent"
+                          : null;
                     const messageProfile = profiles.find(
                       (profile) => profile.user_id === message.user_id,
                     );
@@ -3575,6 +3776,19 @@ export default function Home() {
                             >
                               {formatMessageTime(message.created_at)}
                             </p>
+                            {receiptStatus ? (
+                              <p
+                                className={`text-right text-[11px] font-semibold ${
+                                  isMine ? "text-[#404040]" : "text-[#71717a]"
+                                }`}
+                              >
+                                {receiptStatus === "read"
+                                  ? "прочитано"
+                                  : receiptStatus === "delivered"
+                                    ? "доставлено"
+                                    : "отправлено"}
+                              </p>
+                            ) : null}
                           </div>
                           ) : null}
                         </div>
@@ -3660,7 +3874,7 @@ export default function Home() {
                       <input
                         aria-label="Текст сообщения"
                         className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] focus:bg-[#f4f4f5]/18 sm:px-4"
-                        onChange={(event) => setMessageText(event.target.value)}
+                        onChange={handleMessageTextChange}
                         placeholder={
                           editingMessage
                             ? "Измени сообщение..."
