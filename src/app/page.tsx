@@ -77,6 +77,8 @@ type ReceiptMessagePayload = {
 };
 
 type TypingMessagePayload = {
+  action?: "start" | "stop";
+  eventAt?: string;
   expiresAt: string;
 };
 
@@ -273,8 +275,12 @@ function getReceiptMessagePayload(text: string): ReceiptMessagePayload | null {
   return null;
 }
 
-function createTypingMessageText(expiresAt: string) {
-  return `${typingMessagePrefix}${JSON.stringify({ expiresAt })}`;
+function createTypingMessageText(action: "start" | "stop", eventAt: string) {
+  return `${typingMessagePrefix}${JSON.stringify({
+    action,
+    eventAt,
+    expiresAt: action === "start" ? new Date(Date.now() + 2500).toISOString() : eventAt,
+  } satisfies TypingMessagePayload)}`;
 }
 
 function getTypingMessagePayload(text: string): TypingMessagePayload | null {
@@ -288,7 +294,13 @@ function getTypingMessagePayload(text: string): TypingMessagePayload | null {
     if (
       parsedPayload &&
       typeof parsedPayload.expiresAt === "string" &&
-      Number.isFinite(new Date(parsedPayload.expiresAt).getTime())
+      Number.isFinite(new Date(parsedPayload.expiresAt).getTime()) &&
+      (!parsedPayload.action ||
+        parsedPayload.action === "start" ||
+        parsedPayload.action === "stop") &&
+      (!parsedPayload.eventAt ||
+        (typeof parsedPayload.eventAt === "string" &&
+          Number.isFinite(new Date(parsedPayload.eventAt).getTime())))
     ) {
       return parsedPayload as TypingMessagePayload;
     }
@@ -617,7 +629,6 @@ export default function Home() {
   const [profileName, setProfileName] = useState("");
   const [messageText, setMessageText] = useState("");
   const [typingNow, setTypingNow] = useState(() => Date.now());
-  const [friendTypingUntil, setFriendTypingUntil] = useState(0);
   const [galleryCaption, setGalleryCaption] = useState("");
   const [ideaText, setIdeaText] = useState("");
   const [activeView, setActiveView] = useState<ActiveView>("profile");
@@ -687,7 +698,6 @@ export default function Home() {
   const sentDeliveryReceiptIdsRef = useRef<Set<number>>(new Set());
   const sentReadReceiptIdsRef = useRef<Set<number>>(new Set());
   const typingSentAtRef = useRef(0);
-  const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const latestMessageCreatedAtRef = useRef<string | null>(null);
   const notificationsEnabledRef = useRef(false);
   const isDeletingChatRef = useRef(false);
@@ -714,6 +724,22 @@ export default function Home() {
       await supabase.from("messages").insert({
         author: activeUserName,
         text,
+        user_id: user.id,
+      });
+    },
+    [activeUserName, user],
+  );
+  const sendTypingState = useCallback(
+    async (action: "start" | "stop") => {
+      if (!user) {
+        return;
+      }
+
+      const eventAt = new Date().toISOString();
+
+      await supabase.from("messages").insert({
+        author: activeUserName,
+        text: createTypingMessageText(action, eventAt),
         user_id: user.id,
       });
     },
@@ -765,7 +791,7 @@ export default function Home() {
       return 0;
     }
 
-    let latestFriendTypingCreatedAt = 0;
+    let latestFriendTypingEventAt = 0;
     let latestFriendTypingExpiresAt = 0;
     let latestFriendRealMessageCreatedAt = 0;
 
@@ -778,9 +804,14 @@ export default function Home() {
       const typingPayload = getTypingMessagePayload(message.text);
 
       if (typingPayload) {
-        if (createdAt >= latestFriendTypingCreatedAt) {
-          latestFriendTypingCreatedAt = createdAt;
-          latestFriendTypingExpiresAt = new Date(typingPayload.expiresAt).getTime();
+        const eventAt = new Date(typingPayload.eventAt ?? message.created_at).getTime();
+
+        if (eventAt >= latestFriendTypingEventAt) {
+          latestFriendTypingEventAt = eventAt;
+          latestFriendTypingExpiresAt =
+            typingPayload.action === "stop"
+              ? 0
+              : new Date(typingPayload.expiresAt).getTime();
         }
 
         continue;
@@ -794,13 +825,16 @@ export default function Home() {
       }
     }
 
-    if (latestFriendTypingCreatedAt <= latestFriendRealMessageCreatedAt) {
+    if (
+      !latestFriendTypingExpiresAt ||
+      latestFriendTypingEventAt <= latestFriendRealMessageCreatedAt
+    ) {
       return 0;
     }
 
     return latestFriendTypingExpiresAt;
   }, [messages, user]);
-  const isFriendTyping = Math.max(friendTypingUntil, friendTypingUntilFromMessages) > typingNow;
+  const isFriendTyping = friendTypingUntilFromMessages > typingNow;
   const visibleMessages = useMemo(() => {
     return messages.filter((message) => {
       return !hiddenMessageIds.includes(message.id) && !isServiceMessage(message.text);
@@ -878,9 +912,7 @@ export default function Home() {
       setGalleryItems([]);
       setIdeas([]);
       setProfiles([]);
-      setFriendTypingUntil(0);
       latestMessageCreatedAtRef.current = null;
-      typingChannelRef.current = null;
     });
 
     return () => {
@@ -1310,10 +1342,6 @@ export default function Home() {
             return;
           }
 
-          if (newMessage.user_id !== signedInUser.id && !isServiceMessage(newMessage.text)) {
-            setFriendTypingUntil(0);
-          }
-
           setMessages((currentMessages) =>
             mergeMessages(currentMessages, [newMessage]),
           );
@@ -1389,52 +1417,24 @@ export default function Home() {
   }, [user]);
 
   useEffect(() => {
-    if (!user) {
-      return;
-    }
-
-    const signedInUser = user;
-    const channel = supabase
-      .channel("twinline-typing", {
-        config: {
-          broadcast: {
-            self: false,
-          },
-        },
-      })
-      .on("broadcast", { event: "typing" }, (payload) => {
-        const typingPayload = payload.payload as {
-          expiresAt?: string;
-          senderId?: string;
-        };
-
-        if (
-          typingPayload.senderId &&
-          typingPayload.senderId !== signedInUser.id &&
-          typeof typingPayload.expiresAt === "string"
-        ) {
-          setFriendTypingUntil(new Date(typingPayload.expiresAt).getTime());
-        }
-      })
-      .subscribe();
-
-    typingChannelRef.current = channel;
-
-    return () => {
-      typingChannelRef.current = null;
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
-
-  useEffect(() => {
     const interval = window.setInterval(() => {
       setTypingNow(Date.now());
-    }, 1000);
+    }, 500);
 
     return () => {
       window.clearInterval(interval);
     };
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    return () => {
+      void sendTypingState("stop");
+    };
+  }, [sendTypingState, user]);
 
   useEffect(() => {
     if (!user) {
@@ -2402,28 +2402,28 @@ export default function Home() {
   }
 
   function handleMessageTextChange(event: ChangeEvent<HTMLInputElement>) {
-    setMessageText(event.target.value);
+    const nextMessageText = event.target.value;
 
-    if (!user || !event.target.value.trim() || editingMessage) {
+    setMessageText(nextMessageText);
+
+    if (!user || editingMessage) {
+      return;
+    }
+
+    if (!nextMessageText.trim()) {
+      typingSentAtRef.current = 0;
+      void sendTypingState("stop");
       return;
     }
 
     const now = Date.now();
 
-    if (now - typingSentAtRef.current < 1800) {
+    if (now - typingSentAtRef.current < 900) {
       return;
     }
 
     typingSentAtRef.current = now;
-    void sendServiceMessage(createTypingMessageText(new Date(now + 3500).toISOString()));
-    void typingChannelRef.current?.send({
-      event: "typing",
-      payload: {
-        expiresAt: new Date(now + 3500).toISOString(),
-        senderId: user.id,
-      },
-      type: "broadcast",
-    });
+    void sendTypingState("start");
   }
 
   function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
@@ -2449,6 +2449,9 @@ export default function Home() {
     if (!trimmedText) {
       return;
     }
+
+    typingSentAtRef.current = 0;
+    void sendTypingState("stop");
 
     if (editingMessage) {
       const previousMessages = messages;
