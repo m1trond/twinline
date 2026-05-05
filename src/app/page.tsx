@@ -795,6 +795,44 @@ export default function Home() {
 
     return statuses;
   }, [messages, user?.id]);
+  const incomingUnreadMessageIds = useMemo(() => {
+    if (!user) {
+      return new Set<number>();
+    }
+
+    const readMessageIds = new Set<number>();
+
+    for (const message of messages) {
+      const receiptPayload = getReceiptMessagePayload(message.text);
+
+      if (
+        message.user_id === user.id &&
+        receiptPayload?.status === "read"
+      ) {
+        readMessageIds.add(receiptPayload.messageId);
+      }
+    }
+
+    return new Set(
+      messages
+        .filter((message) => {
+          return (
+            message.id > 0 &&
+            message.user_id &&
+            message.user_id !== user.id &&
+            !hiddenMessageIds.includes(message.id) &&
+            !isServiceMessage(message.text) &&
+            !readMessageIds.has(message.id)
+          );
+        })
+        .map((message) => message.id),
+    );
+  }, [hiddenMessageIds, messages, user]);
+  const unreadMessageCountFromReceipts = incomingUnreadMessageIds.size;
+  const totalUnreadMessageCount = Math.max(
+    unreadMessageCount,
+    unreadMessageCountFromReceipts,
+  );
   const friendTypingUntilFromMessages = useMemo(() => {
     if (!user) {
       return 0;
@@ -847,6 +885,24 @@ export default function Home() {
       return !hiddenMessageIds.includes(message.id) && !isServiceMessage(message.text);
     });
   }, [hiddenMessageIds, messages]);
+  const unreadMessagesByUserId = useMemo(() => {
+    const unreadByUserId = new Map<string, number>();
+
+    for (const message of visibleMessages) {
+      if (
+        message.user_id &&
+        message.user_id !== user?.id &&
+        incomingUnreadMessageIds.has(message.id)
+      ) {
+        unreadByUserId.set(
+          message.user_id,
+          (unreadByUserId.get(message.user_id) ?? 0) + 1,
+        );
+      }
+    }
+
+    return unreadByUserId;
+  }, [incomingUnreadMessageIds, user?.id, visibleMessages]);
   const chatProfiles = useMemo(() => {
     return profiles
       .filter((profile) => profile.user_id !== user?.id)
@@ -1026,13 +1082,13 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (unreadMessageCount > 0) {
-      document.title = `(${unreadMessageCount}) Twinline`;
+    if (totalUnreadMessageCount > 0) {
+      document.title = `(${totalUnreadMessageCount}) Twinline`;
       return;
     }
 
     document.title = originalPageTitleRef.current;
-  }, [unreadMessageCount]);
+  }, [totalUnreadMessageCount]);
 
   useEffect(() => {
     function resetUnreadWhenDialogVisible() {
@@ -1370,6 +1426,9 @@ export default function Home() {
             body: getNotificationMessageText(newMessage.text),
             tag: `twinline-message-${newMessage.id}`,
           });
+          window.setTimeout(() => {
+            notification.close();
+          }, 3000);
 
           notification.onclick = () => {
             window.focus();
@@ -1581,6 +1640,7 @@ export default function Home() {
       if (
         activeView === "messages" &&
         selectedChatUserId !== null &&
+        message.user_id === selectedChatUserId &&
         document.visibilityState === "visible" &&
         !hasSentReadReceipt &&
         !sentReadReceiptIdsRef.current.has(message.id)
@@ -3193,13 +3253,13 @@ export default function Home() {
               >
                 <span className="inline-flex items-center gap-2">
                   {item.label}
-                  {item.view === "messages" && unreadMessageCount > 0 ? (
+                  {item.view === "messages" && totalUnreadMessageCount > 0 ? (
                     <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[11px] font-black ${
                       activeView === item.view
                         ? "bg-[#050505] text-[#f4f4f5]"
                         : "bg-[#f4f4f5] text-[#050505]"
                     }`}>
-                      {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+                      {totalUnreadMessageCount > 99 ? "99+" : totalUnreadMessageCount}
                     </span>
                   ) : null}
                 </span>
@@ -3235,13 +3295,13 @@ export default function Home() {
                   >
                     <span className="flex items-center justify-between gap-3">
                       <span>{item.label}</span>
-                      {item.view === "messages" && unreadMessageCount > 0 ? (
+                      {item.view === "messages" && totalUnreadMessageCount > 0 ? (
                         <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[11px] font-black ${
                           activeView === item.view
                             ? "bg-[#050505] text-[#f4f4f5]"
                             : "bg-[#f4f4f5] text-[#050505]"
                         }`}>
-                          {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+                          {totalUnreadMessageCount > 99 ? "99+" : totalUnreadMessageCount}
                         </span>
                       ) : null}
                     </span>
@@ -3375,7 +3435,7 @@ export default function Home() {
                           Непрочитанные также появятся в названии вкладки.
                         </p>
                         <p className="mt-2 text-xs font-semibold text-[#e5e5e5]/70">
-                          Сейчас непрочитанных: {unreadMessageCount}
+                          Сейчас непрочитанных: {totalUnreadMessageCount}
                         </p>
                       </div>
                       <button
@@ -3416,15 +3476,27 @@ export default function Home() {
                   ) : null}
 
                   {chatProfiles.map((profile) => {
-                    const previewText = latestVisibleMessage
-                      ? getReadableMessageText(latestVisibleMessage.text)
+                    const profileMessages = visibleMessages.filter((message) => {
+                      return message.user_id === profile.user_id || message.user_id === user?.id;
+                    });
+                    const latestProfileMessage = profileMessages.at(-1) ?? latestVisibleMessage;
+                    const profileUnreadCount = unreadMessagesByUserId.get(profile.user_id) ?? 0;
+                    const previewText = latestProfileMessage
+                      ? getReadableMessageText(latestProfileMessage.text)
                       : "Открыть переписку";
 
                     return (
                       <button
-                        className="flex w-full items-center gap-3 rounded-2xl border border-transparent bg-[#050505]/52 p-3 text-left transition hover:border-[#3f3f46]/55 hover:bg-[#f4f4f5]/8"
+                        className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition hover:border-[#3f3f46]/55 hover:bg-[#f4f4f5]/8 ${
+                          profileUnreadCount > 0
+                            ? "border-[#f4f4f5]/20 bg-[#f4f4f5]/10"
+                            : "border-transparent bg-[#050505]/52"
+                        }`}
                         key={profile.user_id}
-                        onClick={() => setSelectedChatUserId(profile.user_id)}
+                        onClick={() => {
+                          setSelectedChatUserId(profile.user_id);
+                          setUnreadMessageCount(0);
+                        }}
                         type="button"
                       >
                         <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-base font-bold text-[#050505]">
@@ -3444,15 +3516,28 @@ export default function Home() {
                             <p className="truncate text-base font-semibold text-[#f4f4f5]">
                               {profile.display_name}
                             </p>
-                            {latestVisibleMessage ? (
+                            {latestProfileMessage ? (
                               <span className="shrink-0 text-xs font-medium text-[#a1a1aa]">
-                                {formatMessageTime(latestVisibleMessage.created_at)}
+                                {formatMessageTime(latestProfileMessage.created_at)}
                               </span>
                             ) : null}
                           </div>
-                          <p className="mt-1 truncate text-sm text-[#a1a1aa]">
-                            {previewText}
-                          </p>
+                          <div className="mt-1 flex items-center justify-between gap-3">
+                            <p className={`truncate text-sm ${
+                              profileUnreadCount > 0
+                                ? "font-semibold text-[#f4f4f5]"
+                                : "text-[#a1a1aa]"
+                            }`}>
+                              {profileUnreadCount > 0
+                                ? `Непрочитанное от ${profile.display_name}: ${previewText}`
+                                : previewText}
+                            </p>
+                            {profileUnreadCount > 0 ? (
+                              <span className="grid h-6 min-w-6 shrink-0 place-items-center rounded-full bg-[#f4f4f5] px-2 text-xs font-black text-[#050505]">
+                                {profileUnreadCount > 99 ? "99+" : profileUnreadCount}
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
                       </button>
                     );
