@@ -23,24 +23,6 @@ type MessageRow = {
   user_id: string | null;
 };
 
-type GalleryItem = {
-  id: number;
-  user_id: string;
-  author: string;
-  file_url: string;
-  file_type: "image" | "video";
-  caption: string | null;
-  created_at: string;
-};
-
-type IdeaRow = {
-  id: number;
-  user_id: string;
-  author: string;
-  text: string;
-  created_at: string;
-};
-
 type ProfileRow = {
   user_id: string;
   display_name: string;
@@ -82,15 +64,13 @@ type TypingMessagePayload = {
   expiresAt?: string;
 };
 
-type ActiveView = "profile" | "messages" | "gallery" | "ideas" | "settings";
+type ActiveView = "profile" | "messages" | "settings";
 type AuthMode = "sign-in" | "sign-up";
 type CallStatus = "idle" | "calling" | "incoming" | "connecting" | "connected";
 
 const navItems: Array<{ label: string; view: ActiveView }> = [
   { label: "Профиль", view: "profile" },
   { label: "Сообщения", view: "messages" },
-  { label: "Галерея", view: "gallery" },
-  { label: "Идеи", view: "ideas" },
 ];
 const settingsNavItem: { label: string; view: ActiveView } = {
   label: "Настройки",
@@ -446,20 +426,6 @@ async function fetchMessagesAfter(createdAt: string) {
     .order("created_at", { ascending: true });
 }
 
-async function fetchGalleryItems() {
-  return supabase
-    .from("gallery_items")
-    .select("id, user_id, author, file_url, file_type, caption, created_at")
-    .order("created_at", { ascending: false });
-}
-
-async function fetchIdeas() {
-  return supabase
-    .from("ideas")
-    .select("id, user_id, author, text, created_at")
-    .order("created_at", { ascending: false });
-}
-
 async function fetchProfiles() {
   return supabase
     .from("profiles")
@@ -623,14 +589,10 @@ export default function Home() {
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [messages, setMessages] = useState<MessageRow[]>([]);
-  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
-  const [ideas, setIdeas] = useState<IdeaRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [profileName, setProfileName] = useState("");
   const [messageText, setMessageText] = useState("");
   const [typingNow, setTypingNow] = useState(() => Date.now());
-  const [galleryCaption, setGalleryCaption] = useState("");
-  const [ideaText, setIdeaText] = useState("");
   const [activeView, setActiveView] = useState<ActiveView>("profile");
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const [viewedProfile, setViewedProfile] = useState<{
@@ -640,7 +602,6 @@ export default function Home() {
   } | null>(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
-  const [isUploadingGalleryItem, setIsUploadingGalleryItem] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [voiceRecordingDuration, setVoiceRecordingDuration] = useState(0);
@@ -678,7 +639,6 @@ export default function Home() {
   });
   const [errorMessage, setErrorMessage] = useState("");
   const imageInputRef = useRef<HTMLInputElement | null>(null);
-  const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const stickerButtonRef = useRef<HTMLButtonElement | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -914,8 +874,6 @@ export default function Home() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setMessages([]);
-      setGalleryItems([]);
-      setIdeas([]);
       setProfiles([]);
       latestMessageCreatedAtRef.current = null;
     });
@@ -1495,105 +1453,31 @@ export default function Home() {
 
     let isMounted = true;
 
-    async function syncSharedSections() {
-      const [galleryResult, ideasResult, profilesResult] = await Promise.all([
-        fetchGalleryItems(),
-        fetchIdeas(),
-        fetchProfiles(),
-      ]);
+    async function syncProfiles() {
+      const { data, error } = await fetchProfiles();
 
       if (!isMounted) {
         return;
       }
 
-      if (galleryResult.error || ideasResult.error || profilesResult.error) {
-        setErrorMessage("Не получилось загрузить общие разделы.");
+      if (error) {
+        setErrorMessage("Не получилось загрузить профили.");
         return;
       }
 
-      setGalleryItems(galleryResult.data ?? []);
-      setIdeas(ideasResult.data ?? []);
-      setProfiles(profilesResult.data ?? []);
+      setProfiles(data ?? []);
     }
 
-    syncSharedSections();
+    syncProfiles();
 
-    const sharedSectionsInterval = window.setInterval(() => {
+    const profilesInterval = window.setInterval(() => {
       if (document.visibilityState === "visible") {
-        syncSharedSections();
+        syncProfiles();
       }
     }, 5000);
 
     const channel = supabase
-      .channel("shared-sections-channel")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "gallery_items",
-        },
-        (payload) => {
-          const newItem = payload.new as GalleryItem;
-
-          setGalleryItems((currentItems) => {
-            if (currentItems.some((item) => item.id === newItem.id)) {
-              return currentItems;
-            }
-
-            return [newItem, ...currentItems];
-          });
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "gallery_items",
-        },
-        (payload) => {
-          const deletedItem = payload.old as Pick<GalleryItem, "id">;
-
-          setGalleryItems((currentItems) =>
-            currentItems.filter((item) => item.id !== deletedItem.id),
-          );
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "ideas",
-        },
-        (payload) => {
-          const newIdea = payload.new as IdeaRow;
-
-          setIdeas((currentIdeas) => {
-            if (currentIdeas.some((idea) => idea.id === newIdea.id)) {
-              return currentIdeas;
-            }
-
-            return [newIdea, ...currentIdeas];
-          });
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "ideas",
-        },
-        (payload) => {
-          const deletedIdea = payload.old as Pick<IdeaRow, "id">;
-
-          setIdeas((currentIdeas) =>
-            currentIdeas.filter((idea) => idea.id !== deletedIdea.id),
-          );
-        },
-      )
+      .channel("profiles-channel")
       .on(
         "postgres_changes",
         {
@@ -1636,7 +1520,7 @@ export default function Home() {
 
     return () => {
       isMounted = false;
-      window.clearInterval(sharedSectionsInterval);
+      window.clearInterval(profilesInterval);
       supabase.removeChannel(channel);
     };
   }, [user]);
@@ -2927,161 +2811,6 @@ export default function Home() {
     event.target.value = "";
   }
 
-  async function addIdea(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!user) {
-      setErrorMessage("Сначала войди в аккаунт.");
-      return;
-    }
-
-    const trimmedIdea = ideaText.trim();
-
-    if (!trimmedIdea) {
-      return;
-    }
-
-    setIdeaText("");
-
-    const { data, error } = await supabase
-      .from("ideas")
-      .insert({
-        author: activeUserName,
-        text: trimmedIdea,
-        user_id: user.id,
-      })
-      .select("id, user_id, author, text, created_at")
-      .single();
-
-    if (error) {
-      setIdeaText(trimmedIdea);
-      setErrorMessage("Не получилось сохранить идею.");
-      return;
-    }
-
-    if (data) {
-      setIdeas((currentIdeas) => [data, ...currentIdeas]);
-    }
-
-    setErrorMessage("");
-  }
-
-  async function uploadGalleryItem(file: File) {
-    if (!user) {
-      setErrorMessage("Сначала войди в аккаунт.");
-      return;
-    }
-
-    const isImage = file.type.startsWith("image/");
-    const isVideo = file.type.startsWith("video/");
-
-    if (!isImage && !isVideo) {
-      setErrorMessage("В галерею можно загружать только фото и видео.");
-      return;
-    }
-
-    if (file.size > maxAttachmentSize) {
-      setErrorMessage("Файл должен быть меньше 50 МБ.");
-      return;
-    }
-
-    setIsUploadingGalleryItem(true);
-    setErrorMessage("");
-
-    const fileExtension = file.name.split(".").pop() ?? "jpg";
-    const filePath = `gallery/${user.id}/${Date.now()}-${crypto.randomUUID()}.${fileExtension}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("message-images")
-      .upload(filePath, file, {
-        cacheControl: "3600",
-        upsert: false,
-      });
-
-    if (uploadError) {
-      setIsUploadingGalleryItem(false);
-      setErrorMessage("Не получилось загрузить файл в галерею.");
-      return;
-    }
-
-    const { data: publicUrlData } = supabase.storage
-      .from("message-images")
-      .getPublicUrl(filePath);
-
-    const { data, error } = await supabase
-      .from("gallery_items")
-      .insert({
-        author: activeUserName,
-        caption: galleryCaption.trim() || null,
-        file_type: isVideo ? "video" : "image",
-        file_url: publicUrlData.publicUrl,
-        user_id: user.id,
-      })
-      .select("id, user_id, author, file_url, file_type, caption, created_at")
-      .single();
-
-    setIsUploadingGalleryItem(false);
-
-    if (error) {
-      setErrorMessage("Файл загрузился, но не получилось сохранить его в галерее.");
-      return;
-    }
-
-    if (data) {
-      setGalleryItems((currentItems) => [data, ...currentItems]);
-    }
-
-    setGalleryCaption("");
-    setErrorMessage("");
-  }
-
-  function handleGalleryFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-
-    if (file) {
-      uploadGalleryItem(file);
-    }
-
-    event.target.value = "";
-  }
-
-  async function deleteGalleryItem(item: GalleryItem) {
-    const previousItems = galleryItems;
-
-    setGalleryItems((currentItems) =>
-      currentItems.filter((currentItem) => currentItem.id !== item.id),
-    );
-
-    const { error } = await supabase
-      .from("gallery_items")
-      .delete()
-      .eq("id", item.id);
-
-    if (error) {
-      setGalleryItems(previousItems);
-      setErrorMessage("Не получилось удалить файл из галереи.");
-    } else {
-      setErrorMessage("");
-    }
-  }
-
-  async function deleteIdea(idea: IdeaRow) {
-    const previousIdeas = ideas;
-
-    setIdeas((currentIdeas) =>
-      currentIdeas.filter((currentIdea) => currentIdea.id !== idea.id),
-    );
-
-    const { error } = await supabase.from("ideas").delete().eq("id", idea.id);
-
-    if (error) {
-      setIdeas(previousIdeas);
-      setErrorMessage("Не получилось удалить идею.");
-    } else {
-      setErrorMessage("");
-    }
-  }
-
   async function deleteMessage(message: MessageRow) {
     setMessageContextMenu(null);
     setMessageDeleteTarget(null);
@@ -3410,163 +3139,6 @@ export default function Home() {
                     </p>
                   </section>
 
-                </div>
-              </div>
-            ) : activeView === "gallery" ? (
-              <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
-                <div className="mb-5 flex flex-wrap items-end justify-between gap-4 border-b border-[#3f3f46]/35 pb-5">
-                  <div>
-                    <p className="text-sm font-medium text-[#e5e5e5]">Общий раздел</p>
-                    <h2 className="text-2xl font-semibold sm:text-3xl">Галерея</h2>
-                  </div>
-                  <div className="flex w-full gap-2 sm:w-auto">
-                    <input
-                      className="min-h-11 min-w-0 flex-1 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:w-64"
-                      onChange={(event) => setGalleryCaption(event.target.value)}
-                      placeholder="Подпись к фото..."
-                      type="text"
-                      value={galleryCaption}
-                    />
-                    <input
-                      accept="image/*,video/*"
-                      className="hidden"
-                      onChange={handleGalleryFileChange}
-                      ref={galleryInputRef}
-                      type="file"
-                    />
-                    <button
-                      className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
-                      disabled={isUploadingGalleryItem}
-                      onClick={() => galleryInputRef.current?.click()}
-                      type="button"
-                    >
-                      {isUploadingGalleryItem ? "Загрузка..." : "Добавить"}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-                  {galleryItems.length === 0 ? (
-                    <article className="rounded-2xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-6 text-center sm:col-span-2 xl:col-span-3">
-                      <p className="text-base font-semibold">Галерея пока пустая</p>
-                      <p className="mt-2 text-sm text-[#a1a1aa]">
-                        Загрузи первое фото или видео, и оно будет видно вам обоим.
-                      </p>
-                    </article>
-                  ) : null}
-
-                  {galleryItems.map((item) => (
-                    <article
-                      className="overflow-hidden rounded-2xl border border-[#3f3f46]/35 bg-black/20"
-                      key={item.id}
-                    >
-                      {item.file_type === "image" ? (
-                        <button
-                          className="block aspect-[16/10] w-full overflow-hidden sm:aspect-[4/5]"
-                          onClick={() => setSelectedImageUrl(item.file_url)}
-                          type="button"
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            alt={item.caption ?? "Фото из галереи"}
-                            className="h-full w-full object-cover"
-                            src={item.file_url}
-                          />
-                        </button>
-                      ) : (
-                        <video
-                          className="aspect-[16/10] w-full bg-black object-cover sm:aspect-[4/5]"
-                          controls
-                          preload="metadata"
-                          src={item.file_url}
-                        />
-                      )}
-                      <div className="p-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <p className="text-sm font-semibold">
-                            {profiles.find((profile) => profile.user_id === item.user_id)
-                              ?.display_name ?? item.author}
-                          </p>
-                          <button
-                            className="rounded-lg border border-[#3f3f46]/35 px-2 py-1 text-[11px] font-bold text-[#a1a1aa] transition hover:bg-white/10 hover:text-[#f4f4f5]"
-                            onClick={() => deleteGalleryItem(item)}
-                            type="button"
-                          >
-                            Удалить
-                          </button>
-                        </div>
-                        {item.caption ? (
-                          <p className="mt-1 text-sm text-[#a1a1aa]">{item.caption}</p>
-                        ) : null}
-                        <p className="mt-2 text-xs text-[#71717a]">
-                          {formatMessageTime(item.created_at)}
-                        </p>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            ) : activeView === "ideas" ? (
-              <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
-                <div className="mb-5 border-b border-[#3f3f46]/35 pb-5">
-                  <p className="text-sm font-medium text-[#e5e5e5]">Общий раздел</p>
-                  <h2 className="text-2xl font-semibold sm:text-3xl">Идеи</h2>
-                </div>
-
-                <form
-                  className="mb-4 flex gap-2 rounded-2xl border border-[#3f3f46]/35 bg-black/20 p-2"
-                  onSubmit={addIdea}
-                >
-                  <input
-                    className="min-h-12 min-w-0 flex-1 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-base outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5]"
-                    onChange={(event) => setIdeaText(event.target.value)}
-                    placeholder="Напиши общую идею..."
-                    type="text"
-                    value={ideaText}
-                  />
-                  <button
-                    className="min-h-12 rounded-xl bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
-                    disabled={!ideaText.trim()}
-                    type="submit"
-                  >
-                    Добавить
-                  </button>
-                </form>
-
-                <div className="grid gap-3">
-                  {ideas.length === 0 ? (
-                    <article className="rounded-2xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-6 text-center">
-                      <p className="text-base font-semibold">Идей пока нет</p>
-                      <p className="mt-2 text-sm text-[#a1a1aa]">
-                        Добавьте первую идею, и она сохранится здесь для вас обоих.
-                      </p>
-                    </article>
-                  ) : null}
-
-                  {ideas.map((idea) => (
-                    <article
-                      className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 p-4"
-                      key={idea.id}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="text-base font-semibold text-[#f4f4f5]">
-                          {idea.text}
-                        </p>
-                        <button
-                          className="shrink-0 rounded-lg border border-[#3f3f46]/35 px-2 py-1 text-[11px] font-bold text-[#a1a1aa] transition hover:bg-white/10 hover:text-[#f4f4f5]"
-                          onClick={() => deleteIdea(idea)}
-                          type="button"
-                        >
-                          Удалить
-                        </button>
-                      </div>
-                      <p className="mt-3 text-xs font-semibold text-[#a1a1aa]">
-                        {profiles.find((profile) => profile.user_id === idea.user_id)
-                          ?.display_name ?? idea.author}{" "}
-                        · {formatMessageTime(idea.created_at)}
-                      </p>
-                    </article>
-                  ))}
                 </div>
               </div>
             ) : activeView === "settings" ? (
