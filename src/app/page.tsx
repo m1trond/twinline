@@ -3754,6 +3754,7 @@ export default function Home() {
                     );
                     const messageAuthor = messageProfile?.display_name ?? message.author;
                     const shouldShowFriendAvatar = !isMine && !isNextSameAuthor;
+                    const shouldShowOwnAvatar = isMine && !isNextSameAuthor;
                     const reply = getMessageReply(message.text);
                     const displayText = reply?.body ?? message.text;
                     const imageUrl = getMessageImageUrl(displayText);
@@ -3977,6 +3978,34 @@ export default function Home() {
                           </div>
                           ) : null}
                         </div>
+                        {isMine ? (
+                          shouldShowOwnAvatar ? (
+                            <button
+                              className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-bold text-[#050505] transition hover:scale-105"
+                              onClick={() =>
+                                setViewedProfile({
+                                  avatarUrl: currentProfile?.avatar_url ?? null,
+                                  name: activeUserName,
+                                  userId: user.id,
+                                })
+                              }
+                              type="button"
+                            >
+                              {currentProfile?.avatar_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  alt="Твоя аватарка"
+                                  className="h-full w-full object-cover"
+                                  src={currentProfile.avatar_url}
+                                />
+                              ) : (
+                                activeUserName[0]?.toUpperCase()
+                              )}
+                            </button>
+                          ) : (
+                            <span className="h-8 w-8 shrink-0" />
+                          )
+                        ) : null}
                       </article>
                     );
                   })}
