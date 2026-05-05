@@ -76,6 +76,10 @@ type ReceiptMessagePayload = {
   status: "delivered" | "read";
 };
 
+type TypingMessagePayload = {
+  expiresAt: string;
+};
+
 type ActiveView = "profile" | "messages" | "gallery" | "ideas" | "settings";
 type AuthMode = "sign-in" | "sign-up";
 type CallStatus = "idle" | "calling" | "incoming" | "connecting" | "connected";
@@ -99,6 +103,7 @@ const stickerMessagePrefix = "sticker::";
 const replyMessagePrefix = "reply::";
 const pinMessagePrefix = "pin::";
 const receiptMessagePrefix = "receipt::";
+const typingMessagePrefix = "typing::";
 const maxAttachmentSize = 50 * 1024 * 1024;
 const stickerOptions = ["😂", "❤️", "🔥", "🤝", "😎", "😭", "🥱", "😡", "🫡", "💀", "🥳", "🤯", "👍", "👎", "🍻", "✨"];
 
@@ -268,11 +273,37 @@ function getReceiptMessagePayload(text: string): ReceiptMessagePayload | null {
   return null;
 }
 
+function createTypingMessageText(expiresAt: string) {
+  return `${typingMessagePrefix}${JSON.stringify({ expiresAt })}`;
+}
+
+function getTypingMessagePayload(text: string): TypingMessagePayload | null {
+  if (!text.startsWith(typingMessagePrefix)) {
+    return null;
+  }
+
+  try {
+    const parsedPayload = JSON.parse(text.slice(typingMessagePrefix.length));
+
+    if (
+      parsedPayload &&
+      typeof parsedPayload.expiresAt === "string" &&
+      Number.isFinite(new Date(parsedPayload.expiresAt).getTime())
+    ) {
+      return parsedPayload as TypingMessagePayload;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 function isServiceMessage(text: string) {
   return Boolean(
     getPinMessagePayload(text) ||
       getReceiptMessagePayload(text) ||
-      text.startsWith("typing::"),
+      getTypingMessagePayload(text),
   );
 }
 
@@ -729,7 +760,47 @@ export default function Home() {
 
     return statuses;
   }, [messages, user?.id]);
-  const isFriendTyping = friendTypingUntil > typingNow;
+  const friendTypingUntilFromMessages = useMemo(() => {
+    if (!user) {
+      return 0;
+    }
+
+    let latestFriendTypingCreatedAt = 0;
+    let latestFriendTypingExpiresAt = 0;
+    let latestFriendRealMessageCreatedAt = 0;
+
+    for (const message of messages) {
+      if (message.user_id === user.id) {
+        continue;
+      }
+
+      const createdAt = new Date(message.created_at).getTime();
+      const typingPayload = getTypingMessagePayload(message.text);
+
+      if (typingPayload) {
+        if (createdAt >= latestFriendTypingCreatedAt) {
+          latestFriendTypingCreatedAt = createdAt;
+          latestFriendTypingExpiresAt = new Date(typingPayload.expiresAt).getTime();
+        }
+
+        continue;
+      }
+
+      if (!isServiceMessage(message.text)) {
+        latestFriendRealMessageCreatedAt = Math.max(
+          latestFriendRealMessageCreatedAt,
+          createdAt,
+        );
+      }
+    }
+
+    if (latestFriendTypingCreatedAt <= latestFriendRealMessageCreatedAt) {
+      return 0;
+    }
+
+    return latestFriendTypingExpiresAt;
+  }, [messages, user]);
+  const isFriendTyping = Math.max(friendTypingUntil, friendTypingUntilFromMessages) > typingNow;
   const visibleMessages = useMemo(() => {
     return messages.filter((message) => {
       return !hiddenMessageIds.includes(message.id) && !isServiceMessage(message.text);
@@ -2344,6 +2415,7 @@ export default function Home() {
     }
 
     typingSentAtRef.current = now;
+    void sendServiceMessage(createTypingMessageText(new Date(now + 3500).toISOString()));
     void typingChannelRef.current?.send({
       event: "typing",
       payload: {
