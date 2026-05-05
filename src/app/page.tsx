@@ -3924,9 +3924,58 @@ export default function Home() {
                               className="whitespace-pre-wrap break-words text-[15px] leading-6"
                             >
                               {displayText}
+                              <span className="ml-2 inline-flex translate-y-[1px] items-center gap-1 align-baseline">
+                                <span
+                                  className={`text-[11px] font-medium leading-none ${
+                                    isMine ? "text-[#404040]" : "text-[#71717a]"
+                                  }`}
+                                >
+                                  {formatMessageTime(message.created_at)}
+                                </span>
+                                {receiptStatus ? (
+                                  <span
+                                    aria-label={
+                                      receiptStatus === "read" ? "Прочитано" : "Доставлено"
+                                    }
+                                    className="inline-flex items-center text-[#262626]"
+                                  >
+                                    {receiptStatus === "read" ? (
+                                      <svg
+                                        aria-hidden="true"
+                                        className="h-3.5 w-6"
+                                        fill="none"
+                                        viewBox="0 0 24 16"
+                                      >
+                                        <path
+                                          d="m3 8 3 3 7-7M11 11l8-8"
+                                          stroke="currentColor"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth="2"
+                                        />
+                                      </svg>
+                                    ) : (
+                                      <svg
+                                        aria-hidden="true"
+                                        className="h-3.5 w-3.5"
+                                        fill="none"
+                                        viewBox="0 0 16 16"
+                                      >
+                                        <path
+                                          d="m3 8 3 3 7-7"
+                                          stroke="currentColor"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth="2"
+                                        />
+                                      </svg>
+                                    )}
+                                  </span>
+                                ) : null}
+                              </span>
                             </p>
                           )}
-                          {!hasStandaloneBubble ? (
+                          {!hasStandaloneBubble && hasAttachment ? (
                           <div className={`${hasAttachment ? "mt-2 px-1" : "mt-1"} flex items-center justify-end gap-3`}>
                             <p
                               className={`text-right text-[11px] font-medium ${
