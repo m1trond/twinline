@@ -641,6 +641,7 @@ export default function Home() {
   const [errorMessage, setErrorMessage] = useState("");
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  const messagesListRef = useRef<HTMLDivElement | null>(null);
   const stickerButtonRef = useRef<HTMLButtonElement | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const remoteCallStreamRef = useRef<MediaStream | null>(null);
@@ -897,6 +898,26 @@ export default function Home() {
     latestMessageCreatedAtRef.current =
       messages.filter((message) => message.id > 0).at(-1)?.created_at ?? null;
   }, [messages]);
+
+  useEffect(() => {
+    if (activeView !== "messages" || selectedChatUserId === null) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      const messagesList = messagesListRef.current;
+
+      if (!messagesList) {
+        return;
+      }
+
+      messagesList.scrollTop = messagesList.scrollHeight;
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [activeView, isLoadingMessages, selectedChatUserId, visibleMessages.length]);
 
   useEffect(() => {
     callStatusRef.current = callStatus;
@@ -3401,7 +3422,10 @@ export default function Home() {
                   </article>
                 ) : null}
 
-                <div className="scrollbar-hidden flex min-h-0 flex-col overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#050505]/82 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-4">
+                <div
+                  className="scrollbar-hidden flex min-h-0 flex-col overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#050505]/82 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-4"
+                  ref={messagesListRef}
+                >
                   {isLoadingMessages ? (
                     <p className="text-sm text-[#a1a1aa]">Загружаю сообщения...</p>
                   ) : null}
