@@ -76,10 +76,6 @@ type ReceiptMessagePayload = {
   status: "delivered" | "read";
 };
 
-type TypingMessagePayload = {
-  expiresAt: string;
-};
-
 type ActiveView = "profile" | "messages" | "gallery" | "ideas" | "settings";
 type AuthMode = "sign-in" | "sign-up";
 type CallStatus = "idle" | "calling" | "incoming" | "connecting" | "connected";
@@ -103,7 +99,6 @@ const stickerMessagePrefix = "sticker::";
 const replyMessagePrefix = "reply::";
 const pinMessagePrefix = "pin::";
 const receiptMessagePrefix = "receipt::";
-const typingMessagePrefix = "typing::";
 const maxAttachmentSize = 50 * 1024 * 1024;
 const stickerOptions = ["😂", "❤️", "🔥", "🤝", "😎", "😭", "🥱", "😡", "🫡", "💀", "🥳", "🤯", "👍", "👎", "🍻", "✨"];
 
@@ -273,35 +268,11 @@ function getReceiptMessagePayload(text: string): ReceiptMessagePayload | null {
   return null;
 }
 
-function createTypingMessageText() {
-  return `${typingMessagePrefix}${JSON.stringify({
-    expiresAt: new Date(Date.now() + 3500).toISOString(),
-  } satisfies TypingMessagePayload)}`;
-}
-
-function getTypingMessagePayload(text: string): TypingMessagePayload | null {
-  if (!text.startsWith(typingMessagePrefix)) {
-    return null;
-  }
-
-  try {
-    const parsedPayload = JSON.parse(text.slice(typingMessagePrefix.length));
-
-    if (parsedPayload && typeof parsedPayload.expiresAt === "string") {
-      return parsedPayload;
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
-}
-
 function isServiceMessage(text: string) {
   return Boolean(
     getPinMessagePayload(text) ||
       getReceiptMessagePayload(text) ||
-      getTypingMessagePayload(text),
+      text.startsWith("typing::"),
   );
 }
 
@@ -615,6 +586,7 @@ export default function Home() {
   const [profileName, setProfileName] = useState("");
   const [messageText, setMessageText] = useState("");
   const [typingNow, setTypingNow] = useState(() => Date.now());
+  const [friendTypingUntil, setFriendTypingUntil] = useState(0);
   const [galleryCaption, setGalleryCaption] = useState("");
   const [ideaText, setIdeaText] = useState("");
   const [activeView, setActiveView] = useState<ActiveView>("profile");
@@ -684,6 +656,7 @@ export default function Home() {
   const sentDeliveryReceiptIdsRef = useRef<Set<number>>(new Set());
   const sentReadReceiptIdsRef = useRef<Set<number>>(new Set());
   const typingSentAtRef = useRef(0);
+  const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const latestMessageCreatedAtRef = useRef<string | null>(null);
   const notificationsEnabledRef = useRef(false);
   const isDeletingChatRef = useRef(false);
@@ -755,17 +728,6 @@ export default function Home() {
     }
 
     return statuses;
-  }, [messages, user?.id]);
-  const friendTypingUntil = useMemo(() => {
-    for (let index = messages.length - 1; index >= 0; index -= 1) {
-      const typingPayload = getTypingMessagePayload(messages[index].text);
-
-      if (typingPayload && messages[index].user_id !== user?.id) {
-        return new Date(typingPayload.expiresAt).getTime();
-      }
-    }
-
-    return 0;
   }, [messages, user?.id]);
   const isFriendTyping = friendTypingUntil > typingNow;
   const visibleMessages = useMemo(() => {
@@ -845,7 +807,9 @@ export default function Home() {
       setGalleryItems([]);
       setIdeas([]);
       setProfiles([]);
+      setFriendTypingUntil(0);
       latestMessageCreatedAtRef.current = null;
+      typingChannelRef.current = null;
     });
 
     return () => {
@@ -1339,12 +1303,29 @@ export default function Home() {
           );
         },
       )
+      .on("broadcast", { event: "typing" }, (payload) => {
+        const typingPayload = payload.payload as {
+          expiresAt?: string;
+          senderId?: string;
+        };
+
+        if (
+          typingPayload.senderId &&
+          typingPayload.senderId !== signedInUser.id &&
+          typeof typingPayload.expiresAt === "string"
+        ) {
+          setFriendTypingUntil(new Date(typingPayload.expiresAt).getTime());
+        }
+      })
       .subscribe();
+
+    typingChannelRef.current = channel;
 
     return () => {
       isMounted = false;
       window.clearInterval(newMessagesInterval);
       window.clearInterval(fullSyncInterval);
+      typingChannelRef.current = null;
       supabase.removeChannel(channel);
     };
   }, [user]);
@@ -2338,7 +2319,14 @@ export default function Home() {
     }
 
     typingSentAtRef.current = now;
-    void sendServiceMessage(createTypingMessageText());
+    void typingChannelRef.current?.send({
+      event: "typing",
+      payload: {
+        expiresAt: new Date(now + 3500).toISOString(),
+        senderId: user.id,
+      },
+      type: "broadcast",
+    });
   }
 
   function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
