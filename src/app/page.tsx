@@ -1239,6 +1239,10 @@ export default function Home() {
             return;
           }
 
+          if (newMessage.user_id !== signedInUser.id && !isServiceMessage(newMessage.text)) {
+            setFriendTypingUntil(0);
+          }
+
           setMessages((currentMessages) =>
             mergeMessages(currentMessages, [newMessage]),
           );
@@ -1303,6 +1307,30 @@ export default function Home() {
           );
         },
       )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(newMessagesInterval);
+      window.clearInterval(fullSyncInterval);
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const signedInUser = user;
+    const channel = supabase
+      .channel("twinline-typing", {
+        config: {
+          broadcast: {
+            self: false,
+          },
+        },
+      })
       .on("broadcast", { event: "typing" }, (payload) => {
         const typingPayload = payload.payload as {
           expiresAt?: string;
@@ -1322,9 +1350,6 @@ export default function Home() {
     typingChannelRef.current = channel;
 
     return () => {
-      isMounted = false;
-      window.clearInterval(newMessagesInterval);
-      window.clearInterval(fullSyncInterval);
       typingChannelRef.current = null;
       supabase.removeChannel(channel);
     };
@@ -3767,18 +3792,44 @@ export default function Home() {
                             >
                               {formatMessageTime(message.created_at)}
                             </p>
-                            {receiptStatus ? (
-                              <p
-                                className={`text-right text-[11px] font-semibold ${
-                                  isMine ? "text-[#404040]" : "text-[#71717a]"
-                                }`}
+                            {receiptStatus === "delivered" || receiptStatus === "read" ? (
+                              <span
+                                aria-label={
+                                  receiptStatus === "read" ? "Прочитано" : "Доставлено"
+                                }
+                                className="flex items-center text-[#262626]"
                               >
-                                {receiptStatus === "read"
-                                  ? "прочитано"
-                                  : receiptStatus === "delivered"
-                                    ? "доставлено"
-                                    : "отправлено"}
-                              </p>
+                                <svg
+                                  aria-hidden="true"
+                                  className="h-3.5 w-3.5"
+                                  fill="none"
+                                  viewBox="0 0 16 16"
+                                >
+                                  <path
+                                    d="m3 8 3 3 7-7"
+                                    stroke="currentColor"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                  />
+                                </svg>
+                                {receiptStatus === "read" ? (
+                                  <svg
+                                    aria-hidden="true"
+                                    className="-ml-1 h-3.5 w-3.5"
+                                    fill="none"
+                                    viewBox="0 0 16 16"
+                                  >
+                                    <path
+                                      d="m3 8 3 3 7-7"
+                                      stroke="currentColor"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2"
+                                    />
+                                  </svg>
+                                ) : null}
+                              </span>
                             ) : null}
                           </div>
                           ) : null}
