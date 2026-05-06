@@ -3226,9 +3226,6 @@ export default function Home() {
                 <h1 className="text-lg font-semibold tracking-normal sm:text-xl">
                   Twinline
                 </h1>
-                <p className="max-w-[210px] truncate text-xs font-medium text-[#a1a1aa] sm:max-w-none sm:text-sm">
-                  Приватное пространство для двоих
-                </p>
               </div>
             </div>
           </header>
@@ -3433,9 +3430,6 @@ export default function Home() {
                         <p className="mt-1 text-sm leading-6 text-[#a1a1aa]">
                           Показывать новые сообщения в браузере, если диалог не открыт.
                           Непрочитанные также появятся в названии вкладки.
-                        </p>
-                        <p className="mt-2 text-xs font-semibold text-[#e5e5e5]/70">
-                          Сейчас непрочитанных: {totalUnreadMessageCount}
                         </p>
                       </div>
                       <button
