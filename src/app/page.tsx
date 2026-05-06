@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import Image from "next/image";
 import {
   ChangeEvent,
   FormEvent,
@@ -3129,8 +3130,14 @@ export default function Home() {
         />
         <section className="relative w-full max-w-md rounded-3xl border border-[#3f3f46]/45 bg-[#111111]/86 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-md">
           <div className="mb-6 flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-xl bg-[#f4f4f5]">
-              <span className="text-xl font-black text-[#050505]">H</span>
+            <div className="grid h-11 w-11 place-items-center overflow-hidden rounded-xl bg-white">
+              <Image
+                alt="Hush"
+                className="h-full w-full object-cover"
+                height={44}
+                src="/hush-logo.png"
+                width={44}
+              />
             </div>
             <div>
               <h1 className="text-2xl font-semibold">Hush</h1>
@@ -3219,8 +3226,14 @@ export default function Home() {
         <div className="flex h-full w-full flex-col overflow-hidden px-2 py-2 sm:px-3 sm:py-3 lg:px-4 xl:px-5">
           <header className="mb-2 flex shrink-0 items-center justify-between gap-3 rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/82 px-3 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-4 lg:hidden">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#f4f4f5] shadow-[0_8px_24px_rgba(244,244,245,0.16)] sm:h-10 sm:w-10">
-                <span className="text-lg font-black text-[#050505]">H</span>
+              <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl bg-white shadow-[0_8px_24px_rgba(244,244,245,0.16)] sm:h-10 sm:w-10">
+                <Image
+                  alt="Hush"
+                  className="h-full w-full object-cover"
+                  height={40}
+                  src="/hush-logo.png"
+                  width={40}
+                />
               </div>
               <div className="min-w-0">
                 <h1 className="text-lg font-semibold tracking-normal sm:text-xl">
@@ -3267,8 +3280,14 @@ export default function Home() {
           <section className="grid min-h-0 flex-1 gap-2 overflow-hidden pb-1 sm:gap-2 lg:grid-cols-[250px_minmax(0,1fr)] xl:grid-cols-[270px_minmax(0,1fr)]">
             <aside className="hidden min-h-0 flex-col rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:flex">
               <div className="mb-5 flex items-center gap-3">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#f4f4f5] shadow-[0_8px_24px_rgba(244,244,245,0.16)]">
-                  <span className="text-lg font-black text-[#050505]">H</span>
+                <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl bg-white shadow-[0_8px_24px_rgba(244,244,245,0.16)]">
+                  <Image
+                    alt="Hush"
+                    className="h-full w-full object-cover"
+                    height={40}
+                    src="/hush-logo.png"
+                    width={40}
+                  />
                 </div>
                 <h1 className="min-w-0 text-xl font-semibold tracking-normal">
                   Hush
