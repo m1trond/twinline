@@ -19,11 +19,11 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "/hush-favicon.svg?v=3",
+        url: "/hush-favicon.svg?v=4",
         type: "image/svg+xml",
       },
     ],
-    shortcut: "/hush-favicon.svg?v=3",
+    shortcut: "/hush-favicon.svg?v=4",
   },
 };
 
