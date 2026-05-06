@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: "Hush",
   description: "Hush private space",
   icons: {
-    icon: "/icons/twinline-icon.svg",
+    icon: "/hush-logo.png",
   },
 };
 
