@@ -3397,7 +3397,7 @@ export default function Home() {
                         Сохранить имя
                       </button>
                     </form>
-                    <p className="mt-2 text-xs leading-5 text-[#a1a1aa]">
+                    <p className="mt-2 text-[13px] leading-5 text-[#a1a1aa]">
                       {isNameChangeAllowed
                         ? "Имя можно менять один раз в месяц."
                         : `Имя снова можно будет изменить ${nextNameChangeDate ?? "позже"}.`}
@@ -3411,7 +3411,7 @@ export default function Home() {
                     <p className="mt-2 break-words text-base font-semibold">
                       {user.email}
                     </p>
-                    <p className="mt-1 text-xs leading-5 text-[#a1a1aa]">
+                    <p className="mt-1 text-[13px] leading-5 text-[#a1a1aa]">
                       Его видишь только ты в своём аккаунте.
                     </p>
                   </section>
