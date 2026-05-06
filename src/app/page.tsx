@@ -2144,10 +2144,14 @@ export default function Home() {
     if (button) {
       const rect = button.getBoundingClientRect();
       const pickerWidth = Math.min(300, window.innerWidth - 32);
+      const pickerHeight = 286;
 
       setStickerPickerPosition({
         left: Math.max(16, Math.min(rect.left, window.innerWidth - pickerWidth - 16)),
-        top: Math.max(16, rect.top - 236),
+        top: Math.max(
+          16,
+          Math.min(rect.top - 236, window.innerHeight - pickerHeight - 16),
+        ),
       });
     }
 
@@ -2165,18 +2169,18 @@ export default function Home() {
     event.preventDefault();
     setIsStickerPickerOpen(false);
 
-    const menuWidth = 220;
+    const menuWidth = Math.min(220, window.innerWidth - 24);
     const menuHeight = 306;
 
     setMessageContextMenu({
       left: Math.max(
-        8,
-        Math.min(event.clientX, window.innerWidth - menuWidth - 8),
+        12,
+        Math.min(event.clientX, window.innerWidth - menuWidth - 12),
       ),
       message,
       top: Math.max(
-        8,
-        Math.min(event.clientY, window.innerHeight - menuHeight - 8),
+        12,
+        Math.min(event.clientY, window.innerHeight - menuHeight - 12),
       ),
     });
   }
@@ -3128,9 +3132,9 @@ export default function Home() {
           aria-hidden="true"
           className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(244,244,245,0.12),transparent_32%),linear-gradient(135deg,#050505_0%,#111111_48%,#000000_100%)]"
         />
-        <section className="relative w-full max-w-md rounded-3xl border border-[#3f3f46]/45 bg-[#111111]/86 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-md">
-          <div className="mb-6 flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center overflow-hidden rounded-xl bg-white">
+        <section className="relative w-full max-w-[min(28rem,calc(100vw-1.5rem))] rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/86 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-md sm:rounded-3xl sm:p-5">
+          <div className="mb-5 flex items-center gap-3 sm:mb-6">
+            <div className="grid h-10 w-10 place-items-center overflow-hidden rounded-xl bg-white sm:h-11 sm:w-11">
               <Image
                 alt="Hush"
                 className="h-full w-full object-cover"
@@ -3140,7 +3144,7 @@ export default function Home() {
               />
             </div>
             <div>
-              <h1 className="text-2xl font-semibold">Hush</h1>
+              <h1 className="text-xl font-semibold sm:text-2xl">Hush</h1>
               <p className="text-sm text-[#a1a1aa]">Вход в приватное пространство</p>
             </div>
           </div>
@@ -3173,7 +3177,7 @@ export default function Home() {
           <form className="grid gap-3" onSubmit={handleAuth}>
             {authMode === "sign-up" ? (
               <input
-                className="min-h-12 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-base outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5]"
+                className="min-h-11 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-base outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:min-h-12"
                 onChange={(event) => setAuthName(event.target.value)}
                 placeholder="Имя в Hush"
                 type="text"
@@ -3181,21 +3185,21 @@ export default function Home() {
               />
             ) : null}
             <input
-              className="min-h-12 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-base outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5]"
+              className="min-h-11 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-base outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:min-h-12"
               onChange={(event) => setAuthEmail(event.target.value)}
               placeholder="Email"
               type="email"
               value={authEmail}
             />
             <input
-              className="min-h-12 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-base outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5]"
+              className="min-h-11 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-base outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:min-h-12"
               onChange={(event) => setAuthPassword(event.target.value)}
               placeholder="Пароль"
               type="password"
               value={authPassword}
             />
             <button
-              className="min-h-12 rounded-xl bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5]"
+              className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5] sm:min-h-12"
               type="submit"
             >
               {authMode === "sign-in" ? "Войти" : "Создать аккаунт"}
@@ -3223,8 +3227,8 @@ export default function Home() {
         className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(245,245,245,0.35)_1px,transparent_1px),linear-gradient(90deg,rgba(245,245,245,0.35)_1px,transparent_1px)] [background-size:44px_44px]"
       />
       <div className="relative h-full overflow-hidden bg-[#0a0a0a]/35">
-        <div className="flex h-full w-full flex-col overflow-hidden px-2 py-2 sm:px-3 sm:py-3 lg:px-4 xl:px-5">
-          <header className="mb-2 flex shrink-0 items-center justify-between gap-3 rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/82 px-3 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-4 lg:hidden">
+        <div className="safe-bottom flex h-full w-full flex-col overflow-hidden px-1.5 py-1.5 sm:px-3 sm:py-3 lg:px-4 xl:px-5">
+          <header className="mb-2 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 px-3 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4 lg:hidden">
             <div className="flex min-w-0 items-center gap-3">
               <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl bg-white shadow-[0_8px_24px_rgba(244,244,245,0.16)] sm:h-10 sm:w-10">
                 <Image
@@ -3243,10 +3247,10 @@ export default function Home() {
             </div>
           </header>
 
-          <nav className="scrollbar-hidden mb-3 flex shrink-0 gap-2 overflow-x-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-2 shadow-[0_14px_45px_rgba(0,0,0,0.24)] backdrop-blur-md lg:hidden">
+          <nav className="scrollbar-hidden mb-2 flex shrink-0 gap-1.5 overflow-x-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.24)] backdrop-blur-md sm:mb-3 sm:gap-2 sm:rounded-2xl sm:p-2 lg:hidden">
             {[...navItems, settingsNavItem].map((item) => (
               <button
-                className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                className={`shrink-0 rounded-lg px-3 py-2 text-sm font-semibold transition sm:rounded-xl sm:px-4 sm:py-2.5 ${
                   activeView === item.view
                     ? "bg-[#f4f4f5] text-[#050505]"
                     : "text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
@@ -3277,7 +3281,7 @@ export default function Home() {
             ))}
           </nav>
 
-          <section className="grid min-h-0 flex-1 gap-2 overflow-hidden pb-1 sm:gap-2 lg:grid-cols-[250px_minmax(0,1fr)] xl:grid-cols-[270px_minmax(0,1fr)]">
+          <section className="grid min-h-0 flex-1 gap-2 overflow-hidden lg:grid-cols-[250px_minmax(0,1fr)] xl:grid-cols-[270px_minmax(0,1fr)]">
             <aside className="hidden min-h-0 flex-col rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:flex">
               <div className="mb-5 flex items-center gap-3">
                 <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl bg-white shadow-[0_8px_24px_rgba(244,244,245,0.16)]">
@@ -3347,10 +3351,10 @@ export default function Home() {
             </aside>
 
             {activeView === "profile" ? (
-              <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
-                <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[#3f3f46]/35 pb-5 sm:mb-6">
-                  <div className="flex items-center gap-4">
-                    <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-[#f4f4f5] text-2xl font-black text-[#050505] sm:h-20 sm:w-20 sm:text-3xl">
+              <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#3f3f46]/35 pb-4 sm:mb-6 sm:gap-4 sm:pb-5">
+                  <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                    <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#f4f4f5] text-xl font-black text-[#050505] sm:h-20 sm:w-20 sm:rounded-2xl sm:text-3xl">
                       {currentProfile?.avatar_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -3362,11 +3366,11 @@ export default function Home() {
                         activeUserName[0]?.toUpperCase()
                       )}
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-[#e5e5e5]">
                         Активный профиль
                       </p>
-                      <h2 className="text-2xl font-semibold sm:text-3xl">
+                      <h2 className="truncate text-2xl font-semibold sm:text-3xl">
                         {activeUserName}
                       </h2>
                       <input
@@ -3377,7 +3381,7 @@ export default function Home() {
                         type="file"
                       />
                       <button
-                        className="mt-3 rounded-xl border border-[#3f3f46]/35 px-3 py-2 text-xs font-bold text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="mt-2 rounded-xl border border-[#3f3f46]/35 px-3 py-2 text-xs font-bold text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 sm:mt-3"
                         disabled={isUploadingAvatar}
                         onClick={() => avatarInputRef.current?.click()}
                         type="button"
@@ -3389,13 +3393,13 @@ export default function Home() {
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <section className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 px-4 py-3 sm:col-span-2">
+                  <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-3 sm:col-span-2 sm:rounded-2xl sm:px-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#e5e5e5]">
                       Имя профиля
                     </p>
                     <form className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={updateProfileName}>
                       <input
-                        className="min-h-10 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="min-h-10 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-base outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm"
                         disabled={!isNameChangeAllowed}
                         maxLength={24}
                         minLength={2}
@@ -3423,7 +3427,7 @@ export default function Home() {
                     </p>
                   </section>
 
-                  <section className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 px-4 py-3">
+                  <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-3 sm:rounded-2xl sm:px-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#e5e5e5]">
                       Email
                     </p>
@@ -3438,8 +3442,8 @@ export default function Home() {
                 </div>
               </div>
             ) : activeView === "settings" ? (
-              <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
-                <div className="mb-5 border-b border-[#3f3f46]/35 pb-5">
+              <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
+                <div className="mb-4 border-b border-[#3f3f46]/35 pb-4 sm:mb-5 sm:pb-5">
                   <p className="text-sm font-medium text-[#e5e5e5]">
                     Hush
                   </p>
@@ -3448,8 +3452,8 @@ export default function Home() {
                   </h2>
                 </div>
 
-                <div className="grid gap-4">
-                  <section className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 p-4">
+                <div className="grid gap-3 sm:gap-4">
+                  <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 p-3 sm:rounded-2xl sm:p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <p className="text-base font-semibold">
@@ -3481,14 +3485,14 @@ export default function Home() {
               </div>
             ) : (
               selectedChatUserId === null ? (
-              <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
-                <div className="mb-4 border-b border-[#3f3f46]/35 pb-4">
+              <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
+                <div className="mb-3 border-b border-[#3f3f46]/35 pb-3 sm:mb-4 sm:pb-4">
                   <h2 className="text-xl font-semibold sm:text-2xl">Сообщения</h2>
                 </div>
 
                 <div className="grid gap-2">
                   {chatProfiles.length === 0 ? (
-                    <article className="rounded-2xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-6 text-center">
+                    <article className="rounded-xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-4 text-center sm:rounded-2xl sm:p-6">
                       <p className="text-base font-semibold">Диалогов пока нет</p>
                       <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
                         Когда появятся другие пользователи, их чаты будут здесь.
@@ -3508,7 +3512,7 @@ export default function Home() {
 
                     return (
                       <button
-                        className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition hover:border-[#3f3f46]/55 hover:bg-[#f4f4f5]/8 ${
+                        className={`flex w-full items-center gap-2.5 rounded-xl border p-2.5 text-left transition hover:border-[#3f3f46]/55 hover:bg-[#f4f4f5]/8 sm:gap-3 sm:rounded-2xl sm:p-3 ${
                           profileUnreadCount > 0
                             ? "border-[#f4f4f5]/20 bg-[#f4f4f5]/10"
                             : "border-transparent bg-[#050505]/52"
@@ -3520,7 +3524,7 @@ export default function Home() {
                         }}
                         type="button"
                       >
-                        <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-base font-bold text-[#050505]">
+                        <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-sm font-bold text-[#050505] sm:h-12 sm:w-12 sm:text-base">
                           {profile.avatar_url ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
@@ -3534,17 +3538,17 @@ export default function Home() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-3">
-                            <p className="truncate text-base font-semibold text-[#f4f4f5]">
+                            <p className="truncate text-sm font-semibold text-[#f4f4f5] sm:text-base">
                               {profile.display_name}
                             </p>
                             {latestProfileMessage ? (
-                              <span className="shrink-0 text-xs font-medium text-[#a1a1aa]">
+                              <span className="shrink-0 text-[11px] font-medium text-[#a1a1aa] sm:text-xs">
                                 {formatMessageTime(latestProfileMessage.created_at)}
                               </span>
                             ) : null}
                           </div>
                           <div className="mt-1 flex items-center justify-between gap-3">
-                            <p className={`truncate text-sm ${
+                            <p className={`truncate text-xs sm:text-sm ${
                               profileUnreadCount > 0
                                 ? "font-semibold text-[#f4f4f5]"
                                 : "text-[#a1a1aa]"
@@ -3567,11 +3571,11 @@ export default function Home() {
               </div>
               ) : (
               <div className="grid min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden">
-                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 px-3 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-4">
-                  <div className="flex min-w-0 items-center gap-3">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
+                  <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
                     <button
                       aria-label="Назад к чатам"
-                      className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[#3f3f46]/35 text-[#f4f4f5] transition hover:bg-white/10"
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 text-[#f4f4f5] transition hover:bg-white/10 sm:rounded-xl"
                       onClick={() => setSelectedChatUserId(null)}
                       type="button"
                     >
@@ -3591,7 +3595,7 @@ export default function Home() {
                       </svg>
                     </button>
                     <button
-                      className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-base font-semibold text-[#050505] transition hover:scale-105"
+                      className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-sm font-semibold text-[#050505] transition hover:scale-105 sm:h-10 sm:w-10 sm:text-base"
                       onClick={() => {
                         setViewedProfile(
                           friendProfile ?? {
@@ -3623,10 +3627,10 @@ export default function Home() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+                  <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
                     <button
                       aria-label="Удалить переписку"
-                      className="grid min-h-10 w-10 place-items-center rounded-xl border border-red-400/45 bg-red-500/15 text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-55"
+                      className="grid min-h-9 w-9 place-items-center rounded-lg border border-red-400/45 bg-red-500/15 text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-55 sm:min-h-10 sm:w-10 sm:rounded-xl"
                       disabled={isDeletingChat}
                       onClick={deleteChat}
                       type="button"
@@ -3651,7 +3655,7 @@ export default function Home() {
                       )}
                     </button>
                     <button
-                      className="min-h-9 min-w-28 rounded-xl bg-[#f4f4f5] px-4 text-xs font-bold text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
+                      className="min-h-9 min-w-24 rounded-lg bg-[#f4f4f5] px-3 text-xs font-bold text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b] sm:min-w-28 sm:rounded-xl sm:px-4"
                       disabled={!friendProfile?.userId || callStatus !== "idle"}
                       onClick={startCall}
                       type="button"
@@ -3661,8 +3665,8 @@ export default function Home() {
                   </div>
                 </div>
                 {activePinnedMessage ? (
-                  <article className="mb-3 flex shrink-0 items-center gap-3 rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/82 px-4 py-3 text-left shadow-[0_14px_45px_rgba(0,0,0,0.22)] backdrop-blur-md">
-                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#f4f4f5]/18 text-[#e5e5e5]">
+                  <article className="mb-2 flex shrink-0 items-center gap-2.5 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 px-3 py-2.5 text-left shadow-[0_14px_45px_rgba(0,0,0,0.22)] backdrop-blur-md sm:mb-3 sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
+                    <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#f4f4f5]/18 text-[#e5e5e5] sm:h-9 sm:w-9 sm:rounded-xl">
                       <svg
                         aria-hidden="true"
                         className="h-5 w-5"
@@ -3693,7 +3697,7 @@ export default function Home() {
                       </span>
                     </div>
                     <button
-                      className="min-h-10 shrink-0 rounded-xl border border-[#3f3f46]/35 px-3 text-xs font-bold text-[#f4f4f5] transition hover:bg-white/10 sm:px-4"
+                      className="min-h-9 shrink-0 rounded-lg border border-[#3f3f46]/35 px-2.5 text-xs font-bold text-[#f4f4f5] transition hover:bg-white/10 sm:min-h-10 sm:rounded-xl sm:px-4"
                       onClick={() => requestUnpinPinnedMessage(activePinnedMessage)}
                       type="button"
                     >
@@ -3703,7 +3707,7 @@ export default function Home() {
                 ) : null}
 
                 <div
-                  className="scrollbar-hidden flex min-h-0 flex-col overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#050505]/82 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-4"
+                  className="scrollbar-hidden flex min-h-0 flex-col overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#050505]/82 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4"
                   ref={messagesListRef}
                 >
                   {isLoadingMessages ? (
@@ -3753,7 +3757,7 @@ export default function Home() {
 
                     return (
                       <article
-                        className={`-mx-1 flex items-end gap-2 rounded-2xl px-1 py-1 transition-[background-color,box-shadow] duration-300 ${
+                        className={`-mx-1 flex items-end gap-1.5 rounded-xl px-1 py-1 transition-[background-color,box-shadow] duration-300 sm:gap-2 sm:rounded-2xl ${
                           highlightedMessageId === message.id
                             ? "bg-[#f4f4f5]/12 shadow-[0_0_0_2px_rgba(244,244,245,0.26),0_0_38px_rgba(244,244,245,0.12)]"
                             : "shadow-[0_0_0_0_rgba(244,244,245,0)]"
@@ -3766,7 +3770,7 @@ export default function Home() {
                         {!isMine ? (
                           shouldShowFriendAvatar ? (
                             <button
-                              className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-bold text-[#050505] transition hover:scale-105"
+                              className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-[11px] font-bold text-[#050505] transition hover:scale-105 sm:h-8 sm:w-8 sm:text-xs"
                               onClick={() =>
                                 setViewedProfile({
                                   avatarUrl: messageProfile?.avatar_url ?? null,
@@ -3788,15 +3792,15 @@ export default function Home() {
                               )}
                             </button>
                           ) : (
-                            <span className="h-8 w-8 shrink-0" />
+                            <span className="h-7 w-7 shrink-0 sm:h-8 sm:w-8" />
                           )
                         ) : null}
                         <div
-                          className={`max-w-[92%] rounded-[20px] sm:max-w-[72%] ${
+                          className={`max-w-[min(84vw,92%)] rounded-[18px] sm:max-w-[72%] sm:rounded-[20px] ${
                             hasStandaloneBubble
                               ? "bg-transparent p-0 shadow-none"
                               : `shadow-[0_10px_30px_rgba(0,0,0,0.18)] ${
-                                  hasAttachment ? "p-2" : "px-3.5 py-2.5"
+                                  hasAttachment ? "p-1.5 sm:p-2" : "px-3 py-2 sm:px-3.5 sm:py-2.5"
                                 }`
                           } ${
                             hasStandaloneBubble
@@ -3842,20 +3846,20 @@ export default function Home() {
                           ) : null}
                           {imageUrl ? (
                             <button
-                              className="block w-full overflow-hidden rounded-xl"
+                              className="block w-full overflow-hidden rounded-lg sm:rounded-xl"
                               onClick={() => setSelectedImageUrl(imageUrl)}
                               type="button"
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 alt="Отправленное изображение"
-                                className="max-h-[420px] w-full object-cover"
+                                className="max-h-[58dvh] w-full object-cover sm:max-h-[420px]"
                                 src={imageUrl}
                               />
                             </button>
                         ) : videoUrl ? (
                           <video
-                            className="max-h-[420px] w-full rounded-xl bg-black"
+                            className="max-h-[58dvh] w-full rounded-lg bg-black sm:max-h-[420px] sm:rounded-xl"
                             controls
                             controlsList="nodownload"
                             preload="metadata"
@@ -3869,7 +3873,7 @@ export default function Home() {
                           />
                         ) : callDurationSeconds !== null ? (
                           <div
-                            className={`min-w-[min(260px,70vw)] rounded-2xl px-3 py-2 ${
+                            className={`min-w-[min(230px,70vw)] rounded-xl px-3 py-2 sm:min-w-[min(260px,70vw)] sm:rounded-2xl ${
                               isMine ? "bg-[#2f2f2f]" : "bg-[#262626]"
                             }`}
                           >
@@ -3904,13 +3908,13 @@ export default function Home() {
                           </div>
                         ) : sticker ? (
                           <div className="px-1 py-0.5">
-                            <span className="block text-7xl leading-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.25)]">
+                            <span className="block text-6xl leading-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.25)] sm:text-7xl">
                               {sticker}
                             </span>
                           </div>
                         ) : (
                             <p
-                              className="whitespace-pre-wrap break-words text-[15px] leading-6"
+                              className="whitespace-pre-wrap break-words text-sm leading-6 sm:text-[15px]"
                             >
                               {displayText}
                               <span className="ml-2 inline-flex translate-y-[1px] items-center gap-1 align-baseline">
@@ -4019,7 +4023,7 @@ export default function Home() {
                         {isMine ? (
                           shouldShowOwnAvatar ? (
                             <button
-                              className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-bold text-[#050505] transition hover:scale-105"
+                              className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-[11px] font-bold text-[#050505] transition hover:scale-105 sm:h-8 sm:w-8 sm:text-xs"
                               onClick={() =>
                                 setViewedProfile({
                                   avatarUrl: currentProfile?.avatar_url ?? null,
@@ -4041,7 +4045,7 @@ export default function Home() {
                               )}
                             </button>
                           ) : (
-                            <span className="h-8 w-8 shrink-0" />
+                            <span className="h-7 w-7 shrink-0 sm:h-8 sm:w-8" />
                           )
                         ) : null}
                       </article>
@@ -4050,7 +4054,7 @@ export default function Home() {
                 </div>
 
                 <form
-                  className="mt-2 flex gap-2 rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/82 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md"
+                  className="mt-2 grid grid-cols-[auto_1fr_auto_auto_auto] gap-1.5 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:flex sm:gap-2 sm:rounded-2xl"
                   onSubmit={sendMessage}
                 >
                   <input
@@ -4087,7 +4091,7 @@ export default function Home() {
                     )}
                   </button>
                   {isRecordingVoice ? (
-                    <div className="relative flex min-h-10 min-w-0 flex-1 items-center rounded-lg border border-red-400/35 bg-red-500/10 px-3 text-sm text-[#f4f4f5]">
+                    <div className="relative col-span-3 flex min-h-10 min-w-0 flex-1 items-center rounded-lg border border-red-400/35 bg-red-500/10 px-3 text-sm text-[#f4f4f5] sm:col-span-1">
                       <div className="flex min-w-[86px] items-center gap-2">
                         <span className="h-2.5 w-2.5 rounded-full bg-red-300 shadow-[0_0_14px_rgba(252,165,165,0.65)]" />
                         <span className="font-semibold tabular-nums text-red-100">
@@ -4106,7 +4110,7 @@ export default function Home() {
                     <>
                       <input
                         aria-label="Текст сообщения"
-                        className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] focus:bg-[#f4f4f5]/18 sm:px-4"
+                        className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-base text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] focus:bg-[#f4f4f5]/18 sm:px-4 sm:text-sm"
                         onChange={handleMessageTextChange}
                         placeholder={
                           editingMessage
@@ -4224,7 +4228,7 @@ export default function Home() {
                 </form>
 
                 {replyTarget || editingMessage ? (
-                  <div className="mt-2 flex items-center justify-between gap-3 rounded-2xl border border-[#3f3f46]/35 bg-[#111111]/82 px-4 py-3 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md">
+                  <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-2.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
                     <div className="min-w-0">
                       <p className="text-xs font-black uppercase tracking-[0.14em] text-[#e5e5e5]">
                         {editingMessage ? "Редактирование" : "Ответ"}
@@ -4263,8 +4267,8 @@ export default function Home() {
         <aside
           className={`fixed z-[60] cursor-move touch-none rounded-3xl border border-[#3f3f46]/70 bg-[#111111]/96 text-center shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-xl ${
             isCallPanelCollapsed
-              ? "w-[min(286px,calc(100vw-24px))] border-[#3f3f46]/35 bg-[#18181b]/94 p-2.5 shadow-[0_18px_55px_rgba(0,0,0,0.42)]"
-              : "w-[min(350px,calc(100vw-24px))] p-4 sm:p-5"
+              ? "w-[min(286px,calc(100vw-16px))] border-[#3f3f46]/35 bg-[#18181b]/94 p-2.5 shadow-[0_18px_55px_rgba(0,0,0,0.42)]"
+              : "w-[min(350px,calc(100vw-16px))] p-3 sm:w-[min(350px,calc(100vw-24px))] sm:p-5"
           }`}
           onPointerDown={startCallPanelDrag}
           onPointerMove={dragCallPanel}
@@ -4353,7 +4357,7 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <div className="mx-auto mb-4 grid h-24 w-24 place-items-center overflow-hidden rounded-full bg-[#e5e5e5] text-4xl font-black text-[#111111]">
+              <div className="mx-auto mb-3 grid h-20 w-20 place-items-center overflow-hidden rounded-full bg-[#e5e5e5] text-3xl font-black text-[#111111] sm:mb-4 sm:h-24 sm:w-24 sm:text-4xl">
                 {callPanelProfile.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -4376,7 +4380,7 @@ export default function Home() {
                   : callStatusText || "00:00"}
               </p>
 
-              <div className="mt-5 flex items-center justify-center gap-3">
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:mt-5 sm:gap-3">
                 {callStatus === "incoming" ? (
                   <>
                     <button
@@ -4473,7 +4477,7 @@ export default function Home() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             alt="Просмотр изображения"
-            className="max-h-[76dvh] max-w-[82vw] rounded-2xl border border-[#3f3f46]/35 object-contain shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
+            className="max-h-[78dvh] max-w-[92vw] rounded-xl border border-[#3f3f46]/35 object-contain shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:max-w-[82vw] sm:rounded-2xl"
             onClick={(event) => event.stopPropagation()}
             src={selectedImageUrl}
           />
@@ -4497,7 +4501,7 @@ export default function Home() {
             type="button"
           />
           <div
-            className="fixed z-[90] w-[220px] overflow-hidden rounded-lg border border-white/10 bg-[#18181b] py-1.5 text-[#f4f4f5] shadow-[0_18px_60px_rgba(0,0,0,0.55)]"
+            className="fixed z-[90] w-[min(220px,calc(100vw-24px))] overflow-hidden rounded-lg border border-white/10 bg-[#18181b] py-1.5 text-[#f4f4f5] shadow-[0_18px_60px_rgba(0,0,0,0.55)]"
             onClick={(event) => event.stopPropagation()}
             onContextMenu={(event) => event.preventDefault()}
             style={{
@@ -4587,7 +4591,7 @@ export default function Home() {
             onClick={() => setMessagePinTarget(null)}
             type="button"
           />
-          <section className="fixed left-1/2 top-1/2 z-[96] w-[min(448px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-[#3f3f46]/45 bg-[#111111]/96 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.58)]">
+          <section className="fixed left-1/2 top-1/2 z-[96] max-h-[calc(100dvh-24px)] w-[min(448px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:w-[min(448px,calc(100vw-32px))] sm:rounded-3xl sm:p-5">
             <div className="mb-4 flex items-start gap-3">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#f4f4f5]/18 text-[#e5e5e5]">
                 <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -4661,7 +4665,7 @@ export default function Home() {
             type="button"
           />
           <section
-            className="fixed left-1/2 top-1/2 z-[96] w-[min(448px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-[#3f3f46]/45 bg-[#111111]/96 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.58)]"
+            className="fixed left-1/2 top-1/2 z-[96] max-h-[calc(100dvh-24px)] w-[min(448px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:w-[min(448px,calc(100vw-32px))] sm:rounded-3xl sm:p-5"
           >
             <div className="mb-4 flex items-start gap-3">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-red-500/14 text-red-100">
@@ -4721,7 +4725,7 @@ export default function Home() {
             type="button"
           />
           <div
-            className="fixed z-[80] w-[min(300px,calc(100vw-32px))] rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/98 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.58)] backdrop-blur-xl"
+            className="fixed z-[80] w-[min(300px,calc(100vw-24px))] rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/98 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.58)] backdrop-blur-xl"
             onClick={(event) => event.stopPropagation()}
             onPointerDown={(event) => event.stopPropagation()}
             style={{
@@ -4764,7 +4768,7 @@ export default function Home() {
           type="button"
         >
           <section
-            className="w-full max-w-sm rounded-3xl border border-[#3f3f46]/45 bg-[#111111]/95 p-5 text-left shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
+            className="max-h-[calc(100dvh-32px)] w-full max-w-sm overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/95 p-4 text-left shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:rounded-3xl sm:p-5"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-5 flex items-center gap-4">
