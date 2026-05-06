@@ -24,6 +24,10 @@ type MessageRow = {
   user_id: string | null;
 };
 
+type FavoriteItem = MessageRow & {
+  saved_at: string;
+};
+
 type ProfileRow = {
   user_id: string;
   display_name: string;
@@ -66,13 +70,14 @@ type TypingMessagePayload = {
   expiresAt?: string;
 };
 
-type ActiveView = "profile" | "messages" | "settings";
+type ActiveView = "profile" | "messages" | "favorites" | "settings";
 type AuthMode = "sign-in" | "sign-up";
 type CallStatus = "idle" | "calling" | "incoming" | "connecting" | "connected";
 
 const navItems: Array<{ label: string; view: ActiveView }> = [
   { label: "Профиль", view: "profile" },
   { label: "Сообщения", view: "messages" },
+  { label: "Избранное", view: "favorites" },
 ];
 const settingsNavItem: { label: string; view: ActiveView } = {
   label: "Настройки",
@@ -664,6 +669,7 @@ export default function Home() {
   const [messagePinTarget, setMessagePinTarget] = useState<MessageRow | null>(null);
   const [shouldPinForBoth, setShouldPinForBoth] = useState(false);
   const [selectedMessageIds, setSelectedMessageIds] = useState<number[]>([]);
+  const [favoriteItems, setFavoriteItems] = useState<FavoriteItem[]>([]);
   const [hiddenMessageIds, setHiddenMessageIds] = useState<number[]>([]);
   const [messageDeleteTarget, setMessageDeleteTarget] = useState<MessageRow | null>(null);
   const [areNotificationsEnabled, setAreNotificationsEnabled] = useState(() => {
@@ -1027,6 +1033,63 @@ export default function Home() {
   useEffect(() => {
     callStatusRef.current = callStatus;
   }, [callStatus]);
+
+  useEffect(() => {
+    let frameId = 0;
+
+    if (!user) {
+      frameId = window.requestAnimationFrame(() => {
+        setFavoriteItems([]);
+      });
+
+      return () => {
+        window.cancelAnimationFrame(frameId);
+      };
+    }
+
+    frameId = window.requestAnimationFrame(() => {
+      const storedFavoriteItems = window.localStorage.getItem(
+        `hush-favorites-${user.id}`,
+      );
+
+      if (!storedFavoriteItems) {
+        setFavoriteItems([]);
+        return;
+      }
+
+      try {
+        const parsedFavoriteItems = JSON.parse(storedFavoriteItems);
+
+        setFavoriteItems(
+          Array.isArray(parsedFavoriteItems)
+            ? parsedFavoriteItems
+                .filter((item): item is FavoriteItem => {
+                  const favoriteItem = item as FavoriteItem;
+
+                  return (
+                    favoriteItem !== null &&
+                    typeof favoriteItem === "object" &&
+                    Number.isInteger(favoriteItem.id) &&
+                    typeof favoriteItem.author === "string" &&
+                    typeof favoriteItem.text === "string" &&
+                    typeof favoriteItem.created_at === "string" &&
+                    typeof favoriteItem.saved_at === "string"
+                  );
+                })
+                .sort((firstItem, secondItem) =>
+                  secondItem.saved_at.localeCompare(firstItem.saved_at),
+                )
+            : [],
+        );
+      } catch {
+        setFavoriteItems([]);
+      }
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [user]);
 
   useEffect(() => {
     let frameId = 0;
@@ -2170,7 +2233,7 @@ export default function Home() {
     setIsStickerPickerOpen(false);
 
     const menuWidth = Math.min(220, window.innerWidth - 24);
-    const menuHeight = 306;
+    const menuHeight = 348;
 
     setMessageContextMenu({
       left: Math.max(
@@ -2194,6 +2257,59 @@ export default function Home() {
     }
 
     setMessageContextMenu(null);
+  }
+
+  function saveFavoriteItems(nextFavoriteItems: FavoriteItem[]) {
+    setFavoriteItems(nextFavoriteItems);
+
+    if (!user) {
+      return;
+    }
+
+    window.localStorage.setItem(
+      `hush-favorites-${user.id}`,
+      JSON.stringify(nextFavoriteItems),
+    );
+  }
+
+  function isMessageFavorite(messageId: number) {
+    return favoriteItems.some((favoriteItem) => favoriteItem.id === messageId);
+  }
+
+  function toggleFavoriteMessage(message: MessageRow) {
+    if (!user) {
+      setErrorMessage("Сначала войди в аккаунт.");
+      setMessageContextMenu(null);
+      return;
+    }
+
+    if (message.id < 0) {
+      setErrorMessage("Подожди, пока сообщение сохранится.");
+      setMessageContextMenu(null);
+      return;
+    }
+
+    const isFavorite = isMessageFavorite(message.id);
+    const nextFavoriteItems = isFavorite
+      ? favoriteItems.filter((favoriteItem) => favoriteItem.id !== message.id)
+      : [
+          {
+            ...message,
+            saved_at: new Date().toISOString(),
+          },
+          ...favoriteItems.filter((favoriteItem) => favoriteItem.id !== message.id),
+        ];
+
+    saveFavoriteItems(nextFavoriteItems);
+    setMessageContextMenu(null);
+    setErrorMessage(isFavorite ? "Убрано из избранного." : "Добавлено в избранное.");
+  }
+
+  function removeFavoriteItem(favoriteItemId: number) {
+    saveFavoriteItems(
+      favoriteItems.filter((favoriteItem) => favoriteItem.id !== favoriteItemId),
+    );
+    setErrorMessage("");
   }
 
   function replyToMessage(message: MessageRow) {
@@ -3441,6 +3557,148 @@ export default function Home() {
 
                 </div>
               </div>
+            ) : activeView === "favorites" ? (
+              <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
+                <div className="mb-4 border-b border-[#3f3f46]/35 pb-4 sm:mb-5 sm:pb-5">
+                  <p className="text-sm font-medium text-[#e5e5e5]">
+                    Личное
+                  </p>
+                  <h2 className="text-2xl font-semibold sm:text-3xl">
+                    Избранное
+                  </h2>
+                  <p className="mt-1 text-sm leading-6 text-[#a1a1aa]">
+                    Здесь только то, что ты сам сохранил: сообщения, фото, видео,
+                    голосовые и стикеры.
+                  </p>
+                </div>
+
+                {favoriteItems.length === 0 ? (
+                  <article className="rounded-xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-4 text-center sm:rounded-2xl sm:p-6">
+                    <p className="text-base font-semibold">
+                      В избранном пока пусто
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
+                      Открой меню сообщения в чате и нажми «В избранное».
+                    </p>
+                  </article>
+                ) : (
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {favoriteItems.map((favoriteItem) => {
+                      const reply = getMessageReply(favoriteItem.text);
+                      const displayText = reply?.body ?? favoriteItem.text;
+                      const imageUrl = getMessageImageUrl(displayText);
+                      const videoUrl = getMessageVideoUrl(displayText);
+                      const audioUrl = getMessageAudioUrl(displayText);
+                      const callDurationSeconds = getMessageCallDuration(displayText);
+                      const sticker = getMessageSticker(displayText);
+                      const favoriteProfile = profiles.find(
+                        (profile) => profile.user_id === favoriteItem.user_id,
+                      );
+                      const favoriteAuthor =
+                        favoriteProfile?.display_name ?? favoriteItem.author;
+
+                      return (
+                        <article
+                          className="overflow-hidden rounded-xl border border-[#3f3f46]/35 bg-black/24 p-3 shadow-[0_14px_44px_rgba(0,0,0,0.22)] sm:rounded-2xl"
+                          key={favoriteItem.id}
+                        >
+                          <div className="mb-3 flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-[#f4f4f5]">
+                                {favoriteAuthor}
+                              </p>
+                              <p className="mt-0.5 text-xs text-[#a1a1aa]">
+                                Сохранено {formatMessageTime(favoriteItem.saved_at)}
+                              </p>
+                            </div>
+                            <button
+                              aria-label="Убрать из избранного"
+                              className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 text-[#a1a1aa] transition hover:bg-white/10 hover:text-[#f4f4f5]"
+                              onClick={() => removeFavoriteItem(favoriteItem.id)}
+                              type="button"
+                            >
+                              <svg
+                                aria-hidden="true"
+                                className="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  d="M6 6l12 12M18 6 6 18"
+                                  stroke="currentColor"
+                                  strokeLinecap="round"
+                                  strokeWidth="2"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+
+                          {reply ? (
+                            <div className="mb-3 rounded-xl border-l-4 border-[#f4f4f5]/45 bg-white/8 px-3 py-2">
+                              <p className="text-[11px] font-black uppercase tracking-[0.12em] text-[#a1a1aa]">
+                                Ответ на {reply.author}
+                              </p>
+                              <p className="mt-0.5 line-clamp-2 text-xs font-semibold text-[#e5e5e5]/75">
+                                {reply.text}
+                              </p>
+                            </div>
+                          ) : null}
+
+                          {imageUrl ? (
+                            <button
+                              className="block w-full overflow-hidden rounded-xl bg-[#050505]"
+                              onClick={() => setSelectedImageUrl(imageUrl)}
+                              type="button"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                alt="Избранное изображение"
+                                className="max-h-64 w-full object-cover"
+                                src={imageUrl}
+                              />
+                            </button>
+                          ) : videoUrl ? (
+                            <video
+                              className="max-h-64 w-full rounded-xl bg-black"
+                              controls
+                              controlsList="nodownload"
+                              preload="metadata"
+                              src={videoUrl}
+                            />
+                          ) : audioUrl ? (
+                            <VoiceMessage
+                              isMine={favoriteItem.user_id === user.id}
+                              sentAt={favoriteItem.created_at}
+                              src={audioUrl}
+                            />
+                          ) : callDurationSeconds !== null ? (
+                            <div className="rounded-xl bg-[#262626] px-3 py-2 text-[#f4f4f5]">
+                              <p className="text-sm font-bold">Звонок</p>
+                              <p className="mt-1 text-xs font-semibold text-[#a1a1aa]">
+                                Разговор {formatCallDuration(callDurationSeconds)}
+                              </p>
+                            </div>
+                          ) : sticker ? (
+                            <div className="grid min-h-28 place-items-center rounded-xl bg-[#050505]/72">
+                              <span className="text-6xl leading-none">
+                                {sticker}
+                              </span>
+                            </div>
+                          ) : (
+                            <p className="whitespace-pre-wrap break-words rounded-xl bg-[#262626] px-3 py-2 text-sm leading-6 text-[#f4f4f5]">
+                              {displayText}
+                            </p>
+                          )}
+
+                          <p className="mt-3 text-xs text-[#a1a1aa]">
+                            Отправлено {formatMessageTime(favoriteItem.created_at)}
+                          </p>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             ) : activeView === "settings" ? (
               <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
                 <div className="mb-4 border-b border-[#3f3f46]/35 pb-4 sm:mb-5 sm:pb-5">
@@ -4487,6 +4745,9 @@ export default function Home() {
         <>
           {(() => {
             const isContextMessageMine = messageContextMenu.message.user_id === user?.id;
+            const isContextMessageFavorite = isMessageFavorite(
+              messageContextMenu.message.id,
+            );
 
             return (
               <>
@@ -4541,6 +4802,16 @@ export default function Home() {
                 <path d="m9.5 14.5-4 4" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
               </svg>
               {activePinnedMessage?.id === messageContextMenu.message.id ? "Открепить" : "Закрепить"}
+            </button>
+            <button
+              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+              onClick={() => toggleFavoriteMessage(messageContextMenu.message)}
+              type="button"
+            >
+              <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill={isContextMessageFavorite ? "currentColor" : "none"} viewBox="0 0 24 24">
+                <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2 7.5 14 3 9.6l6.2-.9L12 3Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+              </svg>
+              {isContextMessageFavorite ? "Убрать из избранного" : "В избранное"}
             </button>
             <button
               className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
