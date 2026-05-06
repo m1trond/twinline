@@ -3464,7 +3464,7 @@ export default function Home() {
               selectedChatUserId === null ? (
               <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
                 <div className="mb-4 border-b border-[#3f3f46]/35 pb-4">
-                  <h2 className="text-2xl font-semibold sm:text-3xl">Сообщения</h2>
+                  <h2 className="text-xl font-semibold sm:text-2xl">Сообщения</h2>
                 </div>
 
                 <div className="grid gap-2">
