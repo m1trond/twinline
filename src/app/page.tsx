@@ -3369,14 +3369,14 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <section className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 p-4 sm:col-span-2">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <section className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 px-4 py-3 sm:col-span-2">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#e5e5e5]">
                       Имя профиля
                     </p>
-                    <form className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]" onSubmit={updateProfileName}>
+                    <form className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={updateProfileName}>
                       <input
-                        className="min-h-12 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-base outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="min-h-10 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] disabled:cursor-not-allowed disabled:opacity-60"
                         disabled={!isNameChangeAllowed}
                         maxLength={24}
                         minLength={2}
@@ -3386,7 +3386,7 @@ export default function Home() {
                         value={profileNameInputValue}
                       />
                       <button
-                        className="min-h-12 rounded-xl bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
+                        className="min-h-10 rounded-xl bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
                         disabled={
                           !isNameChangeAllowed ||
                           !profileName.trim() ||
@@ -3397,21 +3397,21 @@ export default function Home() {
                         Сохранить имя
                       </button>
                     </form>
-                    <p className="mt-3 text-sm leading-6 text-[#a1a1aa]">
+                    <p className="mt-2 text-xs leading-5 text-[#a1a1aa]">
                       {isNameChangeAllowed
                         ? "Имя можно менять один раз в месяц."
                         : `Имя снова можно будет изменить ${nextNameChangeDate ?? "позже"}.`}
                     </p>
                   </section>
 
-                  <section className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 p-4">
+                  <section className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 px-4 py-3">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#e5e5e5]">
                       Email
                     </p>
-                    <p className="mt-3 break-words text-lg font-semibold">
+                    <p className="mt-2 break-words text-base font-semibold">
                       {user.email}
                     </p>
-                    <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
+                    <p className="mt-1 text-xs leading-5 text-[#a1a1aa]">
                       Его видишь только ты в своём аккаунте.
                     </p>
                   </section>
