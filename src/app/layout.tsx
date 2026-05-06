@@ -17,7 +17,13 @@ export const metadata: Metadata = {
   title: "Hush",
   description: "Hush private space",
   icons: {
-    icon: "/hush-logo.png",
+    icon: [
+      {
+        url: "/hush-favicon.svg?v=2",
+        type: "image/svg+xml",
+      },
+    ],
+    shortcut: "/hush-favicon.svg?v=2",
   },
 };
 
