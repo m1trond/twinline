@@ -3217,7 +3217,7 @@ export default function Home() {
       />
       <div className="relative h-full overflow-hidden bg-[#0a0a0a]/35">
         <div className="flex h-full w-full flex-col overflow-hidden px-2 py-2 sm:px-3 sm:py-3 lg:px-4 xl:px-5">
-          <header className="mb-2 flex shrink-0 items-center justify-between gap-3 rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/82 px-3 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-4">
+          <header className="mb-2 flex shrink-0 items-center justify-between gap-3 rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/82 px-3 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-4 lg:hidden">
             <div className="flex min-w-0 items-center gap-3">
               <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#f4f4f5] shadow-[0_8px_24px_rgba(244,244,245,0.16)] sm:h-10 sm:w-10">
                 <span className="text-lg font-black text-[#050505]">T</span>
@@ -3266,6 +3266,15 @@ export default function Home() {
 
           <section className="grid min-h-0 flex-1 gap-2 overflow-hidden pb-1 sm:gap-2 lg:grid-cols-[250px_minmax(0,1fr)] xl:grid-cols-[270px_minmax(0,1fr)]">
             <aside className="hidden min-h-0 flex-col rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:flex">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#f4f4f5] shadow-[0_8px_24px_rgba(244,244,245,0.16)]">
+                  <span className="text-lg font-black text-[#050505]">T</span>
+                </div>
+                <h1 className="min-w-0 text-xl font-semibold tracking-normal">
+                  Twinline
+                </h1>
+              </div>
+
               <div className="mb-4">
                 <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#e5e5e5]">
                   Меню
