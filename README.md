@@ -1,6 +1,6 @@
-# Twinline
+# Hush
 
-Twinline - сайт-мессенджер на Next.js и Supabase.
+Hush - сайт-мессенджер на Next.js и Supabase.
 
 ## Как перенести на другой компьютер
 

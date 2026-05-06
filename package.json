@@ -1,7 +1,7 @@
 {
-  "name": "chat-for-two",
+  "name": "hush",
   "version": "0.1.0",
-  "description": "Twinline private website",
+  "description": "Hush private website",
   "author": "m1trond",
   "private": true,
   "scripts": {

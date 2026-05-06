@@ -704,7 +704,7 @@ export default function Home() {
   const activeViewRef = useRef<ActiveView>("profile");
   const selectedChatUserIdRef = useRef<string | null>(null);
   const notifiedMessageIdsRef = useRef<Set<number>>(new Set());
-  const originalPageTitleRef = useRef("Twinline");
+  const originalPageTitleRef = useRef("Hush");
   const isDeletingChatRef = useRef(false);
   const callPanelDragRef = useRef({
     left: 0,
@@ -749,7 +749,7 @@ export default function Home() {
       });
 
       if (error) {
-        console.error("Twinline typing state failed:", error.message);
+        console.error("Hush typing state failed:", error.message);
       }
     },
     [activeUserName, user],
@@ -1078,12 +1078,12 @@ export default function Home() {
   }, [activeView, selectedChatUserId]);
 
   useEffect(() => {
-    originalPageTitleRef.current = document.title || "Twinline";
+    originalPageTitleRef.current = document.title || "Hush";
   }, []);
 
   useEffect(() => {
     if (totalUnreadMessageCount > 0) {
-      document.title = `(${totalUnreadMessageCount}) Twinline`;
+      document.title = `(${totalUnreadMessageCount}) Hush`;
       return;
     }
 
@@ -3115,7 +3115,7 @@ export default function Home() {
   if (isAuthLoading) {
     return (
       <main className="grid h-dvh place-items-center bg-[#050505] text-[#f4f4f5]">
-        <p className="text-sm font-semibold text-[#a1a1aa]">Загружаю Twinline...</p>
+        <p className="text-sm font-semibold text-[#a1a1aa]">Загружаю Hush...</p>
       </main>
     );
   }
@@ -3130,10 +3130,10 @@ export default function Home() {
         <section className="relative w-full max-w-md rounded-3xl border border-[#3f3f46]/45 bg-[#111111]/86 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-md">
           <div className="mb-6 flex items-center gap-3">
             <div className="grid h-11 w-11 place-items-center rounded-xl bg-[#f4f4f5]">
-              <span className="text-xl font-black text-[#050505]">T</span>
+              <span className="text-xl font-black text-[#050505]">H</span>
             </div>
             <div>
-              <h1 className="text-2xl font-semibold">Twinline</h1>
+              <h1 className="text-2xl font-semibold">Hush</h1>
               <p className="text-sm text-[#a1a1aa]">Вход в приватное пространство</p>
             </div>
           </div>
@@ -3168,7 +3168,7 @@ export default function Home() {
               <input
                 className="min-h-12 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-base outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5]"
                 onChange={(event) => setAuthName(event.target.value)}
-                placeholder="Имя в Twinline"
+                placeholder="Имя в Hush"
                 type="text"
                 value={authName}
               />
@@ -3220,11 +3220,11 @@ export default function Home() {
           <header className="mb-2 flex shrink-0 items-center justify-between gap-3 rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/82 px-3 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-4 lg:hidden">
             <div className="flex min-w-0 items-center gap-3">
               <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#f4f4f5] shadow-[0_8px_24px_rgba(244,244,245,0.16)] sm:h-10 sm:w-10">
-                <span className="text-lg font-black text-[#050505]">T</span>
+                <span className="text-lg font-black text-[#050505]">H</span>
               </div>
               <div className="min-w-0">
                 <h1 className="text-lg font-semibold tracking-normal sm:text-xl">
-                  Twinline
+                  Hush
                 </h1>
               </div>
             </div>
@@ -3268,10 +3268,10 @@ export default function Home() {
             <aside className="hidden min-h-0 flex-col rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:flex">
               <div className="mb-5 flex items-center gap-3">
                 <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#f4f4f5] shadow-[0_8px_24px_rgba(244,244,245,0.16)]">
-                  <span className="text-lg font-black text-[#050505]">T</span>
+                  <span className="text-lg font-black text-[#050505]">H</span>
                 </div>
                 <h1 className="min-w-0 text-xl font-semibold tracking-normal">
-                  Twinline
+                  Hush
                 </h1>
               </div>
 
@@ -3422,7 +3422,7 @@ export default function Home() {
               <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
                 <div className="mb-5 border-b border-[#3f3f46]/35 pb-5">
                   <p className="text-sm font-medium text-[#e5e5e5]">
-                    Twinline
+                    Hush
                   </p>
                   <h2 className="text-2xl font-semibold sm:text-3xl">
                     Настройки
