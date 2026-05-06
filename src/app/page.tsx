@@ -663,6 +663,11 @@ export default function Home() {
     message: MessageRow;
     top: number;
   } | null>(null);
+  const [favoriteContextMenu, setFavoriteContextMenu] = useState<{
+    item: FavoriteItem;
+    left: number;
+    top: number;
+  } | null>(null);
   const [replyTarget, setReplyTarget] = useState<MessageRow | null>(null);
   const [editingMessage, setEditingMessage] = useState<MessageRow | null>(null);
   const [pinnedMessage, setPinnedMessage] = useState<MessageRow | null>(null);
@@ -1302,6 +1307,32 @@ export default function Home() {
       window.removeEventListener("keydown", closeMenuOnEscape);
     };
   }, [messageContextMenu]);
+
+  useEffect(() => {
+    if (!favoriteContextMenu) {
+      return;
+    }
+
+    function closeMenu() {
+      setFavoriteContextMenu(null);
+    }
+
+    function closeMenuOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setFavoriteContextMenu(null);
+      }
+    }
+
+    window.addEventListener("scroll", closeMenu, true);
+    window.addEventListener("resize", closeMenu);
+    window.addEventListener("keydown", closeMenuOnEscape);
+
+    return () => {
+      window.removeEventListener("scroll", closeMenu, true);
+      window.removeEventListener("resize", closeMenu);
+      window.removeEventListener("keydown", closeMenuOnEscape);
+    };
+  }, [favoriteContextMenu]);
 
   useEffect(() => {
     return () => {
@@ -2253,7 +2284,7 @@ export default function Home() {
     setIsStickerPickerOpen(false);
 
     const menuWidth = Math.min(220, window.innerWidth - 24);
-    const menuHeight = 348;
+    const menuHeight = 306;
 
     setMessageContextMenu({
       left: Math.max(
@@ -2261,6 +2292,29 @@ export default function Home() {
         Math.min(event.clientX, window.innerWidth - menuWidth - 12),
       ),
       message,
+      top: Math.max(
+        12,
+        Math.min(event.clientY, window.innerHeight - menuHeight - 12),
+      ),
+    });
+  }
+
+  function openFavoriteContextMenu(
+    event: MouseEvent<HTMLElement>,
+    item: FavoriteItem,
+  ) {
+    event.preventDefault();
+    setIsStickerPickerOpen(false);
+
+    const menuWidth = Math.min(220, window.innerWidth - 24);
+    const menuHeight = 96;
+
+    setFavoriteContextMenu({
+      item,
+      left: Math.max(
+        12,
+        Math.min(event.clientX, window.innerWidth - menuWidth - 12),
+      ),
       top: Math.max(
         12,
         Math.min(event.clientY, window.innerHeight - menuHeight - 12),
@@ -2277,6 +2331,17 @@ export default function Home() {
     }
 
     setMessageContextMenu(null);
+  }
+
+  async function copyFavoriteText(item: FavoriteItem) {
+    try {
+      await navigator.clipboard.writeText(getReadableMessageText(item.text));
+      setErrorMessage("");
+    } catch {
+      setErrorMessage("Не получилось скопировать текст.");
+    }
+
+    setFavoriteContextMenu(null);
   }
 
   function saveFavoriteItems(nextFavoriteItems: FavoriteItem[]) {
@@ -2318,43 +2383,11 @@ export default function Home() {
     setErrorMessage("");
   }
 
-  function isMessageFavorite(messageId: number) {
-    return favoriteItems.some((favoriteItem) => favoriteItem.id === messageId);
-  }
-
-  function toggleFavoriteMessage(message: MessageRow) {
-    if (!user) {
-      setErrorMessage("Сначала войди в аккаунт.");
-      setMessageContextMenu(null);
-      return;
-    }
-
-    if (message.id < 0) {
-      setErrorMessage("Подожди, пока сообщение сохранится.");
-      setMessageContextMenu(null);
-      return;
-    }
-
-    const isFavorite = isMessageFavorite(message.id);
-    const nextFavoriteItems = isFavorite
-      ? favoriteItems.filter((favoriteItem) => favoriteItem.id !== message.id)
-      : [
-          {
-            ...message,
-            saved_at: new Date().toISOString(),
-          },
-          ...favoriteItems.filter((favoriteItem) => favoriteItem.id !== message.id),
-        ];
-
-    saveFavoriteItems(nextFavoriteItems);
-    setMessageContextMenu(null);
-    setErrorMessage(isFavorite ? "Убрано из избранного." : "Добавлено в избранное.");
-  }
-
   function removeFavoriteItem(favoriteItemId: number) {
     saveFavoriteItems(
       favoriteItems.filter((favoriteItem) => favoriteItem.id !== favoriteItemId),
     );
+    setFavoriteContextMenu(null);
     setErrorMessage("");
   }
 
@@ -3633,15 +3666,9 @@ export default function Home() {
             ) : activeView === "favorites" ? (
               <div className="grid min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden">
                 <div className="mb-2 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-3 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4 sm:py-3">
-                  <p className="text-sm font-medium text-[#e5e5e5]">
-                    Личное хранилище
-                  </p>
                   <h2 className="text-xl font-semibold sm:text-2xl">
                     Избранное
                   </h2>
-                  <p className="mt-1 text-xs leading-5 text-[#a1a1aa] sm:text-sm">
-                    Пиши сюда заметки, кидай фото, видео, голосовые и стикеры. Это видишь только ты.
-                  </p>
                 </div>
 
                 <div className="scrollbar-hidden flex min-h-0 flex-col overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#050505]/82 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4">
@@ -3652,7 +3679,7 @@ export default function Home() {
                           Избранное пока пустое
                         </p>
                         <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
-                          Напиши сюда первую заметку или прикрепи файл. Можно также сохранять сообщения из обычного чата через меню сообщения.
+                          Напиши сюда первую заметку или прикрепи файл.
                         </p>
                       </div>
                     </div>
@@ -3683,6 +3710,7 @@ export default function Home() {
                           isPreviousSameAuthor ? "mt-1" : "mt-3"
                         }`}
                         key={favoriteItem.id}
+                        onContextMenu={(event) => openFavoriteContextMenu(event, favoriteItem)}
                       >
                         <div
                           className={`max-w-[min(84vw,92%)] rounded-[18px] sm:max-w-[72%] sm:rounded-[20px] ${
@@ -3768,26 +3796,6 @@ export default function Home() {
                           ) : null}
                         </div>
 
-                        <button
-                          aria-label="Удалить из избранного"
-                          className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[#3f3f46]/35 bg-[#111111]/82 text-[#a1a1aa] transition hover:bg-white/10 hover:text-[#f4f4f5] sm:h-8 sm:w-8"
-                          onClick={() => removeFavoriteItem(favoriteItem.id)}
-                          type="button"
-                        >
-                          <svg
-                            aria-hidden="true"
-                            className="h-3.5 w-3.5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              d="M6 6l12 12M18 6 6 18"
-                              stroke="currentColor"
-                              strokeLinecap="round"
-                              strokeWidth="2"
-                            />
-                          </svg>
-                        </button>
                       </article>
                     );
                   })}
@@ -4990,9 +4998,6 @@ export default function Home() {
         <>
           {(() => {
             const isContextMessageMine = messageContextMenu.message.user_id === user?.id;
-            const isContextMessageFavorite = isMessageFavorite(
-              messageContextMenu.message.id,
-            );
 
             return (
               <>
@@ -5050,16 +5055,6 @@ export default function Home() {
             </button>
             <button
               className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
-              onClick={() => toggleFavoriteMessage(messageContextMenu.message)}
-              type="button"
-            >
-              <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill={isContextMessageFavorite ? "currentColor" : "none"} viewBox="0 0 24 24">
-                <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2 7.5 14 3 9.6l6.2-.9L12 3Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-              </svg>
-              {isContextMessageFavorite ? "Убрать из избранного" : "В избранное"}
-            </button>
-            <button
-              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
               onClick={() => copyMessageText(messageContextMenu.message)}
               type="button"
             >
@@ -5097,6 +5092,51 @@ export default function Home() {
               </>
             );
           })()}
+        </>
+      ) : null}
+      {favoriteContextMenu ? (
+        <>
+          <button
+            aria-label="Закрыть меню избранного"
+            className="fixed inset-0 z-[80] cursor-default bg-transparent"
+            onClick={() => setFavoriteContextMenu(null)}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              setFavoriteContextMenu(null);
+            }}
+            type="button"
+          />
+          <div
+            className="fixed z-[90] w-[min(220px,calc(100vw-24px))] overflow-hidden rounded-lg border border-white/10 bg-[#18181b] py-1.5 text-[#f4f4f5] shadow-[0_18px_60px_rgba(0,0,0,0.55)]"
+            onClick={(event) => event.stopPropagation()}
+            onContextMenu={(event) => event.preventDefault()}
+            style={{
+              left: favoriteContextMenu.left,
+              top: favoriteContextMenu.top,
+            }}
+          >
+            <button
+              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+              onClick={() => copyFavoriteText(favoriteContextMenu.item)}
+              type="button"
+            >
+              <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+                <rect height="14" rx="2" stroke="currentColor" strokeWidth="2" width="12" x="8" y="8" />
+                <path d="M4 16V6a2 2 0 0 1 2-2h10" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+              </svg>
+              Копировать текст
+            </button>
+            <button
+              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium text-red-100 transition hover:bg-red-500/18"
+              onClick={() => removeFavoriteItem(favoriteContextMenu.item.id)}
+              type="button"
+            >
+              <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+                <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+              </svg>
+              Удалить
+            </button>
+          </div>
         </>
       ) : null}
       {messagePinTarget ? (
@@ -5342,5 +5382,3 @@ export default function Home() {
     </main>
   );
 }
-
-
