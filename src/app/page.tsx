@@ -3464,7 +3464,6 @@ export default function Home() {
               selectedChatUserId === null ? (
               <div className="min-h-0 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-5">
                 <div className="mb-4 border-b border-[#3f3f46]/35 pb-4">
-                  <p className="text-sm font-medium text-[#e5e5e5]">Twinline</p>
                   <h2 className="text-2xl font-semibold sm:text-3xl">Сообщения</h2>
                 </div>
 
