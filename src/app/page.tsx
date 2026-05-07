@@ -72,6 +72,11 @@ type TypingMessagePayload = {
   expiresAt?: string;
 };
 
+type BlockMessagePayload = {
+  action: "block" | "unblock";
+  blockedId: string;
+};
+
 type ActiveView = "profile" | "messages" | "favorites" | "settings";
 type AuthMode = "sign-in" | "sign-up";
 type CallStatus = "idle" | "calling" | "incoming" | "connecting" | "connected";
@@ -96,6 +101,7 @@ const replyMessagePrefix = "reply::";
 const pinMessagePrefix = "pin::";
 const receiptMessagePrefix = "receipt::";
 const typingMessagePrefix = "typing::";
+const blockMessagePrefix = "block::";
 const maxAttachmentSize = 50 * 1024 * 1024;
 const stickerOptions = ["😂", "❤️", "🔥", "🤝", "😎", "😭", "🥱", "😡", "🫡", "💀", "🥳", "🤯", "👍", "👎", "🍻", "✨"];
 const profileColumns = "user_id, display_name, username, username_changed_at, avatar_url, name_changed_at, updated_at";
@@ -424,11 +430,38 @@ function getTypingMessagePayload(text: string): TypingMessagePayload | null {
   return null;
 }
 
+function createBlockMessageText(blockedId: string, action: BlockMessagePayload["action"]) {
+  return `${blockMessagePrefix}${JSON.stringify({ action, blockedId })}`;
+}
+
+function getBlockMessagePayload(text: string): BlockMessagePayload | null {
+  if (!text.startsWith(blockMessagePrefix)) {
+    return null;
+  }
+
+  try {
+    const parsedPayload = JSON.parse(text.slice(blockMessagePrefix.length));
+
+    if (
+      parsedPayload &&
+      typeof parsedPayload.blockedId === "string" &&
+      (parsedPayload.action === "block" || parsedPayload.action === "unblock")
+    ) {
+      return parsedPayload;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 function isServiceMessage(text: string) {
   return Boolean(
     getPinMessagePayload(text) ||
       getReceiptMessagePayload(text) ||
-      getTypingMessagePayload(text),
+      getTypingMessagePayload(text) ||
+      getBlockMessagePayload(text),
   );
 }
 
@@ -860,10 +893,15 @@ export default function Home() {
   const [mutedProfiles, setMutedProfiles] = useState<MutedProfileUntil>(() =>
     readStoredMutedProfiles(),
   );
-  const [blockedProfileIds, setBlockedProfileIds] = useState<string[]>(() =>
+  const [localBlockedProfileIds, setLocalBlockedProfileIds] = useState<string[]>(() =>
     readStoredStringList("twinline-blocked-profiles"),
   );
   const [profileNotificationMenuUserId, setProfileNotificationMenuUserId] = useState<string | null>(null);
+  const [blockConfirmation, setBlockConfirmation] = useState<{
+    action: "block" | "unblock";
+    name: string;
+    userId: string;
+  } | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
@@ -1074,30 +1112,71 @@ export default function Home() {
     return latestFriendTypingExpiresAt;
   }, [messages, user]);
   const isFriendTyping = friendTypingUntilFromMessages > typingNow;
+  const blockState = useMemo(() => {
+    const blockedByMeIds = new Set<string>();
+    const blockedMeIds = new Set<string>();
+
+    for (const message of messages) {
+      const blockPayload = getBlockMessagePayload(message.text);
+
+      if (!blockPayload || !message.user_id || !user?.id) {
+        continue;
+      }
+
+      if (message.user_id === user.id) {
+        if (blockPayload.action === "block") {
+          blockedByMeIds.add(blockPayload.blockedId);
+        } else {
+          blockedByMeIds.delete(blockPayload.blockedId);
+        }
+      }
+
+      if (blockPayload.blockedId === user.id) {
+        if (blockPayload.action === "block") {
+          blockedMeIds.add(message.user_id);
+        } else {
+          blockedMeIds.delete(message.user_id);
+        }
+      }
+    }
+
+    return {
+      blockedByMeIds: Array.from(blockedByMeIds),
+      blockedMeIds: Array.from(blockedMeIds),
+    };
+  }, [messages, user?.id]);
+  const blockedProfileIds = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...localBlockedProfileIds,
+          ...blockState.blockedByMeIds,
+          ...blockState.blockedMeIds,
+        ]),
+      ),
+    [blockState.blockedByMeIds, blockState.blockedMeIds, localBlockedProfileIds],
+  );
+  const blockedByMeProfileIds = useMemo(
+    () => Array.from(new Set([...localBlockedProfileIds, ...blockState.blockedByMeIds])),
+    [blockState.blockedByMeIds, localBlockedProfileIds],
+  );
   const visibleMessages = useMemo(() => {
     return messages.filter((message) => {
       return (
         !hiddenMessageIds.includes(message.id) &&
-        !isServiceMessage(message.text) &&
-        (!message.user_id ||
-          message.user_id === user?.id ||
-          !blockedProfileIds.includes(message.user_id))
+        !isServiceMessage(message.text)
       );
     });
-  }, [blockedProfileIds, hiddenMessageIds, messages, user?.id]);
+  }, [hiddenMessageIds, messages]);
   const activeDialogMessages = useMemo(() => {
     if (!user || !selectedChatUserId) {
-      return [];
-    }
-
-    if (blockedProfileIds.includes(selectedChatUserId)) {
       return [];
     }
 
     return visibleMessages.filter((message) => {
       return message.user_id === user.id || message.user_id === selectedChatUserId;
     });
-  }, [blockedProfileIds, selectedChatUserId, user, visibleMessages]);
+  }, [selectedChatUserId, user, visibleMessages]);
   const unreadMessagesByUserId = useMemo(() => {
     const unreadByUserId = new Map<string, number>();
 
@@ -1156,8 +1235,11 @@ export default function Home() {
       userId: friendMessage.user_id,
     };
   }, [chatProfiles, profiles, selectedChatUserId, user?.id, visibleMessages]);
-  const isSelectedChatBlocked =
-    selectedChatUserId !== null && blockedProfileIds.includes(selectedChatUserId);
+  const isSelectedChatBlockedByMe =
+    selectedChatUserId !== null && blockedByMeProfileIds.includes(selectedChatUserId);
+  const isSelectedChatBlockingMe =
+    selectedChatUserId !== null && blockState.blockedMeIds.includes(selectedChatUserId);
+  const isSelectedChatBlocked = isSelectedChatBlockedByMe || isSelectedChatBlockingMe;
   const latestVisibleMessage = visibleMessages.at(-1);
   const isUsernameChangeAllowed = canChangeName(currentProfile?.username_changed_at ?? null);
   const nextUsernameChangeDate = getNextNameChangeDate(
@@ -2572,34 +2654,89 @@ export default function Home() {
     setErrorMessage("");
   }
 
-  function toggleBlockedProfile(profileUserId: string) {
+  function requestBlockChange(profileUserId: string, profileName: string) {
     if (!profileUserId) {
       return;
     }
 
-    const nextBlockedProfileIds = blockedProfileIds.includes(profileUserId)
-      ? blockedProfileIds.filter((profileId) => profileId !== profileUserId)
-      : [...blockedProfileIds, profileUserId];
-
-    setBlockedProfileIds(nextBlockedProfileIds);
-    writeStoredStringList("twinline-blocked-profiles", nextBlockedProfileIds);
     setProfileNotificationMenuUserId(null);
+    setBlockConfirmation({
+      action: blockedByMeProfileIds.includes(profileUserId) ? "unblock" : "block",
+      name: profileName,
+      userId: profileUserId,
+    });
+  }
 
-    if (!nextBlockedProfileIds.includes(profileUserId)) {
-      setErrorMessage("");
+  async function confirmBlockChange() {
+    if (!blockConfirmation) {
       return;
     }
 
-    setIncomingCall((currentCall) =>
-      currentCall?.sender_id === profileUserId ? null : currentCall,
+    if (!user) {
+      setErrorMessage("Сначала войди в аккаунт.");
+      return;
+    }
+
+    const { action, userId } = blockConfirmation;
+
+    setBlockConfirmation(null);
+    setProfileNotificationMenuUserId(null);
+
+    const nextLocalBlockedProfileIds =
+      action === "block"
+        ? Array.from(new Set([...localBlockedProfileIds, userId]))
+        : localBlockedProfileIds.filter((profileId) => profileId !== userId);
+
+    setLocalBlockedProfileIds(nextLocalBlockedProfileIds);
+    writeStoredStringList("twinline-blocked-profiles", nextLocalBlockedProfileIds);
+
+    const optimisticMessage: MessageRow = {
+      author: activeUserName,
+      created_at: new Date().toISOString(),
+      id: -Date.now(),
+      text: createBlockMessageText(userId, action),
+      user_id: user.id,
+    };
+
+    setMessages((currentMessages) =>
+      mergeMessages(currentMessages, [optimisticMessage]),
     );
-    setSelectedChatUserId((currentSelectedChatUserId) =>
-      currentSelectedChatUserId === profileUserId ? null : currentSelectedChatUserId,
+
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        author: activeUserName,
+        text: createBlockMessageText(userId, action),
+        user_id: user.id,
+      })
+      .select("id, author, text, created_at, user_id")
+      .single();
+
+    if (error || !data) {
+      setMessages((currentMessages) =>
+        currentMessages.filter((message) => message.id !== optimisticMessage.id),
+      );
+      setErrorMessage("Не получилось изменить блокировку. Попробуй ещё раз.");
+      return;
+    }
+
+    setMessages((currentMessages) =>
+      mergeMessages(
+        currentMessages.filter((message) => message.id !== optimisticMessage.id),
+        [data],
+      ),
     );
+
+    if (action === "block") {
+      setIncomingCall((currentCall) =>
+        currentCall?.sender_id === userId ? null : currentCall,
+      );
+    }
+
     setMessageText("");
     setReplyTarget(null);
     setEditingMessage(null);
-    setErrorMessage("Пользователь заблокирован локально на этом устройстве.");
+    setErrorMessage("");
   }
 
   async function confirmDeleteChat() {
@@ -4523,6 +4660,27 @@ export default function Home() {
                   })}
                 </div>
 
+                {isSelectedChatBlocked ? (
+                  <div className="mt-2 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl">
+                    {isSelectedChatBlockedByMe ? (
+                      <button
+                        className="min-h-11 w-full rounded-lg bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5] sm:rounded-xl"
+                        onClick={() => {
+                          if (selectedChatUserId && friendProfile?.name) {
+                            requestBlockChange(selectedChatUserId, friendProfile.name);
+                          }
+                        }}
+                        type="button"
+                      >
+                        Разблокировать
+                      </button>
+                    ) : (
+                      <div className="flex min-h-11 items-center justify-center rounded-lg bg-[#f4f4f5]/12 px-4 text-sm font-semibold text-[#a1a1aa] sm:rounded-xl">
+                        Вы были заблокированы
+                      </div>
+                    )}
+                  </div>
+                ) : (
                 <form
                   className="mt-2 grid grid-cols-[auto_1fr_auto_auto_auto] gap-1.5 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:flex sm:gap-2 sm:rounded-2xl"
                   onSubmit={sendMessage}
@@ -4680,6 +4838,7 @@ export default function Home() {
                     )}
                   </button>
                 </form>
+                )}
 
                 {replyTarget || editingMessage ? (
                   <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-2.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
@@ -6203,6 +6362,70 @@ export default function Home() {
           </div>
         </>
       ) : null}
+      {blockConfirmation ? (
+        <>
+          <button
+            aria-label="Закрыть подтверждение блокировки"
+            className="fixed inset-0 z-[115] bg-black/62 backdrop-blur-md"
+            onClick={() => setBlockConfirmation(null)}
+            type="button"
+          />
+          <section className="fixed left-1/2 top-1/2 z-[116] w-[min(430px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 rounded-[28px] border border-[#3f3f46]/55 bg-[#101010]/98 p-5 text-left shadow-[0_28px_90px_rgba(0,0,0,0.68)] backdrop-blur-xl">
+            <div className="flex items-start gap-4">
+              <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl border ${
+                blockConfirmation.action === "block"
+                  ? "border-red-300/35 bg-red-500/14 text-red-100"
+                  : "border-emerald-300/30 bg-emerald-400/12 text-emerald-100"
+              }`}>
+                <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <path
+                    d="M18 11H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2ZM8 11V7a4 4 0 0 1 8 0v4"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                  />
+                </svg>
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#a1a1aa]">
+                  {blockConfirmation.action === "block" ? "Блокировка" : "Разблокировка"}
+                </p>
+                <h2 className="mt-1 text-2xl font-bold leading-tight text-[#f4f4f5]">
+                  {blockConfirmation.action === "block"
+                    ? "Заблокировать пользователя?"
+                    : "Разблокировать пользователя?"}
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-[#a1a1aa]">
+                  {blockConfirmation.action === "block"
+                    ? `${blockConfirmation.name} не сможет писать тебе и звонить.`
+                    : `${blockConfirmation.name} снова сможет писать тебе и звонить.`}
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 grid gap-2 sm:grid-cols-2">
+              <button
+                className={`min-h-12 rounded-2xl px-4 text-sm font-bold transition ${
+                  blockConfirmation.action === "block"
+                    ? "bg-red-500 text-white hover:bg-red-400"
+                    : "bg-[#f4f4f5] text-[#050505] hover:bg-[#e5e5e5]"
+                }`}
+                onClick={() => void confirmBlockChange()}
+                type="button"
+              >
+                Да
+              </button>
+              <button
+                className="min-h-12 rounded-2xl border border-[#3f3f46]/45 bg-white/[0.03] px-4 text-sm font-bold text-[#f4f4f5] transition hover:bg-white/10"
+                onClick={() => setBlockConfirmation(null)}
+                type="button"
+              >
+                Нет
+              </button>
+            </div>
+          </section>
+        </>
+      ) : null}
       {viewedProfile ? (
         <>
           <button
@@ -6370,7 +6593,7 @@ export default function Home() {
                   </span>
                 </button>
                 {profileNotificationMenuUserId === viewedProfile.userId && viewedProfile.userId ? (
-                  <div className="absolute left-1/2 top-[calc(100%+8px)] z-[110] w-48 -translate-x-1/2 rounded-2xl border border-[#3f3f46]/55 bg-[#171717]/98 p-1.5 text-left shadow-[0_18px_55px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+                  <div className="absolute left-1/2 top-[calc(100%+8px)] z-[110] w-64 -translate-x-1/2 rounded-2xl border border-[#3f3f46]/55 bg-[#171717]/98 p-1.5 text-left shadow-[0_18px_55px_rgba(0,0,0,0.55)] backdrop-blur-xl">
                     {isProfileMuted(mutedProfiles, viewedProfile.userId) ? (
                       <button
                         className="min-h-10 w-full rounded-xl px-3 text-left text-sm font-semibold text-emerald-100 transition hover:bg-emerald-400/10"
@@ -6381,14 +6604,14 @@ export default function Home() {
                       </button>
                     ) : null}
                     {[
-                      { durationMs: 30 * 60 * 1000, label: "30 минут" },
-                      { durationMs: 60 * 60 * 1000, label: "1 час" },
-                      { durationMs: 2 * 60 * 60 * 1000, label: "2 часа" },
-                      { durationMs: 8 * 60 * 60 * 1000, label: "8 часов" },
+                      { durationMs: 30 * 60 * 1000, label: "Отмена на 30 минут" },
+                      { durationMs: 60 * 60 * 1000, label: "Отмена на 1 час" },
+                      { durationMs: 2 * 60 * 60 * 1000, label: "Отмена на 2 часа" },
+                      { durationMs: 8 * 60 * 60 * 1000, label: "Отмена на 8 часов" },
                       { durationMs: null, label: "Выключить уведомления" },
                     ].map((option) => (
                       <button
-                        className="min-h-10 w-full rounded-xl px-3 text-left text-sm font-semibold text-[#f4f4f5] transition hover:bg-white/10"
+                        className="min-h-10 w-full whitespace-nowrap rounded-xl px-3 text-left text-sm font-semibold text-[#f4f4f5] transition hover:bg-white/10"
                         key={option.label}
                         onClick={() =>
                           viewedProfile.userId
@@ -6409,7 +6632,7 @@ export default function Home() {
               <button
                 aria-label="Заблокировать"
                 className={`flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border text-center transition disabled:cursor-not-allowed disabled:opacity-45 ${
-                  viewedProfile.userId && blockedProfileIds.includes(viewedProfile.userId)
+                  viewedProfile.userId && blockedByMeProfileIds.includes(viewedProfile.userId)
                     ? "border-red-300/45 bg-red-500/12 text-red-100 hover:bg-red-500/18"
                     : "border-[#3f3f46]/40 bg-black/24 text-[#f4f4f5] hover:bg-white/[0.08]"
                 }`}
@@ -6419,7 +6642,7 @@ export default function Home() {
                     return;
                   }
 
-                  toggleBlockedProfile(viewedProfile.userId);
+                  requestBlockChange(viewedProfile.userId, viewedProfile.name);
                 }}
                 type="button"
               >
@@ -6433,7 +6656,7 @@ export default function Home() {
                   />
                 </svg>
                 <span className="text-[11px] font-semibold leading-none text-[#d4d4d8]">
-                  {viewedProfile.userId && blockedProfileIds.includes(viewedProfile.userId)
+                  {viewedProfile.userId && blockedByMeProfileIds.includes(viewedProfile.userId)
                     ? "Разблок"
                     : "Блок"}
                 </span>
