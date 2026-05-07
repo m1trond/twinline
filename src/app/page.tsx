@@ -4318,12 +4318,26 @@ export default function Home() {
                       )}
                     </button>
                     <button
-                      className="min-h-9 min-w-24 rounded-lg bg-[#f4f4f5] px-3 text-xs font-bold text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b] sm:min-w-28 sm:rounded-xl sm:px-4"
+                      aria-label={callStatus === "idle" ? "Позвонить" : callStatusText}
+                      className="grid min-h-9 w-9 place-items-center rounded-lg bg-[#f4f4f5] text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b] sm:min-h-10 sm:w-10 sm:rounded-xl"
                       disabled={!friendProfile?.userId || callStatus !== "idle"}
                       onClick={startCall}
                       type="button"
                     >
-                      {callStatus === "idle" ? "Позвонить" : callStatusText}
+                      <svg
+                        aria-hidden="true"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.7.6 2.5a2 2 0 0 1-.5 2.1L8 9.5a16 16 0 0 0 6.5 6.5l1.2-1.2a2 2 0 0 1 2.1-.5c.8.3 1.6.5 2.5.6A2 2 0 0 1 22 16.9Z"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                        />
+                      </svg>
                     </button>
                   </div>
                 </div>
