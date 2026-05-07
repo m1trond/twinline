@@ -75,6 +75,7 @@ type TypingMessagePayload = {
 type ActiveView = "profile" | "messages" | "favorites" | "settings";
 type AuthMode = "sign-in" | "sign-up";
 type CallStatus = "idle" | "calling" | "incoming" | "connecting" | "connected";
+type MutedProfileUntil = Record<string, number | null>;
 
 const navItems: Array<{ label: string; view: ActiveView }> = [
   { label: "Профиль", view: "profile" },
@@ -121,6 +122,52 @@ function readStoredStringList(key: string) {
 
 function writeStoredStringList(key: string, value: string[]) {
   window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+function readStoredMutedProfiles() {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const storedValue = window.localStorage.getItem("twinline-muted-profiles");
+    const parsedValue = storedValue ? JSON.parse(storedValue) : {};
+
+    if (Array.isArray(parsedValue)) {
+      return Object.fromEntries(
+        parsedValue
+          .filter((item): item is string => typeof item === "string")
+          .map((profileId) => [profileId, null]),
+      );
+    }
+
+    if (!parsedValue || typeof parsedValue !== "object") {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(parsedValue).filter((entry): entry is [string, number | null] => {
+        const [profileId, muteUntil] = entry;
+
+        return (
+          typeof profileId === "string" &&
+          (muteUntil === null || typeof muteUntil === "number")
+        );
+      }),
+    );
+  } catch {
+    return {};
+  }
+}
+
+function writeStoredMutedProfiles(value: MutedProfileUntil) {
+  window.localStorage.setItem("twinline-muted-profiles", JSON.stringify(value));
+}
+
+function isProfileMuted(mutedProfiles: MutedProfileUntil, profileId: string) {
+  const muteUntil = mutedProfiles[profileId];
+
+  return muteUntil === null || (typeof muteUntil === "number" && muteUntil > Date.now());
 }
 
 function normalizeUsername(username: string) {
@@ -810,12 +857,13 @@ export default function Home() {
 
     return window.localStorage.getItem("twinline-notifications") === "enabled";
   });
-  const [mutedProfileIds, setMutedProfileIds] = useState<string[]>(() =>
-    readStoredStringList("twinline-muted-profiles"),
+  const [mutedProfiles, setMutedProfiles] = useState<MutedProfileUntil>(() =>
+    readStoredMutedProfiles(),
   );
   const [blockedProfileIds, setBlockedProfileIds] = useState<string[]>(() =>
     readStoredStringList("twinline-blocked-profiles"),
   );
+  const [profileNotificationMenuUserId, setProfileNotificationMenuUserId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
@@ -845,7 +893,7 @@ export default function Home() {
   const typingSentAtRef = useRef(0);
   const latestMessageCreatedAtRef = useRef<string | null>(null);
   const notificationsEnabledRef = useRef(false);
-  const mutedProfileIdsRef = useRef<Set<string>>(new Set());
+  const mutedProfilesRef = useRef<MutedProfileUntil>({});
   const blockedProfileIdsRef = useRef<Set<string>>(new Set());
   const activeViewRef = useRef<ActiveView>("profile");
   const selectedChatUserIdRef = useRef<string | null>(null);
@@ -1028,18 +1076,28 @@ export default function Home() {
   const isFriendTyping = friendTypingUntilFromMessages > typingNow;
   const visibleMessages = useMemo(() => {
     return messages.filter((message) => {
-      return !hiddenMessageIds.includes(message.id) && !isServiceMessage(message.text);
+      return (
+        !hiddenMessageIds.includes(message.id) &&
+        !isServiceMessage(message.text) &&
+        (!message.user_id ||
+          message.user_id === user?.id ||
+          !blockedProfileIds.includes(message.user_id))
+      );
     });
-  }, [hiddenMessageIds, messages]);
+  }, [blockedProfileIds, hiddenMessageIds, messages, user?.id]);
   const activeDialogMessages = useMemo(() => {
     if (!user || !selectedChatUserId) {
+      return [];
+    }
+
+    if (blockedProfileIds.includes(selectedChatUserId)) {
       return [];
     }
 
     return visibleMessages.filter((message) => {
       return message.user_id === user.id || message.user_id === selectedChatUserId;
     });
-  }, [selectedChatUserId, user, visibleMessages]);
+  }, [blockedProfileIds, selectedChatUserId, user, visibleMessages]);
   const unreadMessagesByUserId = useMemo(() => {
     const unreadByUserId = new Map<string, number>();
 
@@ -1098,6 +1156,8 @@ export default function Home() {
       userId: friendMessage.user_id,
     };
   }, [chatProfiles, profiles, selectedChatUserId, user?.id, visibleMessages]);
+  const isSelectedChatBlocked =
+    selectedChatUserId !== null && blockedProfileIds.includes(selectedChatUserId);
   const latestVisibleMessage = visibleMessages.at(-1);
   const isUsernameChangeAllowed = canChangeName(currentProfile?.username_changed_at ?? null);
   const nextUsernameChangeDate = getNextNameChangeDate(
@@ -1310,8 +1370,8 @@ export default function Home() {
   }, [areNotificationsEnabled]);
 
   useEffect(() => {
-    mutedProfileIdsRef.current = new Set(mutedProfileIds);
-  }, [mutedProfileIds]);
+    mutedProfilesRef.current = mutedProfiles;
+  }, [mutedProfiles]);
 
   useEffect(() => {
     blockedProfileIdsRef.current = new Set(blockedProfileIds);
@@ -1704,7 +1764,8 @@ export default function Home() {
         if (
           !isDialogVisible &&
           notificationsEnabledRef.current &&
-          (!newMessage.user_id || !mutedProfileIdsRef.current.has(newMessage.user_id)) &&
+          (!newMessage.user_id ||
+            !isProfileMuted(mutedProfilesRef.current, newMessage.user_id)) &&
           "Notification" in window &&
           Notification.permission === "granted"
         ) {
@@ -2277,6 +2338,11 @@ export default function Home() {
       return;
     }
 
+    if (blockedProfileIds.includes(targetUserId)) {
+      setErrorMessage("Сначала разблокируй пользователя, чтобы позвонить ему.");
+      return;
+    }
+
     if (!navigator.mediaDevices?.getUserMedia || typeof RTCPeerConnection === "undefined") {
       setErrorMessage("Этот браузер не поддерживает звонки.");
       return;
@@ -2467,7 +2533,7 @@ export default function Home() {
     setErrorMessage("");
   }
 
-  async function toggleProfileNotifications(profileUserId: string) {
+  async function muteProfileNotifications(profileUserId: string, durationMs: number | null) {
     if (!profileUserId) {
       return;
     }
@@ -2484,12 +2550,25 @@ export default function Home() {
       window.localStorage.setItem("twinline-notifications", "enabled");
     }
 
-    const nextMutedProfileIds = mutedProfileIds.includes(profileUserId)
-      ? mutedProfileIds.filter((profileId) => profileId !== profileUserId)
-      : [...mutedProfileIds, profileUserId];
+    const nextMutedProfiles: MutedProfileUntil = {
+      ...mutedProfiles,
+      [profileUserId]: durationMs === null ? null : Date.now() + durationMs,
+    };
 
-    setMutedProfileIds(nextMutedProfileIds);
-    writeStoredStringList("twinline-muted-profiles", nextMutedProfileIds);
+    setMutedProfiles(nextMutedProfiles);
+    writeStoredMutedProfiles(nextMutedProfiles);
+    setProfileNotificationMenuUserId(null);
+    setErrorMessage("");
+  }
+
+  function unmuteProfileNotifications(profileUserId: string) {
+    const nextMutedProfiles = { ...mutedProfiles };
+
+    delete nextMutedProfiles[profileUserId];
+
+    setMutedProfiles(nextMutedProfiles);
+    writeStoredMutedProfiles(nextMutedProfiles);
+    setProfileNotificationMenuUserId(null);
     setErrorMessage("");
   }
 
@@ -2504,6 +2583,7 @@ export default function Home() {
 
     setBlockedProfileIds(nextBlockedProfileIds);
     writeStoredStringList("twinline-blocked-profiles", nextBlockedProfileIds);
+    setProfileNotificationMenuUserId(null);
 
     if (!nextBlockedProfileIds.includes(profileUserId)) {
       setErrorMessage("");
@@ -2513,6 +2593,12 @@ export default function Home() {
     setIncomingCall((currentCall) =>
       currentCall?.sender_id === profileUserId ? null : currentCall,
     );
+    setSelectedChatUserId((currentSelectedChatUserId) =>
+      currentSelectedChatUserId === profileUserId ? null : currentSelectedChatUserId,
+    );
+    setMessageText("");
+    setReplyTarget(null);
+    setEditingMessage(null);
     setErrorMessage("Пользователь заблокирован локально на этом устройстве.");
   }
 
@@ -3262,6 +3348,11 @@ export default function Home() {
       );
       setMessageText("");
       setReplyTarget(null);
+      return;
+    }
+
+    if (isSelectedChatBlocked) {
+      setErrorMessage("Сначала разблокируй пользователя, чтобы написать ему.");
       return;
     }
 
@@ -5264,7 +5355,7 @@ export default function Home() {
                   <button
                     aria-label="Прикрепить файл"
                     className="grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 text-[#f4f4f5] transition hover:bg-[#f4f4f5]/18 disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={isUploadingAttachment || isRecordingVoice}
+                    disabled={isUploadingAttachment || isRecordingVoice || isSelectedChatBlocked}
                     onClick={() => imageInputRef.current?.click()}
                     type="button"
                   >
@@ -5308,9 +5399,12 @@ export default function Home() {
                       <input
                         aria-label="Текст сообщения"
                         className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-base text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] focus:bg-[#f4f4f5]/18 sm:px-4 sm:text-sm"
+                        disabled={isSelectedChatBlocked}
                         onChange={handleMessageTextChange}
                         placeholder={
-                          editingMessage
+                          isSelectedChatBlocked
+                            ? "Пользователь заблокирован"
+                            : editingMessage
                             ? "Измени сообщение..."
                             : replyTarget
                               ? "Ответь на сообщение..."
@@ -5323,7 +5417,7 @@ export default function Home() {
                       <button
                         aria-label="Стикеры"
                         className="grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 text-[#f4f4f5] transition hover:bg-[#f4f4f5]/18 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={isUploadingAttachment}
+                        disabled={isUploadingAttachment || isSelectedChatBlocked}
                         onClick={toggleStickerPicker}
                         ref={stickerButtonRef}
                         type="button"
@@ -5359,7 +5453,7 @@ export default function Home() {
                         ? "border-red-400/60 bg-red-500/85 text-white hover:bg-red-400"
                         : "border-[#3f3f46]/35 bg-[#f4f4f5]/12 hover:bg-[#f4f4f5]/18"
                     }`}
-                    disabled={isUploadingAttachment}
+                    disabled={isUploadingAttachment || isSelectedChatBlocked}
                     onClick={toggleVoiceRecording}
                     style={
                       isRecordingVoice
@@ -6239,38 +6333,79 @@ export default function Home() {
                 </svg>
                 <span className="text-[11px] font-semibold leading-none text-[#d4d4d8]">Телефон</span>
               </button>
-              <button
-                aria-label="Уведомления"
-                className={`flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border text-center transition disabled:cursor-not-allowed disabled:opacity-45 ${
-                  viewedProfile.userId && mutedProfileIds.includes(viewedProfile.userId)
-                    ? "border-amber-300/35 bg-amber-400/10 text-amber-100 hover:bg-amber-400/15"
-                    : "border-[#3f3f46]/40 bg-black/24 text-[#f4f4f5] hover:bg-white/[0.08]"
-                }`}
-                disabled={!viewedProfile.userId || viewedProfile.userId === user?.id}
-                onClick={() => {
-                  if (!viewedProfile.userId || viewedProfile.userId === user?.id) {
-                    return;
-                  }
+              <div className="relative">
+                <button
+                  aria-expanded={profileNotificationMenuUserId === viewedProfile.userId}
+                  aria-label="Уведомления"
+                  className={`flex min-h-[74px] w-full flex-col items-center justify-center gap-1.5 rounded-2xl border text-center transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                    viewedProfile.userId && isProfileMuted(mutedProfiles, viewedProfile.userId)
+                      ? "border-amber-300/35 bg-amber-400/10 text-amber-100 hover:bg-amber-400/15"
+                      : "border-[#3f3f46]/40 bg-black/24 text-[#f4f4f5] hover:bg-white/[0.08]"
+                  }`}
+                  disabled={!viewedProfile.userId || viewedProfile.userId === user?.id}
+                  onClick={() => {
+                    if (!viewedProfile.userId || viewedProfile.userId === user?.id) {
+                      return;
+                    }
 
-                  void toggleProfileNotifications(viewedProfile.userId);
-                }}
-                type="button"
-              >
-                <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM13.7 21a2 2 0 0 1-3.4 0"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                  />
-                </svg>
-                <span className="text-[11px] font-semibold leading-none text-[#d4d4d8]">
-                  {viewedProfile.userId && mutedProfileIds.includes(viewedProfile.userId)
-                    ? "Без звука"
-                    : "Уведомл."}
-                </span>
-              </button>
+                    setProfileNotificationMenuUserId((currentUserId) =>
+                      currentUserId === viewedProfile.userId ? null : viewedProfile.userId,
+                    );
+                  }}
+                  type="button"
+                >
+                  <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM13.7 21a2 2 0 0 1-3.4 0"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                  <span className="text-[11px] font-semibold leading-none text-[#d4d4d8]">
+                    {viewedProfile.userId && isProfileMuted(mutedProfiles, viewedProfile.userId)
+                      ? "Без звука"
+                      : "Уведомл."}
+                  </span>
+                </button>
+                {profileNotificationMenuUserId === viewedProfile.userId && viewedProfile.userId ? (
+                  <div className="absolute left-1/2 top-[calc(100%+8px)] z-[110] w-48 -translate-x-1/2 rounded-2xl border border-[#3f3f46]/55 bg-[#171717]/98 p-1.5 text-left shadow-[0_18px_55px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+                    {isProfileMuted(mutedProfiles, viewedProfile.userId) ? (
+                      <button
+                        className="min-h-10 w-full rounded-xl px-3 text-left text-sm font-semibold text-emerald-100 transition hover:bg-emerald-400/10"
+                        onClick={() => unmuteProfileNotifications(viewedProfile.userId!)}
+                        type="button"
+                      >
+                        Включить уведомления
+                      </button>
+                    ) : null}
+                    {[
+                      { durationMs: 30 * 60 * 1000, label: "30 минут" },
+                      { durationMs: 60 * 60 * 1000, label: "1 час" },
+                      { durationMs: 2 * 60 * 60 * 1000, label: "2 часа" },
+                      { durationMs: 8 * 60 * 60 * 1000, label: "8 часов" },
+                      { durationMs: null, label: "Выключить уведомления" },
+                    ].map((option) => (
+                      <button
+                        className="min-h-10 w-full rounded-xl px-3 text-left text-sm font-semibold text-[#f4f4f5] transition hover:bg-white/10"
+                        key={option.label}
+                        onClick={() =>
+                          viewedProfile.userId
+                            ? void muteProfileNotifications(
+                                viewedProfile.userId,
+                                option.durationMs,
+                              )
+                            : undefined
+                        }
+                        type="button"
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
               <button
                 aria-label="Заблокировать"
                 className={`flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border text-center transition disabled:cursor-not-allowed disabled:opacity-45 ${
