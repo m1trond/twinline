@@ -825,8 +825,6 @@ export default function Home() {
   const [authMode, setAuthMode] = useState<AuthMode>("sign-in");
   const [authContactMethod, setAuthContactMethod] = useState<AuthContactMethod>("email");
   const [authName, setAuthName] = useState("");
-  const [authUsername, setAuthUsername] = useState("");
-  const [authUsernameError, setAuthUsernameError] = useState("");
   const [authEmail, setAuthEmail] = useState("");
   const [authPhone, setAuthPhone] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -2166,7 +2164,6 @@ export default function Home() {
   async function handleAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage("");
-    setAuthUsernameError("");
 
     if (authContactMethod === "phone") {
       setErrorMessage("Вход и регистрация по телефону уже в интерфейсе, SMS-логика пока в разработке.");
@@ -2174,33 +2171,12 @@ export default function Home() {
     }
 
     if (authMode === "sign-up") {
-      const nextUsername = normalizeUsername(authUsername);
-      const usernameValidationError = getUsernameError(nextUsername);
-
-      if (usernameValidationError) {
-        setAuthUsernameError(usernameValidationError);
-        return;
-      }
-
-      const usernameOwner = await fetchUsernameOwner(nextUsername);
-
-      if (usernameOwner.error) {
-        setAuthUsernameError("Сначала нужно добавить колонку username в Supabase.");
-        return;
-      }
-
-      if (usernameOwner.data) {
-        setAuthUsernameError("Такой ник уже занят.");
-        return;
-      }
-
       const { data, error } = await supabase.auth.signUp({
         email: authEmail.trim(),
         password: authPassword,
         options: {
           data: {
             display_name: authName.trim() || authEmail.trim().split("@")[0],
-            username: nextUsername,
           },
         },
       });
@@ -2211,8 +2187,6 @@ export default function Home() {
         if (data.user) {
           await supabase.from("profiles").upsert({
             display_name: authName.trim() || authEmail.trim().split("@")[0],
-            username: nextUsername,
-            username_changed_at: null,
             user_id: data.user.id,
           });
         }
@@ -2248,7 +2222,7 @@ export default function Home() {
 
     if (signedInProfileError) {
       await supabase.auth.signOut();
-      setAuthUsernameError("Не получилось проверить ник аккаунта.");
+      setErrorMessage("Не получилось проверить профиль аккаунта.");
       return;
     }
 
@@ -2301,7 +2275,6 @@ export default function Home() {
       }
 
       setAuthPassword("");
-      setAuthUsernameError("");
     } finally {
       setIsSigningOut(false);
     }
@@ -4115,7 +4088,10 @@ export default function Home() {
                   ? "bg-[#f4f4f5] text-[#050505]"
                   : "text-[#f4f4f5]"
               }`}
-              onClick={() => setAuthMode("sign-in")}
+              onClick={() => {
+                setAuthMode("sign-in");
+                setErrorMessage("");
+              }}
               type="button"
             >
               Вход
@@ -4126,7 +4102,10 @@ export default function Home() {
                   ? "bg-[#f4f4f5] text-[#050505]"
                   : "text-[#f4f4f5]"
               }`}
-              onClick={() => setAuthMode("sign-up")}
+              onClick={() => {
+                setAuthMode("sign-up");
+                setErrorMessage("");
+              }}
               type="button"
             >
               Регистрация
@@ -4148,7 +4127,6 @@ export default function Home() {
                 onClick={() => {
                   setAuthContactMethod(item.method);
                   setErrorMessage("");
-                  setAuthUsernameError("");
                 }}
                 type="button"
               >
@@ -4166,33 +4144,6 @@ export default function Home() {
                 type="text"
                 value={authName}
               />
-            ) : null}
-            {authMode === "sign-up" ? (
-              <label className="grid gap-1.5">
-                <div className="flex min-h-11 items-center rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm focus-within:border-[#f4f4f5] sm:min-h-12">
-                  <span className="font-medium text-[#a1a1aa]">@</span>
-                  <input
-                    aria-label="Ник Hush"
-                    className="min-w-0 flex-1 bg-transparent pl-1 outline-none placeholder:text-[#a1a1aa]/70"
-                    onChange={(event) => {
-                      setAuthUsername(formatUsernameInput(event.target.value));
-                      setAuthUsernameError("");
-                    }}
-                    placeholder="m1trond"
-                    type="text"
-                    value={authUsername}
-                  />
-                </div>
-                {authUsernameError ? (
-                  <span className="text-[13px] font-medium text-red-300">
-                    {authUsernameError}
-                  </span>
-                ) : (
-                  <span className="text-xs font-medium text-[#a1a1aa]">
-                    Ник будет уникальным адресом профиля в Hush.
-                  </span>
-                )}
-              </label>
             ) : null}
             {authContactMethod === "email" ? (
               <>
