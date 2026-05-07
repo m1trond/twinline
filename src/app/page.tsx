@@ -6070,9 +6070,50 @@ export default function Home() {
               </button>
             </div>
 
-            <div className="mt-5 grid grid-cols-3 gap-2">
-              <div className="flex aspect-square flex-col items-center justify-center gap-2 rounded-3xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5]">
-                <svg aria-hidden="true" className="h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <div className="mt-5 grid grid-cols-4 gap-2">
+              <button
+                aria-label="Открыть чат"
+                className="flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5] transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
+                disabled={!viewedProfile.userId || viewedProfile.userId === user?.id}
+                onClick={() => {
+                  if (!viewedProfile.userId || viewedProfile.userId === user?.id) {
+                    return;
+                  }
+
+                  setSelectedChatUserId(viewedProfile.userId);
+                  setActiveView("messages");
+                  setViewedProfile(null);
+                }}
+                type="button"
+              >
+                <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <path
+                    d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 1 1 17 0Z"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                  />
+                </svg>
+                <span className="text-[11px] font-semibold leading-none text-[#d4d4d8]">Чат</span>
+              </button>
+              <button
+                aria-label="Позвонить"
+                className="flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5] transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
+                disabled={!viewedProfile.userId || viewedProfile.userId === user?.id || callStatus !== "idle"}
+                onClick={() => {
+                  if (!viewedProfile.userId || viewedProfile.userId === user?.id) {
+                    return;
+                  }
+
+                  setSelectedChatUserId(viewedProfile.userId);
+                  setActiveView("messages");
+                  setViewedProfile(null);
+                  void startCall(viewedProfile.userId);
+                }}
+                type="button"
+              >
+                <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
                   <path
                     d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.7.6 2.5a2 2 0 0 1-.5 2.1L8 9.5a16 16 0 0 0 6.5 6.5l1.2-1.2a2 2 0 0 1 2.1-.5c.8.3 1.6.5 2.5.6A2 2 0 0 1 22 16.9Z"
                     stroke="currentColor"
@@ -6081,10 +6122,15 @@ export default function Home() {
                     strokeWidth="2"
                   />
                 </svg>
-                <span className="text-xs font-semibold text-[#d4d4d8]">Телефон</span>
-              </div>
-              <div className="flex aspect-square flex-col items-center justify-center gap-2 rounded-3xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5]">
-                <svg aria-hidden="true" className="h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <span className="text-[11px] font-semibold leading-none text-[#d4d4d8]">Телефон</span>
+              </button>
+              <button
+                aria-label="Уведомления"
+                className="flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5] opacity-75"
+                disabled
+                type="button"
+              >
+                <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
                   <path
                     d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM13.7 21a2 2 0 0 1-3.4 0"
                     stroke="currentColor"
@@ -6093,10 +6139,15 @@ export default function Home() {
                     strokeWidth="2"
                   />
                 </svg>
-                <span className="text-xs font-semibold text-[#d4d4d8]">Уведомления</span>
-              </div>
-              <div className="flex aspect-square flex-col items-center justify-center gap-2 rounded-3xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5]">
-                <svg aria-hidden="true" className="h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <span className="text-[11px] font-semibold leading-none text-[#d4d4d8]">Уведомл.</span>
+              </button>
+              <button
+                aria-label="Заблокировать"
+                className="flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5] opacity-75"
+                disabled
+                type="button"
+              >
+                <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
                   <path
                     d="M18 11H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2ZM8 11V7a4 4 0 0 1 8 0v4"
                     stroke="currentColor"
@@ -6105,10 +6156,9 @@ export default function Home() {
                     strokeWidth="2"
                   />
                 </svg>
-                <span className="text-xs font-semibold text-[#d4d4d8]">Блокировка</span>
-              </div>
+                <span className="text-[11px] font-semibold leading-none text-[#d4d4d8]">Блок</span>
+              </button>
             </div>
-
             <div className="mt-5 grid gap-3">
               <article className="rounded-3xl border border-[#3f3f46]/40 bg-black/22 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#e5e5e5]">
@@ -6138,64 +6188,6 @@ export default function Home() {
               </article>
             </div>
 
-            <div className="mt-5 grid gap-2 sm:grid-cols-2">
-              <button
-                className="min-h-12 rounded-2xl bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b] disabled:text-[#a1a1aa]"
-                disabled={!viewedProfile.userId || viewedProfile.userId === user?.id}
-                onClick={() => {
-                  if (!viewedProfile.userId || viewedProfile.userId === user?.id) {
-                    return;
-                  }
-
-                  setSelectedChatUserId(viewedProfile.userId);
-                  setActiveView("messages");
-                  setViewedProfile(null);
-                }}
-                type="button"
-              >
-                Написать
-              </button>
-              <button
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#3f3f46]/50 bg-white/[0.04] px-4 text-sm font-bold text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
-                disabled={!viewedProfile.userId || viewedProfile.userId === user?.id || callStatus !== "idle"}
-                onClick={() => {
-                  if (!viewedProfile.userId || viewedProfile.userId === user?.id) {
-                    return;
-                  }
-
-                  setSelectedChatUserId(viewedProfile.userId);
-                  setActiveView("messages");
-                  setViewedProfile(null);
-                  void startCall(viewedProfile.userId);
-                }}
-                type="button"
-              >
-                <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.7.6 2.5a2 2 0 0 1-.5 2.1L8 9.5a16 16 0 0 0 6.5 6.5l1.2-1.2a2 2 0 0 1 2.1-.5c.8.3 1.6.5 2.5.6A2 2 0 0 1 22 16.9Z"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                  />
-                </svg>
-                Позвонить
-              </button>
-              <button
-                className="min-h-12 rounded-2xl border border-[#3f3f46]/45 bg-white/[0.03] px-4 text-sm font-bold text-[#a1a1aa] opacity-70"
-                disabled
-                type="button"
-              >
-                Заблокировать позже
-              </button>
-              <button
-                className="min-h-12 rounded-2xl border border-[#3f3f46]/45 bg-white/[0.03] px-4 text-sm font-bold text-[#a1a1aa] opacity-70"
-                disabled
-                type="button"
-              >
-                Пожаловаться позже
-              </button>
-            </div>
           </section>
         </>
       ) : null}
