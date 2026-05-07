@@ -1010,8 +1010,8 @@ export default function Home() {
     };
   }, [chatProfiles, profiles, selectedChatUserId, user?.id, visibleMessages]);
   const latestVisibleMessage = visibleMessages.at(-1);
-  const isNameChangeAllowed = canChangeName(currentProfile?.name_changed_at ?? null);
-  const nextNameChangeDate = getNextNameChangeDate(
+  const isUsernameChangeAllowed = canChangeName(currentProfile?.name_changed_at ?? null);
+  const nextUsernameChangeDate = getNextNameChangeDate(
     currentProfile?.name_changed_at ?? null,
   );
   const profileNameInputValue = profileName || activeUserName;
@@ -2784,20 +2784,13 @@ export default function Home() {
       return;
     }
 
-    if (!isNameChangeAllowed) {
-      setErrorMessage(
-        `Имя можно будет снова изменить ${nextNameChangeDate ?? "позже"}.`,
-      );
-      return;
-    }
-
     const updatedAt = new Date().toISOString();
     const { data, error } = await supabase
       .from("profiles")
       .upsert({
         avatar_url: currentProfile?.avatar_url ?? null,
         display_name: nextName,
-        name_changed_at: updatedAt,
+        name_changed_at: currentProfile?.name_changed_at ?? null,
         updated_at: updatedAt,
         user_id: user.id,
         username: currentProfile?.username ?? null,
@@ -2856,6 +2849,13 @@ export default function Home() {
       return;
     }
 
+    if (!isUsernameChangeAllowed) {
+      setProfileUsernameError(
+        `Имя снова можно будет изменить ${nextUsernameChangeDate ?? "позже"}.`,
+      );
+      return;
+    }
+
     const usernameOwner = await fetchUsernameOwner(nextUsername);
 
     if (usernameOwner.error) {
@@ -2874,7 +2874,7 @@ export default function Home() {
       .upsert({
         avatar_url: currentProfile?.avatar_url ?? null,
         display_name: activeUserName,
-        name_changed_at: currentProfile?.name_changed_at ?? null,
+        name_changed_at: updatedAt,
         updated_at: updatedAt,
         user_id: user.id,
         username: nextUsername,
@@ -3923,7 +3923,6 @@ export default function Home() {
                     <form className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={updateProfileName}>
                       <input
                         className="min-h-10 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-base outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm"
-                        disabled={!isNameChangeAllowed}
                         maxLength={24}
                         minLength={2}
                         onChange={(event) => setProfileName(event.target.value)}
@@ -3934,7 +3933,6 @@ export default function Home() {
                       <button
                         className="min-h-10 rounded-xl bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
                         disabled={
-                          !isNameChangeAllowed ||
                           !profileName.trim() ||
                           profileName.trim() === activeUserName
                         }
@@ -3943,11 +3941,6 @@ export default function Home() {
                         Сохранить имя
                       </button>
                     </form>
-                    <p className="mt-2 text-[13px] leading-5 text-[#a1a1aa]">
-                      {isNameChangeAllowed
-                        ? "Имя можно менять один раз в месяц."
-                        : `Имя снова можно будет изменить ${nextNameChangeDate ?? "позже"}.`}
-                    </p>
                   </section>
 
                   <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-3 sm:col-span-2 sm:rounded-2xl sm:px-4">
@@ -3974,6 +3967,7 @@ export default function Home() {
                       <button
                         className="min-h-10 rounded-xl bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
                         disabled={
+                          !isUsernameChangeAllowed ||
                           !profileUsernameInputValue.trim() ||
                           profileUsernameInputValue.trim() === currentProfile?.username
                         }
@@ -3983,7 +3977,10 @@ export default function Home() {
                       </button>
                     </form>
                     <p className={`mt-2 text-[13px] leading-5 ${profileUsernameError ? "font-semibold text-red-300" : "text-[#a1a1aa]"}`}>
-                      {profileUsernameError || "Ник уникальный: если он занят, Hush покажет ошибку."}
+                      {profileUsernameError ||
+                        (isUsernameChangeAllowed
+                          ? "Имя можно менять один раз в месяц."
+                          : `Имя снова можно будет изменить ${nextUsernameChangeDate ?? "позже"}.`)}
                     </p>
                   </section>
 
