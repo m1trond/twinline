@@ -3813,6 +3813,7 @@ export default function Home() {
                     const audioUrl = getMessageAudioUrl(displayText);
                     const callDurationSeconds = getMessageCallDuration(displayText);
                     const sticker = getMessageSticker(displayText);
+                    const hasFramedMedia = Boolean(imageUrl || videoUrl);
                     const hasAttachment = Boolean(
                       imageUrl || videoUrl || audioUrl || callDurationSeconds !== null || sticker,
                     );
@@ -3832,6 +3833,8 @@ export default function Home() {
                           className={`max-w-[min(84vw,92%)] rounded-[18px] sm:max-w-[72%] sm:rounded-[20px] ${
                             hasStandaloneBubble
                               ? "bg-transparent p-0 text-[#f4f4f5] shadow-none"
+                              : hasFramedMedia
+                                ? "bg-transparent p-0 text-[#f4f4f5] shadow-none"
                               : `bg-[#f4f4f5] text-[#050505] shadow-[0_10px_30px_rgba(0,0,0,0.18)] ${
                                   hasAttachment ? "p-1.5 sm:p-2" : "px-3 py-2 sm:px-3.5 sm:py-2.5"
                                 } ${isPreviousSameAuthor ? "rounded-tr-lg" : ""} ${
@@ -3911,7 +3914,7 @@ export default function Home() {
 
                           {!hasStandaloneBubble && hasAttachment ? (
                             <div className="mt-2 flex items-center justify-end gap-3 px-1">
-                              <p className="text-right text-[11px] font-medium text-[#404040]">
+                              <p className={`text-right text-[11px] font-medium ${hasFramedMedia ? "text-[#a1a1aa]" : "text-[#404040]"}`}>
                                 {formatMessageTime(favoriteItem.created_at)}
                               </p>
                             </div>
@@ -4425,6 +4428,7 @@ export default function Home() {
                     const audioUrl = getMessageAudioUrl(displayText);
                     const callDurationSeconds = getMessageCallDuration(displayText);
                     const sticker = getMessageSticker(displayText);
+                    const hasFramedMedia = Boolean(imageUrl || videoUrl);
                     const hasAttachment = Boolean(
                       imageUrl || videoUrl || audioUrl || callDurationSeconds !== null || sticker,
                     );
@@ -4476,11 +4480,13 @@ export default function Home() {
                           className={`max-w-[min(84vw,92%)] rounded-[18px] sm:max-w-[72%] sm:rounded-[20px] ${
                             hasStandaloneBubble
                               ? "bg-transparent p-0 shadow-none"
+                              : hasFramedMedia
+                                ? "bg-transparent p-0 shadow-none"
                               : `shadow-[0_10px_30px_rgba(0,0,0,0.18)] ${
                                   hasAttachment ? "p-1.5 sm:p-2" : "px-3 py-2 sm:px-3.5 sm:py-2.5"
                                 }`
                           } ${
-                            hasStandaloneBubble
+                            hasStandaloneBubble || hasFramedMedia
                               ? "text-[#f4f4f5]"
                               : isMine
                                 ? `bg-[#f4f4f5] text-[#050505] ${
@@ -4649,7 +4655,9 @@ export default function Home() {
                           <div className={`${hasAttachment ? "mt-2 px-1" : "mt-1"} flex items-center justify-end gap-3`}>
                             <p
                               className={`text-right text-[11px] font-medium ${
-                                isMine ? "text-[#404040]" : "text-[#71717a]"
+                                hasFramedMedia
+                                  ? "text-[#a1a1aa]"
+                                  : isMine ? "text-[#404040]" : "text-[#71717a]"
                               }`}
                             >
                               {formatMessageTime(message.created_at)}
@@ -4659,7 +4667,7 @@ export default function Home() {
                                 aria-label={
                                   receiptStatus === "read" ? "Прочитано" : "Доставлено"
                                 }
-                                className="inline-flex items-center text-[#262626]"
+                                className={`inline-flex items-center ${hasFramedMedia ? "text-[#a1a1aa]" : "text-[#262626]"}`}
                               >
                                 {receiptStatus === "read" ? (
                                   <svg
