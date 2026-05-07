@@ -79,6 +79,7 @@ type BlockMessagePayload = {
 
 type ActiveView = "profile" | "messages" | "favorites" | "settings";
 type AuthMode = "sign-in" | "sign-up";
+type AuthContactMethod = "email" | "phone";
 type CallStatus = "idle" | "calling" | "incoming" | "connecting" | "connected";
 type MutedProfileUntil = Record<string, number | null>;
 
@@ -822,10 +823,12 @@ export default function Home() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("sign-in");
+  const [authContactMethod, setAuthContactMethod] = useState<AuthContactMethod>("email");
   const [authName, setAuthName] = useState("");
   const [authUsername, setAuthUsername] = useState("");
   const [authUsernameError, setAuthUsernameError] = useState("");
   const [authEmail, setAuthEmail] = useState("");
+  const [authPhone, setAuthPhone] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
@@ -2165,15 +2168,20 @@ export default function Home() {
     setErrorMessage("");
     setAuthUsernameError("");
 
-    const nextUsername = normalizeUsername(authUsername);
-    const usernameValidationError = getUsernameError(nextUsername);
-
-    if (usernameValidationError) {
-      setAuthUsernameError(usernameValidationError);
+    if (authContactMethod === "phone") {
+      setErrorMessage("Вход и регистрация по телефону уже в интерфейсе, SMS-логика пока в разработке.");
       return;
     }
 
     if (authMode === "sign-up") {
+      const nextUsername = normalizeUsername(authUsername);
+      const usernameValidationError = getUsernameError(nextUsername);
+
+      if (usernameValidationError) {
+        setAuthUsernameError(usernameValidationError);
+        return;
+      }
+
       const usernameOwner = await fetchUsernameOwner(nextUsername);
 
       if (usernameOwner.error) {
@@ -2232,20 +2240,6 @@ export default function Home() {
       return;
     }
 
-    const usernameOwner = await fetchUsernameOwner(nextUsername);
-
-    if (usernameOwner.error) {
-      await supabase.auth.signOut();
-      setAuthUsernameError("Сначала нужно добавить колонку username в Supabase.");
-      return;
-    }
-
-    if (usernameOwner.data && usernameOwner.data.user_id !== signedInUser.id) {
-      await supabase.auth.signOut();
-      setAuthUsernameError("Такой ник уже занят.");
-      return;
-    }
-
     const { data: signedInProfile, error: signedInProfileError } = await supabase
       .from("profiles")
       .select("user_id, username")
@@ -2258,24 +2252,16 @@ export default function Home() {
       return;
     }
 
-    if (signedInProfile?.username && signedInProfile.username !== nextUsername) {
-      await supabase.auth.signOut();
-      setAuthUsernameError("Этот ник не привязан к этому email.");
-      return;
-    }
-
-    if (!signedInProfile?.username) {
+    if (!signedInProfile) {
       const { error: profileError } = await supabase.from("profiles").upsert({
         avatar_url: currentProfile?.avatar_url ?? null,
         display_name: getDisplayName(signedInUser),
-        username: nextUsername,
-        username_changed_at: null,
         user_id: signedInUser.id,
       });
 
       if (profileError) {
         await supabase.auth.signOut();
-        setAuthUsernameError("Не получилось закрепить ник за аккаунтом.");
+        setErrorMessage("Не получилось подготовить профиль аккаунта.");
       }
     }
   }
@@ -4147,6 +4133,30 @@ export default function Home() {
             </button>
           </div>
 
+          <div className="mb-4 grid grid-cols-2 rounded-xl border border-[#3f3f46]/35 bg-black/20 p-1">
+            {[
+              { label: "Почта", method: "email" as const },
+              { label: "Телефон", method: "phone" as const },
+            ].map((item) => (
+              <button
+                className={`rounded-lg px-4 py-2 text-[13px] font-medium transition ${
+                  authContactMethod === item.method
+                    ? "bg-[#f4f4f5] text-[#050505]"
+                    : "text-[#f4f4f5] hover:bg-white/10"
+                }`}
+                key={item.method}
+                onClick={() => {
+                  setAuthContactMethod(item.method);
+                  setErrorMessage("");
+                  setAuthUsernameError("");
+                }}
+                type="button"
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
           <form className="grid gap-3" onSubmit={handleAuth}>
             {authMode === "sign-up" ? (
               <input
@@ -4157,50 +4167,103 @@ export default function Home() {
                 value={authName}
               />
             ) : null}
-            <label className="grid gap-1.5">
-              <div className="flex min-h-11 items-center rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm focus-within:border-[#f4f4f5] sm:min-h-12">
-                <span className="font-medium text-[#a1a1aa]">@</span>
+            {authMode === "sign-up" ? (
+              <label className="grid gap-1.5">
+                <div className="flex min-h-11 items-center rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm focus-within:border-[#f4f4f5] sm:min-h-12">
+                  <span className="font-medium text-[#a1a1aa]">@</span>
+                  <input
+                    aria-label="Ник Hush"
+                    className="min-w-0 flex-1 bg-transparent pl-1 outline-none placeholder:text-[#a1a1aa]/70"
+                    onChange={(event) => {
+                      setAuthUsername(formatUsernameInput(event.target.value));
+                      setAuthUsernameError("");
+                    }}
+                    placeholder="m1trond"
+                    type="text"
+                    value={authUsername}
+                  />
+                </div>
+                {authUsernameError ? (
+                  <span className="text-[13px] font-medium text-red-300">
+                    {authUsernameError}
+                  </span>
+                ) : (
+                  <span className="text-xs font-medium text-[#a1a1aa]">
+                    Ник будет уникальным адресом профиля в Hush.
+                  </span>
+                )}
+              </label>
+            ) : null}
+            {authContactMethod === "email" ? (
+              <>
                 <input
-                  aria-label="Ник Hush"
-                  className="min-w-0 flex-1 bg-transparent pl-1 outline-none placeholder:text-[#a1a1aa]/70"
-                  onChange={(event) => {
-                    setAuthUsername(formatUsernameInput(event.target.value));
-                    setAuthUsernameError("");
-                  }}
-                  placeholder="m1trond"
-                  type="text"
-                  value={authUsername}
+                  className="min-h-11 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:min-h-12"
+                  onChange={(event) => setAuthEmail(event.target.value)}
+                  placeholder="Email"
+                  type="email"
+                  value={authEmail}
                 />
+                <input
+                  className="min-h-11 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:min-h-12"
+                  onChange={(event) => setAuthPassword(event.target.value)}
+                  placeholder="Пароль"
+                  type="password"
+                  value={authPassword}
+                />
+              </>
+            ) : (
+              <div className="rounded-2xl border border-[#3f3f46]/40 bg-black/22 p-3">
+                <div className="flex min-h-11 overflow-hidden rounded-xl border border-[#3f3f46]/35 bg-[#f4f4f5]/12 focus-within:border-[#f4f4f5] sm:min-h-12">
+                  <select
+                    aria-label="Страна"
+                    className="w-24 border-r border-[#3f3f46]/35 bg-transparent px-3 text-sm text-[#f4f4f5] outline-none"
+                    defaultValue="+7"
+                  >
+                    <option className="bg-[#111111]" value="+7">+7</option>
+                    <option className="bg-[#111111]" value="+380">+380</option>
+                    <option className="bg-[#111111]" value="+375">+375</option>
+                    <option className="bg-[#111111]" value="+1">+1</option>
+                  </select>
+                  <input
+                    className="min-w-0 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-[#a1a1aa]/70"
+                    inputMode="tel"
+                    onChange={(event) => setAuthPhone(event.target.value)}
+                    placeholder="Номер телефона"
+                    type="tel"
+                    value={authPhone}
+                  />
+                </div>
+                <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-300/20 bg-amber-300/8 p-3 text-[13px] leading-5 text-amber-100">
+                  <svg
+                    aria-hidden="true"
+                    className="mt-0.5 h-4 w-4 shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M12 8v5m0 3h.01M10.3 4.3 2.8 17.4A2 2 0 0 0 4.5 20h15a2 2 0 0 0 1.7-2.6L13.7 4.3a2 2 0 0 0-3.4 0Z"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                  <p>
+                    Вход по телефону почти готов по интерфейсу. SMS-коды, выбор страны и подтверждение подключим следующим шагом.
+                  </p>
+                </div>
               </div>
-              {authUsernameError ? (
-                <span className="text-[13px] font-medium text-red-300">
-                  {authUsernameError}
-                </span>
-              ) : (
-                <span className="text-xs font-medium text-[#a1a1aa]">
-                  Ник нужен для входа и будет уникальным.
-                </span>
-              )}
-            </label>
-            <input
-              className="min-h-11 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:min-h-12"
-              onChange={(event) => setAuthEmail(event.target.value)}
-              placeholder="Email"
-              type="email"
-              value={authEmail}
-            />
-            <input
-              className="min-h-11 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:min-h-12"
-              onChange={(event) => setAuthPassword(event.target.value)}
-              placeholder="Пароль"
-              type="password"
-              value={authPassword}
-            />
+            )}
             <button
-              className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5] sm:min-h-12"
+              className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b] disabled:text-[#a1a1aa] sm:min-h-12"
+              disabled={authContactMethod === "phone"}
               type="submit"
             >
-              {authMode === "sign-in" ? "Войти" : "Создать аккаунт"}
+              {authContactMethod === "phone"
+                ? "Скоро будет доступно"
+                : authMode === "sign-in"
+                  ? "Войти по почте"
+                  : "Создать аккаунт"}
             </button>
           </form>
 
