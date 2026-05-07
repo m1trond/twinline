@@ -4142,7 +4142,7 @@ export default function Home() {
                 <input
                   aria-label="Никнейм в Hush"
                   className="min-w-0 flex-1 bg-transparent pl-1 outline-none placeholder:text-[#a1a1aa]/70"
-                  onChange={(event) => setAuthName(event.target.value.replace(/^@+/, ""))}
+                  onChange={(event) => setAuthName(formatUsernameInput(event.target.value))}
                   placeholder="Никнейм в Hush"
                   type="text"
                   value={authName}
