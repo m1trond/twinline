@@ -820,6 +820,7 @@ function VoiceMessage({
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("sign-in");
   const [authName, setAuthName] = useState("");
   const [authUsername, setAuthUsername] = useState("");
@@ -2276,6 +2277,47 @@ export default function Home() {
         await supabase.auth.signOut();
         setAuthUsernameError("Не получилось закрепить ник за аккаунтом.");
       }
+    }
+  }
+
+  async function handleSignOut() {
+    if (isSigningOut) {
+      return;
+    }
+
+    setIsSigningOut(true);
+    setErrorMessage("");
+
+    try {
+      if (callStatusRef.current !== "idle") {
+        await closeCall(true);
+      }
+
+      setViewedProfile(null);
+      setSelectedImageUrl(null);
+      setProfileNotificationMenuUserId(null);
+      setBlockConfirmation(null);
+      setMessageContextMenu(null);
+      setFavoriteContextMenu(null);
+      setMessageDeleteTarget(null);
+      setMessagePinTarget(null);
+      setIsChatDeleteDialogOpen(false);
+      setIsStickerPickerOpen(false);
+      setReplyTarget(null);
+      setEditingMessage(null);
+      setMessageText("");
+
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        setErrorMessage("Не получилось выйти из аккаунта.");
+        return;
+      }
+
+      setAuthPassword("");
+      setAuthUsernameError("");
+    } finally {
+      setIsSigningOut(false);
     }
   }
 
@@ -4904,6 +4946,41 @@ export default function Home() {
                         <span className={`h-6 w-6 rounded-full transition ${
                           areNotificationsEnabled ? "bg-[#050505]" : "bg-[#f4f4f5]"
                         }`} />
+                      </button>
+                    </div>
+                  </section>
+
+                  <section className="rounded-xl border border-red-400/25 bg-red-500/8 p-3 sm:rounded-2xl sm:p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-[#f4f4f5]">
+                          Аккаунт
+                        </p>
+                        <p className="mt-1 text-[13px] leading-6 text-[#a1a1aa]">
+                          Выйти из текущей учетной записи на этом устройстве.
+                        </p>
+                      </div>
+                      <button
+                        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-red-400/40 bg-red-500/15 px-4 text-[13px] font-medium text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={isSigningOut}
+                        onClick={handleSignOut}
+                        type="button"
+                      >
+                        <svg
+                          aria-hidden="true"
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M10 7V5.5A2.5 2.5 0 0 1 12.5 3h5A2.5 2.5 0 0 1 20 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-5A2.5 2.5 0 0 1 10 18.5V17M4 12h11m0 0-3.5-3.5M15 12l-3.5 3.5"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                          />
+                        </svg>
+                        {isSigningOut ? "Выходим..." : "Выйти"}
                       </button>
                     </div>
                   </section>
