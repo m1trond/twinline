@@ -134,6 +134,33 @@ function formatMessageTime(createdAt: string) {
   }).format(new Date(createdAt));
 }
 
+function formatLastSeen(updatedAt: string | null) {
+  if (!updatedAt) {
+    return "был недавно";
+  }
+
+  const diffMinutes = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(updatedAt).getTime()) / 60_000),
+  );
+
+  if (diffMinutes < 1) {
+    return "был только что";
+  }
+
+  if (diffMinutes < 60) {
+    return `был ${diffMinutes} мин. назад`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+
+  if (diffHours < 24) {
+    return `был ${diffHours} ч. назад`;
+  }
+
+  return `был ${Math.floor(diffHours / 24)} дн. назад`;
+}
+
 function formatAudioTime(seconds: number) {
   if (!Number.isFinite(seconds)) {
     return "0:00";
@@ -712,6 +739,7 @@ export default function Home() {
     avatarUrl: string | null;
     name: string;
     username: string | null;
+    updatedAt: string | null;
     userId: string | null;
   } | null>(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
@@ -1018,6 +1046,7 @@ export default function Home() {
         avatarUrl: profileFriend.avatar_url,
         name: profileFriend.display_name,
         username: profileFriend.username,
+        updatedAt: profileFriend.updated_at,
         userId: profileFriend.user_id,
       };
     }
@@ -1036,6 +1065,7 @@ export default function Home() {
       avatarUrl: profile?.avatar_url ?? null,
       name: profile?.display_name ?? friendMessage.author,
       username: profile?.username ?? null,
+      updatedAt: profile?.updated_at ?? null,
       userId: friendMessage.user_id,
     };
   }, [chatProfiles, profiles, selectedChatUserId, user?.id, visibleMessages]);
@@ -4648,6 +4678,7 @@ export default function Home() {
                             avatarUrl: null,
                             name: "Друг",
                             username: null,
+                            updatedAt: null,
                             userId: null,
                           },
                         );
@@ -4838,6 +4869,7 @@ export default function Home() {
                                   avatarUrl: messageProfile?.avatar_url ?? null,
                                   name: messageAuthor,
                                   username: messageProfile?.username ?? null,
+                                  updatedAt: messageProfile?.updated_at ?? null,
                                   userId: message.user_id,
                                 })
                               }
@@ -5096,6 +5128,7 @@ export default function Home() {
                                   avatarUrl: currentProfile?.avatar_url ?? null,
                                   name: activeUserName,
                                   username: currentProfile?.username ?? null,
+                                  updatedAt: currentProfile?.updated_at ?? null,
                                   userId: user.id,
                                 })
                               }
@@ -6015,7 +6048,7 @@ export default function Home() {
                   </p>
                   <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-100">
                     <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_16px_rgba(110,231,183,0.8)]" />
-                    был недавно
+                    {formatLastSeen(viewedProfile.updatedAt)}
                   </div>
                 </div>
               </div>
@@ -6035,6 +6068,45 @@ export default function Home() {
                   />
                 </svg>
               </button>
+            </div>
+
+            <div className="mt-5 grid grid-cols-3 gap-2">
+              <div className="flex aspect-square flex-col items-center justify-center gap-2 rounded-3xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5]">
+                <svg aria-hidden="true" className="h-6 w-6" fill="none" viewBox="0 0 24 24">
+                  <path
+                    d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.7.6 2.5a2 2 0 0 1-.5 2.1L8 9.5a16 16 0 0 0 6.5 6.5l1.2-1.2a2 2 0 0 1 2.1-.5c.8.3 1.6.5 2.5.6A2 2 0 0 1 22 16.9Z"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                  />
+                </svg>
+                <span className="text-xs font-semibold text-[#d4d4d8]">Телефон</span>
+              </div>
+              <div className="flex aspect-square flex-col items-center justify-center gap-2 rounded-3xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5]">
+                <svg aria-hidden="true" className="h-6 w-6" fill="none" viewBox="0 0 24 24">
+                  <path
+                    d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM13.7 21a2 2 0 0 1-3.4 0"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                  />
+                </svg>
+                <span className="text-xs font-semibold text-[#d4d4d8]">Уведомления</span>
+              </div>
+              <div className="flex aspect-square flex-col items-center justify-center gap-2 rounded-3xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5]">
+                <svg aria-hidden="true" className="h-6 w-6" fill="none" viewBox="0 0 24 24">
+                  <path
+                    d="M18 11H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2ZM8 11V7a4 4 0 0 1 8 0v4"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                  />
+                </svg>
+                <span className="text-xs font-semibold text-[#d4d4d8]">Блокировка</span>
+              </div>
             </div>
 
             <div className="mt-5 grid gap-3">
