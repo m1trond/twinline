@@ -31,6 +31,7 @@ type FavoriteItem = MessageRow & {
 type ProfileRow = {
   user_id: string;
   display_name: string;
+  username: string | null;
   avatar_url: string | null;
   name_changed_at: string | null;
   updated_at: string;
@@ -95,6 +96,34 @@ const receiptMessagePrefix = "receipt::";
 const typingMessagePrefix = "typing::";
 const maxAttachmentSize = 50 * 1024 * 1024;
 const stickerOptions = ["😂", "❤️", "🔥", "🤝", "😎", "😭", "🥱", "😡", "🫡", "💀", "🥳", "🤯", "👍", "👎", "🍻", "✨"];
+const profileColumns = "user_id, display_name, username, avatar_url, name_changed_at, updated_at";
+const legacyProfileColumns = "user_id, display_name, avatar_url, name_changed_at, updated_at";
+const usernamePattern = /^[a-z0-9_]{3,24}$/;
+
+function normalizeUsername(username: string) {
+  return username.trim().replace(/^@+/, "").toLowerCase();
+}
+
+function formatUsernameInput(username: string) {
+  return username
+    .trim()
+    .replace(/^@+/, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "")
+    .slice(0, 24);
+}
+
+function getUsernameError(username: string) {
+  if (!username) {
+    return "Ник обязателен.";
+  }
+
+  if (!usernamePattern.test(username)) {
+    return "Ник должен быть от 3 до 24 символов: латиница, цифры и подчёркивание.";
+  }
+
+  return "";
+}
 
 function formatMessageTime(createdAt: string) {
   return new Intl.DateTimeFormat("ru-RU", {
@@ -465,9 +494,33 @@ async function fetchMessagesAfter(createdAt: string) {
 }
 
 async function fetchProfiles() {
+  const profilesWithUsername = await supabase
+    .from("profiles")
+    .select(profileColumns);
+
+  if (!profilesWithUsername.error) {
+    return profilesWithUsername;
+  }
+
+  const legacyProfiles = await supabase
+    .from("profiles")
+    .select(legacyProfileColumns);
+
+  return {
+    ...legacyProfiles,
+    data: legacyProfiles.data?.map((profile) => ({
+      ...profile,
+      username: null,
+    })) ?? null,
+  };
+}
+
+async function fetchUsernameOwner(username: string) {
   return supabase
     .from("profiles")
-    .select("user_id, display_name, avatar_url, name_changed_at, updated_at");
+    .select("user_id, username")
+    .eq("username", username)
+    .maybeSingle();
 }
 
 async function fetchCallSignalsAfter(receiverId: string, createdAt: string) {
@@ -624,11 +677,15 @@ export default function Home() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [authMode, setAuthMode] = useState<AuthMode>("sign-in");
   const [authName, setAuthName] = useState("");
+  const [authUsername, setAuthUsername] = useState("");
+  const [authUsernameError, setAuthUsernameError] = useState("");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [profileName, setProfileName] = useState("");
+  const [profileUsername, setProfileUsername] = useState("");
+  const [profileUsernameError, setProfileUsernameError] = useState("");
   const [messageText, setMessageText] = useState("");
   const [typingNow, setTypingNow] = useState(() => Date.now());
   const [activeView, setActiveView] = useState<ActiveView>("profile");
@@ -958,6 +1015,7 @@ export default function Home() {
     currentProfile?.name_changed_at ?? null,
   );
   const profileNameInputValue = profileName || activeUserName;
+  const profileUsernameInputValue = profileUsername || currentProfile?.username || "";
   const incomingCallerProfile = incomingCall
     ? profiles.find((profile) => profile.user_id === incomingCall.sender_id)
     : null;
@@ -1501,6 +1559,10 @@ export default function Home() {
       await supabase.from("profiles").upsert(
         {
           display_name: getDisplayName(signedInUser),
+          username:
+            typeof signedInUser.user_metadata?.username === "string"
+              ? normalizeUsername(signedInUser.user_metadata.username)
+              : null,
           user_id: signedInUser.id,
         },
         {
@@ -1849,14 +1911,36 @@ export default function Home() {
   async function handleAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage("");
+    setAuthUsernameError("");
+
+    const nextUsername = normalizeUsername(authUsername);
+    const usernameValidationError = getUsernameError(nextUsername);
+
+    if (usernameValidationError) {
+      setAuthUsernameError(usernameValidationError);
+      return;
+    }
 
     if (authMode === "sign-up") {
-      const { error } = await supabase.auth.signUp({
+      const usernameOwner = await fetchUsernameOwner(nextUsername);
+
+      if (usernameOwner.error) {
+        setAuthUsernameError("Сначала нужно добавить колонку username в Supabase.");
+        return;
+      }
+
+      if (usernameOwner.data) {
+        setAuthUsernameError("Такой ник уже занят.");
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signUp({
         email: authEmail.trim(),
         password: authPassword,
         options: {
           data: {
             display_name: authName.trim() || authEmail.trim().split("@")[0],
+            username: nextUsername,
           },
         },
       });
@@ -1864,6 +1948,14 @@ export default function Home() {
       if (error) {
         setErrorMessage("Не получилось зарегистрироваться.");
       } else {
+        if (data.user) {
+          await supabase.from("profiles").upsert({
+            display_name: authName.trim() || authEmail.trim().split("@")[0],
+            username: nextUsername,
+            user_id: data.user.id,
+          });
+        }
+
         setErrorMessage("Аккаунт создан. Если Supabase попросит, подтверди email.");
         setAuthMode("sign-in");
       }
@@ -1871,13 +1963,48 @@ export default function Home() {
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: authEmail.trim(),
       password: authPassword,
     });
 
     if (error) {
       setErrorMessage("Не получилось войти. Проверь email и пароль.");
+      return;
+    }
+
+    const signedInUser = data.user;
+
+    if (!signedInUser) {
+      return;
+    }
+
+    const usernameOwner = await fetchUsernameOwner(nextUsername);
+
+    if (usernameOwner.error) {
+      await supabase.auth.signOut();
+      setAuthUsernameError("Сначала нужно добавить колонку username в Supabase.");
+      return;
+    }
+
+    if (usernameOwner.data && usernameOwner.data.user_id !== signedInUser.id) {
+      await supabase.auth.signOut();
+      setAuthUsernameError("Такой ник уже занят.");
+      return;
+    }
+
+    if (!usernameOwner.data) {
+      const { error: profileError } = await supabase.from("profiles").upsert({
+        avatar_url: currentProfile?.avatar_url ?? null,
+        display_name: getDisplayName(signedInUser),
+        username: nextUsername,
+        user_id: signedInUser.id,
+      });
+
+      if (profileError) {
+        await supabase.auth.signOut();
+        setAuthUsernameError("Не получилось закрепить ник за аккаунтом.");
+      }
     }
   }
 
@@ -2673,8 +2800,9 @@ export default function Home() {
         name_changed_at: updatedAt,
         updated_at: updatedAt,
         user_id: user.id,
+        username: currentProfile?.username ?? null,
       })
-      .select("user_id, display_name, avatar_url, name_changed_at, updated_at")
+      .select(profileColumns)
       .single();
 
     if (error) {
@@ -2704,6 +2832,78 @@ export default function Home() {
       ),
     );
     setProfileName("");
+    setErrorMessage("");
+  }
+
+  async function updateProfileUsername(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!user) {
+      return;
+    }
+
+    setProfileUsernameError("");
+
+    const nextUsername = normalizeUsername(profileUsernameInputValue);
+    const usernameValidationError = getUsernameError(nextUsername);
+
+    if (usernameValidationError) {
+      setProfileUsernameError(usernameValidationError);
+      return;
+    }
+
+    if (nextUsername === currentProfile?.username) {
+      return;
+    }
+
+    const usernameOwner = await fetchUsernameOwner(nextUsername);
+
+    if (usernameOwner.error) {
+      setProfileUsernameError("Сначала нужно добавить колонку username в Supabase.");
+      return;
+    }
+
+    if (usernameOwner.data && usernameOwner.data.user_id !== user.id) {
+      setProfileUsernameError("Такой ник уже занят.");
+      return;
+    }
+
+    const updatedAt = new Date().toISOString();
+    const { data, error } = await supabase
+      .from("profiles")
+      .upsert({
+        avatar_url: currentProfile?.avatar_url ?? null,
+        display_name: activeUserName,
+        name_changed_at: currentProfile?.name_changed_at ?? null,
+        updated_at: updatedAt,
+        user_id: user.id,
+        username: nextUsername,
+      })
+      .select(profileColumns)
+      .single();
+
+    if (error) {
+      setProfileUsernameError("Не получилось сохранить ник.");
+      return;
+    }
+
+    if (data) {
+      setProfiles((currentProfiles) => {
+        const withoutProfile = currentProfiles.filter(
+          (profile) => profile.user_id !== data.user_id,
+        );
+
+        return [...withoutProfile, data];
+      });
+    }
+
+    await supabase.auth.updateUser({
+      data: {
+        username: nextUsername,
+      },
+    });
+
+    setProfileUsername("");
     setErrorMessage("");
   }
 
@@ -2753,8 +2953,9 @@ export default function Home() {
         name_changed_at: currentProfile?.name_changed_at ?? null,
         updated_at: new Date().toISOString(),
         user_id: user.id,
+        username: currentProfile?.username ?? null,
       })
-      .select("user_id, display_name, avatar_url, name_changed_at, updated_at")
+      .select(profileColumns)
       .single();
 
     setIsUploadingAvatar(false);
@@ -3478,6 +3679,31 @@ export default function Home() {
                 value={authName}
               />
             ) : null}
+            <label className="grid gap-1.5">
+              <div className="flex min-h-11 items-center rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-base focus-within:border-[#f4f4f5] sm:min-h-12">
+                <span className="font-semibold text-[#a1a1aa]">@</span>
+                <input
+                  aria-label="Ник Hush"
+                  className="min-w-0 flex-1 bg-transparent pl-1 outline-none placeholder:text-[#a1a1aa]/70"
+                  onChange={(event) => {
+                    setAuthUsername(formatUsernameInput(event.target.value));
+                    setAuthUsernameError("");
+                  }}
+                  placeholder="m1trond"
+                  type="text"
+                  value={authUsername}
+                />
+              </div>
+              {authUsernameError ? (
+                <span className="text-sm font-semibold text-red-300">
+                  {authUsernameError}
+                </span>
+              ) : (
+                <span className="text-xs font-medium text-[#a1a1aa]">
+                  Ник нужен для входа и будет уникальным.
+                </span>
+              )}
+            </label>
             <input
               className="min-h-11 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-base outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:min-h-12"
               onChange={(event) => setAuthEmail(event.target.value)}
@@ -3667,6 +3893,9 @@ export default function Home() {
                       <h2 className="truncate text-2xl font-semibold sm:text-3xl">
                         {activeUserName}
                       </h2>
+                      <p className="mt-1 text-sm font-semibold text-[#a1a1aa]">
+                        {currentProfile?.username ? `@${currentProfile.username}` : "@ник не задан"}
+                      </p>
                       <input
                         accept="image/*"
                         className="hidden"
@@ -3718,6 +3947,43 @@ export default function Home() {
                       {isNameChangeAllowed
                         ? "Имя можно менять один раз в месяц."
                         : `Имя снова можно будет изменить ${nextNameChangeDate ?? "позже"}.`}
+                    </p>
+                  </section>
+
+                  <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-3 sm:col-span-2 sm:rounded-2xl sm:px-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#e5e5e5]">
+                      Ник Hush
+                    </p>
+                    <form className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={updateProfileUsername}>
+                      <label className="flex min-h-10 items-center rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-base focus-within:border-[#f4f4f5] sm:text-sm">
+                        <span className="font-semibold text-[#a1a1aa]">@</span>
+                        <input
+                          aria-label="Ник Hush"
+                          className="min-w-0 flex-1 bg-transparent pl-1 outline-none placeholder:text-[#a1a1aa]/70"
+                          maxLength={24}
+                          minLength={3}
+                          onChange={(event) => {
+                            setProfileUsername(formatUsernameInput(event.target.value));
+                            setProfileUsernameError("");
+                          }}
+                          placeholder="m1trond"
+                          type="text"
+                          value={profileUsernameInputValue}
+                        />
+                      </label>
+                      <button
+                        className="min-h-10 rounded-xl bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
+                        disabled={
+                          !profileUsernameInputValue.trim() ||
+                          profileUsernameInputValue.trim() === currentProfile?.username
+                        }
+                        type="submit"
+                      >
+                        Сохранить ник
+                      </button>
+                    </form>
+                    <p className={`mt-2 text-[13px] leading-5 ${profileUsernameError ? "font-semibold text-red-300" : "text-[#a1a1aa]"}`}>
+                      {profileUsernameError || "Ник уникальный: если он занят, Hush покажет ошибку."}
                     </p>
                   </section>
 
