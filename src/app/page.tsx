@@ -807,7 +807,7 @@ function VoiceMessage({
               value={currentTime}
             />
           </div>
-          <p className="mt-0.5 flex items-center justify-between gap-3 text-xs font-semibold tabular-nums opacity-65">
+          <p className="mt-0.5 flex items-center justify-between gap-3 text-xs font-medium tabular-nums opacity-65">
             <span>{formatAudioTime(currentTime || duration)}</span>
             <span>{formatMessageTime(sentAt)}</span>
           </p>
@@ -4051,7 +4051,7 @@ export default function Home() {
   if (isAuthLoading) {
     return (
       <main className="grid h-dvh place-items-center bg-[#050505] text-[#f4f4f5]">
-        <p className="text-sm font-semibold text-[#a1a1aa]">Загружаю Hush...</p>
+        <p className="text-[13px] font-medium text-[#a1a1aa]">Загружаю Hush...</p>
       </main>
     );
   }
@@ -4075,14 +4075,14 @@ export default function Home() {
               />
             </div>
             <div>
-              <h1 className="text-xl font-semibold sm:text-2xl">Hush</h1>
-              <p className="text-sm text-[#a1a1aa]">Вход в приватное пространство</p>
+              <h1 className="text-lg font-medium sm:text-xl">Hush</h1>
+              <p className="text-[13px] text-[#a1a1aa]">Вход в приватное пространство</p>
             </div>
           </div>
 
           <div className="mb-4 grid grid-cols-2 rounded-xl border border-[#3f3f46]/35 bg-black/20 p-1">
             <button
-              className={`rounded-lg px-4 py-2 text-sm font-semibold ${
+              className={`rounded-lg px-4 py-2 text-[13px] font-medium ${
                 authMode === "sign-in"
                   ? "bg-[#f4f4f5] text-[#050505]"
                   : "text-[#f4f4f5]"
@@ -4093,7 +4093,7 @@ export default function Home() {
               Вход
             </button>
             <button
-              className={`rounded-lg px-4 py-2 text-sm font-semibold ${
+              className={`rounded-lg px-4 py-2 text-[13px] font-medium ${
                 authMode === "sign-up"
                   ? "bg-[#f4f4f5] text-[#050505]"
                   : "text-[#f4f4f5]"
@@ -4108,7 +4108,7 @@ export default function Home() {
           <form className="grid gap-3" onSubmit={handleAuth}>
             {authMode === "sign-up" ? (
               <input
-                className="min-h-11 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-base outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:min-h-12"
+                className="min-h-11 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:min-h-12"
                 onChange={(event) => setAuthName(event.target.value)}
                 placeholder="Имя в Hush"
                 type="text"
@@ -4116,8 +4116,8 @@ export default function Home() {
               />
             ) : null}
             <label className="grid gap-1.5">
-              <div className="flex min-h-11 items-center rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-base focus-within:border-[#f4f4f5] sm:min-h-12">
-                <span className="font-semibold text-[#a1a1aa]">@</span>
+              <div className="flex min-h-11 items-center rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm focus-within:border-[#f4f4f5] sm:min-h-12">
+                <span className="font-medium text-[#a1a1aa]">@</span>
                 <input
                   aria-label="Ник Hush"
                   className="min-w-0 flex-1 bg-transparent pl-1 outline-none placeholder:text-[#a1a1aa]/70"
@@ -4131,7 +4131,7 @@ export default function Home() {
                 />
               </div>
               {authUsernameError ? (
-                <span className="text-sm font-semibold text-red-300">
+                <span className="text-[13px] font-medium text-red-300">
                   {authUsernameError}
                 </span>
               ) : (
@@ -4141,21 +4141,21 @@ export default function Home() {
               )}
             </label>
             <input
-              className="min-h-11 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-base outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:min-h-12"
+              className="min-h-11 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:min-h-12"
               onChange={(event) => setAuthEmail(event.target.value)}
               placeholder="Email"
               type="email"
               value={authEmail}
             />
             <input
-              className="min-h-11 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-base outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:min-h-12"
+              className="min-h-11 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:min-h-12"
               onChange={(event) => setAuthPassword(event.target.value)}
               placeholder="Пароль"
               type="password"
               value={authPassword}
             />
             <button
-              className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5] sm:min-h-12"
+              className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5] sm:min-h-12"
               type="submit"
             >
               {authMode === "sign-in" ? "Войти" : "Создать аккаунт"}
@@ -4163,7 +4163,7 @@ export default function Home() {
           </form>
 
           {errorMessage ? (
-            <p className="mt-4 text-sm font-semibold text-[#e5e5e5]">
+            <p className="mt-4 text-[13px] font-medium text-[#e5e5e5]">
               {errorMessage}
             </p>
           ) : null}
@@ -4196,7 +4196,7 @@ export default function Home() {
                 />
               </div>
               <div className="min-w-0">
-                <h1 className="text-lg font-semibold tracking-normal sm:text-xl">
+                <h1 className="text-lg font-medium tracking-normal sm:text-xl">
                   Hush
                 </h1>
               </div>
@@ -4206,7 +4206,7 @@ export default function Home() {
           <nav className="scrollbar-hidden mb-2 flex shrink-0 gap-1.5 overflow-x-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.24)] backdrop-blur-md sm:mb-3 sm:gap-2 sm:rounded-2xl sm:p-2 lg:hidden">
             {[...navItems, settingsNavItem].map((item) => (
               <button
-                className={`shrink-0 rounded-lg px-3 py-2 text-sm font-semibold transition sm:rounded-xl sm:px-4 sm:py-2.5 ${
+                className={`shrink-0 rounded-lg px-3 py-2 text-[13px] font-medium transition sm:rounded-xl sm:px-4 sm:py-2.5 ${
                   activeView === item.view
                     ? "bg-[#f4f4f5] text-[#050505]"
                     : "text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
@@ -4224,7 +4224,7 @@ export default function Home() {
                 <span className="inline-flex items-center gap-2">
                   {item.label}
                   {item.view === "messages" && totalUnreadMessageCount > 0 ? (
-                    <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[11px] font-black ${
+                    <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[11px] font-medium ${
                       activeView === item.view
                         ? "bg-[#050505] text-[#f4f4f5]"
                         : "bg-[#f4f4f5] text-[#050505]"
@@ -4249,13 +4249,13 @@ export default function Home() {
                     width={40}
                   />
                 </div>
-                <h1 className="min-w-0 text-xl font-semibold tracking-normal">
+                <h1 className="min-w-0 text-lg font-medium tracking-normal">
                   Hush
                 </h1>
               </div>
 
               <div className="mb-4">
-                <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#e5e5e5]">
+                <p className="text-[13px] font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
                   Меню
                 </p>
               </div>
@@ -4263,7 +4263,7 @@ export default function Home() {
               <nav className="grid gap-2">
                 {navItems.map((item) => (
                   <button
-                    className={`rounded-xl px-4 py-2.5 text-left text-sm font-semibold transition ${
+                    className={`rounded-xl px-4 py-2.5 text-left text-[13px] font-medium transition ${
                       activeView === item.view
                         ? "bg-[#f4f4f5] text-[#050505]"
                         : "text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
@@ -4281,7 +4281,7 @@ export default function Home() {
                     <span className="flex items-center justify-between gap-3">
                       <span>{item.label}</span>
                       {item.view === "messages" && totalUnreadMessageCount > 0 ? (
-                        <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[11px] font-black ${
+                        <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[11px] font-medium ${
                           activeView === item.view
                             ? "bg-[#050505] text-[#f4f4f5]"
                             : "bg-[#f4f4f5] text-[#050505]"
@@ -4294,7 +4294,7 @@ export default function Home() {
                 ))}
               </nav>
               <button
-                className={`mt-auto rounded-xl px-4 py-2.5 text-left text-sm font-semibold transition ${
+                className={`mt-auto rounded-xl px-4 py-2.5 text-left text-[13px] font-medium transition ${
                   activeView === settingsNavItem.view
                     ? "bg-[#f4f4f5] text-[#050505]"
                     : "border border-[#3f3f46]/25 text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
@@ -4310,7 +4310,7 @@ export default function Home() {
               <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#3f3f46]/35 pb-4 sm:mb-6 sm:gap-4 sm:pb-5">
                   <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-                    <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#f4f4f5] text-xl font-black text-[#050505] sm:h-20 sm:w-20 sm:rounded-2xl sm:text-3xl">
+                    <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#f4f4f5] text-lg font-medium text-[#050505] sm:h-20 sm:w-20 sm:rounded-2xl sm:text-2xl">
                       {currentProfile?.avatar_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -4323,13 +4323,13 @@ export default function Home() {
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-[#e5e5e5]">
+                      <p className="text-[13px] font-medium text-[#e5e5e5]">
                         Активный профиль
                       </p>
-                      <h2 className="truncate text-2xl font-semibold sm:text-3xl">
+                      <h2 className="truncate text-xl font-medium sm:text-2xl">
                         {activeUserName}
                       </h2>
-                      <p className="mt-1 text-sm font-semibold text-[#a1a1aa]">
+                      <p className="mt-1 text-[13px] font-medium text-[#a1a1aa]">
                         {currentProfile?.username ? `@${currentProfile.username}` : "@ник не задан"}
                       </p>
                       <input
@@ -4340,7 +4340,7 @@ export default function Home() {
                         type="file"
                       />
                       <button
-                        className="mt-2 rounded-xl border border-[#3f3f46]/35 px-3 py-2 text-xs font-bold text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 sm:mt-3"
+                        className="mt-2 rounded-xl border border-[#3f3f46]/35 px-3 py-2 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 sm:mt-3"
                         disabled={isUploadingAvatar}
                         onClick={() => avatarInputRef.current?.click()}
                         type="button"
@@ -4353,12 +4353,12 @@ export default function Home() {
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-3 sm:col-span-2 sm:rounded-2xl sm:px-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#e5e5e5]">
+                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
                       Имя профиля
                     </p>
                     <form className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={updateProfileName}>
                       <input
-                        className="min-h-10 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-base outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm"
+                        className="min-h-10 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] disabled:cursor-not-allowed disabled:opacity-60 sm:text-[13px]"
                         maxLength={24}
                         minLength={2}
                         onChange={(event) => setProfileName(event.target.value)}
@@ -4367,7 +4367,7 @@ export default function Home() {
                         value={profileNameInputValue}
                       />
                       <button
-                        className="min-h-10 rounded-xl bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
+                        className="min-h-10 rounded-xl bg-[#f4f4f5] px-4 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
                         disabled={
                           !profileName.trim() ||
                           profileName.trim() === activeUserName
@@ -4380,12 +4380,12 @@ export default function Home() {
                   </section>
 
                   <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-3 sm:col-span-2 sm:rounded-2xl sm:px-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#e5e5e5]">
+                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
                       Ник Hush
                     </p>
                     <form className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={updateProfileUsername}>
-                      <label className="flex min-h-10 items-center rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-base focus-within:border-[#f4f4f5] sm:text-sm">
-                        <span className="font-semibold text-[#a1a1aa]">@</span>
+                      <label className="flex min-h-10 items-center rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-sm focus-within:border-[#f4f4f5] sm:text-[13px]">
+                        <span className="font-medium text-[#a1a1aa]">@</span>
                         <input
                           aria-label="Ник Hush"
                           className="min-w-0 flex-1 bg-transparent pl-1 outline-none placeholder:text-[#a1a1aa]/70"
@@ -4401,7 +4401,7 @@ export default function Home() {
                         />
                       </label>
                       <button
-                        className="min-h-10 rounded-xl bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
+                        className="min-h-10 rounded-xl bg-[#f4f4f5] px-4 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
                         disabled={
                           !profileUsernameInputValue.trim() ||
                           normalizeUsername(profileUsernameInputValue) === currentProfile?.username
@@ -4411,7 +4411,7 @@ export default function Home() {
                         Сохранить ник
                       </button>
                     </form>
-                    <p className={`mt-2 text-[13px] leading-5 ${profileUsernameError ? "font-semibold text-red-300" : "text-[#a1a1aa]"}`}>
+                    <p className={`mt-2 text-[13px] leading-5 ${profileUsernameError ? "font-medium text-red-300" : "text-[#a1a1aa]"}`}>
                       {profileUsernameError ||
                         (isUsernameChangeAllowed
                           ? "Ник можно менять один раз в месяц."
@@ -4420,10 +4420,10 @@ export default function Home() {
                   </section>
 
                   <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-3 sm:rounded-2xl sm:px-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#e5e5e5]">
+                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
                       Email
                     </p>
-                    <p className="mt-2 break-words text-base font-semibold">
+                    <p className="mt-2 break-words text-sm font-medium">
                       {user.email}
                     </p>
                     <p className="mt-1 text-[13px] leading-5 text-[#a1a1aa]">
@@ -4432,13 +4432,13 @@ export default function Home() {
                   </section>
 
                   <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-3 sm:rounded-2xl sm:px-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#e5e5e5]">
+                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
                       Телефон
                     </p>
                     <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(120px,0.36fr)_1fr_auto]">
                       <select
                         aria-label="Страна"
-                        className="min-h-10 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-base outline-none focus:border-[#f4f4f5] sm:text-sm"
+                        className="min-h-10 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none focus:border-[#f4f4f5] sm:text-[13px]"
                         defaultValue="+7"
                       >
                         <option value="+7">RU +7</option>
@@ -4449,13 +4449,13 @@ export default function Home() {
                       </select>
                       <input
                         aria-label="Номер телефона"
-                        className="min-h-10 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-base outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:text-sm"
+                        className="min-h-10 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:text-[13px]"
                         inputMode="tel"
                         placeholder="999 123-45-67"
                         type="tel"
                       />
                       <button
-                        className="min-h-10 rounded-xl bg-[#52525b] px-4 text-sm font-bold text-[#050505] opacity-70"
+                        className="min-h-10 rounded-xl bg-[#52525b] px-4 text-[13px] font-medium text-[#050505] opacity-70"
                         disabled
                         type="button"
                       >
@@ -4472,7 +4472,7 @@ export default function Home() {
             ) : activeView === "favorites" ? (
               <div className="flex min-h-0 flex-col overflow-hidden">
                 <div className="mb-2 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-3 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4 sm:py-3">
-                  <h2 className="text-xl font-semibold sm:text-2xl">
+                  <h2 className="text-lg font-medium sm:text-xl">
                     Избранное
                   </h2>
                 </div>
@@ -4502,15 +4502,15 @@ export default function Home() {
                       </svg>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <span className="block text-xs font-black uppercase tracking-[0.16em] text-[#e5e5e5]">
+                      <span className="block text-xs font-medium uppercase tracking-[0.16em] text-[#e5e5e5]">
                         Закреплено
                       </span>
-                      <span className="mt-0.5 block truncate text-sm font-semibold text-[#f4f4f5]">
+                      <span className="mt-0.5 block truncate text-[13px] font-medium text-[#f4f4f5]">
                         {getReadableMessageText(pinnedFavoriteItem.text)}
                       </span>
                     </div>
                     <button
-                      className="min-h-9 shrink-0 rounded-lg border border-[#3f3f46]/35 px-2.5 text-xs font-bold text-[#f4f4f5] transition hover:bg-white/10 sm:min-h-10 sm:rounded-xl sm:px-4"
+                      className="min-h-9 shrink-0 rounded-lg border border-[#3f3f46]/35 px-2.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 sm:min-h-10 sm:rounded-xl sm:px-4"
                       onClick={() => setPinnedFavoriteItem(null)}
                       type="button"
                     >
@@ -4523,10 +4523,10 @@ export default function Home() {
                   {favoriteItems.length === 0 ? (
                     <div className="grid flex-1 place-items-center text-center">
                       <div className="max-w-sm rounded-2xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-5">
-                        <p className="text-base font-semibold">
+                        <p className="text-sm font-medium">
                           Избранное пока пустое
                         </p>
-                        <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
+                        <p className="mt-2 text-[13px] leading-6 text-[#a1a1aa]">
                           Напиши сюда первую заметку или прикрепи файл.
                         </p>
                       </div>
@@ -4584,10 +4584,10 @@ export default function Home() {
                         >
                           {reply ? (
                             <div className="mb-2 block w-full rounded-xl border-l-4 border-[#050505]/45 bg-[#050505]/12 px-3 py-2 text-left">
-                              <p className="text-[11px] font-black uppercase tracking-[0.12em] opacity-55">
+                              <p className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-55">
                                 {reply.author}
                               </p>
-                              <p className="mt-0.5 line-clamp-2 text-xs font-semibold opacity-70">
+                              <p className="mt-0.5 line-clamp-2 text-xs font-medium opacity-70">
                                 {reply.text}
                               </p>
                             </div>
@@ -4622,10 +4622,10 @@ export default function Home() {
                             />
                           ) : callDurationSeconds !== null ? (
                             <div className="min-w-[min(230px,70vw)] rounded-xl bg-[#262626] px-3 py-2 text-[#f4f4f5] sm:min-w-[min(260px,70vw)] sm:rounded-2xl">
-                              <p className="text-sm font-bold opacity-75">
+                              <p className="text-[13px] font-medium opacity-75">
                                 Звонок
                               </p>
-                              <p className="text-xs font-semibold opacity-60">
+                              <p className="text-xs font-medium opacity-60">
                                 Разговор {formatCallDuration(callDurationSeconds)}
                               </p>
                             </div>
@@ -4636,7 +4636,7 @@ export default function Home() {
                               </span>
                             </div>
                           ) : (
-                            <p className="whitespace-pre-wrap break-words text-sm leading-6 sm:text-[15px]">
+                            <p className="whitespace-pre-wrap break-words text-[13px] leading-6 sm:text-[15px]">
                               {displayText}
                               <span className="ml-2 inline-flex translate-y-[1px] items-center gap-1 align-baseline">
                                 <span className="text-[11px] font-medium leading-none text-[#404040]">
@@ -4664,7 +4664,7 @@ export default function Home() {
                   <div className="mt-2 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl">
                     {isSelectedChatBlockedByMe ? (
                       <button
-                        className="min-h-11 w-full rounded-lg bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5] sm:rounded-xl"
+                        className="min-h-11 w-full rounded-lg bg-[#f4f4f5] px-4 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5] sm:rounded-xl"
                         onClick={() => {
                           if (selectedChatUserId && friendProfile?.name) {
                             requestBlockChange(
@@ -4680,7 +4680,7 @@ export default function Home() {
                         Разблокировать
                       </button>
                     ) : (
-                      <div className="flex min-h-11 items-center justify-center rounded-lg bg-[#f4f4f5]/12 px-4 text-sm font-semibold text-[#a1a1aa] sm:rounded-xl">
+                      <div className="flex min-h-11 items-center justify-center rounded-lg bg-[#f4f4f5]/12 px-4 text-[13px] font-medium text-[#a1a1aa] sm:rounded-xl">
                         Вы были заблокированы
                       </div>
                     )}
@@ -4725,15 +4725,15 @@ export default function Home() {
                   </button>
 
                   {isRecordingVoice ? (
-                    <div className="relative col-span-3 flex min-h-10 min-w-0 flex-1 items-center rounded-lg border border-red-400/35 bg-red-500/10 px-3 text-sm text-[#f4f4f5] sm:col-span-1">
+                    <div className="relative col-span-3 flex min-h-10 min-w-0 flex-1 items-center rounded-lg border border-red-400/35 bg-red-500/10 px-3 text-[13px] text-[#f4f4f5] sm:col-span-1">
                       <div className="flex min-w-[86px] items-center gap-2">
                         <span className="h-2.5 w-2.5 rounded-full bg-red-300 shadow-[0_0_14px_rgba(252,165,165,0.65)]" />
-                        <span className="font-semibold tabular-nums text-red-100">
+                        <span className="font-medium tabular-nums text-red-100">
                           {formatAudioTime(voiceRecordingDuration)}
                         </span>
                       </div>
                       <button
-                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg px-4 py-2 text-xs font-bold text-[#e5e5e5] transition hover:bg-white/10 hover:text-[#f4f4f5]"
+                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg px-4 py-2 text-xs font-medium text-[#e5e5e5] transition hover:bg-white/10 hover:text-[#f4f4f5]"
                         onClick={cancelVoiceRecording}
                         type="button"
                       >
@@ -4744,7 +4744,7 @@ export default function Home() {
                     <>
                       <input
                         aria-label="Текст избранного"
-                        className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-base text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] focus:bg-[#f4f4f5]/18 sm:px-4 sm:text-sm"
+                        className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] focus:bg-[#f4f4f5]/18 sm:px-4 sm:text-[13px]"
                         onChange={handleMessageTextChange}
                         placeholder={
                           editingMessage
@@ -4846,17 +4846,17 @@ export default function Home() {
                 )}
 
                 {replyTarget || editingMessage ? (
-                  <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-2.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
+                  <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-2.5 text-[13px] shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
                     <div className="min-w-0">
-                      <p className="text-xs font-black uppercase tracking-[0.14em] text-[#e5e5e5]">
+                      <p className="text-xs font-medium uppercase tracking-[0.14em] text-[#e5e5e5]">
                         {editingMessage ? "Редактирование" : "Ответ"}
                       </p>
-                      <p className="mt-1 truncate font-semibold text-[#f4f4f5]">
+                      <p className="mt-1 truncate font-medium text-[#f4f4f5]">
                         {getReadableMessageText((editingMessage ?? replyTarget)?.text ?? "")}
                       </p>
                     </div>
                     <button
-                      className="shrink-0 rounded-xl border border-[#3f3f46]/35 px-3 py-2 text-xs font-bold text-[#f4f4f5] transition hover:bg-white/10"
+                      className="shrink-0 rounded-xl border border-[#3f3f46]/35 px-3 py-2 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
                       onClick={() => {
                         setReplyTarget(null);
                         setEditingMessage(null);
@@ -4871,10 +4871,10 @@ export default function Home() {
               </div>            ) : activeView === "settings" ? (
               <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
                 <div className="mb-4 border-b border-[#3f3f46]/35 pb-4 sm:mb-5 sm:pb-5">
-                  <p className="text-sm font-medium text-[#e5e5e5]">
+                  <p className="text-[13px] font-medium text-[#e5e5e5]">
                     Hush
                   </p>
-                  <h2 className="text-2xl font-semibold sm:text-3xl">
+                  <h2 className="text-lg font-medium sm:text-xl">
                     Настройки
                   </h2>
                 </div>
@@ -4883,10 +4883,10 @@ export default function Home() {
                   <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 p-3 sm:rounded-2xl sm:p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <p className="text-base font-semibold">
+                        <p className="text-sm font-medium">
                           Уведомления
                         </p>
-                        <p className="mt-1 text-sm leading-6 text-[#a1a1aa]">
+                        <p className="mt-1 text-[13px] leading-6 text-[#a1a1aa]">
                           Показывать новые сообщения в браузере, если диалог не открыт.
                           Непрочитанные также появятся в названии вкладки.
                         </p>
@@ -4914,14 +4914,14 @@ export default function Home() {
               selectedChatUserId === null ? (
               <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
                 <div className="mb-3 border-b border-[#3f3f46]/35 pb-3 sm:mb-4 sm:pb-4">
-                  <h2 className="text-xl font-semibold sm:text-2xl">Сообщения</h2>
+                  <h2 className="text-lg font-medium sm:text-xl">Сообщения</h2>
                 </div>
 
                 <div className="grid gap-2">
                   {chatProfiles.length === 0 ? (
                     <article className="rounded-xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-4 text-center sm:rounded-2xl sm:p-6">
-                      <p className="text-base font-semibold">Диалогов пока нет</p>
-                      <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
+                      <p className="text-sm font-medium">Диалогов пока нет</p>
+                      <p className="mt-2 text-[13px] leading-6 text-[#a1a1aa]">
                         Когда появятся другие пользователи, их чаты будут здесь.
                       </p>
                     </article>
@@ -4951,7 +4951,7 @@ export default function Home() {
                         }}
                         type="button"
                       >
-                        <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-sm font-bold text-[#050505] sm:h-12 sm:w-12 sm:text-base">
+                        <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-[13px] font-medium text-[#050505] sm:h-12 sm:w-12 sm:text-sm">
                           {profile.avatar_url ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
@@ -4965,7 +4965,7 @@ export default function Home() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-3">
-                            <p className="truncate text-sm font-semibold text-[#f4f4f5] sm:text-base">
+                            <p className="truncate text-[13px] font-medium text-[#f4f4f5] sm:text-sm">
                               {profile.display_name}
                             </p>
                             {latestProfileMessage ? (
@@ -4975,9 +4975,9 @@ export default function Home() {
                             ) : null}
                           </div>
                           <div className="mt-1 flex items-center justify-between gap-3">
-                            <p className={`truncate text-xs sm:text-sm ${
+                            <p className={`truncate text-xs sm:text-[13px] ${
                               profileUnreadCount > 0
-                                ? "font-semibold text-[#f4f4f5]"
+                                ? "font-medium text-[#f4f4f5]"
                                 : "text-[#a1a1aa]"
                             }`}>
                               {profileUnreadCount > 0
@@ -4985,7 +4985,7 @@ export default function Home() {
                                 : previewText}
                             </p>
                             {profileUnreadCount > 0 ? (
-                              <span className="grid h-6 min-w-6 shrink-0 place-items-center rounded-full bg-[#f4f4f5] px-2 text-xs font-black text-[#050505]">
+                              <span className="grid h-6 min-w-6 shrink-0 place-items-center rounded-full bg-[#f4f4f5] px-2 text-xs font-medium text-[#050505]">
                                 {profileUnreadCount > 99 ? "99+" : profileUnreadCount}
                               </span>
                             ) : null}
@@ -5022,7 +5022,7 @@ export default function Home() {
                       </svg>
                     </button>
                     <button
-                      className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-sm font-semibold text-[#050505] transition hover:scale-105 sm:h-10 sm:w-10 sm:text-base"
+                      className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-[13px] font-medium text-[#050505] transition hover:scale-105 sm:h-10 sm:w-10 sm:text-sm"
                       onClick={() => {
                         setViewedProfile(
                           friendProfile ?? {
@@ -5048,10 +5048,10 @@ export default function Home() {
                       )}
                     </button>
                     <div className="min-w-0">
-                      <h2 className="truncate text-sm font-semibold sm:text-base">
+                      <h2 className="truncate text-sm font-medium sm:text-lg">
                         {friendProfile?.name ?? "Друг"}
                       </h2>
-                      <p className="truncate text-xs text-[#a1a1aa] sm:text-sm">
+                      <p className="truncate text-xs text-[#a1a1aa] sm:text-[13px]">
                         {isFriendTyping ? "печатает..." : "Приватный профиль собеседника"}
                       </p>
                     </div>
@@ -5132,15 +5132,15 @@ export default function Home() {
                       </svg>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <span className="block text-xs font-black uppercase tracking-[0.16em] text-[#e5e5e5]">
+                      <span className="block text-xs font-medium uppercase tracking-[0.16em] text-[#e5e5e5]">
                         Закреплено
                       </span>
-                      <span className="mt-0.5 block truncate text-sm font-semibold text-[#f4f4f5]">
+                      <span className="mt-0.5 block truncate text-[13px] font-medium text-[#f4f4f5]">
                         {getReadableMessageText(activePinnedMessage.text)}
                       </span>
                     </div>
                     <button
-                      className="min-h-9 shrink-0 rounded-lg border border-[#3f3f46]/35 px-2.5 text-xs font-bold text-[#f4f4f5] transition hover:bg-white/10 sm:min-h-10 sm:rounded-xl sm:px-4"
+                      className="min-h-9 shrink-0 rounded-lg border border-[#3f3f46]/35 px-2.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 sm:min-h-10 sm:rounded-xl sm:px-4"
                       onClick={() => requestUnpinPinnedMessage(activePinnedMessage)}
                       type="button"
                     >
@@ -5154,11 +5154,11 @@ export default function Home() {
                   ref={messagesListRef}
                 >
                   {isLoadingMessages ? (
-                    <p className="text-sm text-[#a1a1aa]">Загружаю сообщения...</p>
+                    <p className="text-[13px] text-[#a1a1aa]">Загружаю сообщения...</p>
                   ) : null}
 
                   {!isLoadingMessages && activeDialogMessages.length === 0 ? (
-                    <p className="text-sm text-[#a1a1aa]">
+                    <p className="text-[13px] text-[#a1a1aa]">
                       Сообщений пока нет. Напиши первое.
                     </p>
                   ) : null}
@@ -5214,7 +5214,7 @@ export default function Home() {
                         {!isMine ? (
                           shouldShowFriendAvatar ? (
                             <button
-                              className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-[11px] font-bold text-[#050505] transition hover:scale-105 sm:h-8 sm:w-8 sm:text-xs"
+                              className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-[11px] font-medium text-[#050505] transition hover:scale-105 sm:h-8 sm:w-8 sm:text-xs"
                               onClick={() =>
                                 setViewedProfile({
                                   avatarUrl: messageProfile?.avatar_url ?? null,
@@ -5270,7 +5270,7 @@ export default function Home() {
                           onContextMenu={(event) => openMessageContextMenu(event, message)}
                         >
                           {!hasStandaloneBubble && !isMine && !isPreviousSameAuthor ? (
-                            <p className={`${hasAttachment ? "mb-1.5 px-1" : "mb-0.5"} text-[11px] font-bold leading-4 opacity-55`}>
+                            <p className={`${hasAttachment ? "mb-1.5 px-1" : "mb-0.5"} text-[11px] font-medium leading-4 opacity-55`}>
                               {messageAuthor}
                             </p>
                           ) : null}
@@ -5284,10 +5284,10 @@ export default function Home() {
                               onClick={() => scrollToReplyMessage(reply)}
                               type="button"
                             >
-                              <p className="text-[11px] font-black uppercase tracking-[0.12em] opacity-55">
+                              <p className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-55">
                                 {reply.author}
                               </p>
-                              <p className="mt-0.5 line-clamp-2 text-xs font-semibold opacity-70">
+                              <p className="mt-0.5 line-clamp-2 text-xs font-medium opacity-70">
                                 {reply.text}
                               </p>
                             </button>
@@ -5345,10 +5345,10 @@ export default function Home() {
                                 </svg>
                               </div>
                               <div>
-                                <p className="text-sm font-bold opacity-75">
+                                <p className="text-[13px] font-medium opacity-75">
                                   Звонок
                                 </p>
-                                <p className="text-xs font-semibold opacity-60">
+                                <p className="text-xs font-medium opacity-60">
                                   Разговор {formatCallDuration(callDurationSeconds)}
                                 </p>
                               </div>
@@ -5362,7 +5362,7 @@ export default function Home() {
                           </div>
                         ) : (
                             <p
-                              className="whitespace-pre-wrap break-words text-sm leading-6 sm:text-[15px]"
+                              className="whitespace-pre-wrap break-words text-[13px] leading-6 sm:text-[15px]"
                             >
                               {displayText}
                               <span className="ml-2 inline-flex translate-y-[1px] items-center gap-1 align-baseline">
@@ -5473,7 +5473,7 @@ export default function Home() {
                         {isMine ? (
                           shouldShowOwnAvatar ? (
                             <button
-                              className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-[11px] font-bold text-[#050505] transition hover:scale-105 sm:h-8 sm:w-8 sm:text-xs"
+                              className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-[11px] font-medium text-[#050505] transition hover:scale-105 sm:h-8 sm:w-8 sm:text-xs"
                               onClick={() =>
                                 setViewedProfile({
                                   avatarUrl: currentProfile?.avatar_url ?? null,
@@ -5543,15 +5543,15 @@ export default function Home() {
                     )}
                   </button>
                   {isRecordingVoice ? (
-                    <div className="relative col-span-3 flex min-h-10 min-w-0 flex-1 items-center rounded-lg border border-red-400/35 bg-red-500/10 px-3 text-sm text-[#f4f4f5] sm:col-span-1">
+                    <div className="relative col-span-3 flex min-h-10 min-w-0 flex-1 items-center rounded-lg border border-red-400/35 bg-red-500/10 px-3 text-[13px] text-[#f4f4f5] sm:col-span-1">
                       <div className="flex min-w-[86px] items-center gap-2">
                         <span className="h-2.5 w-2.5 rounded-full bg-red-300 shadow-[0_0_14px_rgba(252,165,165,0.65)]" />
-                        <span className="font-semibold tabular-nums text-red-100">
+                        <span className="font-medium tabular-nums text-red-100">
                           {formatAudioTime(voiceRecordingDuration)}
                         </span>
                       </div>
                       <button
-                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg px-4 py-2 text-xs font-bold text-[#e5e5e5] transition hover:bg-white/10 hover:text-[#f4f4f5]"
+                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg px-4 py-2 text-xs font-medium text-[#e5e5e5] transition hover:bg-white/10 hover:text-[#f4f4f5]"
                         onClick={cancelVoiceRecording}
                         type="button"
                       >
@@ -5562,7 +5562,7 @@ export default function Home() {
                     <>
                       <input
                         aria-label="Текст сообщения"
-                        className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-base text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] focus:bg-[#f4f4f5]/18 sm:px-4 sm:text-sm"
+                        className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] focus:bg-[#f4f4f5]/18 sm:px-4 sm:text-[13px]"
                         disabled={isSelectedChatBlocked}
                         onChange={handleMessageTextChange}
                         placeholder={
@@ -5683,17 +5683,17 @@ export default function Home() {
                 </form>
 
                 {replyTarget || editingMessage ? (
-                  <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-2.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
+                  <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-2.5 text-[13px] shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
                     <div className="min-w-0">
-                      <p className="text-xs font-black uppercase tracking-[0.14em] text-[#e5e5e5]">
+                      <p className="text-xs font-medium uppercase tracking-[0.14em] text-[#e5e5e5]">
                         {editingMessage ? "Редактирование" : "Ответ"}
                       </p>
-                      <p className="mt-1 truncate font-semibold text-[#f4f4f5]">
+                      <p className="mt-1 truncate font-medium text-[#f4f4f5]">
                         {getReadableMessageText((editingMessage ?? replyTarget)?.text ?? "")}
                       </p>
                     </div>
                     <button
-                      className="shrink-0 rounded-xl border border-[#3f3f46]/35 px-3 py-2 text-xs font-bold text-[#f4f4f5] transition hover:bg-white/10"
+                      className="shrink-0 rounded-xl border border-[#3f3f46]/35 px-3 py-2 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
                       onClick={() => {
                         setReplyTarget(null);
                         setEditingMessage(null);
@@ -5707,7 +5707,7 @@ export default function Home() {
                 ) : null}
 
                 {errorMessage ? (
-                  <p className="mt-2 text-sm font-medium text-[#e5e5e5]">
+                  <p className="mt-2 text-[13px] font-medium text-[#e5e5e5]">
                     {errorMessage}
                   </p>
                 ) : null}
@@ -5774,7 +5774,7 @@ export default function Home() {
 
           {isCallPanelCollapsed ? (
             <div className="flex items-center gap-3 pr-[84px] text-left">
-              <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-[#e5e5e5] text-lg font-black text-[#111111] shadow-[0_8px_22px_rgba(0,0,0,0.32)] ring-2 ring-[#f4f4f5]/25">
+              <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-[#e5e5e5] text-lg font-medium text-[#111111] shadow-[0_8px_22px_rgba(0,0,0,0.32)] ring-2 ring-[#f4f4f5]/25">
                 {callPanelProfile.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -5788,10 +5788,10 @@ export default function Home() {
                 )}
               </div>
               <div className="min-w-0 flex-1 select-none rounded-2xl py-1 text-left">
-                <p className="truncate text-sm font-bold text-[#f4f4f5]">
+                <p className="truncate text-[13px] font-medium text-[#f4f4f5]">
                   {callPanelProfile.name}
                 </p>
-                <p className="mt-1 flex items-center gap-1.5 truncate text-xs font-semibold text-[#a1a1aa]">
+                <p className="mt-1 flex items-center gap-1.5 truncate text-xs font-medium text-[#a1a1aa]">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#f4f4f5] shadow-[0_0_10px_rgba(244,244,245,0.55)]" />
                   {callStatus === "connected"
                     ? formatCallDuration(callDuration)
@@ -5812,7 +5812,7 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <div className="mx-auto mb-3 grid h-20 w-20 place-items-center overflow-hidden rounded-full bg-[#e5e5e5] text-3xl font-black text-[#111111] sm:mb-4 sm:h-24 sm:w-24 sm:text-4xl">
+              <div className="mx-auto mb-3 grid h-20 w-20 place-items-center overflow-hidden rounded-full bg-[#e5e5e5] text-sm font-medium text-[#111111] sm:mb-4 sm:h-24 sm:w-24 sm:text-xl">
                 {callPanelProfile.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -5826,10 +5826,10 @@ export default function Home() {
                 )}
               </div>
 
-              <p className="truncate text-lg font-semibold text-[#f4f4f5]">
+              <p className="truncate text-lg font-medium text-[#f4f4f5]">
                 {callPanelProfile.name}
               </p>
-              <p className="mt-1 text-sm font-medium text-[#a1a1aa]">
+              <p className="mt-1 text-[13px] font-medium text-[#a1a1aa]">
                 {callStatus === "connected"
                   ? formatCallDuration(callDuration)
                   : callStatusText || "00:00"}
@@ -5839,7 +5839,7 @@ export default function Home() {
                 {callStatus === "incoming" ? (
                   <>
                     <button
-                      className="min-h-11 rounded-xl bg-[#f4f4f5] px-5 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5]"
+                      className="min-h-11 rounded-xl bg-[#f4f4f5] px-5 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
                       onClick={acceptCall}
                       onPointerDown={(event) => event.stopPropagation()}
                       type="button"
@@ -5847,7 +5847,7 @@ export default function Home() {
                       Принять
                     </button>
                     <button
-                      className="min-h-11 rounded-xl border border-red-400/50 bg-red-500/15 px-5 text-sm font-bold text-red-100 transition hover:bg-red-500/25"
+                      className="min-h-11 rounded-xl border border-red-400/50 bg-red-500/15 px-5 text-[13px] font-medium text-red-100 transition hover:bg-red-500/25"
                       onClick={() => closeCall(true)}
                       onPointerDown={(event) => event.stopPropagation()}
                       type="button"
@@ -5899,7 +5899,7 @@ export default function Home() {
                       </svg>
                     </button>
                     <button
-                      className="min-h-12 rounded-full bg-red-500 px-5 text-sm font-bold text-white transition hover:bg-red-400"
+                      className="min-h-12 rounded-full bg-red-500 px-5 text-[13px] font-medium text-white transition hover:bg-red-400"
                       onClick={() => closeCall(true)}
                       onPointerDown={(event) => event.stopPropagation()}
                       type="button"
@@ -5911,7 +5911,7 @@ export default function Home() {
               </div>
 
               {callStatus !== "incoming" ? (
-                <p className="mt-4 text-sm font-medium text-[#a1a1aa]">
+                <p className="mt-4 text-[13px] font-medium text-[#a1a1aa]">
                   {isCallMicMuted ? "Микрофон выключен" : "Микрофон включен"}
                 </p>
               ) : null}
@@ -5926,7 +5926,7 @@ export default function Home() {
           onClick={() => setSelectedImageUrl(null)}
           type="button"
         >
-          <span className="absolute right-4 top-4 rounded-full border border-[#3f3f46]/45 bg-[#111111]/90 px-4 py-2 text-sm font-semibold text-[#f4f4f5]">
+          <span className="absolute right-4 top-4 rounded-full border border-[#3f3f46]/45 bg-[#111111]/90 px-4 py-2 text-[13px] font-medium text-[#f4f4f5]">
             Закрыть
           </span>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -5965,7 +5965,7 @@ export default function Home() {
             }}
           >
             <button
-              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
               onClick={() => replyToMessage(messageContextMenu.message)}
               type="button"
             >
@@ -5976,7 +5976,7 @@ export default function Home() {
             </button>
             {isContextMessageMine ? (
               <button
-                className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+                className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
                 onClick={() => startEditingMessage(messageContextMenu.message)}
                 type="button"
               >
@@ -5987,7 +5987,7 @@ export default function Home() {
               </button>
             ) : null}
             <button
-              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
               onClick={() => requestPinnedMessage(messageContextMenu.message)}
               type="button"
             >
@@ -5998,7 +5998,7 @@ export default function Home() {
               {activePinnedMessage?.id === messageContextMenu.message.id ? "Открепить" : "Закрепить"}
             </button>
             <button
-              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
               onClick={() => copyMessageText(messageContextMenu.message)}
               type="button"
             >
@@ -6010,7 +6010,7 @@ export default function Home() {
             </button>
             {isContextMessageMine ? (
               <button
-                className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium text-red-100 transition hover:bg-red-500/18"
+                className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium text-red-100 transition hover:bg-red-500/18"
                 onClick={() => requestMessageDelete(messageContextMenu.message)}
                 type="button"
               >
@@ -6021,7 +6021,7 @@ export default function Home() {
               </button>
             ) : null}
             <button
-              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
               onClick={() => toggleSelectedMessage(messageContextMenu.message)}
               type="button"
             >
@@ -6066,7 +6066,7 @@ export default function Home() {
                   }}
                 >
                   <button
-                    className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+                    className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
                     onClick={() => replyToFavoriteItem(favoriteContextMenu.item)}
                     type="button"
                   >
@@ -6076,7 +6076,7 @@ export default function Home() {
                     Ответить
                   </button>
                   <button
-                    className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+                    className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
                     onClick={() => startEditingFavoriteItem(favoriteContextMenu.item)}
                     type="button"
                   >
@@ -6086,7 +6086,7 @@ export default function Home() {
                     Изменить
                   </button>
                   <button
-                    className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+                    className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
                     onClick={() => togglePinnedFavoriteItem(favoriteContextMenu.item)}
                     type="button"
                   >
@@ -6097,7 +6097,7 @@ export default function Home() {
                     {isFavoritePinned ? "Открепить" : "Закрепить"}
                   </button>
                   <button
-                    className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+                    className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
                     onClick={() => copyFavoriteText(favoriteContextMenu.item)}
                     type="button"
                   >
@@ -6108,7 +6108,7 @@ export default function Home() {
                     Копировать текст
                   </button>
                   <button
-                    className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium text-red-100 transition hover:bg-red-500/18"
+                    className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium text-red-100 transition hover:bg-red-500/18"
                     onClick={() => removeFavoriteItem(favoriteContextMenu.item.id)}
                     type="button"
                   >
@@ -6118,7 +6118,7 @@ export default function Home() {
                     Удалить
                   </button>
                   <button
-                    className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+                    className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
                     onClick={() => toggleSelectedFavoriteItem(favoriteContextMenu.item)}
                     type="button"
                   >
@@ -6150,12 +6150,12 @@ export default function Home() {
                 </svg>
               </span>
               <div className="min-w-0">
-                <h2 className="text-lg font-bold text-[#f4f4f5]">
+                <h2 className="text-lg font-medium text-[#f4f4f5]">
                   {activePinnedMessage?.id === messagePinTarget.id
                     ? "Открепление сообщения"
                     : "Закрепление сообщения"}
                 </h2>
-                <p className="mt-1 text-sm leading-6 text-[#a1a1aa]">
+                <p className="mt-1 text-[13px] leading-6 text-[#a1a1aa]">
                   {activePinnedMessage?.id === messagePinTarget.id
                     ? "Желаете открепить сообщение?"
                     : "Выберите, закрепить сообщение только у себя или сделать его общим для обоих участников переписки."}
@@ -6166,12 +6166,12 @@ export default function Home() {
             {activePinnedMessage?.id !== messagePinTarget.id ? (
               <>
                 <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 p-3">
-                  <p className="line-clamp-3 text-sm font-semibold text-[#f4f4f5]">
+                  <p className="line-clamp-3 text-[13px] font-medium text-[#f4f4f5]">
                     {getReadableMessageText(messagePinTarget.text)}
                   </p>
                 </div>
 
-                <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-2xl border border-[#3f3f46]/35 bg-[#f4f4f5]/8 p-3 text-sm font-semibold text-[#f4f4f5]">
+                <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-2xl border border-[#3f3f46]/35 bg-[#f4f4f5]/8 p-3 text-[13px] font-medium text-[#f4f4f5]">
                   <input
                     checked={shouldPinForBoth}
                     className="h-5 w-5 accent-[#f4f4f5]"
@@ -6185,7 +6185,7 @@ export default function Home() {
 
             <div className="mt-5 grid gap-2 sm:grid-cols-2">
               <button
-                className="min-h-12 rounded-xl bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5]"
+                className="min-h-12 rounded-xl bg-[#f4f4f5] px-4 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
                 onClick={
                   activePinnedMessage?.id === messagePinTarget.id
                     ? confirmUnpinPinnedMessage
@@ -6196,7 +6196,7 @@ export default function Home() {
                 {activePinnedMessage?.id === messagePinTarget.id ? "Да" : "Закрепить"}
               </button>
               <button
-                className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-bold text-[#f4f4f5] transition hover:bg-white/10"
+                className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
                 onClick={() => setMessagePinTarget(null)}
                 type="button"
               >
@@ -6224,31 +6224,31 @@ export default function Home() {
                 </svg>
               </span>
               <div className="min-w-0">
-                <h2 className="text-lg font-bold text-[#f4f4f5]">
+                <h2 className="text-lg font-medium text-[#f4f4f5]">
                   Удаление сообщения
                 </h2>
-                <p className="mt-1 text-sm leading-6 text-[#a1a1aa]">
+                <p className="mt-1 text-[13px] leading-6 text-[#a1a1aa]">
                   Выберите, удалить сообщение только у себя или у обоих участников переписки.
                 </p>
               </div>
             </div>
 
             <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 p-3">
-              <p className="line-clamp-3 text-sm font-semibold text-[#f4f4f5]">
+              <p className="line-clamp-3 text-[13px] font-medium text-[#f4f4f5]">
                 {getReadableMessageText(messageDeleteTarget.text)}
               </p>
             </div>
 
             <div className="mt-5 grid gap-2 sm:grid-cols-2">
               <button
-                className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-bold text-[#f4f4f5] transition hover:bg-white/10"
+                className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
                 onClick={() => hideMessageForMe(messageDeleteTarget)}
                 type="button"
               >
                 Только у себя
               </button>
               <button
-                className="min-h-12 rounded-xl bg-red-500 px-4 text-sm font-bold text-white transition hover:bg-red-400"
+                className="min-h-12 rounded-xl bg-red-500 px-4 text-[13px] font-medium text-white transition hover:bg-red-400"
                 onClick={() => deleteMessage(messageDeleteTarget)}
                 type="button"
               >
@@ -6257,7 +6257,7 @@ export default function Home() {
             </div>
 
             <button
-              className="mt-3 min-h-11 w-full rounded-xl px-4 text-sm font-bold text-[#a1a1aa] transition hover:bg-white/10 hover:text-[#f4f4f5]"
+              className="mt-3 min-h-11 w-full rounded-xl px-4 text-[13px] font-medium text-[#a1a1aa] transition hover:bg-white/10 hover:text-[#f4f4f5]"
               onClick={() => setMessageDeleteTarget(null)}
               type="button"
             >
@@ -6287,31 +6287,31 @@ export default function Home() {
                   </svg>
                 </span>
                 <div className="min-w-0">
-                  <h2 className="text-xl font-bold text-[#f4f4f5]">
+                  <h2 className="text-lg font-medium text-[#f4f4f5]">
                     Удалить чат у двоих?
                   </h2>
-                  <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
+                  <p className="mt-2 text-[13px] leading-6 text-[#a1a1aa]">
                     Сообщения этой переписки исчезнут у тебя и собеседника. Отменить действие не получится.
                   </p>
                 </div>
               </div>
 
               <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/24 p-3">
-                <p className="text-sm font-semibold text-[#f4f4f5]">
+                <p className="text-[13px] font-medium text-[#f4f4f5]">
                   {friendProfile?.name ? `Чат с ${friendProfile.name}` : "Текущий чат"}
                 </p>
               </div>
 
               <div className="mt-5 grid gap-2 sm:grid-cols-2">
                 <button
-                  className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-bold text-[#f4f4f5] transition hover:bg-white/10"
+                  className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
                   onClick={() => setIsChatDeleteDialogOpen(false)}
                   type="button"
                 >
                   Оставить
                 </button>
                 <button
-                  className="min-h-12 rounded-xl bg-red-500 px-4 text-sm font-bold text-white shadow-[0_14px_34px_rgba(239,68,68,0.22)] transition hover:bg-red-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="min-h-12 rounded-xl bg-red-500 px-4 text-[13px] font-medium text-white shadow-[0_14px_34px_rgba(239,68,68,0.22)] transition hover:bg-red-400 disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={isDeletingChat}
                   onClick={confirmDeleteChat}
                   type="button"
@@ -6341,11 +6341,11 @@ export default function Home() {
             }}
           >
             <div className="flex items-center justify-between gap-3 px-1">
-              <p className="text-sm font-black uppercase tracking-[0.16em] text-[#e5e5e5]">
+              <p className="text-[13px] font-medium uppercase tracking-[0.16em] text-[#e5e5e5]">
                 Стикеры
               </p>
               <button
-                className="rounded-full px-2 py-1 text-xs font-bold text-[#a1a1aa] transition hover:bg-white/10 hover:text-[#f4f4f5]"
+                className="rounded-full px-2 py-1 text-xs font-medium text-[#a1a1aa] transition hover:bg-white/10 hover:text-[#f4f4f5]"
                 onClick={() => setIsStickerPickerOpen(false)}
                 type="button"
               >
@@ -6393,7 +6393,7 @@ export default function Home() {
                 </svg>
               </span>
               <div className="min-w-0">
-                <h2 className="text-2xl font-bold leading-tight text-[#f4f4f5]">
+                <h2 className="text-lg font-medium leading-tight text-[#f4f4f5]">
                   {blockConfirmation.action === "block"
                     ? `Заблокировать пользователя ${blockConfirmation.targetLabel}?`
                     : `Разблокировать пользователя ${blockConfirmation.targetLabel}?`}
@@ -6402,7 +6402,7 @@ export default function Home() {
             </div>
             <div className="mt-5 grid gap-2 sm:grid-cols-2">
               <button
-                className={`min-h-12 rounded-2xl px-4 text-sm font-bold transition ${
+                className={`min-h-12 rounded-2xl px-4 text-[13px] font-medium transition ${
                   blockConfirmation.action === "block"
                     ? "bg-red-500 text-white hover:bg-red-400"
                     : "bg-[#f4f4f5] text-[#050505] hover:bg-[#e5e5e5]"
@@ -6413,7 +6413,7 @@ export default function Home() {
                 Да
               </button>
               <button
-                className="min-h-12 rounded-2xl border border-[#3f3f46]/45 bg-white/[0.03] px-4 text-sm font-bold text-[#f4f4f5] transition hover:bg-white/10"
+                className="min-h-12 rounded-2xl border border-[#3f3f46]/45 bg-white/[0.03] px-4 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
                 onClick={() => setBlockConfirmation(null)}
                 type="button"
               >
@@ -6436,7 +6436,7 @@ export default function Home() {
               <div className="flex min-w-0 items-center gap-4">
                 <button
                   aria-label="Открыть аватар"
-                  className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-[24px] bg-[#f4f4f5] text-3xl font-black text-[#050505] shadow-[0_18px_45px_rgba(0,0,0,0.35)] transition hover:scale-[1.03] disabled:cursor-default disabled:hover:scale-100 sm:h-24 sm:w-24"
+                  className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-[24px] bg-[#f4f4f5] text-2xl font-medium text-[#050505] shadow-[0_18px_45px_rgba(0,0,0,0.35)] transition hover:scale-[1.03] disabled:cursor-default disabled:hover:scale-100 sm:h-24 sm:w-24"
                   disabled={!viewedProfile.avatarUrl}
                   onClick={() => {
                     if (viewedProfile.avatarUrl) {
@@ -6457,16 +6457,16 @@ export default function Home() {
                   )}
                 </button>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#a1a1aa]">
+                  <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#a1a1aa]">
                     Профиль
                   </p>
-                  <h2 className="mt-1 truncate text-3xl font-semibold leading-none text-[#f4f4f5] sm:text-4xl">
+                  <h2 className="mt-1 truncate text-2xl font-medium leading-none text-[#f4f4f5] sm:text-3xl">
                     {viewedProfile.name}
                   </h2>
-                  <p className="mt-2 truncate text-base font-medium text-[#a1a1aa]">
+                  <p className="mt-2 truncate text-sm font-medium text-[#a1a1aa]">
                     {viewedProfile.username ? `@${viewedProfile.username}` : "@ник пока не выбран"}
                   </p>
-                  <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-100">
+                  <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-100">
                     <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_16px_rgba(110,231,183,0.8)]" />
                     {formatLastSeen(viewedProfile.updatedAt)}
                   </div>
@@ -6519,7 +6519,7 @@ export default function Home() {
                     strokeWidth="2"
                   />
                 </svg>
-                <span className="text-[11px] font-semibold leading-none text-[#d4d4d8]">Чат</span>
+                <span className="text-[11px] font-medium leading-none text-[#d4d4d8]">Чат</span>
               </button>
               <button
                 aria-label="Позвонить"
@@ -6551,7 +6551,7 @@ export default function Home() {
                     strokeWidth="2"
                   />
                 </svg>
-                <span className="text-[11px] font-semibold leading-none text-[#d4d4d8]">Телефон</span>
+                <span className="text-[11px] font-medium leading-none text-[#d4d4d8]">Телефон</span>
               </button>
               <div className="relative">
                 <button
@@ -6583,7 +6583,7 @@ export default function Home() {
                       strokeWidth="2"
                     />
                   </svg>
-                  <span className="text-[11px] font-semibold leading-none text-[#d4d4d8]">
+                  <span className="text-[11px] font-medium leading-none text-[#d4d4d8]">
                     {viewedProfile.userId && isProfileMuted(mutedProfiles, viewedProfile.userId)
                       ? "Без звука"
                       : "Уведомл."}
@@ -6600,7 +6600,7 @@ export default function Home() {
                   <div className="absolute left-1/2 top-[calc(100%+8px)] z-[110] w-64 -translate-x-1/2 rounded-2xl border border-[#3f3f46]/55 bg-[#171717]/98 p-1.5 text-left shadow-[0_18px_55px_rgba(0,0,0,0.55)] backdrop-blur-xl">
                     {isProfileMuted(mutedProfiles, viewedProfile.userId) ? (
                       <button
-                        className="min-h-10 w-full rounded-xl px-3 text-left text-sm font-semibold text-emerald-100 transition hover:bg-emerald-400/10"
+                        className="min-h-10 w-full rounded-xl px-3 text-left text-[13px] font-medium text-emerald-100 transition hover:bg-emerald-400/10"
                         onClick={() => unmuteProfileNotifications(viewedProfile.userId!)}
                         type="button"
                       >
@@ -6615,7 +6615,7 @@ export default function Home() {
                       { durationMs: null, label: "Отключить уведомления" },
                     ].map((option) => (
                       <button
-                        className="min-h-10 w-full whitespace-nowrap rounded-xl px-3 text-left text-sm font-semibold text-[#f4f4f5] transition hover:bg-white/10"
+                        className="min-h-10 w-full whitespace-nowrap rounded-xl px-3 text-left text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
                         key={option.label}
                         onClick={() =>
                           viewedProfile.userId
@@ -6663,7 +6663,7 @@ export default function Home() {
                     strokeWidth="2"
                   />
                 </svg>
-                <span className="text-[11px] font-semibold leading-none text-[#d4d4d8]">
+                <span className="text-[11px] font-medium leading-none text-[#d4d4d8]">
                   {viewedProfile.userId && blockedByMeProfileIds.includes(viewedProfile.userId)
                     ? "Разблок"
                     : "Блок"}
@@ -6672,28 +6672,28 @@ export default function Home() {
             </div>
             <div className="mt-5 grid gap-3">
               <article className="rounded-3xl border border-[#3f3f46]/40 bg-black/22 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#e5e5e5]">
+                <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#e5e5e5]">
                   О себе
                 </p>
-                <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
+                <p className="mt-2 text-[13px] leading-6 text-[#a1a1aa]">
                   Пока ничего не написал о себе.
                 </p>
               </article>
 
               <article className="rounded-3xl border border-[#3f3f46]/40 bg-black/22 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#e5e5e5]">
+                <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#e5e5e5]">
                   Телефон
                 </p>
-                <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
+                <p className="mt-2 text-[13px] leading-6 text-[#a1a1aa]">
                   Скрыт настройками приватности. Позже добавим показ только с разрешения пользователя.
                 </p>
               </article>
 
               <article className="rounded-3xl border border-[#3f3f46]/40 bg-black/22 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#e5e5e5]">
+                <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#e5e5e5]">
                   Общие данные
                 </p>
-                <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
+                <p className="mt-2 text-[13px] leading-6 text-[#a1a1aa]">
                   Общие чаты и группы появятся здесь позже.
                 </p>
               </article>

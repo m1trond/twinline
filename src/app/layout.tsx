@@ -1,11 +1,11 @@
-﻿import type { Metadata, Viewport } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Montserrat } from "next/font/google";
 import "./globals.css";
 
 const montserrat = Montserrat({
-  variable: "--font-geist-sans",
-  weight: ["400", "500", "600", "700", "800", "900"],
-  subsets: ["latin"],
+  variable: "--font-montserrat",
+  weight: ["400", "500", "600", "700"],
+  subsets: ["latin", "cyrillic"],
 });
 
 const geistMono = Geist_Mono({
