@@ -32,6 +32,7 @@ type ProfileRow = {
   user_id: string;
   display_name: string;
   username: string | null;
+  username_changed_at: string | null;
   avatar_url: string | null;
   name_changed_at: string | null;
   updated_at: string;
@@ -96,7 +97,8 @@ const receiptMessagePrefix = "receipt::";
 const typingMessagePrefix = "typing::";
 const maxAttachmentSize = 50 * 1024 * 1024;
 const stickerOptions = ["😂", "❤️", "🔥", "🤝", "😎", "😭", "🥱", "😡", "🫡", "💀", "🥳", "🤯", "👍", "👎", "🍻", "✨"];
-const profileColumns = "user_id, display_name, username, avatar_url, name_changed_at, updated_at";
+const profileColumns = "user_id, display_name, username, username_changed_at, avatar_url, name_changed_at, updated_at";
+const usernameProfileColumns = "user_id, display_name, username, avatar_url, name_changed_at, updated_at";
 const legacyProfileColumns = "user_id, display_name, avatar_url, name_changed_at, updated_at";
 const usernamePattern = /^[a-z0-9_]{3,24}$/;
 
@@ -502,6 +504,20 @@ async function fetchProfiles() {
     return profilesWithUsername;
   }
 
+  const profilesWithoutUsernameDate = await supabase
+    .from("profiles")
+    .select(usernameProfileColumns);
+
+  if (!profilesWithoutUsernameDate.error) {
+    return {
+      ...profilesWithoutUsernameDate,
+      data: profilesWithoutUsernameDate.data?.map((profile) => ({
+        ...profile,
+        username_changed_at: null,
+      })) ?? null,
+    };
+  }
+
   const legacyProfiles = await supabase
     .from("profiles")
     .select(legacyProfileColumns);
@@ -511,6 +527,7 @@ async function fetchProfiles() {
     data: legacyProfiles.data?.map((profile) => ({
       ...profile,
       username: null,
+      username_changed_at: null,
     })) ?? null,
   };
 }
@@ -1020,9 +1037,9 @@ export default function Home() {
     };
   }, [chatProfiles, profiles, selectedChatUserId, user?.id, visibleMessages]);
   const latestVisibleMessage = visibleMessages.at(-1);
-  const isUsernameChangeAllowed = canChangeName(currentProfile?.name_changed_at ?? null);
+  const isUsernameChangeAllowed = canChangeName(currentProfile?.username_changed_at ?? null);
   const nextUsernameChangeDate = getNextNameChangeDate(
-    currentProfile?.name_changed_at ?? null,
+    currentProfile?.username_changed_at ?? null,
   );
   const profileNameInputValue = profileName || activeUserName;
   const profileUsernameInputValue = profileUsername ?? currentProfile?.username ?? "";
@@ -1573,6 +1590,7 @@ export default function Home() {
             typeof signedInUser.user_metadata?.username === "string"
               ? normalizeUsername(signedInUser.user_metadata.username)
               : null,
+          username_changed_at: null,
           user_id: signedInUser.id,
         },
         {
@@ -1962,6 +1980,7 @@ export default function Home() {
           await supabase.from("profiles").upsert({
             display_name: authName.trim() || authEmail.trim().split("@")[0],
             username: nextUsername,
+            username_changed_at: null,
             user_id: data.user.id,
           });
         }
@@ -2026,6 +2045,7 @@ export default function Home() {
         avatar_url: currentProfile?.avatar_url ?? null,
         display_name: getDisplayName(signedInUser),
         username: nextUsername,
+        username_changed_at: null,
         user_id: signedInUser.id,
       });
 
@@ -2850,6 +2870,7 @@ export default function Home() {
         updated_at: updatedAt,
         user_id: user.id,
         username: currentProfile?.username ?? null,
+        username_changed_at: currentProfile?.username_changed_at ?? null,
       })
       .select(profileColumns)
       .single();
@@ -2934,6 +2955,7 @@ export default function Home() {
         updated_at: updatedAt,
         user_id: user.id,
         username: nextUsername,
+        username_changed_at: updatedAt,
       })
       .select(profileColumns)
       .single();
@@ -3010,6 +3032,7 @@ export default function Home() {
         updated_at: new Date().toISOString(),
         user_id: user.id,
         username: currentProfile?.username ?? null,
+        username_changed_at: currentProfile?.username_changed_at ?? null,
       })
       .select(profileColumns)
       .single();
@@ -4024,7 +4047,7 @@ export default function Home() {
                         className="min-h-10 rounded-xl bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
                         disabled={
                           !profileUsernameInputValue.trim() ||
-                          profileUsernameInputValue.trim() === currentProfile?.username
+                          normalizeUsername(profileUsernameInputValue) === currentProfile?.username
                         }
                         type="submit"
                       >
