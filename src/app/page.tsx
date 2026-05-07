@@ -4140,7 +4140,7 @@ export default function Home() {
               <input
                 className="min-h-11 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:min-h-12"
                 onChange={(event) => setAuthName(event.target.value)}
-                placeholder="Имя в Hush"
+                placeholder="Никнейм в Hush"
                 type="text"
                 value={authName}
               />
@@ -4213,7 +4213,7 @@ export default function Home() {
               {authContactMethod === "phone"
                 ? "Скоро будет доступно"
                 : authMode === "sign-in"
-                  ? "Войти по почте"
+                  ? "Войти"
                   : "Создать аккаунт"}
             </button>
           </form>
