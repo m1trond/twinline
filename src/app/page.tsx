@@ -735,6 +735,7 @@ export default function Home() {
   const [favoriteItems, setFavoriteItems] = useState<FavoriteItem[]>([]);
   const [hiddenMessageIds, setHiddenMessageIds] = useState<number[]>([]);
   const [messageDeleteTarget, setMessageDeleteTarget] = useState<MessageRow | null>(null);
+  const [isChatDeleteDialogOpen, setIsChatDeleteDialogOpen] = useState(false);
   const [areNotificationsEnabled, setAreNotificationsEnabled] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -2366,19 +2367,12 @@ export default function Home() {
     setErrorMessage("");
   }
 
-  async function deleteChat() {
+  async function confirmDeleteChat() {
     if (isDeletingChat || !user || !selectedChatUserId) {
       return;
     }
 
-    const confirmed = window.confirm(
-      "Вы точно хотите удалить эту переписку у двоих?",
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
+    setIsChatDeleteDialogOpen(false);
     isDeletingChatRef.current = true;
     latestMessageCreatedAtRef.current = null;
     flushSync(() => {
@@ -4659,7 +4653,7 @@ export default function Home() {
                       aria-label="Удалить переписку"
                       className="grid min-h-9 w-9 place-items-center rounded-lg border border-red-400/45 bg-red-500/15 text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-55 sm:min-h-10 sm:w-10 sm:rounded-xl"
                       disabled={isDeletingChat}
-                      onClick={deleteChat}
+                      onClick={() => setIsChatDeleteDialogOpen(true)}
                       type="button"
                     >
                       {isDeletingChat ? (
@@ -5854,6 +5848,69 @@ export default function Home() {
             >
               Отмена
             </button>
+          </section>
+        </>
+      ) : null}
+      {isChatDeleteDialogOpen ? (
+        <>
+          <button
+            aria-label="Закрыть окно удаления переписки"
+            className="fixed inset-0 z-[95] bg-black/62 backdrop-blur-sm"
+            onClick={() => setIsChatDeleteDialogOpen(false)}
+            type="button"
+          />
+          <section className="fixed left-1/2 top-1/2 z-[96] w-[min(460px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-red-400/25 bg-[#111111]/96 p-4 text-left shadow-[0_24px_90px_rgba(0,0,0,0.65)] sm:rounded-3xl sm:p-5">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(248,113,113,0.18),transparent_34%),linear-gradient(135deg,rgba(244,244,245,0.04),transparent_54%)]"
+            />
+            <div className="relative">
+              <div className="mb-4 flex items-start gap-3">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-red-300/25 bg-red-500/16 text-red-100 shadow-[0_10px_30px_rgba(239,68,68,0.18)]">
+                  <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                  </svg>
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-red-100/80">
+                    Удаление переписки
+                  </p>
+                  <h2 className="mt-1 text-xl font-bold text-[#f4f4f5]">
+                    Удалить чат у двоих?
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
+                    Сообщения этой переписки исчезнут у тебя и собеседника. Отменить действие не получится.
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/24 p-3">
+                <p className="text-sm font-semibold text-[#f4f4f5]">
+                  {friendProfile?.name ? `Чат с ${friendProfile.name}` : "Текущий чат"}
+                </p>
+                <p className="mt-1 text-xs leading-5 text-[#a1a1aa]">
+                  Удаляются только сообщения выбранной переписки.
+                </p>
+              </div>
+
+              <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                <button
+                  className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-bold text-[#f4f4f5] transition hover:bg-white/10"
+                  onClick={() => setIsChatDeleteDialogOpen(false)}
+                  type="button"
+                >
+                  Оставить
+                </button>
+                <button
+                  className="min-h-12 rounded-xl bg-red-500 px-4 text-sm font-bold text-white shadow-[0_14px_34px_rgba(239,68,68,0.22)] transition hover:bg-red-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isDeletingChat}
+                  onClick={confirmDeleteChat}
+                  type="button"
+                >
+                  {isDeletingChat ? "Удаляю..." : "Удалить у двоих"}
+                </button>
+              </div>
+            </div>
           </section>
         </>
       ) : null}
