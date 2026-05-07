@@ -4367,10 +4367,10 @@ export default function Home() {
             </aside>
 
             {activeView === "profile" ? (
-              <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#3f3f46]/35 pb-4 sm:mb-6 sm:gap-4 sm:pb-5">
-                  <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-                    <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#f4f4f5] text-lg font-medium text-[#050505] sm:h-20 sm:w-20 sm:rounded-2xl sm:text-2xl">
+              <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-[#3f3f46]/35 pb-3 sm:mb-4 sm:gap-4 sm:pb-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#f4f4f5] text-lg font-medium text-[#050505] sm:h-16 sm:w-16 sm:rounded-2xl sm:text-xl">
                       {currentProfile?.avatar_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -4383,13 +4383,10 @@ export default function Home() {
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[13px] font-medium text-[#e5e5e5]">
-                        Активный профиль
-                      </p>
-                      <h2 className="truncate text-xl font-medium sm:text-2xl">
+                      <h2 className="truncate text-lg font-medium sm:text-xl">
                         {activeUserName}
                       </h2>
-                      <p className="mt-1 text-[13px] font-medium text-[#a1a1aa]">
+                      <p className="mt-0.5 text-[13px] font-medium text-[#a1a1aa]">
                         {currentProfile?.username ? `@${currentProfile.username}` : "@ник не задан"}
                       </p>
                       <input
@@ -4400,7 +4397,7 @@ export default function Home() {
                         type="file"
                       />
                       <button
-                        className="mt-2 rounded-xl border border-[#3f3f46]/35 px-3 py-2 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 sm:mt-3"
+                        className="mt-2 rounded-xl border border-[#3f3f46]/35 px-3 py-1.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
                         disabled={isUploadingAvatar}
                         onClick={() => avatarInputRef.current?.click()}
                         type="button"
@@ -4411,14 +4408,14 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-3 sm:col-span-2 sm:rounded-2xl sm:px-4">
+                <div className="grid gap-2.5 sm:grid-cols-2">
+                  <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-2.5 sm:col-span-2 sm:rounded-2xl">
                     <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
                       Имя профиля
                     </p>
                     <form className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={updateProfileName}>
                       <input
-                        className="min-h-10 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] disabled:cursor-not-allowed disabled:opacity-60 sm:text-[13px]"
+                        className="min-h-9 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-[13px] outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] disabled:cursor-not-allowed disabled:opacity-60"
                         maxLength={24}
                         minLength={2}
                         onChange={(event) => setProfileName(event.target.value)}
@@ -4427,7 +4424,7 @@ export default function Home() {
                         value={profileNameInputValue}
                       />
                       <button
-                        className="min-h-10 rounded-xl bg-[#f4f4f5] px-4 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
+                        className="min-h-9 rounded-xl bg-[#f4f4f5] px-4 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
                         disabled={
                           !profileName.trim() ||
                           profileName.trim() === activeUserName
@@ -4439,12 +4436,12 @@ export default function Home() {
                     </form>
                   </section>
 
-                  <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-3 sm:col-span-2 sm:rounded-2xl sm:px-4">
+                  <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-2.5 sm:col-span-2 sm:rounded-2xl">
                     <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
                       Ник Hush
                     </p>
                     <form className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={updateProfileUsername}>
-                      <label className="flex min-h-10 items-center rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-sm focus-within:border-[#f4f4f5] sm:text-[13px]">
+                      <label className="flex min-h-9 items-center rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-[13px] focus-within:border-[#f4f4f5]">
                         <span className="font-medium text-[#a1a1aa]">@</span>
                         <input
                           aria-label="Ник Hush"
@@ -4461,7 +4458,7 @@ export default function Home() {
                         />
                       </label>
                       <button
-                        className="min-h-10 rounded-xl bg-[#f4f4f5] px-4 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
+                        className="min-h-9 rounded-xl bg-[#f4f4f5] px-4 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
                         disabled={
                           !profileUsernameInputValue.trim() ||
                           normalizeUsername(profileUsernameInputValue) === currentProfile?.username
@@ -4471,7 +4468,7 @@ export default function Home() {
                         Сохранить ник
                       </button>
                     </form>
-                    <p className={`mt-2 text-[13px] leading-5 ${profileUsernameError ? "font-medium text-red-300" : "text-[#a1a1aa]"}`}>
+                    <p className={`mt-1.5 text-xs leading-5 ${profileUsernameError ? "font-medium text-red-300" : "text-[#a1a1aa]"}`}>
                       {profileUsernameError ||
                         (isUsernameChangeAllowed
                           ? "Ник можно менять один раз в месяц."
@@ -4479,26 +4476,26 @@ export default function Home() {
                     </p>
                   </section>
 
-                  <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-3 sm:rounded-2xl sm:px-4">
+                  <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-2.5 sm:rounded-2xl">
                     <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
                       Email
                     </p>
-                    <p className="mt-2 break-words text-sm font-medium">
+                    <p className="mt-1.5 break-words text-[13px] font-medium">
                       {user.email}
                     </p>
-                    <p className="mt-1 text-[13px] leading-5 text-[#a1a1aa]">
+                    <p className="mt-1 text-xs leading-5 text-[#a1a1aa]">
                       Его видишь только ты в своём аккаунте.
                     </p>
                   </section>
 
-                  <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-3 sm:rounded-2xl sm:px-4">
+                  <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-2.5 sm:rounded-2xl">
                     <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
                       Телефон
                     </p>
                     <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(120px,0.36fr)_1fr_auto]">
                       <select
                         aria-label="Страна"
-                        className="min-h-10 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none focus:border-[#f4f4f5] sm:text-[13px]"
+                        className="min-h-9 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-[13px] outline-none focus:border-[#f4f4f5]"
                         defaultValue="+7"
                       >
                         <option value="+7">RU +7</option>
@@ -4509,20 +4506,20 @@ export default function Home() {
                       </select>
                       <input
                         aria-label="Номер телефона"
-                        className="min-h-10 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:text-[13px]"
+                        className="min-h-9 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-[13px] outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5]"
                         inputMode="tel"
                         placeholder="999 123-45-67"
                         type="tel"
                       />
                       <button
-                        className="min-h-10 rounded-xl bg-[#52525b] px-4 text-[13px] font-medium text-[#050505] opacity-70"
+                        className="min-h-9 rounded-xl bg-[#52525b] px-4 text-[13px] font-medium text-[#050505] opacity-70"
                         disabled
                         type="button"
                       >
                         Скоро
                       </button>
                     </div>
-                    <p className="mt-2 text-[13px] leading-5 text-[#a1a1aa]">
+                    <p className="mt-1.5 text-xs leading-5 text-[#a1a1aa]">
                       Позже подключим вход и регистрацию по SMS.
                     </p>
                   </section>
