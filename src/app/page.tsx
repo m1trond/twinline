@@ -4137,13 +4137,17 @@ export default function Home() {
 
           <form className="grid gap-3" onSubmit={handleAuth}>
             {authMode === "sign-up" ? (
-              <input
-                className="min-h-11 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:min-h-12"
-                onChange={(event) => setAuthName(event.target.value)}
-                placeholder="Никнейм в Hush"
-                type="text"
-                value={authName}
-              />
+              <label className="flex min-h-11 items-center rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm focus-within:border-[#f4f4f5] sm:min-h-12">
+                <span className="shrink-0 font-medium text-[#a1a1aa]">@</span>
+                <input
+                  aria-label="Никнейм в Hush"
+                  className="min-w-0 flex-1 bg-transparent pl-1 outline-none placeholder:text-[#a1a1aa]/70"
+                  onChange={(event) => setAuthName(event.target.value.replace(/^@+/, ""))}
+                  placeholder="Никнейм в Hush"
+                  type="text"
+                  value={authName}
+                />
+              </label>
             ) : null}
             {authContactMethod === "email" ? (
               <>
