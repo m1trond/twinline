@@ -955,6 +955,15 @@ export default function Home() {
       return !hiddenMessageIds.includes(message.id) && !isServiceMessage(message.text);
     });
   }, [hiddenMessageIds, messages]);
+  const activeDialogMessages = useMemo(() => {
+    if (!user || !selectedChatUserId) {
+      return [];
+    }
+
+    return visibleMessages.filter((message) => {
+      return message.user_id === user.id || message.user_id === selectedChatUserId;
+    });
+  }, [selectedChatUserId, user, visibleMessages]);
   const unreadMessagesByUserId = useMemo(() => {
     const unreadByUserId = new Map<string, number>();
 
@@ -1084,7 +1093,7 @@ export default function Home() {
     return () => {
       window.cancelAnimationFrame(frameId);
     };
-  }, [activeView, isLoadingMessages, selectedChatUserId, visibleMessages.length]);
+  }, [activeDialogMessages.length, activeView, isLoadingMessages, selectedChatUserId]);
 
   useEffect(() => {
     if (activeView !== "favorites") {
@@ -1993,7 +2002,25 @@ export default function Home() {
       return;
     }
 
-    if (!usernameOwner.data) {
+    const { data: signedInProfile, error: signedInProfileError } = await supabase
+      .from("profiles")
+      .select("user_id, username")
+      .eq("user_id", signedInUser.id)
+      .maybeSingle();
+
+    if (signedInProfileError) {
+      await supabase.auth.signOut();
+      setAuthUsernameError("Не получилось проверить ник аккаунта.");
+      return;
+    }
+
+    if (signedInProfile?.username && signedInProfile.username !== nextUsername) {
+      await supabase.auth.signOut();
+      setAuthUsernameError("Этот ник не привязан к этому email.");
+      return;
+    }
+
+    if (!signedInProfile?.username) {
       const { error: profileError } = await supabase.from("profiles").upsert({
         avatar_url: currentProfile?.avatar_url ?? null,
         display_name: getDisplayName(signedInUser),
@@ -2340,41 +2367,44 @@ export default function Home() {
   }
 
   async function deleteChat() {
-    if (isDeletingChat) {
+    if (isDeletingChat || !user || !selectedChatUserId) {
       return;
     }
 
     const confirmed = window.confirm(
-      "Вы точно хотите удалить переписку у обоих?",
+      "Вы точно хотите скрыть эту переписку у себя?",
     );
 
     if (!confirmed) {
       return;
     }
 
-    const previousMessages = messages;
-
     isDeletingChatRef.current = true;
-    latestMessageCreatedAtRef.current = null;
     flushSync(() => {
       setIsDeletingChat(true);
-      setMessages([]);
     });
 
-    const { error } = await supabase.from("messages").delete().gte("id", 0);
+    const nextHiddenMessageIds = Array.from(
+      new Set([
+        ...hiddenMessageIds,
+        ...messages
+          .filter((message) => {
+            return (
+              message.id > 0 &&
+              message.user_id === selectedChatUserId &&
+              !isServiceMessage(message.text)
+            );
+          })
+          .map((message) => message.id),
+      ]),
+    );
 
-    if (error) {
-      isDeletingChatRef.current = false;
-      flushSync(() => {
-        setMessages(previousMessages);
-        setIsDeletingChat(false);
-      });
-      setErrorMessage("Не получилось удалить чат. Возможно, нужно разрешить удаление в Supabase.");
-      return;
-    }
-
-    latestMessageCreatedAtRef.current = null;
-    setMessages([]);
+    window.localStorage.setItem(
+      `twinline-hidden-messages-${user.id}`,
+      JSON.stringify(nextHiddenMessageIds),
+    );
+    setHiddenMessageIds(nextHiddenMessageIds);
+    setSelectedChatUserId(null);
     setIsDeletingChat(false);
     isDeletingChatRef.current = false;
     setErrorMessage("");
@@ -2851,7 +2881,7 @@ export default function Home() {
 
     if (!isUsernameChangeAllowed) {
       setProfileUsernameError(
-        `Имя снова можно будет изменить ${nextUsernameChangeDate ?? "позже"}.`,
+        `Ник снова можно будет изменить ${nextUsernameChangeDate ?? "позже"}.`,
       );
       return;
     }
@@ -4693,16 +4723,16 @@ export default function Home() {
                     <p className="text-sm text-[#a1a1aa]">Загружаю сообщения...</p>
                   ) : null}
 
-                  {!isLoadingMessages && visibleMessages.length === 0 ? (
+                  {!isLoadingMessages && activeDialogMessages.length === 0 ? (
                     <p className="text-sm text-[#a1a1aa]">
                       Сообщений пока нет. Напиши первое.
                     </p>
                   ) : null}
 
-                  {visibleMessages.map((message, messageIndex) => {
+                  {activeDialogMessages.map((message, messageIndex) => {
                     const isMine = message.user_id === user.id;
-                    const previousMessage = visibleMessages[messageIndex - 1];
-                    const nextMessage = visibleMessages[messageIndex + 1];
+                    const previousMessage = activeDialogMessages[messageIndex - 1];
+                    const nextMessage = activeDialogMessages[messageIndex + 1];
                     const isPreviousSameAuthor =
                       previousMessage?.user_id === message.user_id;
                     const isNextSameAuthor = nextMessage?.user_id === message.user_id;
