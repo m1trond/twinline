@@ -5872,10 +5872,7 @@ export default function Home() {
                   </svg>
                 </span>
                 <div className="min-w-0">
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-red-100/80">
-                    Удаление переписки
-                  </p>
-                  <h2 className="mt-1 text-xl font-bold text-[#f4f4f5]">
+                  <h2 className="text-xl font-bold text-[#f4f4f5]">
                     Удалить чат у двоих?
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
@@ -5887,9 +5884,6 @@ export default function Home() {
               <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/24 p-3">
                 <p className="text-sm font-semibold text-[#f4f4f5]">
                   {friendProfile?.name ? `Чат с ${friendProfile.name}` : "Текущий чат"}
-                </p>
-                <p className="mt-1 text-xs leading-5 text-[#a1a1aa]">
-                  Удаляются только сообщения выбранной переписки.
                 </p>
               </div>
 
