@@ -4023,7 +4023,6 @@ export default function Home() {
                       <button
                         className="min-h-10 rounded-xl bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
                         disabled={
-                          !isUsernameChangeAllowed ||
                           !profileUsernameInputValue.trim() ||
                           profileUsernameInputValue.trim() === currentProfile?.username
                         }
