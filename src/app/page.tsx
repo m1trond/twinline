@@ -2372,7 +2372,7 @@ export default function Home() {
     }
 
     const confirmed = window.confirm(
-      "Вы точно хотите скрыть эту переписку у себя?",
+      "Вы точно хотите удалить эту переписку у двоих?",
     );
 
     if (!confirmed) {
@@ -2380,30 +2380,62 @@ export default function Home() {
     }
 
     isDeletingChatRef.current = true;
+    latestMessageCreatedAtRef.current = null;
     flushSync(() => {
       setIsDeletingChat(true);
     });
 
-    const nextHiddenMessageIds = Array.from(
-      new Set([
-        ...hiddenMessageIds,
-        ...messages
-          .filter((message) => {
-            return (
-              message.id > 0 &&
-              message.user_id === selectedChatUserId &&
-              !isServiceMessage(message.text)
-            );
-          })
-          .map((message) => message.id),
-      ]),
+    const selectedChatMessageIds = messages
+      .filter((message) => {
+        return (
+          message.id > 0 &&
+          !isServiceMessage(message.text) &&
+          (message.user_id === selectedChatUserId || message.user_id === user.id)
+        );
+      })
+      .map((message) => message.id);
+
+    if (selectedChatMessageIds.length === 0) {
+      setSelectedChatUserId(null);
+      setIsDeletingChat(false);
+      isDeletingChatRef.current = false;
+      setErrorMessage("");
+      return;
+    }
+
+    const previousMessages = messages;
+    const previousPinnedMessage = pinnedMessage;
+    const previousSelectedMessageIds = selectedMessageIds;
+
+    setMessages((currentMessages) =>
+      currentMessages.filter((message) => !selectedChatMessageIds.includes(message.id)),
+    );
+    setPinnedMessage((currentPinnedMessage) =>
+      currentPinnedMessage && selectedChatMessageIds.includes(currentPinnedMessage.id)
+        ? null
+        : currentPinnedMessage,
+    );
+    setSelectedMessageIds((currentIds) =>
+      currentIds.filter((id) => !selectedChatMessageIds.includes(id)),
     );
 
-    window.localStorage.setItem(
-      `twinline-hidden-messages-${user.id}`,
-      JSON.stringify(nextHiddenMessageIds),
-    );
-    setHiddenMessageIds(nextHiddenMessageIds);
+    const { error } = await supabase
+      .from("messages")
+      .delete()
+      .in("id", selectedChatMessageIds);
+
+    if (error) {
+      latestMessageCreatedAtRef.current =
+        previousMessages.filter((message) => message.id > 0).at(-1)?.created_at ?? null;
+      setMessages(previousMessages);
+      setPinnedMessage(previousPinnedMessage);
+      setSelectedMessageIds(previousSelectedMessageIds);
+      setIsDeletingChat(false);
+      isDeletingChatRef.current = false;
+      setErrorMessage("Не получилось удалить переписку у двоих.");
+      return;
+    }
+
     setSelectedChatUserId(null);
     setIsDeletingChat(false);
     isDeletingChatRef.current = false;
