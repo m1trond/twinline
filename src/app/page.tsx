@@ -899,7 +899,7 @@ export default function Home() {
   const [profileNotificationMenuUserId, setProfileNotificationMenuUserId] = useState<string | null>(null);
   const [blockConfirmation, setBlockConfirmation] = useState<{
     action: "block" | "unblock";
-    name: string;
+    targetLabel: string;
     userId: string;
   } | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -2654,7 +2654,7 @@ export default function Home() {
     setErrorMessage("");
   }
 
-  function requestBlockChange(profileUserId: string, profileName: string) {
+  function requestBlockChange(profileUserId: string, targetLabel: string) {
     if (!profileUserId) {
       return;
     }
@@ -2662,7 +2662,7 @@ export default function Home() {
     setProfileNotificationMenuUserId(null);
     setBlockConfirmation({
       action: blockedByMeProfileIds.includes(profileUserId) ? "unblock" : "block",
-      name: profileName,
+      targetLabel,
       userId: profileUserId,
     });
   }
@@ -4667,7 +4667,12 @@ export default function Home() {
                         className="min-h-11 w-full rounded-lg bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5] sm:rounded-xl"
                         onClick={() => {
                           if (selectedChatUserId && friendProfile?.name) {
-                            requestBlockChange(selectedChatUserId, friendProfile.name);
+                            requestBlockChange(
+                              selectedChatUserId,
+                              friendProfile.username
+                                ? `@${friendProfile.username}`
+                                : friendProfile.name,
+                            );
                           }
                         }}
                         type="button"
@@ -6388,19 +6393,11 @@ export default function Home() {
                 </svg>
               </span>
               <div className="min-w-0">
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#a1a1aa]">
-                  {blockConfirmation.action === "block" ? "Блокировка" : "Разблокировка"}
-                </p>
-                <h2 className="mt-1 text-2xl font-bold leading-tight text-[#f4f4f5]">
+                <h2 className="text-2xl font-bold leading-tight text-[#f4f4f5]">
                   {blockConfirmation.action === "block"
-                    ? "Заблокировать пользователя?"
-                    : "Разблокировать пользователя?"}
+                    ? `Заблокировать пользователя ${blockConfirmation.targetLabel}?`
+                    : `Разблокировать пользователя ${blockConfirmation.targetLabel}?`}
                 </h2>
-                <p className="mt-3 text-sm leading-6 text-[#a1a1aa]">
-                  {blockConfirmation.action === "block"
-                    ? `${blockConfirmation.name} не сможет писать тебе и звонить.`
-                    : `${blockConfirmation.name} снова сможет писать тебе и звонить.`}
-                </p>
               </div>
             </div>
             <div className="mt-5 grid gap-2 sm:grid-cols-2">
@@ -6593,6 +6590,13 @@ export default function Home() {
                   </span>
                 </button>
                 {profileNotificationMenuUserId === viewedProfile.userId && viewedProfile.userId ? (
+                  <>
+                  <button
+                    aria-label="Закрыть меню уведомлений"
+                    className="fixed inset-0 z-[105] cursor-default bg-transparent"
+                    onClick={() => setProfileNotificationMenuUserId(null)}
+                    type="button"
+                  />
                   <div className="absolute left-1/2 top-[calc(100%+8px)] z-[110] w-64 -translate-x-1/2 rounded-2xl border border-[#3f3f46]/55 bg-[#171717]/98 p-1.5 text-left shadow-[0_18px_55px_rgba(0,0,0,0.55)] backdrop-blur-xl">
                     {isProfileMuted(mutedProfiles, viewedProfile.userId) ? (
                       <button
@@ -6604,11 +6608,11 @@ export default function Home() {
                       </button>
                     ) : null}
                     {[
-                      { durationMs: 30 * 60 * 1000, label: "Отмена на 30 минут" },
-                      { durationMs: 60 * 60 * 1000, label: "Отмена на 1 час" },
-                      { durationMs: 2 * 60 * 60 * 1000, label: "Отмена на 2 часа" },
-                      { durationMs: 8 * 60 * 60 * 1000, label: "Отмена на 8 часов" },
-                      { durationMs: null, label: "Выключить уведомления" },
+                      { durationMs: 30 * 60 * 1000, label: "Выключить на 30 минут" },
+                      { durationMs: 60 * 60 * 1000, label: "Выключить на 1 час" },
+                      { durationMs: 2 * 60 * 60 * 1000, label: "Выключить на 2 часа" },
+                      { durationMs: 8 * 60 * 60 * 1000, label: "Выключить на 8 часов" },
+                      { durationMs: null, label: "Отключить уведомления" },
                     ].map((option) => (
                       <button
                         className="min-h-10 w-full whitespace-nowrap rounded-xl px-3 text-left text-sm font-semibold text-[#f4f4f5] transition hover:bg-white/10"
@@ -6627,6 +6631,7 @@ export default function Home() {
                       </button>
                     ))}
                   </div>
+                  </>
                 ) : null}
               </div>
               <button
@@ -6642,7 +6647,10 @@ export default function Home() {
                     return;
                   }
 
-                  requestBlockChange(viewedProfile.userId, viewedProfile.name);
+                  requestBlockChange(
+                    viewedProfile.userId,
+                    viewedProfile.username ? `@${viewedProfile.username}` : viewedProfile.name,
+                  );
                 }}
                 type="button"
               >
