@@ -102,6 +102,27 @@ const usernameProfileColumns = "user_id, display_name, username, avatar_url, nam
 const legacyProfileColumns = "user_id, display_name, avatar_url, name_changed_at, updated_at";
 const usernamePattern = /^[a-z0-9_]{3,24}$/;
 
+function readStoredStringList(key: string) {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const storedValue = window.localStorage.getItem(key);
+    const parsedValue = storedValue ? JSON.parse(storedValue) : [];
+
+    return Array.isArray(parsedValue)
+      ? parsedValue.filter((item): item is string => typeof item === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeStoredStringList(key: string, value: string[]) {
+  window.localStorage.setItem(key, JSON.stringify(value));
+}
+
 function normalizeUsername(username: string) {
   return username.trim().replace(/^@+/, "").toLowerCase();
 }
@@ -789,6 +810,12 @@ export default function Home() {
 
     return window.localStorage.getItem("twinline-notifications") === "enabled";
   });
+  const [mutedProfileIds, setMutedProfileIds] = useState<string[]>(() =>
+    readStoredStringList("twinline-muted-profiles"),
+  );
+  const [blockedProfileIds, setBlockedProfileIds] = useState<string[]>(() =>
+    readStoredStringList("twinline-blocked-profiles"),
+  );
   const [errorMessage, setErrorMessage] = useState("");
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
@@ -818,6 +845,8 @@ export default function Home() {
   const typingSentAtRef = useRef(0);
   const latestMessageCreatedAtRef = useRef<string | null>(null);
   const notificationsEnabledRef = useRef(false);
+  const mutedProfileIdsRef = useRef<Set<string>>(new Set());
+  const blockedProfileIdsRef = useRef<Set<string>>(new Set());
   const activeViewRef = useRef<ActiveView>("profile");
   const selectedChatUserIdRef = useRef<string | null>(null);
   const notifiedMessageIdsRef = useRef<Set<number>>(new Set());
@@ -1281,6 +1310,14 @@ export default function Home() {
   }, [areNotificationsEnabled]);
 
   useEffect(() => {
+    mutedProfileIdsRef.current = new Set(mutedProfileIds);
+  }, [mutedProfileIds]);
+
+  useEffect(() => {
+    blockedProfileIdsRef.current = new Set(blockedProfileIds);
+  }, [blockedProfileIds]);
+
+  useEffect(() => {
     activeViewRef.current = activeView;
     selectedChatUserIdRef.current = selectedChatUserId;
   }, [activeView, selectedChatUserId]);
@@ -1484,6 +1521,14 @@ export default function Home() {
         return;
       }
 
+      if (blockedProfileIdsRef.current.has(signal.sender_id)) {
+        if (signal.type === "offer") {
+          await sendCallSignal(signal.sender_id, "end", { reason: "blocked" });
+        }
+
+        return;
+      }
+
       if (signal.type === "offer") {
         if (!isSessionDescriptionPayload(signal.payload)) {
           return;
@@ -1639,6 +1684,7 @@ export default function Home() {
           newMessage.id <= 0 ||
           notifiedMessageIdsRef.current.has(newMessage.id) ||
           isServiceMessage(newMessage.text) ||
+          (newMessage.user_id && blockedProfileIdsRef.current.has(newMessage.user_id)) ||
           newMessage.user_id === signedInUser.id
         ) {
           continue;
@@ -1658,6 +1704,7 @@ export default function Home() {
         if (
           !isDialogVisible &&
           notificationsEnabledRef.current &&
+          (!newMessage.user_id || !mutedProfileIdsRef.current.has(newMessage.user_id)) &&
           "Notification" in window &&
           Notification.permission === "granted"
         ) {
@@ -2418,6 +2465,55 @@ export default function Home() {
       nextValue ? "enabled" : "disabled",
     );
     setErrorMessage("");
+  }
+
+  async function toggleProfileNotifications(profileUserId: string) {
+    if (!profileUserId) {
+      return;
+    }
+
+    if (!areNotificationsEnabled && "Notification" in window) {
+      const permission = await Notification.requestPermission();
+
+      if (permission !== "granted") {
+        setErrorMessage("Браузер не разрешил уведомления.");
+        return;
+      }
+
+      setAreNotificationsEnabled(true);
+      window.localStorage.setItem("twinline-notifications", "enabled");
+    }
+
+    const nextMutedProfileIds = mutedProfileIds.includes(profileUserId)
+      ? mutedProfileIds.filter((profileId) => profileId !== profileUserId)
+      : [...mutedProfileIds, profileUserId];
+
+    setMutedProfileIds(nextMutedProfileIds);
+    writeStoredStringList("twinline-muted-profiles", nextMutedProfileIds);
+    setErrorMessage("");
+  }
+
+  function toggleBlockedProfile(profileUserId: string) {
+    if (!profileUserId) {
+      return;
+    }
+
+    const nextBlockedProfileIds = blockedProfileIds.includes(profileUserId)
+      ? blockedProfileIds.filter((profileId) => profileId !== profileUserId)
+      : [...blockedProfileIds, profileUserId];
+
+    setBlockedProfileIds(nextBlockedProfileIds);
+    writeStoredStringList("twinline-blocked-profiles", nextBlockedProfileIds);
+
+    if (!nextBlockedProfileIds.includes(profileUserId)) {
+      setErrorMessage("");
+      return;
+    }
+
+    setIncomingCall((currentCall) =>
+      currentCall?.sender_id === profileUserId ? null : currentCall,
+    );
+    setErrorMessage("Пользователь заблокирован локально на этом устройстве.");
   }
 
   async function confirmDeleteChat() {
@@ -5568,7 +5664,7 @@ export default function Home() {
       {selectedImageUrl ? (
         <button
           aria-label="Закрыть изображение"
-          className="fixed inset-0 z-50 grid place-items-center bg-black/58 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[120] grid place-items-center bg-black/58 p-4 backdrop-blur-sm"
           onClick={() => setSelectedImageUrl(null)}
           type="button"
         >
@@ -6024,7 +6120,17 @@ export default function Home() {
           <section className="fixed left-1/2 top-1/2 z-[96] max-h-[calc(100dvh-24px)] w-[min(520px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[28px] border border-[#3f3f46]/50 bg-[#101010]/96 p-4 text-left shadow-[0_28px_90px_rgba(0,0,0,0.68)] backdrop-blur-xl sm:p-5">
             <div className="flex items-start justify-between gap-4">
               <div className="flex min-w-0 items-center gap-4">
-                <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-[24px] bg-[#f4f4f5] text-3xl font-black text-[#050505] shadow-[0_18px_45px_rgba(0,0,0,0.35)] sm:h-24 sm:w-24">
+                <button
+                  aria-label="Открыть аватар"
+                  className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-[24px] bg-[#f4f4f5] text-3xl font-black text-[#050505] shadow-[0_18px_45px_rgba(0,0,0,0.35)] transition hover:scale-[1.03] disabled:cursor-default disabled:hover:scale-100 sm:h-24 sm:w-24"
+                  disabled={!viewedProfile.avatarUrl}
+                  onClick={() => {
+                    if (viewedProfile.avatarUrl) {
+                      setSelectedImageUrl(viewedProfile.avatarUrl);
+                    }
+                  }}
+                  type="button"
+                >
                   {viewedProfile.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -6035,7 +6141,7 @@ export default function Home() {
                   ) : (
                     viewedProfile.name[0]?.toUpperCase()
                   )}
-                </div>
+                </button>
                 <div className="min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#a1a1aa]">
                     Профиль
@@ -6074,7 +6180,11 @@ export default function Home() {
               <button
                 aria-label="Открыть чат"
                 className="flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5] transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
-                disabled={!viewedProfile.userId || viewedProfile.userId === user?.id}
+                disabled={
+                  !viewedProfile.userId ||
+                  viewedProfile.userId === user?.id ||
+                  blockedProfileIds.includes(viewedProfile.userId)
+                }
                 onClick={() => {
                   if (!viewedProfile.userId || viewedProfile.userId === user?.id) {
                     return;
@@ -6100,7 +6210,12 @@ export default function Home() {
               <button
                 aria-label="Позвонить"
                 className="flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5] transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
-                disabled={!viewedProfile.userId || viewedProfile.userId === user?.id || callStatus !== "idle"}
+                disabled={
+                  !viewedProfile.userId ||
+                  viewedProfile.userId === user?.id ||
+                  blockedProfileIds.includes(viewedProfile.userId) ||
+                  callStatus !== "idle"
+                }
                 onClick={() => {
                   if (!viewedProfile.userId || viewedProfile.userId === user?.id) {
                     return;
@@ -6126,8 +6241,19 @@ export default function Home() {
               </button>
               <button
                 aria-label="Уведомления"
-                className="flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5] opacity-75"
-                disabled
+                className={`flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border text-center transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                  viewedProfile.userId && mutedProfileIds.includes(viewedProfile.userId)
+                    ? "border-amber-300/35 bg-amber-400/10 text-amber-100 hover:bg-amber-400/15"
+                    : "border-[#3f3f46]/40 bg-black/24 text-[#f4f4f5] hover:bg-white/[0.08]"
+                }`}
+                disabled={!viewedProfile.userId || viewedProfile.userId === user?.id}
+                onClick={() => {
+                  if (!viewedProfile.userId || viewedProfile.userId === user?.id) {
+                    return;
+                  }
+
+                  void toggleProfileNotifications(viewedProfile.userId);
+                }}
                 type="button"
               >
                 <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -6139,12 +6265,27 @@ export default function Home() {
                     strokeWidth="2"
                   />
                 </svg>
-                <span className="text-[11px] font-semibold leading-none text-[#d4d4d8]">Уведомл.</span>
+                <span className="text-[11px] font-semibold leading-none text-[#d4d4d8]">
+                  {viewedProfile.userId && mutedProfileIds.includes(viewedProfile.userId)
+                    ? "Без звука"
+                    : "Уведомл."}
+                </span>
               </button>
               <button
                 aria-label="Заблокировать"
-                className="flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5] opacity-75"
-                disabled
+                className={`flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border text-center transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                  viewedProfile.userId && blockedProfileIds.includes(viewedProfile.userId)
+                    ? "border-red-300/45 bg-red-500/12 text-red-100 hover:bg-red-500/18"
+                    : "border-[#3f3f46]/40 bg-black/24 text-[#f4f4f5] hover:bg-white/[0.08]"
+                }`}
+                disabled={!viewedProfile.userId || viewedProfile.userId === user?.id}
+                onClick={() => {
+                  if (!viewedProfile.userId || viewedProfile.userId === user?.id) {
+                    return;
+                  }
+
+                  toggleBlockedProfile(viewedProfile.userId);
+                }}
                 type="button"
               >
                 <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -6156,7 +6297,11 @@ export default function Home() {
                     strokeWidth="2"
                   />
                 </svg>
-                <span className="text-[11px] font-semibold leading-none text-[#d4d4d8]">Блок</span>
+                <span className="text-[11px] font-semibold leading-none text-[#d4d4d8]">
+                  {viewedProfile.userId && blockedProfileIds.includes(viewedProfile.userId)
+                    ? "Разблок"
+                    : "Блок"}
+                </span>
               </button>
             </div>
             <div className="mt-5 grid gap-3">
