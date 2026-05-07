@@ -711,6 +711,7 @@ export default function Home() {
   const [viewedProfile, setViewedProfile] = useState<{
     avatarUrl: string | null;
     name: string;
+    username: string | null;
     userId: string | null;
   } | null>(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
@@ -1016,6 +1017,7 @@ export default function Home() {
       return {
         avatarUrl: profileFriend.avatar_url,
         name: profileFriend.display_name,
+        username: profileFriend.username,
         userId: profileFriend.user_id,
       };
     }
@@ -1033,6 +1035,7 @@ export default function Home() {
     return {
       avatarUrl: profile?.avatar_url ?? null,
       name: profile?.display_name ?? friendMessage.author,
+      username: profile?.username ?? null,
       userId: friendMessage.user_id,
     };
   }, [chatProfiles, profiles, selectedChatUserId, user?.id, visibleMessages]);
@@ -2187,12 +2190,12 @@ export default function Home() {
     return stream;
   }
 
-  async function startCall() {
+  async function startCall(targetUserId = friendProfile?.userId ?? null) {
     if (!user) {
       return;
     }
 
-    if (!friendProfile?.userId) {
+    if (!targetUserId || targetUserId === user.id) {
       setErrorMessage("Чтобы позвонить, сначала нужен хотя бы один вход друга в чат.");
       return;
     }
@@ -2215,7 +2218,7 @@ export default function Home() {
       setIsCallMicMuted(false);
 
       const stream = await getLocalCallStream();
-      const peerConnection = createPeerConnection(friendProfile.userId);
+      const peerConnection = createPeerConnection(targetUserId);
 
       stream.getTracks().forEach((track) => {
         peerConnection.addTrack(track, stream);
@@ -2223,7 +2226,7 @@ export default function Home() {
 
       const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
-      await sendCallSignal(friendProfile.userId, "offer", offer);
+      await sendCallSignal(targetUserId, "offer", offer);
     } catch {
       closeCall(false);
       setErrorMessage("Не получилось начать звонок. Проверь доступ к микрофону.");
@@ -4644,6 +4647,7 @@ export default function Home() {
                           friendProfile ?? {
                             avatarUrl: null,
                             name: "Друг",
+                            username: null,
                             userId: null,
                           },
                         );
@@ -4701,7 +4705,7 @@ export default function Home() {
                       aria-label={callStatus === "idle" ? "Позвонить" : callStatusText}
                       className="grid min-h-9 w-9 place-items-center rounded-lg bg-[#f4f4f5] text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b] sm:min-h-10 sm:w-10 sm:rounded-xl"
                       disabled={!friendProfile?.userId || callStatus !== "idle"}
-                      onClick={startCall}
+                      onClick={() => startCall()}
                       type="button"
                     >
                       <svg
@@ -4833,6 +4837,7 @@ export default function Home() {
                                 setViewedProfile({
                                   avatarUrl: messageProfile?.avatar_url ?? null,
                                   name: messageAuthor,
+                                  username: messageProfile?.username ?? null,
                                   userId: message.user_id,
                                 })
                               }
@@ -5090,6 +5095,7 @@ export default function Home() {
                                 setViewedProfile({
                                   avatarUrl: currentProfile?.avatar_url ?? null,
                                   name: activeUserName,
+                                  username: currentProfile?.username ?? null,
                                   userId: user.id,
                                 })
                               }
@@ -5975,67 +5981,151 @@ export default function Home() {
         </>
       ) : null}
       {viewedProfile ? (
-        <button
-          aria-label="Закрыть профиль"
-          className="fixed inset-0 z-50 grid place-items-center bg-black/58 p-4 backdrop-blur-sm"
-          onClick={() => setViewedProfile(null)}
-          type="button"
-        >
-          <section
-            className="max-h-[calc(100dvh-32px)] w-full max-w-sm overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/95 p-4 text-left shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:rounded-3xl sm:p-5"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="mb-5 flex items-center gap-4">
-              <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-2xl bg-[#f4f4f5] text-2xl font-black text-[#050505]">
-                {viewedProfile.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    alt="Аватар профиля"
-                    className="h-full w-full object-cover"
-                    src={viewedProfile.avatarUrl}
+        <>
+          <button
+            aria-label="Закрыть профиль"
+            className="fixed inset-0 z-[95] bg-black/62 backdrop-blur-md"
+            onClick={() => setViewedProfile(null)}
+            type="button"
+          />
+          <section className="fixed left-1/2 top-1/2 z-[96] max-h-[calc(100dvh-24px)] w-[min(520px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[28px] border border-[#3f3f46]/50 bg-[#101010]/96 p-4 text-left shadow-[0_28px_90px_rgba(0,0,0,0.68)] backdrop-blur-xl sm:p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex min-w-0 items-center gap-4">
+                <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-[24px] bg-[#f4f4f5] text-3xl font-black text-[#050505] shadow-[0_18px_45px_rgba(0,0,0,0.35)] sm:h-24 sm:w-24">
+                  {viewedProfile.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      alt="Аватар профиля"
+                      className="h-full w-full object-cover"
+                      src={viewedProfile.avatarUrl}
+                    />
+                  ) : (
+                    viewedProfile.name[0]?.toUpperCase()
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#a1a1aa]">
+                    Профиль
+                  </p>
+                  <h2 className="mt-1 truncate text-3xl font-semibold leading-none text-[#f4f4f5] sm:text-4xl">
+                    {viewedProfile.name}
+                  </h2>
+                  <p className="mt-2 truncate text-base font-medium text-[#a1a1aa]">
+                    {viewedProfile.username ? `@${viewedProfile.username}` : "@ник пока не выбран"}
+                  </p>
+                  <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-100">
+                    <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_16px_rgba(110,231,183,0.8)]" />
+                    был недавно
+                  </div>
+                </div>
+              </div>
+              <button
+                aria-label="Закрыть профиль"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-[#3f3f46]/45 bg-white/[0.03] text-[#d4d4d8] transition hover:bg-white/10"
+                onClick={() => setViewedProfile(null)}
+                type="button"
+              >
+                <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <path
+                    d="m6 6 12 12M18 6 6 18"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
                   />
-                ) : (
-                  viewedProfile.name[0]?.toUpperCase()
-                )}
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-[#e5e5e5]">
-                  Профиль
-                </p>
-                <h2 className="truncate text-2xl font-semibold">
-                  {viewedProfile.name}
-                </h2>
-              </div>
+                </svg>
+              </button>
             </div>
 
-            <div className="grid gap-3">
-              <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#e5e5e5]">
-                  Статус
-                </p>
-                <p className="mt-2 text-sm text-[#f4f4f5]">
-                  Участник вашего приватного пространства.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#e5e5e5]">
-                  Конфиденциальность
+            <div className="mt-5 grid gap-3">
+              <article className="rounded-3xl border border-[#3f3f46]/40 bg-black/22 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#e5e5e5]">
+                  О себе
                 </p>
                 <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
-                  Email, технический ID и данные входа здесь не показываются.
+                  Пока ничего не написал о себе.
                 </p>
-              </div>
+              </article>
+
+              <article className="rounded-3xl border border-[#3f3f46]/40 bg-black/22 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#e5e5e5]">
+                  Телефон
+                </p>
+                <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
+                  Скрыт настройками приватности. Позже добавим показ только с разрешения пользователя.
+                </p>
+              </article>
+
+              <article className="rounded-3xl border border-[#3f3f46]/40 bg-black/22 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#e5e5e5]">
+                  Общие данные
+                </p>
+                <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
+                  Общие чаты и группы появятся здесь позже.
+                </p>
+              </article>
             </div>
 
-            <button
-              className="mt-5 min-h-11 w-full rounded-xl bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505]"
-              onClick={() => setViewedProfile(null)}
-              type="button"
-            >
-              Закрыть
-            </button>
+            <div className="mt-5 grid gap-2 sm:grid-cols-2">
+              <button
+                className="min-h-12 rounded-2xl bg-[#f4f4f5] px-4 text-sm font-bold text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b] disabled:text-[#a1a1aa]"
+                disabled={!viewedProfile.userId || viewedProfile.userId === user?.id}
+                onClick={() => {
+                  if (!viewedProfile.userId || viewedProfile.userId === user?.id) {
+                    return;
+                  }
+
+                  setSelectedChatUserId(viewedProfile.userId);
+                  setActiveView("messages");
+                  setViewedProfile(null);
+                }}
+                type="button"
+              >
+                Написать
+              </button>
+              <button
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#3f3f46]/50 bg-white/[0.04] px-4 text-sm font-bold text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
+                disabled={!viewedProfile.userId || viewedProfile.userId === user?.id || callStatus !== "idle"}
+                onClick={() => {
+                  if (!viewedProfile.userId || viewedProfile.userId === user?.id) {
+                    return;
+                  }
+
+                  setSelectedChatUserId(viewedProfile.userId);
+                  setActiveView("messages");
+                  setViewedProfile(null);
+                  void startCall(viewedProfile.userId);
+                }}
+                type="button"
+              >
+                <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <path
+                    d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.7.6 2.5a2 2 0 0 1-.5 2.1L8 9.5a16 16 0 0 0 6.5 6.5l1.2-1.2a2 2 0 0 1 2.1-.5c.8.3 1.6.5 2.5.6A2 2 0 0 1 22 16.9Z"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                  />
+                </svg>
+                Позвонить
+              </button>
+              <button
+                className="min-h-12 rounded-2xl border border-[#3f3f46]/45 bg-white/[0.03] px-4 text-sm font-bold text-[#a1a1aa] opacity-70"
+                disabled
+                type="button"
+              >
+                Заблокировать позже
+              </button>
+              <button
+                className="min-h-12 rounded-2xl border border-[#3f3f46]/45 bg-white/[0.03] px-4 text-sm font-bold text-[#a1a1aa] opacity-70"
+                disabled
+                type="button"
+              >
+                Пожаловаться позже
+              </button>
+            </div>
           </section>
-        </button>
+        </>
       ) : null}
     </main>
   );
