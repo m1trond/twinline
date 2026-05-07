@@ -3979,8 +3979,8 @@ export default function Home() {
                     <p className={`mt-2 text-[13px] leading-5 ${profileUsernameError ? "font-semibold text-red-300" : "text-[#a1a1aa]"}`}>
                       {profileUsernameError ||
                         (isUsernameChangeAllowed
-                          ? "Имя можно менять один раз в месяц."
-                          : `Имя снова можно будет изменить ${nextUsernameChangeDate ?? "позже"}.`)}
+                          ? "Ник можно менять один раз в месяц."
+                          : `Ник снова можно будет изменить ${nextUsernameChangeDate ?? "позже"}.`)}
                     </p>
                   </section>
 
@@ -3993,6 +3993,42 @@ export default function Home() {
                     </p>
                     <p className="mt-1 text-[13px] leading-5 text-[#a1a1aa]">
                       Его видишь только ты в своём аккаунте.
+                    </p>
+                  </section>
+
+                  <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-3 sm:rounded-2xl sm:px-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#e5e5e5]">
+                      Телефон
+                    </p>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(120px,0.36fr)_1fr_auto]">
+                      <select
+                        aria-label="Страна"
+                        className="min-h-10 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-base outline-none focus:border-[#f4f4f5] sm:text-sm"
+                        defaultValue="+7"
+                      >
+                        <option value="+7">RU +7</option>
+                        <option value="+375">BY +375</option>
+                        <option value="+380">UA +380</option>
+                        <option value="+1">US +1</option>
+                        <option value="+49">DE +49</option>
+                      </select>
+                      <input
+                        aria-label="Номер телефона"
+                        className="min-h-10 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-base outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:text-sm"
+                        inputMode="tel"
+                        placeholder="999 123-45-67"
+                        type="tel"
+                      />
+                      <button
+                        className="min-h-10 rounded-xl bg-[#52525b] px-4 text-sm font-bold text-[#050505] opacity-70"
+                        disabled
+                        type="button"
+                      >
+                        Скоро
+                      </button>
+                    </div>
+                    <p className="mt-2 text-[13px] leading-5 text-[#a1a1aa]">
+                      Позже подключим вход и регистрацию по SMS.
                     </p>
                   </section>
 
