@@ -684,7 +684,7 @@ export default function Home() {
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [profileName, setProfileName] = useState("");
-  const [profileUsername, setProfileUsername] = useState("");
+  const [profileUsername, setProfileUsername] = useState<string | null>(null);
   const [profileUsernameError, setProfileUsernameError] = useState("");
   const [messageText, setMessageText] = useState("");
   const [typingNow, setTypingNow] = useState(() => Date.now());
@@ -1025,7 +1025,7 @@ export default function Home() {
     currentProfile?.name_changed_at ?? null,
   );
   const profileNameInputValue = profileName || activeUserName;
-  const profileUsernameInputValue = profileUsername || currentProfile?.username || "";
+  const profileUsernameInputValue = profileUsername ?? currentProfile?.username ?? "";
   const incomingCallerProfile = incomingCall
     ? profiles.find((profile) => profile.user_id === incomingCall.sender_id)
     : null;
@@ -2959,7 +2959,7 @@ export default function Home() {
       },
     });
 
-    setProfileUsername("");
+    setProfileUsername(null);
     setErrorMessage("");
   }
 
