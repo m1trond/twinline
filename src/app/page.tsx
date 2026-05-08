@@ -82,6 +82,7 @@ type AuthMode = "sign-in" | "sign-up";
 type AuthContactMethod = "email" | "phone";
 type CallStatus = "idle" | "calling" | "incoming" | "connecting" | "connected";
 type MutedProfileUntil = Record<string, number | null>;
+type PinnedMessageIdsByChat = Record<string, number[]>;
 
 const navItems: Array<{ label: string; view: ActiveView }> = [
   { label: "Профиль", view: "profile" },
@@ -169,6 +170,36 @@ function readStoredMutedProfiles() {
 
 function writeStoredMutedProfiles(value: MutedProfileUntil) {
   window.localStorage.setItem("twinline-muted-profiles", JSON.stringify(value));
+}
+
+function readStoredPinnedMessageIds(userId: string) {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const storedValue = window.localStorage.getItem(`hush-pinned-messages-${userId}`);
+    const parsedValue = storedValue ? JSON.parse(storedValue) : {};
+
+    if (!parsedValue || typeof parsedValue !== "object" || Array.isArray(parsedValue)) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(parsedValue).map(([chatUserId, ids]) => [
+        chatUserId,
+        Array.isArray(ids)
+          ? ids.filter((id): id is number => Number.isInteger(id))
+          : [],
+      ]),
+    );
+  } catch {
+    return {};
+  }
+}
+
+function writeStoredPinnedMessageIds(userId: string, value: PinnedMessageIdsByChat) {
+  window.localStorage.setItem(`hush-pinned-messages-${userId}`, JSON.stringify(value));
 }
 
 function pruneMutedProfiles(value: MutedProfileUntil) {
@@ -887,7 +918,8 @@ export default function Home() {
   } | null>(null);
   const [replyTarget, setReplyTarget] = useState<MessageRow | null>(null);
   const [editingMessage, setEditingMessage] = useState<MessageRow | null>(null);
-  const [pinnedMessage, setPinnedMessage] = useState<MessageRow | null>(null);
+  const [pinnedMessageIdsByChat, setPinnedMessageIdsByChat] = useState<PinnedMessageIdsByChat>({});
+  const [isPinnedMessagesViewOpen, setIsPinnedMessagesViewOpen] = useState(false);
   const [pinnedFavoriteItem, setPinnedFavoriteItem] = useState<FavoriteItem | null>(null);
   const [messagePinTarget, setMessagePinTarget] = useState<MessageRow | null>(null);
   const [shouldPinForBoth, setShouldPinForBoth] = useState(false);
@@ -999,28 +1031,23 @@ export default function Home() {
     },
     [activeUserName, user],
   );
-  const sharedPinnedMessage = useMemo(() => {
-    for (let index = messages.length - 1; index >= 0; index -= 1) {
-      const pinPayload = getPinMessagePayload(messages[index].text);
+  const sharedPinnedMessageIds = useMemo(() => {
+    const pinnedIds = new Map<number, PinMessagePayload["action"]>();
 
-      if (!pinPayload) {
-        continue;
+    for (const message of messages) {
+      const pinPayload = getPinMessagePayload(message.text);
+
+      if (pinPayload) {
+        pinnedIds.set(pinPayload.messageId, pinPayload.action);
       }
-
-      if (pinPayload.action === "unpin") {
-        return null;
-      }
-
-      return (
-        messages.find((message) => {
-          return message.id === pinPayload.messageId && !getPinMessagePayload(message.text);
-        }) ?? null
-      );
     }
 
-    return null;
+    return new Set(
+      Array.from(pinnedIds.entries())
+        .filter(([, action]) => action === "pin")
+        .map(([messageId]) => messageId),
+    );
   }, [messages]);
-  const activePinnedMessage = pinnedMessage ?? sharedPinnedMessage;
   const messageReceiptStatuses = useMemo(() => {
     const statuses = new Map<number, ReceiptMessagePayload["status"]>();
 
@@ -1190,6 +1217,17 @@ export default function Home() {
       return message.user_id === user.id || message.user_id === selectedChatUserId;
     });
   }, [selectedChatUserId, user, visibleMessages]);
+  const activePinnedMessages = useMemo(() => {
+    const activeLocalPinnedMessageIds = selectedChatUserId
+      ? pinnedMessageIdsByChat[selectedChatUserId] ?? []
+      : [];
+    const pinnedIds = new Set([
+      ...activeLocalPinnedMessageIds,
+      ...Array.from(sharedPinnedMessageIds),
+    ]);
+
+    return activeDialogMessages.filter((message) => pinnedIds.has(message.id));
+  }, [activeDialogMessages, pinnedMessageIdsByChat, selectedChatUserId, sharedPinnedMessageIds]);
   const unreadMessagesByUserId = useMemo(() => {
     const unreadByUserId = new Map<string, number>();
 
@@ -1424,6 +1462,38 @@ export default function Home() {
 
     if (!user) {
       frameId = window.requestAnimationFrame(() => {
+        setPinnedMessageIdsByChat({});
+      });
+
+      return () => {
+        window.cancelAnimationFrame(frameId);
+      };
+    }
+
+    frameId = window.requestAnimationFrame(() => {
+      setPinnedMessageIdsByChat(readStoredPinnedMessageIds(user.id));
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [user]);
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      setIsPinnedMessagesViewOpen(false);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [selectedChatUserId]);
+
+  useEffect(() => {
+    let frameId = 0;
+
+    if (!user) {
+      frameId = window.requestAnimationFrame(() => {
         setHiddenMessageIds([]);
       });
 
@@ -1459,7 +1529,6 @@ export default function Home() {
       window.cancelAnimationFrame(frameId);
     };
   }, [user]);
-
   useEffect(() => {
     notificationsEnabledRef.current = areNotificationsEnabled;
   }, [areNotificationsEnabled]);
@@ -2026,11 +2095,6 @@ export default function Home() {
             currentMessages.map((message) =>
               message.id === updatedMessage.id ? updatedMessage : message,
             ),
-          );
-          setPinnedMessage((currentPinnedMessage) =>
-            currentPinnedMessage?.id === updatedMessage.id
-              ? updatedMessage
-              : currentPinnedMessage,
           );
         },
       )
@@ -2822,17 +2886,16 @@ export default function Home() {
     }
 
     const previousMessages = messages;
-    const previousPinnedMessage = pinnedMessage;
+    const previousPinnedMessageIdsByChat = pinnedMessageIdsByChat;
     const previousSelectedMessageIds = selectedMessageIds;
 
     setMessages((currentMessages) =>
       currentMessages.filter((message) => !selectedChatMessageIds.includes(message.id)),
     );
-    setPinnedMessage((currentPinnedMessage) =>
-      currentPinnedMessage && selectedChatMessageIds.includes(currentPinnedMessage.id)
-        ? null
-        : currentPinnedMessage,
-    );
+    const nextPinnedMessageIdsByChat = { ...pinnedMessageIdsByChat };
+    delete nextPinnedMessageIdsByChat[selectedChatUserId];
+    setPinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
+    writeStoredPinnedMessageIds(user.id, nextPinnedMessageIdsByChat);
     setSelectedMessageIds((currentIds) =>
       currentIds.filter((id) => !selectedChatMessageIds.includes(id)),
     );
@@ -2846,7 +2909,8 @@ export default function Home() {
       latestMessageCreatedAtRef.current =
         previousMessages.filter((message) => message.id > 0).at(-1)?.created_at ?? null;
       setMessages(previousMessages);
-      setPinnedMessage(previousPinnedMessage);
+      setPinnedMessageIdsByChat(previousPinnedMessageIdsByChat);
+      writeStoredPinnedMessageIds(user.id, previousPinnedMessageIdsByChat);
       setSelectedMessageIds(previousSelectedMessageIds);
       setIsDeletingChat(false);
       isDeletingChatRef.current = false;
@@ -3108,9 +3172,29 @@ export default function Home() {
     setErrorMessage("");
   }
 
+  function removeLocalPinnedMessageId(messageId: number, chatUserId = selectedChatUserId) {
+    if (!user || !chatUserId) {
+      return;
+    }
+
+    const currentPinnedIds = pinnedMessageIdsByChat[chatUserId] ?? [];
+
+    if (!currentPinnedIds.includes(messageId)) {
+      return;
+    }
+
+    const nextPinnedMessageIdsByChat = {
+      ...pinnedMessageIdsByChat,
+      [chatUserId]: currentPinnedIds.filter((pinnedMessageId) => pinnedMessageId !== messageId),
+    };
+
+    setPinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
+    writeStoredPinnedMessageIds(user.id, nextPinnedMessageIdsByChat);
+  }
+
   function requestUnpinPinnedMessage(message: MessageRow) {
     setMessagePinTarget(message);
-    setShouldPinForBoth(sharedPinnedMessage?.id === message.id);
+    setShouldPinForBoth(sharedPinnedMessageIds.has(message.id));
     setMessageContextMenu(null);
     setErrorMessage("");
   }
@@ -3120,17 +3204,31 @@ export default function Home() {
       return;
     }
 
-    const wasSharedPinned = sharedPinnedMessage?.id === messagePinTarget.id;
+    const wasSharedPinned = sharedPinnedMessageIds.has(messagePinTarget.id);
+    const wasLocalPinned =
+      selectedChatUserId !== null &&
+      (pinnedMessageIdsByChat[selectedChatUserId] ?? []).includes(messagePinTarget.id);
 
-    if (!wasSharedPinned) {
-      setPinnedMessage(null);
-      setMessagePinTarget(null);
-      setErrorMessage("");
+    if (wasLocalPinned && user && selectedChatUserId) {
+      const nextPinnedMessageIdsByChat = {
+        ...pinnedMessageIdsByChat,
+        [selectedChatUserId]: (pinnedMessageIdsByChat[selectedChatUserId] ?? []).filter(
+          (messageId) => messageId !== messagePinTarget.id,
+        ),
+      };
+
+      setPinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
+      writeStoredPinnedMessageIds(user.id, nextPinnedMessageIdsByChat);
+    }
+
+    if (wasSharedPinned) {
+      setShouldPinForBoth(true);
+      await confirmPinnedMessage();
       return;
     }
 
-    setShouldPinForBoth(true);
-    await confirmPinnedMessage();
+    setMessagePinTarget(null);
+    setErrorMessage("");
   }
 
   async function confirmPinnedMessage() {
@@ -3138,11 +3236,26 @@ export default function Home() {
       return;
     }
 
-    const isSharedPinned = sharedPinnedMessage?.id === messagePinTarget.id;
-    const isPinned = activePinnedMessage?.id === messagePinTarget.id;
+    const isSharedPinned = sharedPinnedMessageIds.has(messagePinTarget.id);
+    const isPinned = activePinnedMessages.some((message) => message.id === messagePinTarget.id);
 
     if (!shouldPinForBoth) {
-      setPinnedMessage(isPinned && pinnedMessage?.id === messagePinTarget.id ? null : messagePinTarget);
+      if (!user || !selectedChatUserId) {
+        setErrorMessage("Сначала открой нужный чат.");
+        return;
+      }
+
+      const currentPinnedIds = pinnedMessageIdsByChat[selectedChatUserId] ?? [];
+      const nextPinnedIds = isPinned
+        ? currentPinnedIds.filter((messageId) => messageId !== messagePinTarget.id)
+        : [...currentPinnedIds, messagePinTarget.id];
+      const nextPinnedMessageIdsByChat = {
+        ...pinnedMessageIdsByChat,
+        [selectedChatUserId]: Array.from(new Set(nextPinnedIds)),
+      };
+
+      setPinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
+      writeStoredPinnedMessageIds(user.id, nextPinnedMessageIdsByChat);
       setMessagePinTarget(null);
       setErrorMessage("");
       return;
@@ -3162,7 +3275,6 @@ export default function Home() {
       user_id: user.id,
     };
 
-    setPinnedMessage(null);
     setMessagePinTarget(null);
     setMessages((currentMessages) =>
       mergeMessages(currentMessages, [optimisticMessage]),
@@ -3561,9 +3673,6 @@ export default function Home() {
           message.id === editingMessage.id ? updatedMessage : message,
         ),
       );
-      setPinnedMessage((currentPinnedMessage) =>
-        currentPinnedMessage?.id === editingMessage.id ? updatedMessage : currentPinnedMessage,
-      );
       setEditingMessage(null);
       setMessageText("");
 
@@ -3577,9 +3686,6 @@ export default function Home() {
 
       if (error || !data) {
         setMessages(previousMessages);
-        setPinnedMessage((currentPinnedMessage) =>
-          currentPinnedMessage?.id === editingMessage.id ? editingMessage : currentPinnedMessage,
-        );
         setEditingMessage(editingMessage);
         setMessageText(trimmedText);
         setErrorMessage("Не получилось изменить сообщение. Возможно, нужно разрешить UPDATE в Supabase.");
@@ -3588,9 +3694,6 @@ export default function Home() {
           currentMessages.map((message) =>
             message.id === data.id ? data : message,
           ),
-        );
-        setPinnedMessage((currentPinnedMessage) =>
-          currentPinnedMessage?.id === data.id ? data : currentPinnedMessage,
         );
         setErrorMessage("");
       }
@@ -4063,9 +4166,7 @@ export default function Home() {
       setMessages(previousMessages);
       setErrorMessage("Не получилось удалить сообщение из базы.");
     } else {
-      setPinnedMessage((currentPinnedMessage) =>
-        currentPinnedMessage?.id === message.id ? null : currentPinnedMessage,
-      );
+      removeLocalPinnedMessageId(message.id, message.user_id === user.id ? selectedChatUserId : message.user_id);
       setSelectedMessageIds((currentIds) =>
         currentIds.filter((id) => id !== message.id),
       );
@@ -4091,9 +4192,7 @@ export default function Home() {
       return nextIds;
     });
     setMessageDeleteTarget(null);
-    setPinnedMessage((currentPinnedMessage) =>
-      currentPinnedMessage?.id === message.id ? null : currentPinnedMessage,
-    );
+    removeLocalPinnedMessageId(message.id, message.user_id === user.id ? selectedChatUserId : message.user_id);
     setSelectedMessageIds((currentIds) =>
       currentIds.filter((id) => id !== message.id),
     );
@@ -4812,7 +4911,7 @@ export default function Home() {
                       </div>
                     )}
                   </div>
-                ) : (
+                ) : !isPinnedMessagesViewOpen ? (
                 <form
                   className="mt-2 grid grid-cols-[auto_1fr_auto_auto_auto] gap-1.5 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:flex sm:gap-2 sm:rounded-2xl"
                   onSubmit={sendMessage}
@@ -4970,7 +5069,7 @@ export default function Home() {
                     )}
                   </button>
                 </form>
-                )}
+                ) : null}
 
                 {replyTarget || editingMessage ? (
                   <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-2.5 text-[13px] shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
@@ -5269,12 +5368,20 @@ export default function Home() {
                     </button>
                   </div>
                 </div>
-                {activePinnedMessage ? (
-                  <article className="mb-2 flex shrink-0 items-center gap-2.5 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 px-3 py-2.5 text-left shadow-[0_14px_45px_rgba(0,0,0,0.22)] backdrop-blur-md sm:mb-3 sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
-                    <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#f4f4f5]/18 text-[#e5e5e5] sm:h-9 sm:w-9 sm:rounded-xl">
+                {activePinnedMessages.length > 0 ? (
+                  <button
+                    className={`mb-2 flex min-h-9 shrink-0 items-center gap-2 rounded-xl border px-3 py-1.5 text-left text-[13px] transition sm:mb-3 ${
+                      isPinnedMessagesViewOpen
+                        ? "border-[#f4f4f5]/55 bg-[#f4f4f5]/14 text-[#f4f4f5]"
+                        : "border-[#3f3f46]/45 bg-[#111111]/82 text-[#e5e5e5] hover:bg-white/[0.08]"
+                    }`}
+                    onClick={() => setIsPinnedMessagesViewOpen((isOpen) => !isOpen)}
+                    type="button"
+                  >
+                    <span className="grid h-5 w-5 shrink-0 place-items-center text-[#e5e5e5]">
                       <svg
                         aria-hidden="true"
-                        className="h-5 w-5"
+                        className="h-4 w-4"
                         fill="none"
                         viewBox="0 0 24 24"
                       >
@@ -5292,23 +5399,17 @@ export default function Home() {
                           strokeWidth="2"
                         />
                       </svg>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <span className="block text-xs font-medium uppercase tracking-[0.16em] text-[#e5e5e5]">
-                        Закреплено
+                    </span>
+                    <span className="min-w-0 flex-1 truncate font-medium">
+                      Закрепы: {activePinnedMessages.length}
+                      <span className="ml-2 text-[#a1a1aa]">
+                        {getReadableMessageText(activePinnedMessages.at(-1)?.text ?? "")}
                       </span>
-                      <span className="mt-0.5 block truncate text-[13px] font-medium text-[#f4f4f5]">
-                        {getReadableMessageText(activePinnedMessage.text)}
-                      </span>
-                    </div>
-                    <button
-                      className="min-h-9 shrink-0 rounded-lg border border-[#3f3f46]/35 px-2.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 sm:min-h-10 sm:rounded-xl sm:px-4"
-                      onClick={() => requestUnpinPinnedMessage(activePinnedMessage)}
-                      type="button"
-                    >
-                      Открепить
-                    </button>
-                  </article>
+                    </span>
+                    <span className="text-xs text-[#a1a1aa]">
+                      {isPinnedMessagesViewOpen ? "Закрыть" : "Открыть"}
+                    </span>
+                  </button>
                 ) : null}
 
                 <div
@@ -5319,21 +5420,27 @@ export default function Home() {
                     <p className="text-[13px] text-[#a1a1aa]">Загружаю сообщения...</p>
                   ) : null}
 
-                  {!isLoadingMessages && activeDialogMessages.length === 0 ? (
+                  {!isLoadingMessages &&
+                  (isPinnedMessagesViewOpen ? activePinnedMessages : activeDialogMessages).length === 0 ? (
                     <p className="text-[13px] text-[#a1a1aa]">
-                      Сообщений пока нет. Напиши первое.
+                      {isPinnedMessagesViewOpen
+                        ? "Закрепов пока нет."
+                        : "Сообщений пока нет. Напиши первое."}
                     </p>
                   ) : null}
 
-                  {activeDialogMessages.map((message, messageIndex) => {
+                  {(isPinnedMessagesViewOpen ? activePinnedMessages : activeDialogMessages).map((message, messageIndex) => {
                     const isMine = message.user_id === user.id;
-                    const previousMessage = activeDialogMessages[messageIndex - 1];
-                    const nextMessage = activeDialogMessages[messageIndex + 1];
+                    const visibleDialogMessages = isPinnedMessagesViewOpen
+                      ? activePinnedMessages
+                      : activeDialogMessages;
+                    const previousMessage = visibleDialogMessages[messageIndex - 1];
+                    const nextMessage = visibleDialogMessages[messageIndex + 1];
                     const isPreviousSameAuthor =
                       previousMessage?.user_id === message.user_id;
                     const isNextSameAuthor = nextMessage?.user_id === message.user_id;
                     const isSelected = selectedMessageIds.includes(message.id);
-                    const isPinned = activePinnedMessage?.id === message.id;
+                    const isPinned = activePinnedMessages.some((pinnedMessage) => pinnedMessage.id === message.id);
                     const receiptStatus =
                       isMine && message.id > 0
                         ? messageReceiptStatuses.get(message.id) ?? "delivered"
@@ -5667,6 +5774,7 @@ export default function Home() {
                   })}
                 </div>
 
+                {!isPinnedMessagesViewOpen ? (
                 <form
                   className="mt-2 grid grid-cols-[auto_1fr_auto_auto_auto] gap-1.5 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:flex sm:gap-2 sm:rounded-2xl"
                   onSubmit={sendMessage}
@@ -5843,8 +5951,9 @@ export default function Home() {
                     )}
                   </button>
                 </form>
+                ) : null}
 
-                {replyTarget || editingMessage ? (
+                {!isPinnedMessagesViewOpen && (replyTarget || editingMessage) ? (
                   <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-2.5 text-[13px] shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
                     <div className="min-w-0">
                       <p className="text-xs font-medium uppercase tracking-[0.14em] text-[#e5e5e5]">
@@ -6150,14 +6259,18 @@ export default function Home() {
             ) : null}
             <button
               className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
-              onClick={() => requestPinnedMessage(messageContextMenu.message)}
+              onClick={() =>
+                activePinnedMessages.some((message) => message.id === messageContextMenu.message.id)
+                  ? requestUnpinPinnedMessage(messageContextMenu.message)
+                  : requestPinnedMessage(messageContextMenu.message)
+              }
               type="button"
             >
               <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
                 <path d="m14.5 4.5 5 5-3.4 1.1-4.8 4.8.7 3.6-7-7 3.6.7 4.8-4.8 1.1-3.4Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                 <path d="m9.5 14.5-4 4" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
               </svg>
-              {activePinnedMessage?.id === messageContextMenu.message.id ? "Открепить" : "Закрепить"}
+              {activePinnedMessages.some((message) => message.id === messageContextMenu.message.id) ? "Открепить" : "Закрепить"}
             </button>
             <button
               className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
@@ -6313,19 +6426,19 @@ export default function Home() {
               </span>
               <div className="min-w-0">
                 <h2 className="text-lg font-medium text-[#f4f4f5]">
-                  {activePinnedMessage?.id === messagePinTarget.id
+                  {activePinnedMessages.some((message) => message.id === messagePinTarget.id)
                     ? "Открепление сообщения"
                     : "Закрепление сообщения"}
                 </h2>
                 <p className="mt-1 text-[13px] leading-6 text-[#a1a1aa]">
-                  {activePinnedMessage?.id === messagePinTarget.id
+                  {activePinnedMessages.some((message) => message.id === messagePinTarget.id)
                     ? "Желаете открепить сообщение?"
                     : "Выберите, закрепить сообщение только у себя или сделать его общим для обоих участников переписки."}
                 </p>
               </div>
             </div>
 
-            {activePinnedMessage?.id !== messagePinTarget.id ? (
+            {!activePinnedMessages.some((message) => message.id === messagePinTarget.id) ? (
               <>
                 <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 p-3">
                   <p className="line-clamp-3 text-[13px] font-medium text-[#f4f4f5]">
@@ -6349,20 +6462,20 @@ export default function Home() {
               <button
                 className="min-h-12 rounded-xl bg-[#f4f4f5] px-4 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
                 onClick={
-                  activePinnedMessage?.id === messagePinTarget.id
+                  activePinnedMessages.some((message) => message.id === messagePinTarget.id)
                     ? confirmUnpinPinnedMessage
                     : confirmPinnedMessage
                 }
                 type="button"
               >
-                {activePinnedMessage?.id === messagePinTarget.id ? "Да" : "Закрепить"}
+                {activePinnedMessages.some((message) => message.id === messagePinTarget.id) ? "Да" : "Закрепить"}
               </button>
               <button
                 className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
                 onClick={() => setMessagePinTarget(null)}
                 type="button"
               >
-                {activePinnedMessage?.id === messagePinTarget.id ? "Нет" : "Отмена"}
+                {activePinnedMessages.some((message) => message.id === messagePinTarget.id) ? "Нет" : "Отмена"}
               </button>
             </div>
           </section>
@@ -6867,3 +6980,4 @@ export default function Home() {
     </main>
   );
 }
+
