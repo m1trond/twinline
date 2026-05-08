@@ -824,7 +824,8 @@ export default function Home() {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("sign-in");
   const [authContactMethod, setAuthContactMethod] = useState<AuthContactMethod>("email");
-  const [authName, setAuthName] = useState("");
+  const [authUsername, setAuthUsername] = useState("");
+  const [authUsernameError, setAuthUsernameError] = useState("");
   const [authEmail, setAuthEmail] = useState("");
   const [authPhone, setAuthPhone] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -2164,6 +2165,7 @@ export default function Home() {
   async function handleAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage("");
+    setAuthUsernameError("");
 
     if (authContactMethod === "phone") {
       setErrorMessage("Вход и регистрация по телефону уже в интерфейсе, SMS-логика пока в разработке.");
@@ -2171,12 +2173,34 @@ export default function Home() {
     }
 
     if (authMode === "sign-up") {
+      const nextUsername = normalizeUsername(authUsername);
+      const usernameValidationError = getUsernameError(nextUsername);
+
+      if (usernameValidationError) {
+        setAuthUsernameError(usernameValidationError);
+        return;
+      }
+
+      const usernameOwner = await fetchUsernameOwner(nextUsername);
+
+      if (usernameOwner.error) {
+        setAuthUsernameError("Не получилось проверить ник. Попробуй ещё раз.");
+        return;
+      }
+
+      if (usernameOwner.data) {
+        setAuthUsernameError("Такой ник уже занят.");
+        return;
+      }
+
+      const fallbackDisplayName = authEmail.trim().split("@")[0] || nextUsername;
       const { data, error } = await supabase.auth.signUp({
         email: authEmail.trim(),
         password: authPassword,
         options: {
           data: {
-            display_name: authName.trim() || authEmail.trim().split("@")[0],
+            display_name: fallbackDisplayName,
+            username: nextUsername,
           },
         },
       });
@@ -2185,13 +2209,21 @@ export default function Home() {
         setErrorMessage("Не получилось зарегистрироваться.");
       } else {
         if (data.user) {
-          await supabase.from("profiles").upsert({
-            display_name: authName.trim() || authEmail.trim().split("@")[0],
+          const { error: profileError } = await supabase.from("profiles").upsert({
+            display_name: fallbackDisplayName,
+            username: nextUsername,
+            username_changed_at: null,
             user_id: data.user.id,
           });
+
+          if (profileError) {
+            setAuthUsernameError("Аккаунт создан, но ник не сохранился. Попробуй войти и сохранить ник в профиле.");
+            return;
+          }
         }
 
         setErrorMessage("Аккаунт создан. Если Supabase попросит, подтверди email.");
+        setAuthUsername("");
         setAuthMode("sign-in");
       }
 
@@ -2275,6 +2307,8 @@ export default function Home() {
       }
 
       setAuthPassword("");
+      setAuthUsername("");
+      setAuthUsernameError("");
     } finally {
       setIsSigningOut(false);
     }
@@ -4091,6 +4125,7 @@ export default function Home() {
               onClick={() => {
                 setAuthMode("sign-in");
                 setErrorMessage("");
+                setAuthUsernameError("");
               }}
               type="button"
             >
@@ -4105,6 +4140,7 @@ export default function Home() {
               onClick={() => {
                 setAuthMode("sign-up");
                 setErrorMessage("");
+                setAuthUsernameError("");
               }}
               type="button"
             >
@@ -4127,6 +4163,7 @@ export default function Home() {
                 onClick={() => {
                   setAuthContactMethod(item.method);
                   setErrorMessage("");
+                  setAuthUsernameError("");
                 }}
                 type="button"
               >
@@ -4137,16 +4174,32 @@ export default function Home() {
 
           <form className="grid gap-3" onSubmit={handleAuth}>
             {authMode === "sign-up" ? (
-              <label className="flex min-h-11 items-center rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm focus-within:border-[#f4f4f5] sm:min-h-12">
-                <span className="shrink-0 font-medium text-[#a1a1aa]">@</span>
-                <input
-                  aria-label="Никнейм в Hush"
-                  className="min-w-0 flex-1 bg-transparent pl-1 outline-none placeholder:text-[#a1a1aa]/70"
-                  onChange={(event) => setAuthName(formatUsernameInput(event.target.value))}
-                  placeholder="Никнейм в Hush"
-                  type="text"
-                  value={authName}
-                />
+              <label className="grid gap-1.5">
+                <div className="flex min-h-11 items-center rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm focus-within:border-[#f4f4f5] sm:min-h-12">
+                  <span className="shrink-0 font-medium text-[#a1a1aa]">@</span>
+                  <input
+                    aria-label="Никнейм в Hush"
+                    className="min-w-0 flex-1 bg-transparent pl-1 outline-none placeholder:text-[#a1a1aa]/70"
+                    maxLength={24}
+                    minLength={3}
+                    onChange={(event) => {
+                      setAuthUsername(formatUsernameInput(event.target.value));
+                      setAuthUsernameError("");
+                    }}
+                    placeholder="Никнейм в Hush"
+                    type="text"
+                    value={authUsername}
+                  />
+                </div>
+                {authUsernameError ? (
+                  <span className="text-[13px] font-medium text-red-300">
+                    {authUsernameError}
+                  </span>
+                ) : (
+                  <span className="text-xs font-medium text-[#a1a1aa]">
+                    По этому нику тебя смогут найти другие пользователи.
+                  </span>
+                )}
               </label>
             ) : null}
             {authContactMethod === "email" ? (
