@@ -152,7 +152,7 @@ function readStoredMutedProfiles() {
       return {};
     }
 
-    return Object.fromEntries(
+    return pruneMutedProfiles(Object.fromEntries(
       Object.entries(parsedValue).filter((entry): entry is [string, number | null] => {
         const [profileId, muteUntil] = entry;
 
@@ -161,7 +161,7 @@ function readStoredMutedProfiles() {
           (muteUntil === null || typeof muteUntil === "number")
         );
       }),
-    );
+    ));
   } catch {
     return {};
   }
@@ -169,6 +169,16 @@ function readStoredMutedProfiles() {
 
 function writeStoredMutedProfiles(value: MutedProfileUntil) {
   window.localStorage.setItem("twinline-muted-profiles", JSON.stringify(value));
+}
+
+function pruneMutedProfiles(value: MutedProfileUntil) {
+  const now = Date.now();
+
+  return Object.fromEntries(
+    Object.entries(value).filter(([, muteUntil]) => {
+      return muteUntil === null || muteUntil > now;
+    }),
+  );
 }
 
 function isProfileMuted(mutedProfiles: MutedProfileUntil, profileId: string) {
@@ -1459,6 +1469,25 @@ export default function Home() {
   }, [mutedProfiles]);
 
   useEffect(() => {
+    const mutedProfilesCleanupInterval = window.setInterval(() => {
+      setMutedProfiles((currentMutedProfiles) => {
+        const nextMutedProfiles = pruneMutedProfiles(currentMutedProfiles);
+
+        if (Object.keys(nextMutedProfiles).length === Object.keys(currentMutedProfiles).length) {
+          return currentMutedProfiles;
+        }
+
+        writeStoredMutedProfiles(nextMutedProfiles);
+        return nextMutedProfiles;
+      });
+    }, 60_000);
+
+    return () => {
+      window.clearInterval(mutedProfilesCleanupInterval);
+    };
+  }, []);
+
+  useEffect(() => {
     blockedProfileIdsRef.current = new Set(blockedProfileIds);
   }, [blockedProfileIds]);
 
@@ -2650,27 +2679,15 @@ export default function Home() {
     setErrorMessage("");
   }
 
-  async function muteProfileNotifications(profileUserId: string, durationMs: number | null) {
+  function muteProfileNotifications(profileUserId: string, durationMs: number | null) {
     if (!profileUserId) {
       return;
     }
 
-    if (!areNotificationsEnabled && "Notification" in window) {
-      const permission = await Notification.requestPermission();
-
-      if (permission !== "granted") {
-        setErrorMessage("Браузер не разрешил уведомления.");
-        return;
-      }
-
-      setAreNotificationsEnabled(true);
-      window.localStorage.setItem("twinline-notifications", "enabled");
-    }
-
-    const nextMutedProfiles: MutedProfileUntil = {
+    const nextMutedProfiles = pruneMutedProfiles({
       ...mutedProfiles,
       [profileUserId]: durationMs === null ? null : Date.now() + durationMs,
-    };
+    });
 
     setMutedProfiles(nextMutedProfiles);
     writeStoredMutedProfiles(nextMutedProfiles);
@@ -4998,7 +5015,7 @@ export default function Home() {
                         </p>
                         <p className="mt-1 text-[13px] leading-6 text-[#a1a1aa]">
                           Показывать новые сообщения в браузере, если диалог не открыт.
-                          Непрочитанные также появятся в названии вкладки.
+                          Отключения у отдельных пользователей работают отдельно.
                         </p>
                       </div>
                       <button
@@ -6764,7 +6781,7 @@ export default function Home() {
                         key={option.label}
                         onClick={() =>
                           viewedProfile.userId
-                            ? void muteProfileNotifications(
+                            ? muteProfileNotifications(
                                 viewedProfile.userId,
                                 option.durationMs,
                               )
