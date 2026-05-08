@@ -920,6 +920,7 @@ export default function Home() {
   const [editingMessage, setEditingMessage] = useState<MessageRow | null>(null);
   const [pinnedMessageIdsByChat, setPinnedMessageIdsByChat] = useState<PinnedMessageIdsByChat>({});
   const [isPinnedMessagesViewOpen, setIsPinnedMessagesViewOpen] = useState(false);
+  const [pinnedNavigationIndex, setPinnedNavigationIndex] = useState(0);
   const [pinnedFavoriteItem, setPinnedFavoriteItem] = useState<FavoriteItem | null>(null);
   const [messagePinTarget, setMessagePinTarget] = useState<MessageRow | null>(null);
   const [shouldPinForBoth, setShouldPinForBoth] = useState(false);
@@ -1482,12 +1483,25 @@ export default function Home() {
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() => {
       setIsPinnedMessagesViewOpen(false);
+      setPinnedNavigationIndex(0);
     });
 
     return () => {
       window.cancelAnimationFrame(frameId);
     };
   }, [selectedChatUserId]);
+
+  useEffect(() => {
+    if (pinnedNavigationIndex >= activePinnedMessages.length) {
+      const frameId = window.requestAnimationFrame(() => {
+        setPinnedNavigationIndex(0);
+      });
+
+      return () => {
+        window.cancelAnimationFrame(frameId);
+      };
+    }
+  }, [activePinnedMessages.length, pinnedNavigationIndex]);
 
   useEffect(() => {
     let frameId = 0;
@@ -3151,6 +3165,48 @@ export default function Home() {
     }, 1200);
   }
 
+  function highlightMessage(messageId: number) {
+    const targetMessage = messagesListRef.current?.querySelector<HTMLElement>(
+      `[data-message-id="${messageId}"]`,
+    );
+
+    if (!targetMessage) {
+      return false;
+    }
+
+    if (highlightedMessageTimeoutRef.current !== null) {
+      window.clearTimeout(highlightedMessageTimeoutRef.current);
+    }
+
+    targetMessage.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightedMessageId(messageId);
+    highlightedMessageTimeoutRef.current = window.setTimeout(() => {
+      setHighlightedMessageId(null);
+      highlightedMessageTimeoutRef.current = null;
+    }, 1200);
+
+    return true;
+  }
+
+  function scrollToNextPinnedMessage() {
+    if (activePinnedMessages.length === 0) {
+      return;
+    }
+
+    if (isPinnedMessagesViewOpen) {
+      setIsPinnedMessagesViewOpen(false);
+    }
+
+    window.requestAnimationFrame(() => {
+      const nextIndex = pinnedNavigationIndex % activePinnedMessages.length;
+      const nextPinnedMessage = activePinnedMessages[nextIndex];
+
+      if (nextPinnedMessage && highlightMessage(nextPinnedMessage.id)) {
+        setPinnedNavigationIndex((nextIndex + 1) % activePinnedMessages.length);
+      }
+    });
+  }
+
   function startEditingMessage(message: MessageRow) {
     if (!user || message.user_id !== user.id) {
       setErrorMessage("Можно изменять только свои сообщения.");
@@ -3304,6 +3360,74 @@ export default function Home() {
         [data],
       ),
     );
+    setErrorMessage("");
+  }
+
+  async function unpinAllActivePinnedMessages() {
+    if (!user || !selectedChatUserId || activePinnedMessages.length === 0) {
+      return;
+    }
+
+    const previousPinnedMessageIdsByChat = pinnedMessageIdsByChat;
+    const sharedPinnedIds = activePinnedMessages
+      .filter((message) => sharedPinnedMessageIds.has(message.id))
+      .map((message) => message.id);
+    const nextPinnedMessageIdsByChat = {
+      ...pinnedMessageIdsByChat,
+      [selectedChatUserId]: [],
+    };
+
+    setPinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
+    writeStoredPinnedMessageIds(user.id, nextPinnedMessageIdsByChat);
+
+    if (sharedPinnedIds.length === 0) {
+      setIsPinnedMessagesViewOpen(false);
+      setErrorMessage("");
+      return;
+    }
+
+    const optimisticMessages = sharedPinnedIds.map((messageId, index) => ({
+      id: -(Date.now() + index),
+      author: activeUserName,
+      text: createPinMessageText(messageId, "unpin"),
+      created_at: new Date(Date.now() + index).toISOString(),
+      user_id: user.id,
+    }));
+
+    setMessages((currentMessages) => mergeMessages(currentMessages, optimisticMessages));
+
+    const { data, error } = await supabase
+      .from("messages")
+      .insert(
+        optimisticMessages.map((message) => ({
+          author: activeUserName,
+          text: message.text,
+          user_id: user.id,
+        })),
+      )
+      .select("id, author, text, created_at, user_id");
+
+    if (error) {
+      setPinnedMessageIdsByChat(previousPinnedMessageIdsByChat);
+      writeStoredPinnedMessageIds(user.id, previousPinnedMessageIdsByChat);
+      setMessages((currentMessages) =>
+        currentMessages.filter(
+          (message) => !optimisticMessages.some((optimisticMessage) => optimisticMessage.id === message.id),
+        ),
+      );
+      setErrorMessage("Не получилось открепить общие закрепы.");
+      return;
+    }
+
+    setMessages((currentMessages) =>
+      mergeMessages(
+        currentMessages.filter(
+          (message) => !optimisticMessages.some((optimisticMessage) => optimisticMessage.id === message.id),
+        ),
+        data ?? [],
+      ),
+    );
+    setIsPinnedMessagesViewOpen(false);
     setErrorMessage("");
   }
 
@@ -4790,7 +4914,7 @@ export default function Home() {
                         onContextMenu={(event) => openFavoriteContextMenu(event, favoriteItem)}
                       >
                         <div
-                          className={`max-w-[min(84vw,92%)] rounded-[18px] sm:max-w-[72%] sm:rounded-[20px] ${
+                          className={`relative max-w-[min(84vw,92%)] rounded-[18px] sm:max-w-[72%] sm:rounded-[20px] ${
                             hasStandaloneBubble
                               ? "bg-transparent p-0 text-[#f4f4f5] shadow-none"
                               : hasFramedMedia
@@ -5369,47 +5493,44 @@ export default function Home() {
                   </div>
                 </div>
                 {activePinnedMessages.length > 0 ? (
-                  <button
-                    className={`mb-2 flex min-h-9 shrink-0 items-center gap-2 rounded-xl border px-3 py-1.5 text-left text-[13px] transition sm:mb-3 ${
-                      isPinnedMessagesViewOpen
-                        ? "border-[#f4f4f5]/55 bg-[#f4f4f5]/14 text-[#f4f4f5]"
-                        : "border-[#3f3f46]/45 bg-[#111111]/82 text-[#e5e5e5] hover:bg-white/[0.08]"
-                    }`}
-                    onClick={() => setIsPinnedMessagesViewOpen((isOpen) => !isOpen)}
-                    type="button"
-                  >
-                    <span className="grid h-5 w-5 shrink-0 place-items-center text-[#e5e5e5]">
+                  <div className="mb-2 flex min-h-9 shrink-0 overflow-hidden rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 text-[13px] text-[#e5e5e5] shadow-[0_10px_30px_rgba(0,0,0,0.18)] sm:mb-3">
+                    <button
+                      className="flex min-w-0 flex-1 items-center gap-2 px-3 py-1.5 text-left transition hover:bg-white/[0.08]"
+                      onClick={scrollToNextPinnedMessage}
+                      type="button"
+                    >
                       <svg
                         aria-hidden="true"
-                        className="h-4 w-4"
+                        className="h-4 w-4 shrink-0 text-[#e5e5e5]"
                         fill="none"
                         viewBox="0 0 24 24"
                       >
-                        <path
-                          d="m14.5 4.5 5 5-3.4 1.1-4.8 4.8.7 3.6-7-7 3.6.7 4.8-4.8 1.1-3.4Z"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                        />
-                        <path
-                          d="m9.5 14.5-4 4"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeWidth="2"
-                        />
+                        <path d="m14.5 4.5 5 5-3.4 1.1-4.8 4.8.7 3.6-7-7 3.6.7 4.8-4.8 1.1-3.4Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                        <path d="m9.5 14.5-4 4" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
                       </svg>
-                    </span>
-                    <span className="min-w-0 flex-1 truncate font-medium">
-                      Закрепы: {activePinnedMessages.length}
-                      <span className="ml-2 text-[#a1a1aa]">
+                      <span className="shrink-0 font-medium text-[#f4f4f5]">
+                        Закрепы: {activePinnedMessages.length}
+                      </span>
+                      <span className="min-w-0 truncate text-[#a1a1aa]">
                         {getReadableMessageText(activePinnedMessages.at(-1)?.text ?? "")}
                       </span>
-                    </span>
-                    <span className="text-xs text-[#a1a1aa]">
-                      {isPinnedMessagesViewOpen ? "Закрыть" : "Открыть"}
-                    </span>
-                  </button>
+                    </button>
+                    <button
+                      aria-label="Открыть все закрепы"
+                      className={`grid w-12 shrink-0 place-items-center border-l border-[#3f3f46]/45 transition ${
+                        isPinnedMessagesViewOpen
+                          ? "bg-[#f4f4f5]/14 text-[#f4f4f5]"
+                          : "text-[#a1a1aa] hover:bg-white/[0.08] hover:text-[#f4f4f5]"
+                      }`}
+                      onClick={() => setIsPinnedMessagesViewOpen((isOpen) => !isOpen)}
+                      type="button"
+                    >
+                      <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                        <path d="m9.5 3.5 3.8 3.8-2.3 1-3.9 3.9.5 2.8-5.6-5.6 2.8.5 3.9-3.9.8-2.5Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+                        <path d="M13 8.8 17 4.8M6 13l-3 3M13 13h8M13 17h8M13 21h8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+                      </svg>
+                    </button>
+                  </div>
                 ) : null}
 
                 <div
@@ -5538,6 +5659,15 @@ export default function Home() {
                           }`}
                           onContextMenu={(event) => openMessageContextMenu(event, message)}
                         >
+                          {isPinned ? (
+                            <span className={`absolute bottom-1.5 right-2 grid h-5 w-5 place-items-center rounded-md ${
+                              isMine ? "bg-[#050505]/12 text-[#2563eb]" : "bg-white/10 text-[#93c5fd]"
+                            }`}>
+                              <svg aria-hidden="true" className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M12.9 2.2 17.8 7l-3.1.9-4.6 4.6.5 3.7-6.8-6.8 3.7.5 4.6-4.6.8-3.1Z" />
+                              </svg>
+                            </span>
+                          ) : null}
                           {!hasStandaloneBubble && !isMine && !isPreviousSameAuthor ? (
                             <p className={`${hasAttachment ? "mb-1.5 px-1" : "mb-0.5"} text-[11px] font-medium leading-4 opacity-55`}>
                               {messageAuthor}
@@ -5951,6 +6081,16 @@ export default function Home() {
                     )}
                   </button>
                 </form>
+                ) : null}
+
+                {isPinnedMessagesViewOpen && activePinnedMessages.length > 0 ? (
+                  <button
+                    className="mt-2 min-h-11 w-full rounded-xl border border-[#3f3f46]/45 bg-[#111111]/88 px-4 text-[13px] font-medium uppercase tracking-[0.08em] text-[#60a5fa] transition hover:bg-white/[0.08] sm:rounded-2xl"
+                    onClick={unpinAllActivePinnedMessages}
+                    type="button"
+                  >
+                    Открепить {activePinnedMessages.length} сообщений
+                  </button>
                 ) : null}
 
                 {!isPinnedMessagesViewOpen && (replyTarget || editingMessage) ? (
