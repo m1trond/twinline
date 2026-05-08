@@ -920,6 +920,7 @@ export default function Home() {
   const [editingMessage, setEditingMessage] = useState<MessageRow | null>(null);
   const [pinnedMessageIdsByChat, setPinnedMessageIdsByChat] = useState<PinnedMessageIdsByChat>({});
   const [isPinnedMessagesViewOpen, setIsPinnedMessagesViewOpen] = useState(false);
+  const [isUnpinAllDialogOpen, setIsUnpinAllDialogOpen] = useState(false);
   const [pinnedNavigationIndex, setPinnedNavigationIndex] = useState(0);
   const [pinnedFavoriteItem, setPinnedFavoriteItem] = useState<FavoriteItem | null>(null);
   const [messagePinTarget, setMessagePinTarget] = useState<MessageRow | null>(null);
@@ -3368,6 +3369,8 @@ export default function Home() {
       return;
     }
 
+    setIsUnpinAllDialogOpen(false);
+
     const previousPinnedMessageIdsByChat = pinnedMessageIdsByChat;
     const sharedPinnedIds = activePinnedMessages
       .filter((message) => sharedPinnedMessageIds.has(message.id))
@@ -4889,7 +4892,6 @@ export default function Home() {
                     const isPreviousSameAuthor = previousFavoriteItem?.user_id === favoriteItem.user_id;
                     const isNextSameAuthor = nextFavoriteItem?.user_id === favoriteItem.user_id;
                     const isSelected = selectedMessageIds.includes(favoriteItem.id);
-                    const isPinned = pinnedFavoriteItem?.id === favoriteItem.id;
                     const reply = getMessageReply(favoriteItem.text);
                     const displayText = reply?.body ?? favoriteItem.text;
                     const imageUrl = getMessageImageUrl(displayText);
@@ -4924,13 +4926,7 @@ export default function Home() {
                                 } ${isPreviousSameAuthor ? "rounded-tr-lg" : ""} ${
                                   isNextSameAuthor ? "rounded-br-lg" : "rounded-br-md"
                                 }`
-                          } ${
-                            isSelected
-                              ? "ring-2 ring-[#f4f4f5]/80"
-                              : isPinned
-                                ? "ring-2 ring-[#f5c85b]/75"
-                                : ""
-                          }`}
+                          } ${isSelected ? "ring-2 ring-[#f4f4f5]/80" : ""}`}
                         >
                           {reply ? (
                             <div className="mb-2 block w-full rounded-xl border-l-4 border-[#050505]/45 bg-[#050505]/12 px-3 py-2 text-left">
@@ -5382,7 +5378,7 @@ export default function Home() {
                 </div>
               </div>
               ) : (
-              <div className="grid min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden">
+              <div className="grid min-h-0 grid-rows-[auto_auto_1fr_auto] overflow-hidden">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
                   <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
                     <button
@@ -5499,15 +5495,6 @@ export default function Home() {
                       onClick={scrollToNextPinnedMessage}
                       type="button"
                     >
-                      <svg
-                        aria-hidden="true"
-                        className="h-4 w-4 shrink-0 text-[#e5e5e5]"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="m14.5 4.5 5 5-3.4 1.1-4.8 4.8.7 3.6-7-7 3.6.7 4.8-4.8 1.1-3.4Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                        <path d="m9.5 14.5-4 4" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
-                      </svg>
                       <span className="shrink-0 font-medium text-[#f4f4f5]">
                         Закрепы: {activePinnedMessages.length}
                       </span>
@@ -5526,8 +5513,8 @@ export default function Home() {
                       type="button"
                     >
                       <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                        <path d="m9.5 3.5 3.8 3.8-2.3 1-3.9 3.9.5 2.8-5.6-5.6 2.8.5 3.9-3.9.8-2.5Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
-                        <path d="M13 8.8 17 4.8M6 13l-3 3M13 13h8M13 17h8M13 21h8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+                        <path d="m8.5 4.5 4 4-2.3.9-3.7 3.7.5 2.7-5-5 2.7.5 3.7-3.7.1-3.6Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+                        <path d="M14 8h7M14 12h7M14 16h7" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
                       </svg>
                     </button>
                   </div>
@@ -5650,13 +5637,7 @@ export default function Home() {
                                 : `bg-[#262626] text-[#f4f4f5] ${
                                   isPreviousSameAuthor ? "rounded-tl-lg" : ""
                                 } ${isNextSameAuthor ? "rounded-bl-lg" : "rounded-bl-md"}`
-                          } ${
-                            isSelected
-                              ? "ring-2 ring-[#f4f4f5]/80"
-                              : isPinned
-                                ? "ring-2 ring-[#f5c85b]/75"
-                                : ""
-                          }`}
+                            } ${isSelected ? "ring-2 ring-[#f4f4f5]/80" : ""}`}
                           onContextMenu={(event) => openMessageContextMenu(event, message)}
                         >
                           {isPinned ? (
@@ -6085,8 +6066,8 @@ export default function Home() {
 
                 {isPinnedMessagesViewOpen && activePinnedMessages.length > 0 ? (
                   <button
-                    className="mt-2 min-h-11 w-full rounded-xl border border-[#3f3f46]/45 bg-[#111111]/88 px-4 text-[13px] font-medium uppercase tracking-[0.08em] text-[#60a5fa] transition hover:bg-white/[0.08] sm:rounded-2xl"
-                    onClick={unpinAllActivePinnedMessages}
+                    className="mt-2 min-h-11 w-full rounded-xl border border-red-400/25 bg-red-500/10 px-4 text-[13px] font-medium text-red-100 shadow-[0_14px_40px_rgba(0,0,0,0.18)] transition hover:border-red-300/40 hover:bg-red-500/16 sm:rounded-2xl"
+                    onClick={() => setIsUnpinAllDialogOpen(true)}
                     type="button"
                   >
                     Открепить {activePinnedMessages.length} сообщений
@@ -6546,6 +6527,60 @@ export default function Home() {
               </>
             );
           })()}
+        </>
+      ) : null}
+      {isUnpinAllDialogOpen ? (
+        <>
+          <button
+            aria-label="Закрыть окно открепления"
+            className="fixed inset-0 z-[95] bg-black/58 backdrop-blur-sm"
+            onClick={() => setIsUnpinAllDialogOpen(false)}
+            type="button"
+          />
+          <section className="fixed left-1/2 top-1/2 z-[96] w-[min(440px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-red-400/25 bg-[#111111]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:rounded-3xl sm:p-5">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(239,68,68,0.18),transparent_36%),linear-gradient(145deg,rgba(255,255,255,0.05),transparent_48%)]" />
+            <div className="relative">
+              <div className="mb-4 flex items-start gap-3">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-red-300/25 bg-red-500/14 text-red-100">
+                  <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <path d="m14.5 4.5 5 5-3.4 1.1-4.8 4.8.7 3.6-7-7 3.6.7 4.8-4.8 1.1-3.4Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                    <path d="m9.5 14.5-4 4" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+                  </svg>
+                </span>
+                <div className="min-w-0">
+                  <h2 className="text-lg font-medium text-[#f4f4f5]">
+                    Открепить все закрепы?
+                  </h2>
+                  <p className="mt-1 text-[13px] leading-6 text-[#a1a1aa]">
+                    Закрепы исчезнут из списка этого чата. Общие закрепы открепятся для обоих.
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/22 px-3 py-2.5">
+                <p className="text-[13px] font-medium text-[#f4f4f5]">
+                  {activePinnedMessages.length} сообщений
+                </p>
+              </div>
+
+              <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                <button
+                  className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
+                  onClick={() => setIsUnpinAllDialogOpen(false)}
+                  type="button"
+                >
+                  Оставить
+                </button>
+                <button
+                  className="min-h-12 rounded-xl bg-red-500 px-4 text-[13px] font-medium text-white transition hover:bg-red-400"
+                  onClick={unpinAllActivePinnedMessages}
+                  type="button"
+                >
+                  Открепить
+                </button>
+              </div>
+            </div>
+          </section>
         </>
       ) : null}
       {messagePinTarget ? (
