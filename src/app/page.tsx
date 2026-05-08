@@ -5618,6 +5618,14 @@ export default function Home() {
                             <span className="h-7 w-7 shrink-0 sm:h-8 sm:w-8" />
                           )
                         ) : null}
+                        {isPinned && isMine ? (
+                          <span className="mb-1 grid h-6 w-6 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/55 bg-[#111111]/94 text-[#f4f4f5] shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+                            <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 20 20">
+                              <path d="m12.8 2.6 4.6 4.6-3 .9-4.5 4.5.5 3.5-6.5-6.5 3.5.5 4.5-4.5.9-3Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+                              <path d="m8.8 12.4-3.6 3.6" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+                            </svg>
+                          </span>
+                        ) : null}
                         <div
                           className={`max-w-[min(84vw,92%)] rounded-[18px] sm:max-w-[72%] sm:rounded-[20px] ${
                             hasStandaloneBubble
@@ -5841,7 +5849,7 @@ export default function Home() {
                           </div>
                           ) : null}
                         </div>
-                        {isPinned ? (
+                        {isPinned && !isMine ? (
                           <span className="mb-1 grid h-6 w-6 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/55 bg-[#111111]/94 text-[#f4f4f5] shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
                             <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 20 20">
                               <path d="m12.8 2.6 4.6 4.6-3 .9-4.5 4.5.5 3.5-6.5-6.5 3.5.5 4.5-4.5.9-3Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
