@@ -14,8 +14,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://twinline.vercel.app"),
   title: "Hush",
-  description: "Hush private space",
+  applicationName: "Hush",
+  description: "Hush - private social space",
+  alternates: {
+    canonical: "/",
+  },
   icons: {
     icon: [
       {
@@ -25,10 +30,31 @@ export const metadata: Metadata = {
     ],
     shortcut: "/hush-favicon.svg?v=4",
   },
+  openGraph: {
+    title: "Hush",
+    description: "Hush - private social space",
+    siteName: "Hush",
+    url: "/",
+    images: [
+      {
+        alt: "Hush",
+        height: 512,
+        url: "/hush-logo.png",
+        width: 512,
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Hush",
+    description: "Hush - private social space",
+    images: ["/hush-logo.png"],
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#7c8cff",
+  themeColor: "#050505",
 };
 
 export default function RootLayout({

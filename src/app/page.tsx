@@ -277,17 +277,23 @@ function formatLastSeen(updatedAt: string | null) {
     return "был недавно";
   }
 
-  const diffMinutes = Math.max(
-    0,
-    Math.floor((Date.now() - new Date(updatedAt).getTime()) / 60_000),
-  );
+  const updatedDate = new Date(updatedAt);
+  const updatedTime = updatedDate.getTime();
 
-  if (diffMinutes < 1) {
-    return "был только что";
+  if (!Number.isFinite(updatedTime)) {
+    return "был недавно";
+  }
+
+  const now = Date.now();
+  const diffSeconds = Math.max(0, Math.floor((now - updatedTime) / 1000));
+  const diffMinutes = Math.floor(diffSeconds / 60);
+
+  if (diffSeconds < 90) {
+    return "в сети";
   }
 
   if (diffMinutes < 60) {
-    return `был ${diffMinutes} мин. назад`;
+    return `был ${Math.max(1, diffMinutes)} мин. назад`;
   }
 
   const diffHours = Math.floor(diffMinutes / 60);
@@ -296,7 +302,34 @@ function formatLastSeen(updatedAt: string | null) {
     return `был ${diffHours} ч. назад`;
   }
 
-  return `был ${Math.floor(diffHours / 24)} дн. назад`;
+  const today = new Date(now);
+  const yesterday = new Date(now);
+
+  yesterday.setDate(today.getDate() - 1);
+
+  const isSameDate = (firstDate: Date, secondDate: Date) =>
+    firstDate.getFullYear() === secondDate.getFullYear() &&
+    firstDate.getMonth() === secondDate.getMonth() &&
+    firstDate.getDate() === secondDate.getDate();
+
+  const formattedTime = new Intl.DateTimeFormat("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(updatedDate);
+
+  if (isSameDate(updatedDate, today)) {
+    return `был сегодня в ${formattedTime}`;
+  }
+
+  if (isSameDate(updatedDate, yesterday)) {
+    return `был вчера в ${formattedTime}`;
+  }
+
+  return `был ${new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(updatedDate)} в ${formattedTime}`;
 }
 
 function formatAudioTime(seconds: number) {
@@ -1002,6 +1035,7 @@ export default function Home() {
   const processedCallSignalIdsRef = useRef<Set<string>>(new Set());
   const latestCallSignalCreatedAtRef = useRef<string>("1970-01-01T00:00:00.000Z");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const currentProfileRef = useRef<ProfileRow | null>(null);
   const recordingChunksRef = useRef<BlobPart[]>([]);
   const recordingStreamRef = useRef<MediaStream | null>(null);
   const shouldDiscardRecordingRef = useRef(false);
@@ -1030,6 +1064,10 @@ export default function Home() {
   const currentProfile = useMemo(() => {
     return profiles.find((profile) => profile.user_id === user?.id) ?? null;
   }, [profiles, user?.id]);
+
+  useEffect(() => {
+    currentProfileRef.current = currentProfile;
+  }, [currentProfile]);
   const activeUserName = useMemo(() => {
     return currentProfile?.display_name ?? getDisplayName(user);
   }, [currentProfile?.display_name, user]);
@@ -1972,6 +2010,7 @@ export default function Home() {
       await supabase.from("profiles").upsert(
         {
           display_name: getDisplayName(signedInUser),
+          updated_at: new Date().toISOString(),
           username:
             typeof signedInUser.user_metadata?.username === "string"
               ? normalizeUsername(signedInUser.user_metadata.username)
@@ -2019,7 +2058,7 @@ export default function Home() {
         ) {
           const notification = new Notification(newMessage.author, {
             body: getNotificationMessageText(newMessage.text),
-            tag: `twinline-message-${newMessage.id}`,
+            tag: `hush-message-${newMessage.id}`,
           });
           window.setTimeout(() => {
             notification.close();
@@ -2170,6 +2209,68 @@ export default function Home() {
       window.clearInterval(newMessagesInterval);
       window.clearInterval(fullSyncInterval);
       supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const signedInUser = user;
+    let isUpdatingPresence = false;
+
+    async function updatePresence() {
+      if (document.visibilityState !== "visible" || isUpdatingPresence) {
+        return;
+      }
+
+      isUpdatingPresence = true;
+
+      const updatedAt = new Date().toISOString();
+
+      setProfiles((currentProfiles) =>
+        currentProfiles.map((profile) =>
+          profile.user_id === signedInUser.id
+            ? { ...profile, updated_at: updatedAt }
+            : profile,
+        ),
+      );
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ updated_at: updatedAt })
+        .eq("user_id", signedInUser.id);
+
+      if (error && currentProfileRef.current === null) {
+        await supabase.from("profiles").upsert({
+          avatar_url: null,
+          display_name: getDisplayName(signedInUser),
+          name_changed_at: null,
+          updated_at: updatedAt,
+          user_id: signedInUser.id,
+          username:
+            typeof signedInUser.user_metadata?.username === "string"
+              ? normalizeUsername(signedInUser.user_metadata.username)
+              : null,
+          username_changed_at: null,
+        });
+      }
+
+      isUpdatingPresence = false;
+    }
+
+    updatePresence();
+
+    const presenceInterval = window.setInterval(updatePresence, 60_000);
+
+    document.addEventListener("visibilitychange", updatePresence);
+    window.addEventListener("focus", updatePresence);
+
+    return () => {
+      window.clearInterval(presenceInterval);
+      document.removeEventListener("visibilitychange", updatePresence);
+      window.removeEventListener("focus", updatePresence);
     };
   }, [user]);
 
