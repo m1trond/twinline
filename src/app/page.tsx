@@ -1039,9 +1039,9 @@ function FileAttachment({
 }) {
   return (
     <a
-      className={`flex min-w-[min(270px,72vw)] max-w-[min(360px,78vw)] items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition hover:scale-[1.01] sm:rounded-2xl ${
+      className={`flex w-[min(360px,78vw)] items-center gap-3 rounded-[18px] border px-3 py-2.5 text-left shadow-[0_10px_30px_rgba(0,0,0,0.18)] transition hover:scale-[1.01] sm:rounded-[20px] ${
         isMine
-          ? "border-[#050505]/10 bg-[#050505]/8 text-[#050505] hover:bg-[#050505]/12"
+          ? "border-[#3f3f46]/45 bg-[#1f1f1f] text-[#f4f4f5] hover:bg-[#262626]"
           : "border-white/10 bg-white/[0.06] text-[#f4f4f5] hover:bg-white/10"
       }`}
       download={file.name}
