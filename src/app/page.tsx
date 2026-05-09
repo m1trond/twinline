@@ -1166,6 +1166,8 @@ export default function Home() {
   const [profileUsernameError, setProfileUsernameError] = useState("");
   const [messageText, setMessageText] = useState("");
   const [chatSearchQuery, setChatSearchQuery] = useState("");
+  const [avatarHistory, setAvatarHistory] = useState<string[]>([]);
+  const [avatarGalleryIndex, setAvatarGalleryIndex] = useState<number | null>(null);
   const [typingNow, setTypingNow] = useState(() => Date.now());
   const [activeView, setActiveView] = useState<ActiveView>("profile");
   const [selectedChatUserId, setSelectedChatUserId] = useState<string | null>(null);
@@ -1722,6 +1724,8 @@ export default function Home() {
   );
   const profileNameInputValue = profileName || activeUserName;
   const profileUsernameInputValue = profileUsername ?? currentProfile?.username ?? "";
+  const avatarGalleryUrl =
+    avatarGalleryIndex !== null ? avatarHistory[avatarGalleryIndex] ?? null : null;
   const incomingCallerProfile = incomingCall
     ? profiles.find((profile) => profile.user_id === incomingCall.sender_id)
     : null;
@@ -1828,6 +1832,34 @@ export default function Home() {
     latestMessageCreatedAtRef.current =
       messages.filter((message) => message.id > 0).at(-1)?.created_at ?? null;
   }, [messages]);
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+    if (!user) {
+      setAvatarHistory([]);
+      setAvatarGalleryIndex(null);
+      return;
+    }
+
+    const storedAvatarHistory = readStoredStringList(`hush-avatar-history-${user.id}`);
+    const nextAvatarHistory = currentProfile?.avatar_url
+      ? [
+          currentProfile.avatar_url,
+          ...storedAvatarHistory.filter((url) => url !== currentProfile.avatar_url),
+        ].slice(0, 20)
+      : storedAvatarHistory;
+
+    setAvatarHistory(nextAvatarHistory);
+    window.localStorage.setItem(
+      `hush-avatar-history-${user.id}`,
+      JSON.stringify(nextAvatarHistory),
+    );
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [currentProfile?.avatar_url, user]);
 
   useEffect(() => {
     if (!user || !hasRestoredNavigationRef.current) {
@@ -4532,9 +4564,43 @@ export default function Home() {
 
         return [...withoutProfile, data];
       });
+
+      const nextAvatarHistory = [
+        data.avatar_url,
+        ...avatarHistory.filter((url) => url !== data.avatar_url),
+      ].slice(0, 20);
+
+      setAvatarHistory(nextAvatarHistory);
+      window.localStorage.setItem(
+        `hush-avatar-history-${user.id}`,
+        JSON.stringify(nextAvatarHistory),
+      );
+      setAvatarGalleryIndex(0);
     }
 
     setErrorMessage("");
+  }
+
+  function openAvatarGallery(url: string | null | undefined) {
+    if (!url) {
+      avatarInputRef.current?.click();
+      return;
+    }
+
+    const nextAvatarHistory = [
+      url,
+      ...avatarHistory.filter((avatarUrl) => avatarUrl !== url),
+    ].slice(0, 20);
+
+    if (user) {
+      window.localStorage.setItem(
+        `hush-avatar-history-${user.id}`,
+        JSON.stringify(nextAvatarHistory),
+      );
+    }
+
+    setAvatarHistory(nextAvatarHistory);
+    setAvatarGalleryIndex(0);
   }
 
   function handleMessageTextChange(event: ChangeEvent<HTMLInputElement>) {
@@ -5625,7 +5691,11 @@ export default function Home() {
               <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-[#3f3f46]/35 pb-3 sm:mb-4 sm:gap-4 sm:pb-4">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#f4f4f5] text-lg font-medium text-[#050505] sm:h-16 sm:w-16 sm:rounded-2xl sm:text-xl">
+                    <button
+                      className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#f4f4f5] text-lg font-medium text-[#050505] transition hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-[#f4f4f5]/55 sm:h-16 sm:w-16 sm:rounded-2xl sm:text-xl"
+                      onClick={() => openAvatarGallery(currentProfile?.avatar_url)}
+                      type="button"
+                    >
                       {currentProfile?.avatar_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -5636,7 +5706,7 @@ export default function Home() {
                       ) : (
                         activeUserName[0]?.toUpperCase()
                       )}
-                    </div>
+                    </button>
                     <div className="min-w-0">
                       <h2 className="truncate text-lg font-medium sm:text-xl">
                         {activeUserName}
@@ -7561,6 +7631,91 @@ export default function Home() {
             </>
           )}
         </aside>
+      ) : null}
+      {avatarGalleryUrl ? (
+        <div className="fixed inset-0 z-[125] flex flex-col bg-black/72 p-3 backdrop-blur-md sm:p-5">
+          <div className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/82 px-3 py-2 text-[#f4f4f5] shadow-[0_14px_45px_rgba(0,0,0,0.28)]">
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium uppercase tracking-[0.16em] text-[#a1a1aa]">
+                {"\u0410\u0432\u0430\u0442\u0430\u0440\u043a\u0438"}
+              </p>
+              <p className="mt-0.5 text-xs text-[#a1a1aa]">
+                {(avatarGalleryIndex ?? 0) + 1} / {avatarHistory.length}
+              </p>
+            </div>
+            <button
+              className="rounded-xl border border-[#3f3f46]/45 px-4 py-2 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
+              onClick={() => setAvatarGalleryIndex(null)}
+              type="button"
+            >
+              {"\u0417\u0430\u043a\u0440\u044b\u0442\u044c"}
+            </button>
+          </div>
+
+          <div className="relative grid min-h-0 flex-1 place-items-center overflow-hidden rounded-2xl border border-[#3f3f46]/35 bg-[#050505]/72 p-3">
+            {avatarHistory.length > 1 ? (
+              <>
+                <button
+                  aria-label="Previous avatar"
+                  className="absolute left-3 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-[#3f3f46]/45 bg-[#111111]/88 text-[#f4f4f5] shadow-[0_12px_34px_rgba(0,0,0,0.35)] transition hover:bg-[#f4f4f5] hover:text-[#050505]"
+                  onClick={() =>
+                    setAvatarGalleryIndex((currentIndex) =>
+                      currentIndex === null
+                        ? 0
+                        : (currentIndex - 1 + avatarHistory.length) % avatarHistory.length,
+                    )
+                  }
+                  type="button"
+                >
+                  <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <path d="m15 18-6-6 6-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                  </svg>
+                </button>
+                <button
+                  aria-label="Next avatar"
+                  className="absolute right-3 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-[#3f3f46]/45 bg-[#111111]/88 text-[#f4f4f5] shadow-[0_12px_34px_rgba(0,0,0,0.35)] transition hover:bg-[#f4f4f5] hover:text-[#050505]"
+                  onClick={() =>
+                    setAvatarGalleryIndex((currentIndex) =>
+                      currentIndex === null ? 0 : (currentIndex + 1) % avatarHistory.length,
+                    )
+                  }
+                  type="button"
+                >
+                  <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <path d="m9 18 6-6-6-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                  </svg>
+                </button>
+              </>
+            ) : null}
+
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              alt="Avatar preview"
+              className="max-h-[82dvh] max-w-[92vw] rounded-2xl object-contain shadow-[0_28px_90px_rgba(0,0,0,0.55)]"
+              src={avatarGalleryUrl}
+            />
+          </div>
+
+          {avatarHistory.length > 1 ? (
+            <div className="scrollbar-hidden mt-3 flex shrink-0 gap-2 overflow-x-auto rounded-2xl border border-[#3f3f46]/35 bg-[#111111]/78 p-2">
+              {avatarHistory.map((avatarUrl, avatarIndex) => (
+                <button
+                  className={`h-14 w-14 shrink-0 overflow-hidden rounded-xl border transition ${
+                    avatarIndex === avatarGalleryIndex
+                      ? "border-[#f4f4f5] opacity-100"
+                      : "border-[#3f3f46]/45 opacity-55 hover:opacity-100"
+                  }`}
+                  key={avatarUrl}
+                  onClick={() => setAvatarGalleryIndex(avatarIndex)}
+                  type="button"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img alt="" className="h-full w-full object-cover" src={avatarUrl} />
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
       ) : null}
       {selectedImageUrl ? (
         <button
