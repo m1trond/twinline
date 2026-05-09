@@ -1016,6 +1016,7 @@ export default function Home() {
   const [hiddenMessageIds, setHiddenMessageIds] = useState<number[]>([]);
   const [messageDeleteTarget, setMessageDeleteTarget] = useState<MessageRow | null>(null);
   const [isChatDeleteDialogOpen, setIsChatDeleteDialogOpen] = useState(false);
+  const [chatDeleteTargetUserId, setChatDeleteTargetUserId] = useState<string | null>(null);
   const [areNotificationsEnabled, setAreNotificationsEnabled] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -1479,6 +1480,20 @@ export default function Home() {
   const isSelectedChatBlockingMe =
     selectedChatUserId !== null && blockState.blockedMeIds.includes(selectedChatUserId);
   const isSelectedChatBlocked = isSelectedChatBlockedByMe || isSelectedChatBlockingMe;
+  const chatDeleteTargetProfile = useMemo(() => {
+    const targetUserId = chatDeleteTargetUserId ?? selectedChatUserId;
+
+    if (!targetUserId) {
+      return null;
+    }
+
+    const profile = profiles.find((item) => item.user_id === targetUserId);
+
+    return {
+      name: profile?.display_name ?? friendProfile?.name ?? "Текущий чат",
+      userId: targetUserId,
+    };
+  }, [chatDeleteTargetUserId, friendProfile?.name, profiles, selectedChatUserId]);
   const isUsernameChangeAllowed = canChangeName(currentProfile?.username_changed_at ?? null);
   const nextUsernameChangeDate = getNextNameChangeDate(
     currentProfile?.username_changed_at ?? null,
@@ -2687,6 +2702,7 @@ export default function Home() {
       setMessageDeleteTarget(null);
       setMessagePinTarget(null);
       setIsChatDeleteDialogOpen(false);
+      setChatDeleteTargetUserId(null);
       setIsStickerPickerOpen(false);
       setReplyTarget(null);
       setEditingMessage(null);
@@ -3179,7 +3195,9 @@ export default function Home() {
   }
 
   async function confirmDeleteChat() {
-    if (isDeletingChat || !user || !selectedChatUserId) {
+    const targetChatUserId = chatDeleteTargetUserId ?? selectedChatUserId;
+
+    if (isDeletingChat || !user || !targetChatUserId) {
       return;
     }
 
@@ -3195,13 +3213,16 @@ export default function Home() {
         return (
           message.id > 0 &&
           !isServiceMessage(message.text) &&
-          isMessageBetweenUsers(message, user.id, selectedChatUserId)
+          isMessageBetweenUsers(message, user.id, targetChatUserId)
         );
       })
       .map((message) => message.id);
 
     if (selectedChatMessageIds.length === 0) {
-      setSelectedChatUserId(null);
+      if (selectedChatUserId === targetChatUserId) {
+        setSelectedChatUserId(null);
+      }
+      setChatDeleteTargetUserId(null);
       setIsDeletingChat(false);
       isDeletingChatRef.current = false;
       setErrorMessage("");
@@ -3216,7 +3237,7 @@ export default function Home() {
       currentMessages.filter((message) => !selectedChatMessageIds.includes(message.id)),
     );
     const nextPinnedMessageIdsByChat = { ...pinnedMessageIdsByChat };
-    delete nextPinnedMessageIdsByChat[selectedChatUserId];
+    delete nextPinnedMessageIdsByChat[targetChatUserId];
     setPinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
     writeStoredPinnedMessageIds(user.id, nextPinnedMessageIdsByChat);
     setSelectedMessageIds((currentIds) =>
@@ -3241,7 +3262,10 @@ export default function Home() {
       return;
     }
 
-    setSelectedChatUserId(null);
+    if (selectedChatUserId === targetChatUserId) {
+      setSelectedChatUserId(null);
+    }
+    setChatDeleteTargetUserId(null);
     setIsDeletingChat(false);
     isDeletingChatRef.current = false;
     setErrorMessage("");
@@ -3343,7 +3367,7 @@ export default function Home() {
   }
 
   function requestChatDeleteFromMenu(profile: ProfileRow) {
-    setSelectedChatUserId(profile.user_id);
+    setChatDeleteTargetUserId(profile.user_id);
     setChatContextMenu(null);
     setIsChatDeleteDialogOpen(true);
   }
@@ -6122,7 +6146,10 @@ export default function Home() {
                       aria-label="Удалить переписку"
                       className="grid min-h-9 w-9 place-items-center rounded-lg border border-red-400/45 bg-red-500/15 text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-55 sm:min-h-10 sm:w-10 sm:rounded-xl"
                       disabled={isDeletingChat}
-                      onClick={() => setIsChatDeleteDialogOpen(true)}
+                      onClick={() => {
+                        setChatDeleteTargetUserId(selectedChatUserId);
+                        setIsChatDeleteDialogOpen(true);
+                      }}
                       type="button"
                     >
                       {isDeletingChat ? (
@@ -7103,51 +7130,68 @@ export default function Home() {
               {blockedByMeProfileIds.includes(chatContextMenu.profile.user_id) ? "Разблокировать" : "Заблокировать"}
             </button>
             <div className="group relative">
-              <button
-                className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
-                type="button"
-              >
-                <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
-                  <path d="M5 9v6h4l5 4V5L9 9H5Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                  <path d="m19 9-4 4M15 9l4 4" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
-                </svg>
-                <span className="min-w-0 flex-1">Выключить уведомления</span>
-                <svg aria-hidden="true" className="h-4 w-4 shrink-0 text-[#a1a1aa]" fill="none" viewBox="0 0 24 24">
-                  <path d="m9 18 6-6-6-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                </svg>
-              </button>
-              <div className="invisible absolute left-[calc(100%-6px)] top-0 z-[91] w-[260px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
-                <button className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10" onClick={() => runChatMenuStub("Выбор звука скоро подключим.")} type="button">Выбрать звук</button>
-                <button className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10" onClick={() => runChatMenuStub("Звуки чатов скоро подключим.")} type="button">Выключить звук</button>
-                {[
-                  { durationMs: 30 * 60 * 1000, label: "Выключить на 30 минут" },
-                  { durationMs: 60 * 60 * 1000, label: "Выключить на 1 час" },
-                  { durationMs: 2 * 60 * 60 * 1000, label: "Выключить на 2 часа" },
-                  { durationMs: 8 * 60 * 60 * 1000, label: "Выключить на 8 часов" },
-                ].map((option) => (
-                  <button
-                    className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
-                    key={option.label}
-                    onClick={() => {
-                      muteProfileNotifications(chatContextMenu.profile.user_id, option.durationMs);
-                      setChatContextMenu(null);
-                    }}
-                    type="button"
-                  >
-                    {option.label}
-                  </button>
-                ))}
+              {isProfileMuted(mutedProfiles, chatContextMenu.profile.user_id) ? (
                 <button
-                  className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium text-red-100 transition hover:bg-red-500/18"
+                  className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
                   onClick={() => {
-                    muteProfileNotifications(chatContextMenu.profile.user_id, null);
+                    unmuteProfileNotifications(chatContextMenu.profile.user_id);
                     setChatContextMenu(null);
                   }}
                   type="button"
                 >
-                  Отключить уведомления
+                  <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+                    <path d="M5 9v6h4l5 4V5L9 9H5Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                    <path d="M18 9a5 5 0 0 1 0 6" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+                  </svg>
+                  Включить уведомления
                 </button>
-              </div>
+              ) : (
+                <>
+                  <button
+                    className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
+                    type="button"
+                  >
+                    <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+                      <path d="M5 9v6h4l5 4V5L9 9H5Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                      <path d="m19 9-4 4M15 9l4 4" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+                    </svg>
+                    <span className="min-w-0 flex-1">Выключить уведомления</span>
+                    <svg aria-hidden="true" className="h-4 w-4 shrink-0 text-[#a1a1aa]" fill="none" viewBox="0 0 24 24">
+                      <path d="m9 18 6-6-6-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                    </svg>
+                  </button>
+                  <div className="invisible absolute left-[calc(100%-6px)] top-0 z-[91] w-[260px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
+                    {[
+                      { durationMs: 30 * 60 * 1000, label: "Выключить на 30 минут" },
+                      { durationMs: 60 * 60 * 1000, label: "Выключить на 1 час" },
+                      { durationMs: 2 * 60 * 60 * 1000, label: "Выключить на 2 часа" },
+                      { durationMs: 8 * 60 * 60 * 1000, label: "Выключить на 8 часов" },
+                    ].map((option) => (
+                      <button
+                        className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
+                        key={option.label}
+                        onClick={() => {
+                          muteProfileNotifications(chatContextMenu.profile.user_id, option.durationMs);
+                          setChatContextMenu(null);
+                        }}
+                        type="button"
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                    <button
+                      className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium text-red-100 transition hover:bg-red-500/18"
+                      onClick={() => {
+                        muteProfileNotifications(chatContextMenu.profile.user_id, null);
+                        setChatContextMenu(null);
+                      }}
+                      type="button"
+                    >
+                      Отключить уведомления
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </>
@@ -7543,7 +7587,10 @@ export default function Home() {
           <button
             aria-label="Закрыть окно удаления переписки"
             className="fixed inset-0 z-[95] bg-black/62 backdrop-blur-sm"
-            onClick={() => setIsChatDeleteDialogOpen(false)}
+            onClick={() => {
+              setIsChatDeleteDialogOpen(false);
+              setChatDeleteTargetUserId(null);
+            }}
             type="button"
           />
           <section className="fixed left-1/2 top-1/2 z-[96] w-[min(460px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-red-400/25 bg-[#111111]/96 p-4 text-left shadow-[0_24px_90px_rgba(0,0,0,0.65)] sm:rounded-3xl sm:p-5">
@@ -7570,14 +7617,19 @@ export default function Home() {
 
               <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/24 p-3">
                 <p className="text-[13px] font-medium text-[#f4f4f5]">
-                  {friendProfile?.name ? `Чат с ${friendProfile.name}` : "Текущий чат"}
+                  {chatDeleteTargetProfile?.name
+                    ? `Чат с ${chatDeleteTargetProfile.name}`
+                    : "Текущий чат"}
                 </p>
               </div>
 
               <div className="mt-5 grid gap-2 sm:grid-cols-2">
                 <button
                   className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
-                  onClick={() => setIsChatDeleteDialogOpen(false)}
+                  onClick={() => {
+                    setIsChatDeleteDialogOpen(false);
+                    setChatDeleteTargetUserId(null);
+                  }}
                   type="button"
                 >
                   Оставить
