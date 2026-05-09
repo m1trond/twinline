@@ -1293,6 +1293,7 @@ export default function Home() {
   const activeViewRef = useRef<ActiveView>("profile");
   const selectedChatUserIdRef = useRef<string | null>(null);
   const hasRestoredNavigationRef = useRef(false);
+  const restoredNavigationUserIdRef = useRef<string | null>(null);
   const notifiedMessageIdsRef = useRef<Set<number>>(new Set());
   const originalPageTitleRef = useRef("Hush");
   const isDeletingChatRef = useRef(false);
@@ -1745,20 +1746,76 @@ export default function Home() {
           name: friendProfile?.name ?? "Друг",
         };
 
+  function restoreNavigationForUser(nextUser: User | null) {
+    if (!nextUser) {
+      hasRestoredNavigationRef.current = false;
+      restoredNavigationUserIdRef.current = null;
+      setActiveView("profile");
+      setSelectedChatUserId(null);
+      return;
+    }
+
+    if (
+      hasRestoredNavigationRef.current &&
+      restoredNavigationUserIdRef.current === nextUser.id
+    ) {
+      return;
+    }
+
+    hasRestoredNavigationRef.current = false;
+    restoredNavigationUserIdRef.current = nextUser.id;
+
+    const storedNavigation = window.localStorage.getItem(
+      "hush-navigation-" + nextUser.id,
+    );
+
+    if (!storedNavigation) {
+      hasRestoredNavigationRef.current = true;
+      return;
+    }
+
+    try {
+      const parsedNavigation = JSON.parse(storedNavigation) as StoredNavigationState;
+      const restoredView = isActiveView(parsedNavigation.activeView)
+        ? parsedNavigation.activeView
+        : "profile";
+      const restoredChatUserId =
+        typeof parsedNavigation.selectedChatUserId === "string"
+          ? parsedNavigation.selectedChatUserId
+          : null;
+
+      flushSync(() => {
+        setActiveView(restoredView);
+        setSelectedChatUserId(restoredView === "messages" ? restoredChatUserId : null);
+      });
+    } catch {
+      flushSync(() => {
+        setActiveView("profile");
+        setSelectedChatUserId(null);
+      });
+    } finally {
+      hasRestoredNavigationRef.current = true;
+    }
+  }
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
+      const sessionUser = data.session?.user ?? null;
+
+      restoreNavigationForUser(sessionUser);
+      setUser(sessionUser);
       setIsAuthLoading(false);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const sessionUser = session?.user ?? null;
+
+      restoreNavigationForUser(sessionUser);
+      setUser(sessionUser);
       setMessages([]);
       setProfiles([]);
-      setSelectedChatUserId(null);
-      hasRestoredNavigationRef.current = false;
       latestMessageCreatedAtRef.current = null;
     });
 
@@ -1771,47 +1828,6 @@ export default function Home() {
     latestMessageCreatedAtRef.current =
       messages.filter((message) => message.id > 0).at(-1)?.created_at ?? null;
   }, [messages]);
-
-  useEffect(() => {
-    if (!user) {
-      hasRestoredNavigationRef.current = false;
-      return;
-    }
-
-    const frameId = window.requestAnimationFrame(() => {
-      const storedNavigation = window.localStorage.getItem(
-        `hush-navigation-${user.id}`,
-      );
-
-      if (!storedNavigation) {
-        hasRestoredNavigationRef.current = true;
-        return;
-      }
-
-      try {
-        const parsedNavigation = JSON.parse(storedNavigation) as StoredNavigationState;
-        const restoredView = isActiveView(parsedNavigation.activeView)
-          ? parsedNavigation.activeView
-          : "profile";
-        const restoredChatUserId =
-          typeof parsedNavigation.selectedChatUserId === "string"
-            ? parsedNavigation.selectedChatUserId
-            : null;
-
-        setActiveView(restoredView);
-        setSelectedChatUserId(restoredView === "messages" ? restoredChatUserId : null);
-      } catch {
-        setActiveView("profile");
-        setSelectedChatUserId(null);
-      } finally {
-        hasRestoredNavigationRef.current = true;
-      }
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-    };
-  }, [user]);
 
   useEffect(() => {
     if (!user || !hasRestoredNavigationRef.current) {
