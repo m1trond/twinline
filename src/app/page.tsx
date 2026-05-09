@@ -1555,6 +1555,16 @@ export default function Home() {
       return isMessageBetweenUsers(message, user.id, selectedChatUserId);
     });
   }, [selectedChatUserId, user, visibleMessages]);
+  const selectedDialogMessages = useMemo(() => {
+    if (!selectedChatUserId) {
+      return [];
+    }
+
+    return activeDialogMessages.filter((message) =>
+      selectedMessageIds.includes(message.id),
+    );
+  }, [activeDialogMessages, selectedChatUserId, selectedMessageIds]);
+  const isMessageSelectionMode = selectedDialogMessages.length > 0;
   const activePinnedMessages = useMemo(() => {
     const activeLocalPinnedMessageIds = selectedChatUserId
       ? pinnedMessageIdsByChat[selectedChatUserId] ?? []
@@ -1896,6 +1906,16 @@ export default function Home() {
       window.cancelAnimationFrame(frameId);
     };
   }, [selectedChatUserId]);
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      setSelectedMessageIds([]);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [activeView, selectedChatUserId]);
 
   useEffect(() => {
     if (pinnedNavigationIndex >= activePinnedMessages.length) {
@@ -4019,6 +4039,112 @@ export default function Home() {
         : [...currentIds, message.id],
     );
     setMessageContextMenu(null);
+    setErrorMessage("");
+  }
+
+  function handleMessageSelectionClick(
+    event: MouseEvent<HTMLElement>,
+    message: MessageRow,
+  ) {
+    if (!isMessageSelectionMode) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    toggleSelectedMessage(message);
+  }
+
+  function forwardSelectedMessages() {
+    if (selectedDialogMessages.length === 0) {
+      return;
+    }
+
+    setErrorMessage("РџРµСЂРµСЃС‹Р»РєСѓ СЃРѕРѕР±С‰РµРЅРёР№ РїРѕРґРєР»СЋС‡РёРј СЃР»РµРґСѓСЋС‰РёРј С€Р°РіРѕРј.");
+  }
+
+  async function deleteSelectedMessages() {
+    if (!user || selectedDialogMessages.length === 0) {
+      return;
+    }
+
+    const selectedIds = selectedDialogMessages.map((message) => message.id);
+    const ownPositiveIds = selectedDialogMessages
+      .filter((message) => message.user_id === user.id && message.id > 0)
+      .map((message) => message.id);
+    const ownLocalIds = selectedDialogMessages
+      .filter((message) => message.user_id === user.id && message.id < 0)
+      .map((message) => message.id);
+    const hiddenIds = selectedDialogMessages
+      .filter((message) => message.user_id !== user.id && message.id > 0)
+      .map((message) => message.id);
+    const previousMessages = messages;
+    const previousHiddenMessageIds = hiddenMessageIds;
+    const previousPinnedMessageIdsByChat = pinnedMessageIdsByChat;
+    const previousSelectedMessageIds = selectedMessageIds;
+
+    setMessages((currentMessages) =>
+      currentMessages.filter(
+        (message) =>
+          !ownPositiveIds.includes(message.id) && !ownLocalIds.includes(message.id),
+      ),
+    );
+
+    if (hiddenIds.length > 0) {
+      setHiddenMessageIds((currentIds) => {
+        const nextIds = Array.from(new Set([...currentIds, ...hiddenIds]));
+
+        window.localStorage.setItem(
+          `twinline-hidden-messages-${user.id}`,
+          JSON.stringify(nextIds),
+        );
+
+        return nextIds;
+      });
+    }
+
+    if (selectedChatUserId) {
+      const nextPinnedMessageIdsByChat = {
+        ...pinnedMessageIdsByChat,
+        [selectedChatUserId]: (pinnedMessageIdsByChat[selectedChatUserId] ?? []).filter(
+          (id) => !selectedIds.includes(id),
+        ),
+      };
+
+      setPinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
+      writeStoredPinnedMessageIds(user.id, nextPinnedMessageIdsByChat);
+    }
+
+    setSelectedMessageIds((currentIds) =>
+      currentIds.filter((id) => !selectedIds.includes(id)),
+    );
+    setMessageContextMenu(null);
+
+    if (ownPositiveIds.length === 0) {
+      setErrorMessage("");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("messages")
+      .delete()
+      .eq("user_id", user.id)
+      .in("id", ownPositiveIds);
+
+    if (error) {
+      setMessages(previousMessages);
+      setHiddenMessageIds(previousHiddenMessageIds);
+      window.localStorage.setItem(
+        `twinline-hidden-messages-${user.id}`,
+        JSON.stringify(previousHiddenMessageIds),
+      );
+      setPinnedMessageIdsByChat(previousPinnedMessageIdsByChat);
+      writeStoredPinnedMessageIds(user.id, previousPinnedMessageIdsByChat);
+      setSelectedMessageIds(previousSelectedMessageIds);
+      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ СѓРґР°Р»РёС‚СЊ РІС‹РґРµР»РµРЅРЅС‹Рµ СЃРѕРѕР±С‰РµРЅРёСЏ.");
+      return;
+    }
+
     setErrorMessage("");
   }
 
@@ -6404,6 +6530,40 @@ export default function Home() {
                     </button>
                   </div>
                 </div>
+                {isMessageSelectionMode ? (
+                  <div className="mb-2 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/88 px-3 py-2 text-[#f4f4f5] shadow-[0_12px_35px_rgba(0,0,0,0.25)] backdrop-blur-md sm:mb-3">
+                    <div className="flex min-w-0 items-center gap-2 text-[13px] font-medium text-[#d4d4d8]">
+                      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#f4f4f5] text-[#050505]">
+                        {selectedDialogMessages.length}
+                      </span>
+                      <span className="truncate">
+                        Р’С‹РґРµР»РµРЅРѕ СЃРѕРѕР±С‰РµРЅРёР№
+                      </span>
+                    </div>
+                    <div className="flex flex-1 justify-end gap-2 sm:flex-none">
+                      <button
+                        className="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-[#3f3f46]/55 bg-[#f4f4f5]/10 px-3 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/16 sm:flex-none"
+                        onClick={forwardSelectedMessages}
+                        type="button"
+                      >
+                        <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <path d="m14 6 6 6-6 6M20 12H9a5 5 0 0 0-5 5v1" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                        </svg>
+                        РџРµСЂРµСЃР»Р°С‚СЊ
+                      </button>
+                      <button
+                        className="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-red-400/45 bg-red-500/16 px-3 text-[13px] font-medium text-red-100 transition hover:bg-red-500/25 sm:flex-none"
+                        onClick={deleteSelectedMessages}
+                        type="button"
+                      >
+                        <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                        </svg>
+                        РЈРґР°Р»РёС‚СЊ
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
                 {activePinnedMessages.length > 0 ? (
                   <div className="mb-2 flex min-h-9 shrink-0 overflow-hidden rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 text-[13px] text-[#e5e5e5] shadow-[0_10px_30px_rgba(0,0,0,0.18)] sm:mb-3">
                     <button
@@ -6498,13 +6658,29 @@ export default function Home() {
                         className={`-mx-1 flex items-end gap-1.5 rounded-xl px-1 py-1 transition-[background-color,box-shadow] duration-300 sm:gap-2 sm:rounded-2xl ${
                           highlightedMessageId === message.id
                             ? "bg-[#f4f4f5]/12 shadow-[0_0_0_2px_rgba(244,244,245,0.26),0_0_38px_rgba(244,244,245,0.12)]"
-                            : "shadow-[0_0_0_0_rgba(244,244,245,0)]"
+                            : isSelected
+                              ? "bg-[#f4f4f5]/8 shadow-[0_0_0_1px_rgba(244,244,245,0.12)]"
+                              : "shadow-[0_0_0_0_rgba(244,244,245,0)]"
                         } ${
                           isPreviousSameAuthor ? "mt-1" : "mt-3"
                         } ${isMine ? "justify-end" : "justify-start"}`}
                         data-message-id={message.id}
                         key={message.id}
+                        onClickCapture={(event) => handleMessageSelectionClick(event, message)}
                       >
+                        {isMessageSelectionMode && isMine ? (
+                          <span
+                            className={`mb-1 grid h-6 w-6 shrink-0 place-items-center rounded-full border transition ${
+                              isSelected
+                                ? "border-[#f4f4f5] bg-[#f4f4f5] text-[#050505]"
+                                : "border-[#3f3f46]/70 bg-[#111111]/88 text-transparent"
+                            }`}
+                          >
+                            <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 16 16">
+                              <path d="m3.5 8.2 2.8 2.8 6.2-6.2" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                            </svg>
+                          </span>
+                        ) : null}
                         {!isMine ? (
                           shouldShowFriendAvatar ? (
                             <button
@@ -6534,6 +6710,19 @@ export default function Home() {
                           ) : (
                             <span className="h-7 w-7 shrink-0 sm:h-8 sm:w-8" />
                           )
+                        ) : null}
+                        {isMessageSelectionMode && !isMine ? (
+                          <span
+                            className={`mb-1 grid h-6 w-6 shrink-0 place-items-center rounded-full border transition ${
+                              isSelected
+                                ? "border-[#f4f4f5] bg-[#f4f4f5] text-[#050505]"
+                                : "border-[#3f3f46]/70 bg-[#111111]/88 text-transparent"
+                            }`}
+                          >
+                            <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 16 16">
+                              <path d="m3.5 8.2 2.8 2.8 6.2-6.2" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                            </svg>
+                          </span>
                         ) : null}
                         {isPinned && isMine ? (
                           <span className="mb-1 grid h-6 w-6 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/55 bg-[#111111]/94 text-[#f4f4f5] shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
