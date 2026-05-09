@@ -91,6 +91,10 @@ type AuthContactMethod = "email" | "phone";
 type CallStatus = "idle" | "calling" | "incoming" | "connecting" | "connected";
 type MutedProfileUntil = Record<string, number | null>;
 type PinnedMessageIdsByChat = Record<string, number[]>;
+type StoredNavigationState = {
+  activeView?: ActiveView;
+  selectedChatUserId?: string | null;
+};
 
 const navItems: Array<{ label: string; view: ActiveView }> = [
   { label: "Профиль", view: "profile" },
@@ -120,6 +124,11 @@ const usernameProfileColumns = "user_id, display_name, username, avatar_url, nam
 const legacyProfileColumns = "user_id, display_name, avatar_url, name_changed_at, updated_at";
 const messageColumns = "id, author, text, created_at, user_id, recipient_id";
 const usernamePattern = /^[a-z0-9_]{3,24}$/;
+const activeViews: ActiveView[] = ["profile", "messages", "favorites", "settings"];
+
+function isActiveView(value: unknown): value is ActiveView {
+  return typeof value === "string" && activeViews.includes(value as ActiveView);
+}
 
 function readStoredStringList(key: string) {
   if (typeof window === "undefined") {
@@ -1283,6 +1292,7 @@ export default function Home() {
   const blockedProfileIdsRef = useRef<Set<string>>(new Set());
   const activeViewRef = useRef<ActiveView>("profile");
   const selectedChatUserIdRef = useRef<string | null>(null);
+  const hasRestoredNavigationRef = useRef(false);
   const notifiedMessageIdsRef = useRef<Set<number>>(new Set());
   const originalPageTitleRef = useRef("Hush");
   const isDeletingChatRef = useRef(false);
@@ -1748,6 +1758,7 @@ export default function Home() {
       setMessages([]);
       setProfiles([]);
       setSelectedChatUserId(null);
+      hasRestoredNavigationRef.current = false;
       latestMessageCreatedAtRef.current = null;
     });
 
@@ -1760,6 +1771,61 @@ export default function Home() {
     latestMessageCreatedAtRef.current =
       messages.filter((message) => message.id > 0).at(-1)?.created_at ?? null;
   }, [messages]);
+
+  useEffect(() => {
+    if (!user) {
+      hasRestoredNavigationRef.current = false;
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      const storedNavigation = window.localStorage.getItem(
+        `hush-navigation-${user.id}`,
+      );
+
+      if (!storedNavigation) {
+        hasRestoredNavigationRef.current = true;
+        return;
+      }
+
+      try {
+        const parsedNavigation = JSON.parse(storedNavigation) as StoredNavigationState;
+        const restoredView = isActiveView(parsedNavigation.activeView)
+          ? parsedNavigation.activeView
+          : "profile";
+        const restoredChatUserId =
+          typeof parsedNavigation.selectedChatUserId === "string"
+            ? parsedNavigation.selectedChatUserId
+            : null;
+
+        setActiveView(restoredView);
+        setSelectedChatUserId(restoredView === "messages" ? restoredChatUserId : null);
+      } catch {
+        setActiveView("profile");
+        setSelectedChatUserId(null);
+      } finally {
+        hasRestoredNavigationRef.current = true;
+      }
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || !hasRestoredNavigationRef.current) {
+      return;
+    }
+
+    window.localStorage.setItem(
+      `hush-navigation-${user.id}`,
+      JSON.stringify({
+        activeView,
+        selectedChatUserId: activeView === "messages" ? selectedChatUserId : null,
+      }),
+    );
+  }, [activeView, selectedChatUserId, user]);
 
   useEffect(() => {
     if (activeView !== "messages" || selectedChatUserId === null) {
