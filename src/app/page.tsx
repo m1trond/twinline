@@ -81,7 +81,6 @@ type ActiveView = "profile" | "messages" | "favorites" | "settings";
 type AuthMode = "sign-in" | "sign-up";
 type AuthContactMethod = "email" | "phone";
 type CallStatus = "idle" | "calling" | "incoming" | "connecting" | "connected";
-type CacheClearTarget = "all" | "favorites" | "hidden" | "pinned" | "settings";
 type MutedProfileUntil = Record<string, number | null>;
 type PinnedMessageIdsByChat = Record<string, number[]>;
 
@@ -948,7 +947,6 @@ export default function Home() {
   const [pinnedFavoriteItem, setPinnedFavoriteItem] = useState<FavoriteItem | null>(null);
   const [messagePinTarget, setMessagePinTarget] = useState<MessageRow | null>(null);
   const [shouldPinForBoth, setShouldPinForBoth] = useState(false);
-  const [cacheClearTarget, setCacheClearTarget] = useState<CacheClearTarget | null>(null);
   const [selectedMessageIds, setSelectedMessageIds] = useState<number[]>([]);
   const [favoriteItems, setFavoriteItems] = useState<FavoriteItem[]>([]);
   const [hiddenMessageIds, setHiddenMessageIds] = useState<number[]>([]);
@@ -2820,75 +2818,6 @@ export default function Home() {
     setter(nextValue);
     writeStoredBoolean(key, nextValue);
     setErrorMessage("");
-  }
-
-  function clearFavoriteCache() {
-    setFavoriteItems([]);
-    setPinnedFavoriteItem(null);
-
-    if (user) {
-      window.localStorage.removeItem(`hush-favorites-${user.id}`);
-    }
-  }
-
-  function clearHiddenMessagesCache() {
-    setHiddenMessageIds([]);
-
-    if (user) {
-      window.localStorage.removeItem(`twinline-hidden-messages-${user.id}`);
-    }
-  }
-
-  function clearPinnedMessagesCache() {
-    setPinnedMessageIdsByChat({});
-    setIsPinnedMessagesViewOpen(false);
-
-    if (user) {
-      window.localStorage.removeItem(`hush-pinned-messages-${user.id}`);
-    }
-  }
-
-  function clearBrowserSettingsCache() {
-    window.localStorage.removeItem("twinline-notifications");
-    window.localStorage.removeItem("twinline-muted-profiles");
-    window.localStorage.removeItem("hush-settings-online-status-visible");
-    window.localStorage.removeItem("hush-settings-phone-visible");
-    window.localStorage.removeItem("hush-settings-profile-searchable");
-    window.localStorage.removeItem("hush-settings-soft-effects");
-    window.localStorage.removeItem("hush-settings-read-receipts-visible");
-    window.localStorage.removeItem("hush-settings-compact-interface");
-
-    setAreNotificationsEnabled(false);
-    setMutedProfiles({});
-    setIsOnlineStatusVisible(true);
-    setIsPhoneVisible(false);
-    setIsProfileSearchable(true);
-    setAreSoftEffectsEnabled(true);
-  }
-
-  function confirmCacheClear() {
-    if (!cacheClearTarget) {
-      return;
-    }
-
-    if (cacheClearTarget === "favorites" || cacheClearTarget === "all") {
-      clearFavoriteCache();
-    }
-
-    if (cacheClearTarget === "hidden" || cacheClearTarget === "all") {
-      clearHiddenMessagesCache();
-    }
-
-    if (cacheClearTarget === "pinned" || cacheClearTarget === "all") {
-      clearPinnedMessagesCache();
-    }
-
-    if (cacheClearTarget === "settings" || cacheClearTarget === "all") {
-      clearBrowserSettingsCache();
-    }
-
-    setCacheClearTarget(null);
-    setErrorMessage("Локальные данные очищены.");
   }
 
   function muteProfileNotifications(profileUserId: string, durationMs: number | null) {
@@ -5620,80 +5549,6 @@ export default function Home() {
                       ))}
                     </div>
                   </section>
-
-                  <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 p-3 sm:rounded-2xl sm:p-4">
-                    <div className="mb-3 flex items-center gap-2">
-                      <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#f4f4f5]/10 text-[#f4f4f5]">
-                        <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                          <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                        </svg>
-                      </span>
-                      <div>
-                        <p className="text-sm font-medium">Данные</p>
-                        <p className="text-xs text-[#a1a1aa]">Очистка локального кэша браузера.</p>
-                      </div>
-                    </div>
-                    <div className="grid gap-2">
-                      {[
-                        {
-                          count: favoriteItems.length,
-                          description: "Личные сообщения, заметки и медиа в избранном на этом устройстве.",
-                          label: "Избранное",
-                          target: "favorites" as const,
-                        },
-                        {
-                          count: hiddenMessageIds.length,
-                          description: "Сообщения, скрытые только у тебя в браузере.",
-                          label: "Скрытые сообщения",
-                          target: "hidden" as const,
-                        },
-                        {
-                          count: Object.values(pinnedMessageIdsByChat).reduce(
-                            (totalCount, pinnedIds) => totalCount + pinnedIds.length,
-                            0,
-                          ),
-                          description: "Закрепы, которые сохранены только для тебя.",
-                          label: "Локальные закрепы",
-                          target: "pinned" as const,
-                        },
-                        {
-                          count: Object.keys(pruneMutedProfiles(mutedProfiles)).length,
-                          description: "Уведомления, мьюты и переключатели настроек.",
-                          label: "Настройки браузера",
-                          target: "settings" as const,
-                        },
-                      ].map((cacheItem) => (
-                        <div
-                          className="flex items-center justify-between gap-3 rounded-xl border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2.5"
-                          key={cacheItem.target}
-                        >
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="text-[13px] font-medium">{cacheItem.label}</p>
-                              <span className="rounded-full bg-[#f4f4f5]/10 px-2 py-0.5 text-[11px] font-medium text-[#d4d4d8]">
-                                {cacheItem.count}
-                              </span>
-                            </div>
-                            <p className="mt-0.5 text-xs leading-5 text-[#a1a1aa]">{cacheItem.description}</p>
-                          </div>
-                          <button
-                            className="shrink-0 rounded-xl border border-[#3f3f46]/40 px-3 py-2 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
-                            onClick={() => setCacheClearTarget(cacheItem.target)}
-                            type="button"
-                          >
-                            Очистить
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        className="mt-1 min-h-10 rounded-xl border border-red-400/35 bg-red-500/12 px-4 text-[13px] font-medium text-red-100 transition hover:bg-red-500/20"
-                        onClick={() => setCacheClearTarget("all")}
-                        type="button"
-                      >
-                        Очистить весь локальный кэш
-                      </button>
-                    </div>
-                  </section>
                 </div>
               </div>
             ) : (
@@ -7227,67 +7082,6 @@ export default function Home() {
               ))}
             </div>
           </div>
-        </>
-      ) : null}
-      {cacheClearTarget ? (
-        <>
-          <button
-            aria-label="Закрыть окно очистки данных"
-            className="fixed inset-0 z-[95] bg-black/58 backdrop-blur-sm"
-            onClick={() => setCacheClearTarget(null)}
-            type="button"
-          />
-          <section className="fixed left-1/2 top-1/2 z-[96] w-[min(430px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-red-400/25 bg-[#111111]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:rounded-3xl sm:p-5">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(239,68,68,0.18),transparent_36%),linear-gradient(145deg,rgba(255,255,255,0.05),transparent_48%)]" />
-            <div className="relative">
-              <div className="mb-4 flex items-start gap-3">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-red-300/25 bg-red-500/14 text-red-100">
-                  <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                    <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                  </svg>
-                </span>
-                <div className="min-w-0">
-                  <h2 className="text-lg font-medium text-[#f4f4f5]">
-                    Очистить локальные данные?
-                  </h2>
-                  <p className="mt-1 text-[13px] leading-6 text-[#a1a1aa]">
-                    Это затронет только данные в этом браузере. Аккаунт, профиль и сообщения в базе не удалятся.
-                  </p>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/22 px-3 py-2.5">
-                <p className="text-[13px] font-medium text-[#f4f4f5]">
-                  {cacheClearTarget === "all"
-                    ? "Весь локальный кэш"
-                    : cacheClearTarget === "favorites"
-                      ? "Избранное"
-                      : cacheClearTarget === "hidden"
-                        ? "Скрытые сообщения"
-                        : cacheClearTarget === "pinned"
-                          ? "Локальные закрепы"
-                          : "Настройки браузера"}
-                </p>
-              </div>
-
-              <div className="mt-5 grid gap-2 sm:grid-cols-2">
-                <button
-                  className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
-                  onClick={() => setCacheClearTarget(null)}
-                  type="button"
-                >
-                  Отмена
-                </button>
-                <button
-                  className="min-h-12 rounded-xl bg-red-500 px-4 text-[13px] font-medium text-white transition hover:bg-red-400"
-                  onClick={confirmCacheClear}
-                  type="button"
-                >
-                  Очистить
-                </button>
-              </div>
-            </div>
-          </section>
         </>
       ) : null}
       {blockConfirmation ? (
