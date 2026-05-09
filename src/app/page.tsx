@@ -5857,7 +5857,13 @@ export default function Home() {
                               className="flex items-center gap-2 rounded-lg px-2 py-2 text-left transition hover:bg-[#f4f4f5]/10 sm:rounded-xl"
                               key={`search-${profile.user_id}`}
                               onClick={() => {
-                                setSelectedChatUserId(profile.user_id);
+                                setViewedProfile({
+                                  avatarUrl: profile.avatar_url,
+                                  name: profile.display_name,
+                                  username: profile.username,
+                                  updatedAt: profile.updated_at,
+                                  userId: profile.user_id,
+                                });
                                 setChatSearchQuery("");
                                 setUnreadMessageCount(0);
                               }}
