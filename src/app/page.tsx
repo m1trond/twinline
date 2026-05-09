@@ -4060,7 +4060,7 @@ export default function Home() {
       return;
     }
 
-    setErrorMessage("РџРµСЂРµСЃС‹Р»РєСѓ СЃРѕРѕР±С‰РµРЅРёР№ РїРѕРґРєР»СЋС‡РёРј СЃР»РµРґСѓСЋС‰РёРј С€Р°РіРѕРј.");
+    setErrorMessage("Пересылку сообщений подключим следующим шагом.");
   }
 
   async function deleteSelectedMessages() {
@@ -4141,7 +4141,7 @@ export default function Home() {
       setPinnedMessageIdsByChat(previousPinnedMessageIdsByChat);
       writeStoredPinnedMessageIds(user.id, previousPinnedMessageIdsByChat);
       setSelectedMessageIds(previousSelectedMessageIds);
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ СѓРґР°Р»РёС‚СЊ РІС‹РґРµР»РµРЅРЅС‹Рµ СЃРѕРѕР±С‰РµРЅРёСЏ.");
+      setErrorMessage("Не получилось удалить выделенные сообщения.");
       return;
     }
 
@@ -6537,7 +6537,7 @@ export default function Home() {
                         {selectedDialogMessages.length}
                       </span>
                       <span className="truncate">
-                        Р’С‹РґРµР»РµРЅРѕ СЃРѕРѕР±С‰РµРЅРёР№
+                        Выделено сообщений
                       </span>
                     </div>
                     <div className="flex flex-1 justify-end gap-2 sm:flex-none">
@@ -6549,7 +6549,7 @@ export default function Home() {
                         <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
                           <path d="m14 6 6 6-6 6M20 12H9a5 5 0 0 0-5 5v1" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                         </svg>
-                        РџРµСЂРµСЃР»Р°С‚СЊ
+                        Переслать
                       </button>
                       <button
                         className="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-red-400/45 bg-red-500/16 px-3 text-[13px] font-medium text-red-100 transition hover:bg-red-500/25 sm:flex-none"
@@ -6559,7 +6559,7 @@ export default function Home() {
                         <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
                           <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                         </svg>
-                        РЈРґР°Р»РёС‚СЊ
+                        Удалить
                       </button>
                     </div>
                   </div>
