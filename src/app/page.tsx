@@ -5427,7 +5427,7 @@ export default function Home() {
                     aria-label="User search by username"
                     className="min-w-0 flex-1 bg-transparent text-[13px] text-[#f4f4f5] outline-none placeholder:text-[#a1a1aa]/75"
                     onChange={(event) => setChatSearchQuery(event.target.value)}
-                    placeholder="\u041d\u0430\u0439\u0442\u0438 \u043f\u043e @\u043d\u0438\u043a\u0443"
+                    placeholder="Найти..."
                     type="text"
                     value={chatSearchQuery}
                   />
