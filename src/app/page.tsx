@@ -968,12 +968,6 @@ export default function Home() {
   const [isProfileSearchable, setIsProfileSearchable] = useState(() =>
     readStoredBoolean("hush-settings-profile-searchable", true),
   );
-  const [areReadReceiptsVisible, setAreReadReceiptsVisible] = useState(() =>
-    readStoredBoolean("hush-settings-read-receipts-visible", true),
-  );
-  const [isCompactInterfaceEnabled, setIsCompactInterfaceEnabled] = useState(() =>
-    readStoredBoolean("hush-settings-compact-interface", false),
-  );
   const [areSoftEffectsEnabled, setAreSoftEffectsEnabled] = useState(() =>
     readStoredBoolean("hush-settings-soft-effects", true),
   );
@@ -5269,21 +5263,13 @@ export default function Home() {
               </div>            ) : activeView === "settings" ? (
               <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
                 <div className="mb-4 border-b border-[#3f3f46]/35 pb-4 sm:mb-5 sm:pb-5">
-                  <p className="text-[13px] font-medium text-[#e5e5e5]">
-                    Hush
-                  </p>
-                  <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
-                    <div>
-                      <h2 className="text-lg font-medium sm:text-xl">
-                        Настройки
-                      </h2>
-                      <p className="mt-1 text-[13px] leading-5 text-[#a1a1aa]">
-                        Уведомления, приватность, аккаунт и внешний вид.
-                      </p>
-                    </div>
-                    <span className="rounded-full border border-[#3f3f46]/45 bg-black/24 px-3 py-1 text-[11px] font-medium text-[#d4d4d8]">
-                      {currentProfile?.username ? `@${currentProfile.username}` : "ник не выбран"}
-                    </span>
+                  <div>
+                    <h2 className="text-lg font-medium sm:text-xl">
+                      Настройки
+                    </h2>
+                    <p className="mt-1 text-[13px] leading-5 text-[#a1a1aa]">
+                      Уведомления, приватность, аккаунт и внешний вид.
+                    </p>
                   </div>
                 </div>
 
@@ -5375,13 +5361,6 @@ export default function Home() {
                           label: "Поиск по нику",
                           setter: setIsProfileSearchable,
                         },
-                        {
-                          description: "Показывать галочки прочтения в переписках.",
-                          enabled: areReadReceiptsVisible,
-                          key: "hush-settings-read-receipts-visible",
-                          label: "Отчеты о прочтении",
-                          setter: setAreReadReceiptsVisible,
-                        },
                       ].map((setting) => (
                         <div className="flex items-center justify-between gap-3 rounded-xl border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2.5" key={setting.key}>
                           <div className="min-w-0">
@@ -5463,13 +5442,6 @@ export default function Home() {
                     </div>
                     <div className="grid gap-2">
                       {[
-                        {
-                          description: "Больше плотности в списках и карточках. Полное применение подключим по экранам.",
-                          enabled: isCompactInterfaceEnabled,
-                          key: "hush-settings-compact-interface",
-                          label: "Компактный режим",
-                          setter: setIsCompactInterfaceEnabled,
-                        },
                         {
                           description: "Мягкие подсветки, блюр и плавные hover-состояния.",
                           enabled: areSoftEffectsEnabled,
@@ -5764,9 +5736,9 @@ export default function Home() {
                     const isSelected = selectedMessageIds.includes(message.id);
                     const isPinned = activePinnedMessages.some((pinnedMessage) => pinnedMessage.id === message.id);
                     const receiptStatus =
-                      areReadReceiptsVisible && isMine && message.id > 0
+                      isMine && message.id > 0
                         ? messageReceiptStatuses.get(message.id) ?? "delivered"
-                        : areReadReceiptsVisible && isMine && message.id < 0
+                        : isMine && message.id < 0
                           ? "delivered"
                           : null;
                     const messageProfile = profiles.find(
