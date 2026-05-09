@@ -2613,8 +2613,13 @@ export default function Home() {
       return;
     }
 
-    if (blockedProfileIds.includes(targetUserId)) {
+    if (blockedByMeProfileIds.includes(targetUserId)) {
       setErrorMessage("Сначала разблокируй пользователя, чтобы позвонить ему.");
+      return;
+    }
+
+    if (blockState.blockedMeIds.includes(targetUserId)) {
+      setErrorMessage("Ты не можешь позвонить: пользователь тебя заблокировал.");
       return;
     }
 
@@ -3841,8 +3846,13 @@ export default function Home() {
       return;
     }
 
-    if (isSelectedChatBlocked) {
+    if (isSelectedChatBlockedByMe) {
       setErrorMessage("Сначала разблокируй пользователя, чтобы написать ему.");
+      return;
+    }
+
+    if (isSelectedChatBlockingMe) {
+      setErrorMessage("Ты не можешь написать: пользователь тебя заблокировал.");
       return;
     }
 
@@ -6214,8 +6224,10 @@ export default function Home() {
                         disabled={isSelectedChatBlocked}
                         onChange={handleMessageTextChange}
                         placeholder={
-                          isSelectedChatBlocked
+                          isSelectedChatBlockedByMe
                             ? "Пользователь заблокирован"
+                            : isSelectedChatBlockingMe
+                              ? "Вы были заблокированы"
                             : editingMessage
                             ? "Измени сообщение..."
                             : replyTarget
