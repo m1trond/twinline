@@ -5453,12 +5453,12 @@ export default function Home() {
                     const filePayload = getMessageFilePayload(displayText);
                     const callDurationSeconds = getMessageCallDuration(displayText);
                     const sticker = getMessageSticker(displayText);
-                    const hasFramedMedia = Boolean(imageUrl || videoUrl);
+                    const hasFramedMedia = Boolean(imageUrl || videoUrl || filePayload);
                     const hasAttachment = Boolean(
                       imageUrl || videoUrl || audioUrl || filePayload || callDurationSeconds !== null || sticker,
                     );
                     const hasStandaloneBubble = Boolean(
-                      audioUrl || callDurationSeconds !== null || sticker,
+                      audioUrl || filePayload || callDurationSeconds !== null || sticker,
                     );
 
                     return (
@@ -6418,12 +6418,12 @@ export default function Home() {
                     const filePayload = getMessageFilePayload(displayText);
                     const callDurationSeconds = getMessageCallDuration(displayText);
                     const sticker = getMessageSticker(displayText);
-                    const hasFramedMedia = Boolean(imageUrl || videoUrl);
+                    const hasFramedMedia = Boolean(imageUrl || videoUrl || filePayload);
                     const hasAttachment = Boolean(
                       imageUrl || videoUrl || audioUrl || filePayload || callDurationSeconds !== null || sticker,
                     );
                     const hasStandaloneBubble = Boolean(
-                      audioUrl || callDurationSeconds !== null || sticker,
+                      audioUrl || filePayload || callDurationSeconds !== null || sticker,
                     );
 
                     return (
