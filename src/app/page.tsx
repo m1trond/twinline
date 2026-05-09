@@ -1037,6 +1037,33 @@ function FileAttachment({
   file: FileMessagePayload;
   isMine: boolean;
 }) {
+  async function downloadFile(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    try {
+      const response = await fetch(file.url);
+
+      if (!response.ok) {
+        window.open(file.url, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = objectUrl;
+      link.download = file.name || "file";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    } catch {
+      window.open(file.url, "_blank", "noopener,noreferrer");
+    }
+  }
+
   return (
     <div
       className={`flex w-[min(360px,78vw)] items-center gap-3 rounded-[18px] border px-3 py-2.5 text-left shadow-[0_10px_30px_rgba(0,0,0,0.18)] transition hover:scale-[1.01] sm:rounded-[20px] ${
@@ -1064,22 +1091,17 @@ function FileAttachment({
           {file.type ? ` · ${file.type}` : ""}
         </span>
       </span>
-      <a
+      <button
         aria-label={`Скачать ${file.name}`}
-        className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl border transition hover:scale-105 ${
-          isMine
-            ? "border-white/10 bg-[#f4f4f5] text-[#050505] hover:bg-[#e5e5e5]"
-            : "border-white/10 bg-white/10 text-[#f4f4f5] hover:bg-white/16"
-        }`}
-        download={file.name}
-        href={file.url}
-        rel="noreferrer"
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.06] text-[#f4f4f5] transition hover:scale-105 hover:bg-white/12"
+        onClick={downloadFile}
         title="Скачать"
+        type="button"
       >
         <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
           <path d="M12 4v10m0 0 4-4m-4 4-4-4M5 20h14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
         </svg>
-      </a>
+      </button>
     </div>
   );
 }
