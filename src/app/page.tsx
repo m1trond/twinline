@@ -729,6 +729,39 @@ function getNotificationMessageText(text: string) {
   return text.length > 120 ? `${text.slice(0, 120)}...` : text;
 }
 
+function getChatPreviewText(text: string) {
+  const reply = getMessageReply(text);
+  const previewText = reply?.body ?? text;
+
+  if (previewText.startsWith(imageMessagePrefix)) {
+    return "Фото";
+  }
+
+  if (previewText.startsWith(videoMessagePrefix)) {
+    return "Видео";
+  }
+
+  if (previewText.startsWith(audioMessagePrefix)) {
+    return "Голосовое сообщение";
+  }
+
+  if (previewText.startsWith(fileMessagePrefix)) {
+    const filePayload = getMessageFilePayload(previewText);
+
+    return filePayload ? `Файл: ${filePayload.name}` : "Файл";
+  }
+
+  if (previewText.startsWith(callMessagePrefix)) {
+    return "Звонок";
+  }
+
+  if (previewText.startsWith(stickerMessagePrefix)) {
+    return `Стикер ${getMessageSticker(previewText) ?? ""}`.trim();
+  }
+
+  return getReadableMessageText(text);
+}
+
 function createReplyMessageText(replyTarget: MessageRow, body: string) {
   return `${replyMessagePrefix}${encodeURIComponent(
     JSON.stringify({
@@ -6184,7 +6217,7 @@ export default function Home() {
                     const latestProfileMessage = profileMessages.at(-1);
                     const profileUnreadCount = unreadMessagesByUserId.get(profile.user_id) ?? 0;
                     const previewText = latestProfileMessage
-                      ? getReadableMessageText(latestProfileMessage.text)
+                      ? getChatPreviewText(latestProfileMessage.text)
                       : "Открыть переписку";
 
                     return (
