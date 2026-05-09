@@ -21,6 +21,7 @@ type MessageRow = {
   author: string;
   text: string;
   created_at: string;
+  recipient_id: string | null;
   user_id: string | null;
 };
 
@@ -109,6 +110,7 @@ const stickerOptions = ["😂", "❤️", "🔥", "🤝", "😎", "😭", "🥱"
 const profileColumns = "user_id, display_name, username, username_changed_at, avatar_url, name_changed_at, updated_at";
 const usernameProfileColumns = "user_id, display_name, username, avatar_url, name_changed_at, updated_at";
 const legacyProfileColumns = "user_id, display_name, avatar_url, name_changed_at, updated_at";
+const messageColumns = "id, author, text, created_at, user_id, recipient_id";
 const usernamePattern = /^[a-z0-9_]{3,24}$/;
 
 function readStoredStringList(key: string) {
@@ -715,17 +717,30 @@ function mergeMessages(currentMessages: MessageRow[], nextMessages: MessageRow[]
   });
 }
 
-async function fetchMessages() {
+function isDirectMessageForUser(message: MessageRow, userId: string) {
+  return message.user_id === userId || message.recipient_id === userId;
+}
+
+function isMessageBetweenUsers(message: MessageRow, firstUserId: string, secondUserId: string) {
+  return (
+    (message.user_id === firstUserId && message.recipient_id === secondUserId) ||
+    (message.user_id === secondUserId && message.recipient_id === firstUserId)
+  );
+}
+
+async function fetchMessages(userId: string) {
   return supabase
     .from("messages")
-    .select("id, author, text, created_at, user_id")
+    .select(messageColumns)
+    .or(`user_id.eq.${userId},recipient_id.eq.${userId}`)
     .order("created_at", { ascending: true });
 }
 
-async function fetchMessagesAfter(createdAt: string) {
+async function fetchMessagesAfter(createdAt: string, userId: string) {
   return supabase
     .from("messages")
-    .select("id, author, text, created_at, user_id")
+    .select(messageColumns)
+    .or(`user_id.eq.${userId},recipient_id.eq.${userId}`)
     .gt("created_at", createdAt)
     .order("created_at", { ascending: true });
 }
@@ -1082,22 +1097,27 @@ export default function Home() {
     return currentProfile?.display_name ?? getDisplayName(user);
   }, [currentProfile?.display_name, user]);
   const sendServiceMessage = useCallback(
-    async (text: string) => {
+    async (text: string, recipientId = selectedChatUserId) => {
       if (!user) {
+        return;
+      }
+
+      if (!recipientId) {
         return;
       }
 
       await supabase.from("messages").insert({
         author: activeUserName,
+        recipient_id: recipientId,
         text,
         user_id: user.id,
       });
     },
-    [activeUserName, user],
+    [activeUserName, selectedChatUserId, user],
   );
   const sendTypingState = useCallback(
     async (action: "start" | "stop") => {
-      if (!user) {
+      if (!user || !selectedChatUserId) {
         return;
       }
 
@@ -1105,6 +1125,7 @@ export default function Home() {
 
       const { error } = await supabase.from("messages").insert({
         author: activeUserName,
+        recipient_id: selectedChatUserId,
         text: createTypingMessageText(action, eventAt),
         user_id: user.id,
       });
@@ -1113,7 +1134,7 @@ export default function Home() {
         console.error("Hush typing state failed:", error.message);
       }
     },
-    [activeUserName, user],
+    [activeUserName, selectedChatUserId, user],
   );
   const sharedPinnedMessageIds = useMemo(() => {
     const pinnedIds = new Map<number, PinMessagePayload["action"]>();
@@ -1175,6 +1196,7 @@ export default function Home() {
           return (
             message.id > 0 &&
             message.user_id &&
+            isDirectMessageForUser(message, user.id) &&
             message.user_id !== user.id &&
             !hiddenMessageIds.includes(message.id) &&
             !isServiceMessage(message.text) &&
@@ -1190,7 +1212,7 @@ export default function Home() {
     unreadMessageCountFromReceipts,
   );
   const friendTypingUntilFromMessages = useMemo(() => {
-    if (!user) {
+    if (!user || !selectedChatUserId) {
       return 0;
     }
 
@@ -1199,7 +1221,10 @@ export default function Home() {
     let latestFriendRealMessageCreatedAt = 0;
 
     for (const message of messages) {
-      if (message.user_id === user.id) {
+      if (
+        message.user_id !== selectedChatUserId ||
+        message.recipient_id !== user.id
+      ) {
         continue;
       }
 
@@ -1234,7 +1259,7 @@ export default function Home() {
     }
 
     return latestFriendTypingExpiresAt;
-  }, [messages, user]);
+  }, [messages, selectedChatUserId, user]);
   const isFriendTyping = friendTypingUntilFromMessages > typingNow;
   const blockState = useMemo(() => {
     const blockedByMeIds = new Set<string>();
@@ -1244,6 +1269,10 @@ export default function Home() {
       const blockPayload = getBlockMessagePayload(message.text);
 
       if (!blockPayload || !message.user_id || !user?.id) {
+        continue;
+      }
+
+      if (!isDirectMessageForUser(message, user.id)) {
         continue;
       }
 
@@ -1303,18 +1332,20 @@ export default function Home() {
   const visibleMessages = useMemo(() => {
     return messages.filter((message) => {
       return (
+        user?.id &&
+        isDirectMessageForUser(message, user.id) &&
         !hiddenMessageIds.includes(message.id) &&
         !isServiceMessage(message.text)
       );
     });
-  }, [hiddenMessageIds, messages]);
+  }, [hiddenMessageIds, messages, user?.id]);
   const activeDialogMessages = useMemo(() => {
     if (!user || !selectedChatUserId) {
       return [];
     }
 
     return visibleMessages.filter((message) => {
-      return message.user_id === user.id || message.user_id === selectedChatUserId;
+      return isMessageBetweenUsers(message, user.id, selectedChatUserId);
     });
   }, [selectedChatUserId, user, visibleMessages]);
   const activePinnedMessages = useMemo(() => {
@@ -1391,7 +1422,6 @@ export default function Home() {
   const isSelectedChatBlockingMe =
     selectedChatUserId !== null && blockState.blockedMeIds.includes(selectedChatUserId);
   const isSelectedChatBlocked = isSelectedChatBlockedByMe || isSelectedChatBlockingMe;
-  const latestVisibleMessage = visibleMessages.at(-1);
   const isUsernameChangeAllowed = canChangeName(currentProfile?.username_changed_at ?? null);
   const nextUsernameChangeDate = getNextNameChangeDate(
     currentProfile?.username_changed_at ?? null,
@@ -1542,6 +1572,11 @@ export default function Home() {
                     typeof favoriteItem.saved_at === "string"
                   );
                 })
+                .map((item) => ({
+                  ...item,
+                  recipient_id: item.recipient_id ?? user.id,
+                  user_id: item.user_id ?? user.id,
+                }))
                 .sort((firstItem, secondItem) =>
                   firstItem.created_at.localeCompare(secondItem.created_at),
                 )
@@ -2039,6 +2074,7 @@ export default function Home() {
       for (const newMessage of incomingMessages) {
         if (
           newMessage.id <= 0 ||
+          !isDirectMessageForUser(newMessage, signedInUser.id) ||
           notifiedMessageIdsRef.current.has(newMessage.id) ||
           isServiceMessage(newMessage.text) ||
           (newMessage.user_id && blockedProfileIdsRef.current.has(newMessage.user_id)) ||
@@ -2099,7 +2135,7 @@ export default function Home() {
         setIsLoadingMessages(true);
       }
 
-      const { data, error } = await fetchMessages();
+      const { data, error } = await fetchMessages(signedInUser.id);
 
       if (!isMounted || isDeletingChatRef.current) {
         setIsLoadingMessages(false);
@@ -2128,7 +2164,7 @@ export default function Home() {
         return;
       }
 
-      const { data, error } = await fetchMessagesAfter(latestMessageCreatedAt);
+      const { data, error } = await fetchMessagesAfter(latestMessageCreatedAt, signedInUser.id);
 
       if (!isMounted || isDeletingChatRef.current) {
         return;
@@ -2171,6 +2207,10 @@ export default function Home() {
           const newMessage = payload.new as MessageRow;
 
           if (isDeletingChatRef.current) {
+            return;
+          }
+
+          if (!isDirectMessageForUser(newMessage, signedInUser.id)) {
             return;
           }
 
@@ -2335,7 +2375,7 @@ export default function Home() {
 
       if (!hasSentDeliveredReceipt && !sentDeliveryReceiptIdsRef.current.has(message.id)) {
         sentDeliveryReceiptIdsRef.current.add(message.id);
-        void sendServiceMessage(createReceiptMessageText(message.id, "delivered"));
+        void sendServiceMessage(createReceiptMessageText(message.id, "delivered"), message.user_id);
       }
 
       if (
@@ -2347,7 +2387,7 @@ export default function Home() {
         !sentReadReceiptIdsRef.current.has(message.id)
       ) {
         sentReadReceiptIdsRef.current.add(message.id);
-        void sendServiceMessage(createReceiptMessageText(message.id, "read"));
+        void sendServiceMessage(createReceiptMessageText(message.id, "read"), message.user_id);
       }
     }
   }, [activeView, messages, selectedChatUserId, sendServiceMessage, user, visibleMessages]);
@@ -2820,7 +2860,9 @@ export default function Home() {
   }
 
   async function saveCallSummaryMessage() {
-    if (!user || hasSavedCallSummaryRef.current || !callStartedAtRef.current) {
+    const partnerId = callPartnerIdRef.current;
+
+    if (!user || !partnerId || hasSavedCallSummaryRef.current || !callStartedAtRef.current) {
       return;
     }
 
@@ -2834,6 +2876,7 @@ export default function Home() {
     const optimisticMessage: MessageRow = {
       id: -Date.now(),
       author: activeUserName,
+      recipient_id: partnerId,
       text: `${callMessagePrefix}${duration}`,
       created_at: new Date().toISOString(),
       user_id: user.id,
@@ -2847,10 +2890,11 @@ export default function Home() {
       .from("messages")
       .insert({
         author: activeUserName,
+        recipient_id: partnerId,
         text: `${callMessagePrefix}${duration}`,
         user_id: user.id,
       })
-      .select("id, author, text, created_at, user_id")
+      .select(messageColumns)
       .single();
 
     if (error) {
@@ -3003,6 +3047,7 @@ export default function Home() {
       author: activeUserName,
       created_at: new Date().toISOString(),
       id: -Date.now(),
+      recipient_id: userId,
       text: createBlockMessageText(userId, action),
       user_id: user.id,
     };
@@ -3015,10 +3060,11 @@ export default function Home() {
       .from("messages")
       .insert({
         author: activeUserName,
+        recipient_id: userId,
         text: createBlockMessageText(userId, action),
         user_id: user.id,
       })
-      .select("id, author, text, created_at, user_id")
+      .select(messageColumns)
       .single();
 
     if (error || !data) {
@@ -3065,7 +3111,7 @@ export default function Home() {
         return (
           message.id > 0 &&
           !isServiceMessage(message.text) &&
-          (message.user_id === selectedChatUserId || message.user_id === user.id)
+          isMessageBetweenUsers(message, user.id, selectedChatUserId)
         );
       })
       .map((message) => message.id);
@@ -3240,6 +3286,7 @@ export default function Home() {
         author: activeUserName,
         created_at: createdAt,
         id: Date.now(),
+        recipient_id: user.id,
         saved_at: createdAt,
         text,
         user_id: user.id,
@@ -3501,10 +3548,16 @@ export default function Home() {
       return;
     }
 
+    if (!selectedChatUserId) {
+      setErrorMessage("Сначала открой нужный чат.");
+      return;
+    }
+
     const action: PinMessagePayload["action"] = isSharedPinned ? "unpin" : "pin";
     const optimisticMessage: MessageRow = {
       id: -Date.now(),
       author: activeUserName,
+      recipient_id: selectedChatUserId,
       text: createPinMessageText(messagePinTarget.id, action),
       created_at: new Date().toISOString(),
       user_id: user.id,
@@ -3519,10 +3572,11 @@ export default function Home() {
       .from("messages")
       .insert({
         author: activeUserName,
+        recipient_id: selectedChatUserId,
         text: optimisticMessage.text,
         user_id: user.id,
       })
-      .select("id, author, text, created_at, user_id")
+      .select(messageColumns)
       .single();
 
     if (error || !data) {
@@ -3570,6 +3624,7 @@ export default function Home() {
     const optimisticMessages = sharedPinnedIds.map((messageId, index) => ({
       id: -(Date.now() + index),
       author: activeUserName,
+      recipient_id: selectedChatUserId,
       text: createPinMessageText(messageId, "unpin"),
       created_at: new Date(Date.now() + index).toISOString(),
       user_id: user.id,
@@ -3582,11 +3637,12 @@ export default function Home() {
       .insert(
         optimisticMessages.map((message) => ({
           author: activeUserName,
+          recipient_id: selectedChatUserId,
           text: message.text,
           user_id: user.id,
         })),
       )
-      .select("id, author, text, created_at, user_id");
+      .select(messageColumns);
 
     if (error) {
       setPinnedMessageIdsByChat(previousPinnedMessageIdsByChat);
@@ -3957,6 +4013,11 @@ export default function Home() {
       return;
     }
 
+    if (!selectedChatUserId) {
+      setErrorMessage("Сначала выбери собеседника.");
+      return;
+    }
+
     if (isSelectedChatBlockedByMe) {
       setErrorMessage("Сначала разблокируй пользователя, чтобы написать ему.");
       return;
@@ -3991,7 +4052,7 @@ export default function Home() {
         .update({ text: editedText })
         .eq("id", editingMessage.id)
         .eq("user_id", user.id)
-        .select("id, author, text, created_at, user_id")
+        .select(messageColumns)
         .maybeSingle();
 
       if (error || !data) {
@@ -4018,6 +4079,7 @@ export default function Home() {
     const optimisticMessage: MessageRow = {
       id: -Date.now(),
       author: activeUserName,
+      recipient_id: selectedChatUserId,
       text: outgoingText,
       created_at: new Date().toISOString(),
       user_id: user.id,
@@ -4033,10 +4095,11 @@ export default function Home() {
       .from("messages")
       .insert({
         author: activeUserName,
+        recipient_id: selectedChatUserId,
         text: outgoingText,
         user_id: user.id,
       })
-      .select("id, author, text, created_at, user_id")
+      .select(messageColumns)
       .single();
 
     if (error) {
@@ -4072,9 +4135,16 @@ export default function Home() {
       return;
     }
 
+    if (!selectedChatUserId) {
+      setErrorMessage("Сначала выбери собеседника.");
+      setIsStickerPickerOpen(false);
+      return;
+    }
+
     const optimisticMessage: MessageRow = {
       id: -Date.now(),
       author: activeUserName,
+      recipient_id: selectedChatUserId,
       text: stickerText,
       created_at: new Date().toISOString(),
       user_id: user.id,
@@ -4089,10 +4159,11 @@ export default function Home() {
       .from("messages")
       .insert({
         author: activeUserName,
+        recipient_id: selectedChatUserId,
         text: stickerText,
         user_id: user.id,
       })
-      .select("id, author, text, created_at, user_id")
+      .select(messageColumns)
       .single();
 
     if (error) {
@@ -4164,9 +4235,16 @@ export default function Home() {
       return;
     }
 
+    if (!selectedChatUserId) {
+      setIsUploadingAttachment(false);
+      setErrorMessage("Сначала выбери собеседника.");
+      return;
+    }
+
     const optimisticMessage: MessageRow = {
       id: -Date.now(),
       author: activeUserName,
+      recipient_id: selectedChatUserId,
       text: `${messagePrefix}${attachmentUrl}`,
       created_at: new Date().toISOString(),
       user_id: user.id,
@@ -4180,10 +4258,11 @@ export default function Home() {
       .from("messages")
       .insert({
         author: activeUserName,
+        recipient_id: selectedChatUserId,
         text: `${messagePrefix}${attachmentUrl}`,
         user_id: user.id,
       })
-      .select("id, author, text, created_at, user_id")
+      .select(messageColumns)
       .single();
 
     setIsUploadingAttachment(false);
@@ -4244,9 +4323,16 @@ export default function Home() {
       return;
     }
 
+    if (!selectedChatUserId) {
+      setIsUploadingAttachment(false);
+      setErrorMessage("Сначала выбери собеседника.");
+      return;
+    }
+
     const optimisticMessage: MessageRow = {
       id: -Date.now(),
       author: activeUserName,
+      recipient_id: selectedChatUserId,
       text: `${audioMessagePrefix}${publicUrlData.publicUrl}`,
       created_at: new Date().toISOString(),
       user_id: user.id,
@@ -4260,10 +4346,11 @@ export default function Home() {
       .from("messages")
       .insert({
         author: activeUserName,
+        recipient_id: selectedChatUserId,
         text: `${audioMessagePrefix}${publicUrlData.publicUrl}`,
         user_id: user.id,
       })
-      .select("id, author, text, created_at, user_id")
+      .select(messageColumns)
       .single();
 
     setIsUploadingAttachment(false);
@@ -5690,10 +5777,12 @@ export default function Home() {
                   ) : null}
 
                   {chatProfiles.map((profile) => {
-                    const profileMessages = visibleMessages.filter((message) => {
-                      return message.user_id === profile.user_id || message.user_id === user?.id;
-                    });
-                    const latestProfileMessage = profileMessages.at(-1) ?? latestVisibleMessage;
+                    const profileMessages = user
+                      ? visibleMessages.filter((message) =>
+                          isMessageBetweenUsers(message, user.id, profile.user_id),
+                        )
+                      : [];
+                    const latestProfileMessage = profileMessages.at(-1);
                     const profileUnreadCount = unreadMessagesByUserId.get(profile.user_id) ?? 0;
                     const previewText = latestProfileMessage
                       ? getReadableMessageText(latestProfileMessage.text)
