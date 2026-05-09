@@ -5407,6 +5407,86 @@ export default function Home() {
                 </h1>
               </div>
 
+              <div className="mb-4 rounded-xl border border-[#3f3f46]/35 bg-[#050505]/50 p-2">
+                <label className="flex min-h-10 items-center gap-2 rounded-lg bg-[#f4f4f5]/10 px-3 text-[#a1a1aa] transition focus-within:bg-[#f4f4f5]/14 focus-within:text-[#f4f4f5]">
+                  <svg
+                    aria-hidden="true"
+                    className="h-4 w-4 shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="m21 21-4.3-4.3M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                  <input
+                    aria-label="User search by username"
+                    className="min-w-0 flex-1 bg-transparent text-[13px] text-[#f4f4f5] outline-none placeholder:text-[#a1a1aa]/75"
+                    onChange={(event) => setChatSearchQuery(event.target.value)}
+                    placeholder="\u041d\u0430\u0439\u0442\u0438 \u043f\u043e @\u043d\u0438\u043a\u0443"
+                    type="text"
+                    value={chatSearchQuery}
+                  />
+                </label>
+                {chatSearchQuery.trim().length > 0 ? (
+                  <div className="mt-2 grid max-h-64 gap-1.5 overflow-y-auto pr-1">
+                    {chatSearchQuery.trim().replace(/^@+/, "").length < 2 ? (
+                      <p className="px-2 py-1 text-xs text-[#a1a1aa]">
+                        {"\u0412\u0432\u0435\u0434\u0438 \u043c\u0438\u043d\u0438\u043c\u0443\u043c 2 \u0441\u0438\u043c\u0432\u043e\u043b\u0430 \u043f\u043e\u0441\u043b\u0435 @."}
+                      </p>
+                    ) : searchableProfiles.length === 0 ? (
+                      <p className="px-2 py-1 text-xs text-[#a1a1aa]">
+                        {"\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d."}
+                      </p>
+                    ) : (
+                      searchableProfiles.map((profile) => (
+                        <button
+                          className="flex items-center gap-2 rounded-lg px-2 py-2 text-left transition hover:bg-[#f4f4f5]/10"
+                          key={"search-" + profile.user_id}
+                          onClick={() => {
+                            setViewedProfile({
+                              avatarUrl: profile.avatar_url,
+                              name: profile.display_name,
+                              username: profile.username,
+                              updatedAt: profile.updated_at,
+                              userId: profile.user_id,
+                            });
+                            setChatSearchQuery("");
+                            setUnreadMessageCount(0);
+                          }}
+                          type="button"
+                        >
+                          <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505]">
+                            {profile.avatar_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                alt={"Avatar " + profile.display_name}
+                                className="h-full w-full object-cover"
+                                src={profile.avatar_url}
+                              />
+                            ) : (
+                              profile.display_name[0]?.toUpperCase()
+                            )}
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block truncate text-[13px] font-medium text-[#f4f4f5]">
+                              {profile.display_name}
+                            </span>
+                            <span className="block truncate text-xs text-[#a1a1aa]">
+                              {profile.username ? "@" + profile.username : "@\u043d\u0438\u043a \u043f\u043e\u043a\u0430 \u043d\u0435 \u0432\u044b\u0431\u0440\u0430\u043d"}
+                            </span>
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                ) : null}
+              </div>
+
               <div className="mb-4">
                 <p className="text-[13px] font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
                   Меню
@@ -6294,85 +6374,6 @@ export default function Home() {
               <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
                 <div className="mb-3 border-b border-[#3f3f46]/35 pb-3 sm:mb-4 sm:pb-4">
                   <h2 className="text-lg font-medium sm:text-xl">Сообщения</h2>
-                  <div className="mt-3 rounded-xl border border-[#3f3f46]/45 bg-[#050505]/58 p-2 sm:rounded-2xl sm:p-2.5">
-                    <label className="flex min-h-10 items-center gap-2 rounded-lg bg-[#f4f4f5]/10 px-3 text-[#a1a1aa] transition focus-within:bg-[#f4f4f5]/14 focus-within:text-[#f4f4f5] sm:rounded-xl">
-                      <svg
-                        aria-hidden="true"
-                        className="h-4 w-4 shrink-0"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="m21 21-4.3-4.3M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                        />
-                      </svg>
-                      <input
-                        aria-label="Поиск пользователя по нику"
-                        className="min-w-0 flex-1 bg-transparent text-[13px] text-[#f4f4f5] outline-none placeholder:text-[#a1a1aa]/75"
-                        onChange={(event) => setChatSearchQuery(event.target.value)}
-                        placeholder="Найти человека по @нику"
-                        type="text"
-                        value={chatSearchQuery}
-                      />
-                    </label>
-                    {chatSearchQuery.trim().length > 0 ? (
-                      <div className="mt-2 grid gap-1.5">
-                        {chatSearchQuery.trim().replace(/^@+/, "").length < 2 ? (
-                          <p className="px-2 py-1 text-xs text-[#a1a1aa]">
-                            Введи минимум 2 символа после @.
-                          </p>
-                        ) : searchableProfiles.length === 0 ? (
-                          <p className="px-2 py-1 text-xs text-[#a1a1aa]">
-                            Пользователь не найден.
-                          </p>
-                        ) : (
-                          searchableProfiles.map((profile) => (
-                            <button
-                              className="flex items-center gap-2 rounded-lg px-2 py-2 text-left transition hover:bg-[#f4f4f5]/10 sm:rounded-xl"
-                              key={`search-${profile.user_id}`}
-                              onClick={() => {
-                                setViewedProfile({
-                                  avatarUrl: profile.avatar_url,
-                                  name: profile.display_name,
-                                  username: profile.username,
-                                  updatedAt: profile.updated_at,
-                                  userId: profile.user_id,
-                                });
-                                setChatSearchQuery("");
-                                setUnreadMessageCount(0);
-                              }}
-                              type="button"
-                            >
-                              <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505]">
-                                {profile.avatar_url ? (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img
-                                    alt={`Аватар ${profile.display_name}`}
-                                    className="h-full w-full object-cover"
-                                    src={profile.avatar_url}
-                                  />
-                                ) : (
-                                  profile.display_name[0]?.toUpperCase()
-                                )}
-                              </span>
-                              <span className="min-w-0">
-                                <span className="block truncate text-[13px] font-medium text-[#f4f4f5]">
-                                  {profile.display_name}
-                                </span>
-                                <span className="block truncate text-xs text-[#a1a1aa]">
-                                  {profile.username ? `@${profile.username}` : "@ник пока не выбран"}
-                                </span>
-                              </span>
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    ) : null}
-                  </div>
                 </div>
 
                 <div className="grid gap-2">
