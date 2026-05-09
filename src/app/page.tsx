@@ -956,6 +956,7 @@ export default function Home() {
   const [profileUsername, setProfileUsername] = useState<string | null>(null);
   const [profileUsernameError, setProfileUsernameError] = useState("");
   const [messageText, setMessageText] = useState("");
+  const [chatSearchQuery, setChatSearchQuery] = useState("");
   const [typingNow, setTypingNow] = useState(() => Date.now());
   const [activeView, setActiveView] = useState<ActiveView>("profile");
   const [selectedChatUserId, setSelectedChatUserId] = useState<string | null>(null);
@@ -1377,17 +1378,68 @@ export default function Home() {
 
     return unreadByUserId;
   }, [incomingUnreadMessageIds, user?.id, visibleMessages]);
+  const dialogProfileIds = useMemo(() => {
+    const profileIds = new Set<string>();
+
+    if (!user) {
+      return profileIds;
+    }
+
+    for (const message of visibleMessages) {
+      const profileId =
+        message.user_id === user.id ? message.recipient_id : message.user_id;
+
+      if (profileId && profileId !== user.id) {
+        profileIds.add(profileId);
+      }
+    }
+
+    return profileIds;
+  }, [user, visibleMessages]);
   const chatProfiles = useMemo(() => {
     return profiles
-      .filter((profile) => profile.user_id !== user?.id)
+      .filter((profile) => profile.user_id !== user?.id && dialogProfileIds.has(profile.user_id))
       .sort((firstProfile, secondProfile) =>
         firstProfile.display_name.localeCompare(secondProfile.display_name, "ru"),
       );
-  }, [profiles, user?.id]);
+  }, [dialogProfileIds, profiles, user?.id]);
+  const searchableProfiles = useMemo(() => {
+    const query = chatSearchQuery.trim().replace(/^@+/, "").toLowerCase();
+
+    if (query.length < 2) {
+      return [];
+    }
+
+    return profiles
+      .filter((profile) => {
+        if (profile.user_id === user?.id) {
+          return false;
+        }
+
+        const username = profile.username?.toLowerCase() ?? "";
+
+        return username.includes(query);
+      })
+      .sort((firstProfile, secondProfile) => {
+        const firstUsername = firstProfile.username?.toLowerCase() ?? "";
+        const secondUsername = secondProfile.username?.toLowerCase() ?? "";
+        const firstStartsWithQuery = firstUsername.startsWith(query) ? 0 : 1;
+        const secondStartsWithQuery = secondUsername.startsWith(query) ? 0 : 1;
+
+        if (firstStartsWithQuery !== secondStartsWithQuery) {
+          return firstStartsWithQuery - secondStartsWithQuery;
+        }
+
+        return firstProfile.display_name.localeCompare(secondProfile.display_name, "ru");
+      })
+      .slice(0, 8);
+  }, [chatSearchQuery, profiles, user?.id]);
   const friendProfile = useMemo(() => {
-    const profileFriend =
-      chatProfiles.find((profile) => profile.user_id === selectedChatUserId) ??
-      chatProfiles[0];
+    if (!selectedChatUserId) {
+      return null;
+    }
+
+    const profileFriend = profiles.find((profile) => profile.user_id === selectedChatUserId);
 
     if (profileFriend) {
       return {
@@ -1399,9 +1451,9 @@ export default function Home() {
       };
     }
 
-    const friendMessage = visibleMessages.find((message) => {
-      return message.user_id && message.user_id !== user?.id;
-    });
+    const friendMessage = visibleMessages.find((message) =>
+      isMessageBetweenUsers(message, user?.id ?? "", selectedChatUserId),
+    );
 
     if (!friendMessage) {
       return null;
@@ -1416,7 +1468,7 @@ export default function Home() {
       updatedAt: profile?.updated_at ?? null,
       userId: friendMessage.user_id,
     };
-  }, [chatProfiles, profiles, selectedChatUserId, user?.id, visibleMessages]);
+  }, [profiles, selectedChatUserId, user?.id, visibleMessages]);
   const isSelectedChatBlockedByMe =
     selectedChatUserId !== null && blockedByMeProfileIds.includes(selectedChatUserId);
   const isSelectedChatBlockingMe =
@@ -5764,6 +5816,79 @@ export default function Home() {
               <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
                 <div className="mb-3 border-b border-[#3f3f46]/35 pb-3 sm:mb-4 sm:pb-4">
                   <h2 className="text-lg font-medium sm:text-xl">Сообщения</h2>
+                  <div className="mt-3 rounded-xl border border-[#3f3f46]/45 bg-[#050505]/58 p-2 sm:rounded-2xl sm:p-2.5">
+                    <label className="flex min-h-10 items-center gap-2 rounded-lg bg-[#f4f4f5]/10 px-3 text-[#a1a1aa] transition focus-within:bg-[#f4f4f5]/14 focus-within:text-[#f4f4f5] sm:rounded-xl">
+                      <svg
+                        aria-hidden="true"
+                        className="h-4 w-4 shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="m21 21-4.3-4.3M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                      <input
+                        aria-label="Поиск пользователя по нику"
+                        className="min-w-0 flex-1 bg-transparent text-[13px] text-[#f4f4f5] outline-none placeholder:text-[#a1a1aa]/75"
+                        onChange={(event) => setChatSearchQuery(event.target.value)}
+                        placeholder="Найти человека по @нику"
+                        type="text"
+                        value={chatSearchQuery}
+                      />
+                    </label>
+                    {chatSearchQuery.trim().length > 0 ? (
+                      <div className="mt-2 grid gap-1.5">
+                        {chatSearchQuery.trim().replace(/^@+/, "").length < 2 ? (
+                          <p className="px-2 py-1 text-xs text-[#a1a1aa]">
+                            Введи минимум 2 символа после @.
+                          </p>
+                        ) : searchableProfiles.length === 0 ? (
+                          <p className="px-2 py-1 text-xs text-[#a1a1aa]">
+                            Пользователь не найден.
+                          </p>
+                        ) : (
+                          searchableProfiles.map((profile) => (
+                            <button
+                              className="flex items-center gap-2 rounded-lg px-2 py-2 text-left transition hover:bg-[#f4f4f5]/10 sm:rounded-xl"
+                              key={`search-${profile.user_id}`}
+                              onClick={() => {
+                                setSelectedChatUserId(profile.user_id);
+                                setChatSearchQuery("");
+                                setUnreadMessageCount(0);
+                              }}
+                              type="button"
+                            >
+                              <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505]">
+                                {profile.avatar_url ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    alt={`Аватар ${profile.display_name}`}
+                                    className="h-full w-full object-cover"
+                                    src={profile.avatar_url}
+                                  />
+                                ) : (
+                                  profile.display_name[0]?.toUpperCase()
+                                )}
+                              </span>
+                              <span className="min-w-0">
+                                <span className="block truncate text-[13px] font-medium text-[#f4f4f5]">
+                                  {profile.display_name}
+                                </span>
+                                <span className="block truncate text-xs text-[#a1a1aa]">
+                                  {profile.username ? `@${profile.username}` : "@ник пока не выбран"}
+                                </span>
+                              </span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="grid gap-2">
@@ -5771,7 +5896,7 @@ export default function Home() {
                     <article className="rounded-xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-4 text-center sm:rounded-2xl sm:p-6">
                       <p className="text-sm font-medium">Диалогов пока нет</p>
                       <p className="mt-2 text-[13px] leading-6 text-[#a1a1aa]">
-                        Когда появятся другие пользователи, их чаты будут здесь.
+                        Найди человека по @нику выше и начни переписку. Новые аккаунты больше не видят чужие чаты.
                       </p>
                     </article>
                   ) : null}
