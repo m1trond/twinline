@@ -57,6 +57,13 @@ type ReplyMessagePayload = {
   text: string;
 };
 
+type FileMessagePayload = {
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+};
+
 type PinMessagePayload = {
   action: "pin" | "unpin";
   messageId: number;
@@ -98,6 +105,7 @@ const settingsNavItem: { label: string; view: ActiveView } = {
 const imageMessagePrefix = "image::";
 const videoMessagePrefix = "video::";
 const audioMessagePrefix = "audio::";
+const fileMessagePrefix = "file::";
 const callMessagePrefix = "call::";
 const stickerMessagePrefix = "sticker::";
 const replyMessagePrefix = "reply::";
@@ -274,6 +282,45 @@ function formatMessageTime(createdAt: string) {
   }).format(new Date(createdAt));
 }
 
+function formatFileSize(size: number) {
+  if (!Number.isFinite(size) || size <= 0) {
+    return "Файл";
+  }
+
+  const units = ["Б", "КБ", "МБ", "ГБ"];
+  let fileSize = size;
+  let unitIndex = 0;
+
+  while (fileSize >= 1024 && unitIndex < units.length - 1) {
+    fileSize /= 1024;
+    unitIndex += 1;
+  }
+
+  return `${fileSize >= 10 || unitIndex === 0 ? Math.round(fileSize) : fileSize.toFixed(1)} ${units[unitIndex]}`;
+}
+
+function getSafeFileExtension(fileName: string) {
+  const extension = fileName.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  return extension || "bin";
+}
+
+function getAttachmentFolder(file: File) {
+  if (file.type.startsWith("image/")) {
+    return "images";
+  }
+
+  if (file.type.startsWith("video/")) {
+    return "videos";
+  }
+
+  if (file.type.startsWith("audio/")) {
+    return "audio";
+  }
+
+  return "files";
+}
+
 function formatLastSeen(updatedAt: string | null) {
   if (!updatedAt) {
     return "был недавно";
@@ -416,6 +463,40 @@ function getMessageAudioUrl(text: string) {
   return text.startsWith(audioMessagePrefix)
     ? text.slice(audioMessagePrefix.length)
     : null;
+}
+
+function createFileMessageText(payload: FileMessagePayload) {
+  return `${fileMessagePrefix}${encodeURIComponent(JSON.stringify(payload))}`;
+}
+
+function getMessageFilePayload(text: string): FileMessagePayload | null {
+  if (!text.startsWith(fileMessagePrefix)) {
+    return null;
+  }
+
+  try {
+    const parsedPayload = JSON.parse(
+      decodeURIComponent(text.slice(fileMessagePrefix.length)),
+    );
+
+    if (
+      parsedPayload &&
+      typeof parsedPayload.url === "string" &&
+      typeof parsedPayload.name === "string" &&
+      typeof parsedPayload.size === "number"
+    ) {
+      return {
+        name: parsedPayload.name,
+        size: parsedPayload.size,
+        type: typeof parsedPayload.type === "string" ? parsedPayload.type : "",
+        url: parsedPayload.url,
+      };
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
 }
 
 function getMessageCallDuration(text: string) {
@@ -597,6 +678,10 @@ function getReadableMessageText(text: string) {
     return "Голосовое сообщение";
   }
 
+  if (text.startsWith(fileMessagePrefix)) {
+    return getMessageFilePayload(text)?.name ?? "Файл";
+  }
+
   if (text.startsWith(callMessagePrefix)) {
     return "Звонок";
   }
@@ -625,6 +710,12 @@ function getNotificationMessageText(text: string) {
 
   if (text.startsWith(audioMessagePrefix)) {
     return "Голосовое сообщение";
+  }
+
+  if (text.startsWith(fileMessagePrefix)) {
+    const filePayload = getMessageFilePayload(text);
+
+    return filePayload ? `Файл: ${filePayload.name}` : "Отправлен файл";
   }
 
   if (text.startsWith(callMessagePrefix)) {
@@ -936,6 +1027,48 @@ function VoiceMessage({
         </div>
       </div>
     </div>
+  );
+}
+
+function FileAttachment({
+  file,
+  isMine,
+}: {
+  file: FileMessagePayload;
+  isMine: boolean;
+}) {
+  return (
+    <a
+      className={`flex min-w-[min(270px,72vw)] max-w-[min(360px,78vw)] items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition hover:scale-[1.01] sm:rounded-2xl ${
+        isMine
+          ? "border-[#050505]/10 bg-[#050505]/8 text-[#050505] hover:bg-[#050505]/12"
+          : "border-white/10 bg-white/[0.06] text-[#f4f4f5] hover:bg-white/10"
+      }`}
+      download={file.name}
+      href={file.url}
+      rel="noreferrer"
+      target="_blank"
+    >
+      <span
+        className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
+          isMine ? "bg-[#050505] text-[#f4f4f5]" : "bg-[#f4f4f5] text-[#050505]"
+        }`}
+      >
+        <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+          <path d="M7 3h7l5 5v13H7V3Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="2" />
+          <path d="M14 3v6h5M9.5 14h5M9.5 17h5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+        </svg>
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[13px] font-semibold leading-5">
+          {file.name}
+        </span>
+        <span className="block truncate text-xs font-medium opacity-60">
+          {formatFileSize(file.size)}
+          {file.type ? ` · ${file.type}` : ""}
+        </span>
+      </span>
+    </a>
   );
 }
 
@@ -4337,11 +4470,6 @@ export default function Home() {
     const isImage = file.type.startsWith("image/");
     const isVideo = file.type.startsWith("video/");
 
-    if (!isImage && !isVideo) {
-      setErrorMessage("Можно отправлять только изображения и видео.");
-      return;
-    }
-
     if (file.size > maxAttachmentSize) {
       setErrorMessage("Файл должен быть меньше 50 МБ.");
       return;
@@ -4350,17 +4478,19 @@ export default function Home() {
     setIsUploadingAttachment(true);
     setErrorMessage("");
 
-    const fileExtension = file.name.split(".").pop() ?? "jpg";
-    const filePath = `${user.id}/${Date.now()}-${crypto.randomUUID()}.${fileExtension}`;
+    const fileExtension = getSafeFileExtension(file.name);
+    const filePath = `${user.id}/${getAttachmentFolder(file)}/${Date.now()}-${crypto.randomUUID()}.${fileExtension}`;
 
     const { error: uploadError } = await supabase.storage
       .from("message-images")
       .upload(filePath, file, {
         cacheControl: "3600",
+        contentType: file.type || "application/octet-stream",
         upsert: false,
       });
 
     if (uploadError) {
+      console.error("Hush file upload failed:", uploadError.message);
       setIsUploadingAttachment(false);
       setErrorMessage("Не получилось загрузить файл.");
       return;
@@ -4371,10 +4501,19 @@ export default function Home() {
       .getPublicUrl(filePath);
 
     const attachmentUrl = publicUrlData.publicUrl;
-    const messagePrefix = isVideo ? videoMessagePrefix : imageMessagePrefix;
+    const messageText = isImage
+      ? `${imageMessagePrefix}${attachmentUrl}`
+      : isVideo
+        ? `${videoMessagePrefix}${attachmentUrl}`
+        : createFileMessageText({
+            name: file.name || "Файл",
+            size: file.size,
+            type: file.type,
+            url: attachmentUrl,
+          });
 
     if (activeView === "favorites") {
-      addFavoriteChatMessage(`${messagePrefix}${attachmentUrl}`);
+      addFavoriteChatMessage(messageText);
       setIsUploadingAttachment(false);
       return;
     }
@@ -4389,7 +4528,7 @@ export default function Home() {
       id: -Date.now(),
       author: activeUserName,
       recipient_id: selectedChatUserId,
-      text: `${messagePrefix}${attachmentUrl}`,
+      text: messageText,
       created_at: new Date().toISOString(),
       user_id: user.id,
     };
@@ -4403,7 +4542,7 @@ export default function Home() {
       .insert({
         author: activeUserName,
         recipient_id: selectedChatUserId,
-        text: `${messagePrefix}${attachmentUrl}`,
+        text: messageText,
         user_id: user.id,
       })
       .select(messageColumns)
@@ -4670,11 +4809,11 @@ export default function Home() {
     }
   }
 
-  function handleAttachmentChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
+  async function handleAttachmentChange(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
 
-    if (file) {
-      sendAttachment(file);
+    for (const file of files) {
+      await sendAttachment(file);
     }
 
     event.target.value = "";
@@ -5311,11 +5450,12 @@ export default function Home() {
                     const imageUrl = getMessageImageUrl(displayText);
                     const videoUrl = getMessageVideoUrl(displayText);
                     const audioUrl = getMessageAudioUrl(displayText);
+                    const filePayload = getMessageFilePayload(displayText);
                     const callDurationSeconds = getMessageCallDuration(displayText);
                     const sticker = getMessageSticker(displayText);
                     const hasFramedMedia = Boolean(imageUrl || videoUrl);
                     const hasAttachment = Boolean(
-                      imageUrl || videoUrl || audioUrl || callDurationSeconds !== null || sticker,
+                      imageUrl || videoUrl || audioUrl || filePayload || callDurationSeconds !== null || sticker,
                     );
                     const hasStandaloneBubble = Boolean(
                       audioUrl || callDurationSeconds !== null || sticker,
@@ -5380,6 +5520,8 @@ export default function Home() {
                               sentAt={favoriteItem.created_at}
                               src={audioUrl}
                             />
+                          ) : filePayload ? (
+                            <FileAttachment file={filePayload} isMine />
                           ) : callDurationSeconds !== null ? (
                             <div className="min-w-[min(230px,70vw)] rounded-xl bg-[#262626] px-3 py-2 text-[#f4f4f5] sm:min-w-[min(260px,70vw)] sm:rounded-2xl">
                               <p className="text-[13px] font-medium opacity-75">
@@ -5451,8 +5593,8 @@ export default function Home() {
                   onSubmit={sendMessage}
                 >
                   <input
-                    accept="image/*,video/*"
                     className="hidden"
+                    multiple
                     onChange={handleAttachmentChange}
                     ref={imageInputRef}
                     type="file"
@@ -6273,11 +6415,12 @@ export default function Home() {
                     const imageUrl = getMessageImageUrl(displayText);
                     const videoUrl = getMessageVideoUrl(displayText);
                     const audioUrl = getMessageAudioUrl(displayText);
+                    const filePayload = getMessageFilePayload(displayText);
                     const callDurationSeconds = getMessageCallDuration(displayText);
                     const sticker = getMessageSticker(displayText);
                     const hasFramedMedia = Boolean(imageUrl || videoUrl);
                     const hasAttachment = Boolean(
-                      imageUrl || videoUrl || audioUrl || callDurationSeconds !== null || sticker,
+                      imageUrl || videoUrl || audioUrl || filePayload || callDurationSeconds !== null || sticker,
                     );
                     const hasStandaloneBubble = Boolean(
                       audioUrl || callDurationSeconds !== null || sticker,
@@ -6405,6 +6548,8 @@ export default function Home() {
                             sentAt={message.created_at}
                             src={audioUrl}
                           />
+                        ) : filePayload ? (
+                          <FileAttachment file={filePayload} isMine={isMine} />
                         ) : callDurationSeconds !== null ? (
                           <div
                             className={`min-w-[min(230px,70vw)] rounded-xl px-3 py-2 sm:min-w-[min(260px,70vw)] sm:rounded-2xl ${
@@ -6605,8 +6750,8 @@ export default function Home() {
                   onSubmit={sendMessage}
                 >
                   <input
-                    accept="image/*,video/*"
                     className="hidden"
+                    multiple
                     onChange={handleAttachmentChange}
                     ref={imageInputRef}
                     type="file"
@@ -7068,16 +7213,6 @@ export default function Home() {
               Чат с {chatContextMenu.profile.display_name}
             </p>
             <button
-              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium text-red-100 transition hover:bg-red-500/18"
-              onClick={() => requestChatDeleteFromMenu(chatContextMenu.profile)}
-              type="button"
-            >
-              <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
-                <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-              </svg>
-              Удалить чат
-            </button>
-            <button
               className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
               onClick={() => runChatMenuStub("Архив скоро подключим.")}
               type="button"
@@ -7193,6 +7328,16 @@ export default function Home() {
                 </>
               )}
             </div>
+            <button
+              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium text-red-100 transition hover:bg-red-500/18"
+              onClick={() => requestChatDeleteFromMenu(chatContextMenu.profile)}
+              type="button"
+            >
+              <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+                <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+              </svg>
+              Удалить чат
+            </button>
           </div>
         </>
       ) : null}
@@ -7930,30 +8075,31 @@ export default function Home() {
                       >
                         Включить уведомления
                       </button>
-                    ) : null}
-                    {[
-                      { durationMs: 30 * 60 * 1000, label: "Выключить на 30 минут" },
-                      { durationMs: 60 * 60 * 1000, label: "Выключить на 1 час" },
-                      { durationMs: 2 * 60 * 60 * 1000, label: "Выключить на 2 часа" },
-                      { durationMs: 8 * 60 * 60 * 1000, label: "Выключить на 8 часов" },
-                      { durationMs: null, label: "Отключить уведомления" },
-                    ].map((option) => (
-                      <button
-                        className="min-h-10 w-full whitespace-nowrap rounded-xl px-3 text-left text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
-                        key={option.label}
-                        onClick={() =>
-                          viewedProfile.userId
-                            ? muteProfileNotifications(
-                                viewedProfile.userId,
-                                option.durationMs,
-                              )
-                            : undefined
-                        }
-                        type="button"
-                      >
-                        {option.label}
-                      </button>
-                    ))}
+                    ) : (
+                      [
+                        { durationMs: 30 * 60 * 1000, label: "Выключить на 30 минут" },
+                        { durationMs: 60 * 60 * 1000, label: "Выключить на 1 час" },
+                        { durationMs: 2 * 60 * 60 * 1000, label: "Выключить на 2 часа" },
+                        { durationMs: 8 * 60 * 60 * 1000, label: "Выключить на 8 часов" },
+                        { durationMs: null, label: "Отключить уведомления" },
+                      ].map((option) => (
+                        <button
+                          className="min-h-10 w-full whitespace-nowrap rounded-xl px-3 text-left text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
+                          key={option.label}
+                          onClick={() =>
+                            viewedProfile.userId
+                              ? muteProfileNotifications(
+                                  viewedProfile.userId,
+                                  option.durationMs,
+                                )
+                              : undefined
+                          }
+                          type="button"
+                        >
+                          {option.label}
+                        </button>
+                      ))
+                    )}
                   </div>
                   </>
                 ) : null}
