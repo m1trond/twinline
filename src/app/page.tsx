@@ -2210,14 +2210,27 @@ export default function Home() {
         return;
       }
 
+      event.preventDefault();
+      event.stopPropagation();
       setIsSelectedDeleteDialogOpen(false);
       setSelectedMessageIds([]);
+
+      window.requestAnimationFrame(() => {
+        const messagesList = messagesListRef.current;
+
+        if (!messagesList) {
+          return;
+        }
+
+        const maxScrollTop = Math.max(0, messagesList.scrollHeight - messagesList.clientHeight);
+        messagesList.scrollTop = Math.min(messagesList.scrollTop, maxScrollTop);
+      });
     }
 
-    window.addEventListener("keydown", clearSelectionOnEscape);
+    window.addEventListener("keydown", clearSelectionOnEscape, true);
 
     return () => {
-      window.removeEventListener("keydown", clearSelectionOnEscape);
+      window.removeEventListener("keydown", clearSelectionOnEscape, true);
     };
   }, [isSelectedDeleteDialogOpen, selectedMessageIds.length]);
 
