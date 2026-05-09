@@ -332,6 +332,16 @@ function formatLastSeen(updatedAt: string | null) {
   }).format(updatedDate)} в ${formattedTime}`;
 }
 
+function isProfileOnline(updatedAt: string | null) {
+  if (!updatedAt) {
+    return false;
+  }
+
+  const updatedTime = new Date(updatedAt).getTime();
+
+  return Number.isFinite(updatedTime) && Date.now() - updatedTime < 90_000;
+}
+
 function formatAudioTime(seconds: number) {
   if (!Number.isFinite(seconds)) {
     return "0:00";
@@ -5703,17 +5713,22 @@ export default function Home() {
                         }}
                         type="button"
                       >
-                        <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-[13px] font-medium text-[#050505] sm:h-12 sm:w-12 sm:text-sm">
-                          {profile.avatar_url ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              alt={`Аватар ${profile.display_name}`}
-                              className="h-full w-full object-cover"
-                              src={profile.avatar_url}
-                            />
-                          ) : (
-                            profile.display_name[0]?.toUpperCase()
-                          )}
+                        <div className="relative h-10 w-10 shrink-0 sm:h-12 sm:w-12">
+                          <div className="grid h-full w-full place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-[13px] font-medium text-[#050505] sm:text-sm">
+                            {profile.avatar_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                alt={`Аватар ${profile.display_name}`}
+                                className="h-full w-full object-cover"
+                                src={profile.avatar_url}
+                              />
+                            ) : (
+                              profile.display_name[0]?.toUpperCase()
+                            )}
+                          </div>
+                          {isProfileOnline(profile.updated_at) ? (
+                            <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#050505] bg-emerald-300 shadow-[0_0_14px_rgba(110,231,183,0.8)] sm:h-3.5 sm:w-3.5" />
+                          ) : null}
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-3">
@@ -5774,7 +5789,7 @@ export default function Home() {
                       </svg>
                     </button>
                     <button
-                      className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-[13px] font-medium text-[#050505] transition hover:scale-105 sm:h-10 sm:w-10 sm:text-sm"
+                      className="relative h-9 w-9 shrink-0 rounded-full transition hover:scale-105 sm:h-10 sm:w-10"
                       onClick={() => {
                         setViewedProfile(
                           friendProfile ?? {
@@ -5788,16 +5803,21 @@ export default function Home() {
                       }}
                       type="button"
                     >
-                      {friendProfile?.avatarUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          alt="Аватар собеседника"
-                          className="h-full w-full object-cover"
-                          src={friendProfile.avatarUrl}
-                        />
-                      ) : (
-                        (friendProfile?.name ?? "Друг")[0]?.toUpperCase()
-                      )}
+                      <span className="grid h-full w-full place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-[13px] font-medium text-[#050505] sm:text-sm">
+                        {friendProfile?.avatarUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            alt="Аватар собеседника"
+                            className="h-full w-full object-cover"
+                            src={friendProfile.avatarUrl}
+                          />
+                        ) : (
+                          (friendProfile?.name ?? "Друг")[0]?.toUpperCase()
+                        )}
+                      </span>
+                      {isProfileOnline(friendProfile?.updatedAt ?? null) ? (
+                        <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#111111] bg-emerald-300 shadow-[0_0_14px_rgba(110,231,183,0.8)] sm:h-3.5 sm:w-3.5" />
+                      ) : null}
                     </button>
                     <div className="min-w-0">
                       <h2 className="truncate text-sm font-medium sm:text-lg">
