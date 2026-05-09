@@ -997,6 +997,11 @@ export default function Home() {
     left: number;
     top: number;
   } | null>(null);
+  const [chatContextMenu, setChatContextMenu] = useState<{
+    left: number;
+    profile: ProfileRow;
+    top: number;
+  } | null>(null);
   const [replyTarget, setReplyTarget] = useState<MessageRow | null>(null);
   const [editingMessage, setEditingMessage] = useState<MessageRow | null>(null);
   const [pinnedMessageIdsByChat, setPinnedMessageIdsByChat] = useState<PinnedMessageIdsByChat>({});
@@ -1934,6 +1939,32 @@ export default function Home() {
   }, [favoriteContextMenu]);
 
   useEffect(() => {
+    if (!chatContextMenu) {
+      return;
+    }
+
+    function closeMenu() {
+      setChatContextMenu(null);
+    }
+
+    function closeMenuOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setChatContextMenu(null);
+      }
+    }
+
+    window.addEventListener("scroll", closeMenu, true);
+    window.addEventListener("resize", closeMenu);
+    window.addEventListener("keydown", closeMenuOnEscape);
+
+    return () => {
+      window.removeEventListener("scroll", closeMenu, true);
+      window.removeEventListener("resize", closeMenu);
+      window.removeEventListener("keydown", closeMenuOnEscape);
+    };
+  }, [chatContextMenu]);
+
+  useEffect(() => {
     return () => {
       stopVoiceInputMeter();
       recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -2652,6 +2683,7 @@ export default function Home() {
       setBlockConfirmation(null);
       setMessageContextMenu(null);
       setFavoriteContextMenu(null);
+      setChatContextMenu(null);
       setMessageDeleteTarget(null);
       setMessagePinTarget(null);
       setIsChatDeleteDialogOpen(false);
@@ -3283,6 +3315,42 @@ export default function Home() {
         Math.min(event.clientY, window.innerHeight - menuHeight - 12),
       ),
     });
+  }
+
+  function openChatContextMenu(
+    event: MouseEvent<HTMLElement>,
+    profile: ProfileRow,
+  ) {
+    event.preventDefault();
+    setMessageContextMenu(null);
+    setFavoriteContextMenu(null);
+    setIsStickerPickerOpen(false);
+
+    const menuWidth = Math.min(286, window.innerWidth - 24);
+    const menuHeight = 240;
+
+    setChatContextMenu({
+      left: Math.max(
+        12,
+        Math.min(event.clientX, window.innerWidth - menuWidth - 12),
+      ),
+      profile,
+      top: Math.max(
+        12,
+        Math.min(event.clientY, window.innerHeight - menuHeight - 12),
+      ),
+    });
+  }
+
+  function requestChatDeleteFromMenu(profile: ProfileRow) {
+    setSelectedChatUserId(profile.user_id);
+    setChatContextMenu(null);
+    setIsChatDeleteDialogOpen(true);
+  }
+
+  function runChatMenuStub(message: string) {
+    setChatContextMenu(null);
+    setErrorMessage(message);
   }
 
   async function copyMessageText(message: MessageRow) {
@@ -5931,6 +5999,7 @@ export default function Home() {
                           setSelectedChatUserId(profile.user_id);
                           setUnreadMessageCount(0);
                         }}
+                        onContextMenu={(event) => openChatContextMenu(event, profile)}
                         type="button"
                       >
                         <div className="relative h-10 w-10 shrink-0 sm:h-12 sm:w-12">
@@ -6949,6 +7018,139 @@ export default function Home() {
             src={selectedImageUrl}
           />
         </button>
+      ) : null}
+      {chatContextMenu ? (
+        <>
+          <button
+            aria-label="Закрыть меню чата"
+            className="fixed inset-0 z-[80] cursor-default bg-transparent"
+            onClick={() => setChatContextMenu(null)}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              setChatContextMenu(null);
+            }}
+            type="button"
+          />
+          <div
+            className="fixed z-[90] w-[min(286px,calc(100vw-24px))] overflow-visible rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 text-[#f4f4f5] shadow-[0_22px_70px_rgba(0,0,0,0.58)] backdrop-blur-xl"
+            onClick={(event) => event.stopPropagation()}
+            onContextMenu={(event) => event.preventDefault()}
+            style={{ left: chatContextMenu.left, top: chatContextMenu.top }}
+          >
+            <p className="truncate px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-[#a1a1aa]">
+              Чат с {chatContextMenu.profile.display_name}
+            </p>
+            <button
+              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium text-red-100 transition hover:bg-red-500/18"
+              onClick={() => requestChatDeleteFromMenu(chatContextMenu.profile)}
+              type="button"
+            >
+              <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+                <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+              </svg>
+              Удалить чат
+            </button>
+            <button
+              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
+              onClick={() => runChatMenuStub("Архив скоро подключим.")}
+              type="button"
+            >
+              <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+                <path d="M4 7h16v13H4V7ZM7 4h10l3 3H4l3-3ZM9 12h6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+              </svg>
+              В архив
+            </button>
+            <div className="group relative">
+              <button
+                className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
+                type="button"
+              >
+                <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+                  <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-9Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                </svg>
+                <span className="min-w-0 flex-1">Добавить в папку</span>
+                <svg aria-hidden="true" className="h-4 w-4 shrink-0 text-[#a1a1aa]" fill="none" viewBox="0 0 24 24">
+                  <path d="m9 18 6-6-6-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                </svg>
+              </button>
+              <div className="invisible absolute left-[calc(100%-6px)] top-0 z-[91] w-[220px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
+                <button className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10" onClick={() => runChatMenuStub("Создание папок скоро подключим.")} type="button">
+                  <span className="grid h-5 w-5 place-items-center">+</span>
+                  Новая папка
+                </button>
+                <button className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10" onClick={() => runChatMenuStub("Папки скоро подключим.")} type="button">
+                  <span className="grid h-5 w-5 place-items-center">#</span>
+                  Выбрать папку
+                </button>
+              </div>
+            </div>
+            <button
+              className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
+              onClick={() => {
+                requestBlockChange(
+                  chatContextMenu.profile.user_id,
+                  chatContextMenu.profile.username
+                    ? `@${chatContextMenu.profile.username}`
+                    : chatContextMenu.profile.display_name,
+                );
+                setChatContextMenu(null);
+              }}
+              type="button"
+            >
+              <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+                <path d="M18 11v8H6v-8M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+              </svg>
+              {blockedByMeProfileIds.includes(chatContextMenu.profile.user_id) ? "Разблокировать" : "Заблокировать"}
+            </button>
+            <div className="group relative">
+              <button
+                className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
+                type="button"
+              >
+                <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+                  <path d="M5 9v6h4l5 4V5L9 9H5Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                  <path d="m19 9-4 4M15 9l4 4" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+                </svg>
+                <span className="min-w-0 flex-1">Выключить уведомления</span>
+                <svg aria-hidden="true" className="h-4 w-4 shrink-0 text-[#a1a1aa]" fill="none" viewBox="0 0 24 24">
+                  <path d="m9 18 6-6-6-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                </svg>
+              </button>
+              <div className="invisible absolute left-[calc(100%-6px)] top-0 z-[91] w-[260px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
+                <button className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10" onClick={() => runChatMenuStub("Выбор звука скоро подключим.")} type="button">Выбрать звук</button>
+                <button className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10" onClick={() => runChatMenuStub("Звуки чатов скоро подключим.")} type="button">Выключить звук</button>
+                {[
+                  { durationMs: 30 * 60 * 1000, label: "Выключить на 30 минут" },
+                  { durationMs: 60 * 60 * 1000, label: "Выключить на 1 час" },
+                  { durationMs: 2 * 60 * 60 * 1000, label: "Выключить на 2 часа" },
+                  { durationMs: 8 * 60 * 60 * 1000, label: "Выключить на 8 часов" },
+                ].map((option) => (
+                  <button
+                    className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
+                    key={option.label}
+                    onClick={() => {
+                      muteProfileNotifications(chatContextMenu.profile.user_id, option.durationMs);
+                      setChatContextMenu(null);
+                    }}
+                    type="button"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+                <button
+                  className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium text-red-100 transition hover:bg-red-500/18"
+                  onClick={() => {
+                    muteProfileNotifications(chatContextMenu.profile.user_id, null);
+                    setChatContextMenu(null);
+                  }}
+                  type="button"
+                >
+                  Отключить уведомления
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       ) : null}
       {messageContextMenu ? (
         <>
