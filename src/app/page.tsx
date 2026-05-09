@@ -1038,16 +1038,12 @@ function FileAttachment({
   isMine: boolean;
 }) {
   return (
-    <a
+    <div
       className={`flex w-[min(360px,78vw)] items-center gap-3 rounded-[18px] border px-3 py-2.5 text-left shadow-[0_10px_30px_rgba(0,0,0,0.18)] transition hover:scale-[1.01] sm:rounded-[20px] ${
         isMine
           ? "border-[#3f3f46]/45 bg-[#1f1f1f] text-[#f4f4f5] hover:bg-[#262626]"
           : "border-white/10 bg-white/[0.06] text-[#f4f4f5] hover:bg-white/10"
       }`}
-      download={file.name}
-      href={file.url}
-      rel="noreferrer"
-      target="_blank"
     >
       <span
         className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
@@ -1068,7 +1064,23 @@ function FileAttachment({
           {file.type ? ` · ${file.type}` : ""}
         </span>
       </span>
-    </a>
+      <a
+        aria-label={`Скачать ${file.name}`}
+        className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl border transition hover:scale-105 ${
+          isMine
+            ? "border-white/10 bg-[#f4f4f5] text-[#050505] hover:bg-[#e5e5e5]"
+            : "border-white/10 bg-white/10 text-[#f4f4f5] hover:bg-white/16"
+        }`}
+        download={file.name}
+        href={file.url}
+        rel="noreferrer"
+        title="Скачать"
+      >
+        <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+          <path d="M12 4v10m0 0 4-4m-4 4-4-4M5 20h14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+        </svg>
+      </a>
+    </div>
   );
 }
 
