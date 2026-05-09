@@ -2201,6 +2201,27 @@ export default function Home() {
   }, [chatContextMenu]);
 
   useEffect(() => {
+    if (selectedMessageIds.length === 0 && !isSelectedDeleteDialogOpen) {
+      return;
+    }
+
+    function clearSelectionOnEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      setIsSelectedDeleteDialogOpen(false);
+      setSelectedMessageIds([]);
+    }
+
+    window.addEventListener("keydown", clearSelectionOnEscape);
+
+    return () => {
+      window.removeEventListener("keydown", clearSelectionOnEscape);
+    };
+  }, [isSelectedDeleteDialogOpen, selectedMessageIds.length]);
+
+  useEffect(() => {
     return () => {
       stopVoiceInputMeter();
       recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
