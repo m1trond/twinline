@@ -4064,41 +4064,26 @@ export default function Home() {
     setErrorMessage("Пересылку сообщений подключим следующим шагом.");
   }
 
-  async function deleteSelectedMessages() {
+  function hideSelectedMessagesForMe() {
     if (!user || selectedDialogMessages.length === 0) {
       return;
     }
 
-    setIsSelectedDeleteDialogOpen(false);
-
     const selectedIds = selectedDialogMessages.map((message) => message.id);
-    const ownPositiveIds = selectedDialogMessages
-      .filter((message) => message.user_id === user.id && message.id > 0)
-      .map((message) => message.id);
-    const ownLocalIds = selectedDialogMessages
-      .filter((message) => message.user_id === user.id && message.id < 0)
-      .map((message) => message.id);
-    const hiddenIds = selectedDialogMessages
-      .filter((message) => message.user_id !== user.id && message.id > 0)
-      .map((message) => message.id);
-    const previousMessages = messages;
-    const previousHiddenMessageIds = hiddenMessageIds;
-    const previousPinnedMessageIdsByChat = pinnedMessageIdsByChat;
-    const previousSelectedMessageIds = selectedMessageIds;
+    const positiveIds = selectedIds.filter((id) => id > 0);
+    const localIds = selectedIds.filter((id) => id < 0);
 
+    setIsSelectedDeleteDialogOpen(false);
     setMessages((currentMessages) =>
-      currentMessages.filter(
-        (message) =>
-          !ownPositiveIds.includes(message.id) && !ownLocalIds.includes(message.id),
-      ),
+      currentMessages.filter((message) => !localIds.includes(message.id)),
     );
 
-    if (hiddenIds.length > 0) {
+    if (positiveIds.length > 0) {
       setHiddenMessageIds((currentIds) => {
-        const nextIds = Array.from(new Set([...currentIds, ...hiddenIds]));
+        const nextIds = Array.from(new Set([...currentIds, ...positiveIds]));
 
         window.localStorage.setItem(
-          `twinline-hidden-messages-${user.id}`,
+          "twinline-hidden-messages-" + user.id,
           JSON.stringify(nextIds),
         );
 
@@ -4122,8 +4107,43 @@ export default function Home() {
       currentIds.filter((id) => !selectedIds.includes(id)),
     );
     setMessageContextMenu(null);
+    setErrorMessage("");
+  }
 
-    if (ownPositiveIds.length === 0) {
+  async function deleteSelectedMessagesForBoth() {
+    if (!user || selectedDialogMessages.length === 0) {
+      return;
+    }
+
+    const selectedIds = selectedDialogMessages.map((message) => message.id);
+    const positiveIds = selectedIds.filter((id) => id > 0);
+    const previousMessages = messages;
+    const previousPinnedMessageIdsByChat = pinnedMessageIdsByChat;
+    const previousSelectedMessageIds = selectedMessageIds;
+
+    setIsSelectedDeleteDialogOpen(false);
+    setMessages((currentMessages) =>
+      currentMessages.filter((message) => !selectedIds.includes(message.id)),
+    );
+
+    if (selectedChatUserId) {
+      const nextPinnedMessageIdsByChat = {
+        ...pinnedMessageIdsByChat,
+        [selectedChatUserId]: (pinnedMessageIdsByChat[selectedChatUserId] ?? []).filter(
+          (id) => !selectedIds.includes(id),
+        ),
+      };
+
+      setPinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
+      writeStoredPinnedMessageIds(user.id, nextPinnedMessageIdsByChat);
+    }
+
+    setSelectedMessageIds((currentIds) =>
+      currentIds.filter((id) => !selectedIds.includes(id)),
+    );
+    setMessageContextMenu(null);
+
+    if (positiveIds.length === 0) {
       setErrorMessage("");
       return;
     }
@@ -4131,20 +4151,14 @@ export default function Home() {
     const { error } = await supabase
       .from("messages")
       .delete()
-      .eq("user_id", user.id)
-      .in("id", ownPositiveIds);
+      .in("id", positiveIds);
 
     if (error) {
       setMessages(previousMessages);
-      setHiddenMessageIds(previousHiddenMessageIds);
-      window.localStorage.setItem(
-        `twinline-hidden-messages-${user.id}`,
-        JSON.stringify(previousHiddenMessageIds),
-      );
       setPinnedMessageIdsByChat(previousPinnedMessageIdsByChat);
       writeStoredPinnedMessageIds(user.id, previousPinnedMessageIdsByChat);
       setSelectedMessageIds(previousSelectedMessageIds);
-      setErrorMessage("Не получилось удалить выделенные сообщения.");
+      setErrorMessage("\u041d\u0435 \u043f\u043e\u043b\u0443\u0447\u0438\u043b\u043e\u0441\u044c \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u0432\u044b\u0434\u0435\u043b\u0435\u043d\u043d\u044b\u0435 \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u044f \u0443 \u0434\u0432\u043e\u0438\u0445.");
       return;
     }
 
@@ -7989,60 +8003,63 @@ export default function Home() {
       {isSelectedDeleteDialogOpen && selectedDialogMessages.length > 0 ? (
         <>
           <button
-            aria-label="Close selected messages delete dialog"
-            className="fixed inset-0 z-[95] bg-black/62 backdrop-blur-sm"
+            aria-label="Close selected messages delete menu"
+            className="fixed inset-0 z-[95] bg-black/58 backdrop-blur-sm"
             onClick={() => setIsSelectedDeleteDialogOpen(false)}
             type="button"
           />
-          <section className="fixed left-1/2 top-1/2 z-[96] w-[min(440px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-red-400/25 bg-[#111111]/96 p-4 text-left shadow-[0_24px_90px_rgba(0,0,0,0.65)] sm:rounded-3xl sm:p-5">
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(248,113,113,0.18),transparent_34%),linear-gradient(135deg,rgba(244,244,245,0.04),transparent_54%)]"
-            />
-            <div className="relative">
-              <div className="mb-4 flex items-start gap-3">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-red-300/25 bg-red-500/16 text-red-100 shadow-[0_10px_30px_rgba(239,68,68,0.18)]">
-                  <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                    <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                  </svg>
-                </span>
-                <div className="min-w-0">
-                  <h2 className="text-lg font-medium text-[#f4f4f5]">
-                    {"\u0423\u0434\u0430\u043b\u0438\u0442\u044c \u0432\u044b\u0434\u0435\u043b\u0435\u043d\u043d\u044b\u0435?"}
-                  </h2>
-                  <p className="mt-2 text-[13px] leading-6 text-[#a1a1aa]">
-                    {"\u0421\u0432\u043e\u0438 \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u044f \u0438\u0441\u0447\u0435\u0437\u043d\u0443\u0442 \u0438\u0437 \u0431\u0430\u0437\u044b, \u0447\u0443\u0436\u0438\u0435 \u0441\u043a\u0440\u043e\u044e\u0442\u0441\u044f \u0442\u043e\u043b\u044c\u043a\u043e \u0443 \u0442\u0435\u0431\u044f."}
-                  </p>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/24 p-3">
-                <p className="text-[13px] font-medium text-[#f4f4f5]">
-                  {selectedDialogMessages.length}{" "}
-                  {"\u0441\u043e\u043e\u0431\u0449."}
+          <section
+            className="fixed left-1/2 top-1/2 z-[96] max-h-[calc(100dvh-24px)] w-[min(448px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:w-[min(448px,calc(100vw-32px))] sm:rounded-3xl sm:p-5"
+          >
+            <div className="mb-4 flex items-start gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-red-500/14 text-red-100">
+                <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                </svg>
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-lg font-medium text-[#f4f4f5]">
+                  {"\u0423\u0434\u0430\u043b\u0435\u043d\u0438\u0435 \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0439"}
+                </h2>
+                <p className="mt-1 text-[13px] leading-6 text-[#a1a1aa]">
+                  {"\u0412\u044b\u0431\u0435\u0440\u0438, \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u0432\u044b\u0434\u0435\u043b\u0435\u043d\u043d\u044b\u0435 \u0442\u043e\u043b\u044c\u043a\u043e \u0443 \u0441\u0435\u0431\u044f \u0438\u043b\u0438 \u0443 \u043e\u0431\u043e\u0438\u0445 \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u043e\u0432 \u043f\u0435\u0440\u0435\u043f\u0438\u0441\u043a\u0438."}
                 </p>
-                <p className="mt-1 line-clamp-2 text-xs text-[#a1a1aa]">
-                  {getReadableMessageText(selectedDialogMessages.at(-1)?.text ?? "")}
-                </p>
-              </div>
-
-              <div className="mt-5 grid gap-2 sm:grid-cols-2">
-                <button
-                  className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
-                  onClick={() => setIsSelectedDeleteDialogOpen(false)}
-                  type="button"
-                >
-                  {"\u041e\u0441\u0442\u0430\u0432\u0438\u0442\u044c"}
-                </button>
-                <button
-                  className="min-h-12 rounded-xl bg-red-500 px-4 text-[13px] font-medium text-white shadow-[0_14px_34px_rgba(239,68,68,0.22)] transition hover:bg-red-400"
-                  onClick={deleteSelectedMessages}
-                  type="button"
-                >
-                  {"\u0423\u0434\u0430\u043b\u0438\u0442\u044c"}
-                </button>
               </div>
             </div>
+
+            <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 p-3">
+              <p className="text-[13px] font-medium text-[#f4f4f5]">
+                {selectedDialogMessages.length} {"\u0441\u043e\u043e\u0431\u0449."}
+              </p>
+              <p className="mt-1 line-clamp-2 text-xs text-[#a1a1aa]">
+                {getReadableMessageText(selectedDialogMessages.at(-1)?.text ?? "")}
+              </p>
+            </div>
+
+            <div className="mt-5 grid gap-2 sm:grid-cols-2">
+              <button
+                className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
+                onClick={hideSelectedMessagesForMe}
+                type="button"
+              >
+                {"\u0422\u043e\u043b\u044c\u043a\u043e \u0443 \u0441\u0435\u0431\u044f"}
+              </button>
+              <button
+                className="min-h-12 rounded-xl bg-red-500 px-4 text-[13px] font-medium text-white transition hover:bg-red-400"
+                onClick={deleteSelectedMessagesForBoth}
+                type="button"
+              >
+                {"\u0423 \u043e\u0431\u043e\u0438\u0445"}
+              </button>
+            </div>
+
+            <button
+              className="mt-3 min-h-11 w-full rounded-xl px-4 text-[13px] font-medium text-[#a1a1aa] transition hover:bg-white/10 hover:text-[#f4f4f5]"
+              onClick={() => setIsSelectedDeleteDialogOpen(false)}
+              type="button"
+            >
+              {"\u041e\u0442\u043c\u0435\u043d\u0430"}
+            </button>
           </section>
         </>
       ) : null}
