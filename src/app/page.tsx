@@ -1249,6 +1249,9 @@ export default function Home() {
   const [areSoftEffectsEnabled, setAreSoftEffectsEnabled] = useState(() =>
     readStoredBoolean("hush-settings-soft-effects", true),
   );
+  const [isLightThemeEnabled, setIsLightThemeEnabled] = useState(() =>
+    readStoredBoolean("hush-settings-light-theme", false),
+  );
   const [mutedProfiles, setMutedProfiles] = useState<MutedProfileUntil>(() =>
     readStoredMutedProfiles(),
   );
@@ -5485,7 +5488,7 @@ export default function Home() {
 
   if (!user) {
     return (
-      <main className="relative grid h-dvh place-items-center overflow-hidden bg-[#050505] px-4 text-[#f4f4f5]">
+      <main className={`hush-shell ${isLightThemeEnabled ? "hush-light" : ""} relative grid h-dvh place-items-center overflow-hidden bg-[#050505] px-4 text-[#f4f4f5]`}>
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(244,244,245,0.12),transparent_32%),linear-gradient(135deg,#050505_0%,#111111_48%,#000000_100%)]"
@@ -5678,7 +5681,7 @@ export default function Home() {
   }
 
   return (
-    <main className="relative h-dvh overflow-hidden bg-[#050505] text-[#f4f4f5]">
+    <main className={`hush-shell ${isLightThemeEnabled ? "hush-light" : ""} relative h-dvh overflow-hidden bg-[#050505] text-[#f4f4f5]`}>
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(244,244,245,0.10),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(245,245,245,0.06),transparent_28%),linear-gradient(135deg,#050505_0%,#111111_46%,#000000_100%)]"
@@ -6690,6 +6693,13 @@ export default function Home() {
                     </div>
                     <div className="grid gap-2">
                       {[
+                        {
+                          description: "\u0421\u0432\u0435\u0442\u043b\u0430\u044f \u043f\u0430\u043b\u0438\u0442\u0440\u0430 \u0434\u043b\u044f \u0432\u0441\u0435\u0433\u043e \u0441\u0430\u0439\u0442\u0430. \u0412\u044b\u0431\u043e\u0440 \u0441\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u0442\u0441\u044f \u0432 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435.",
+                          enabled: isLightThemeEnabled,
+                          key: "hush-settings-light-theme",
+                          label: "\u0421\u0432\u0435\u0442\u043b\u0430\u044f \u0442\u0435\u043c\u0430",
+                          setter: setIsLightThemeEnabled,
+                        },
                         {
                           description: "Мягкие подсветки, блюр и плавные hover-состояния.",
                           enabled: areSoftEffectsEnabled,
