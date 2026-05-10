@@ -1316,6 +1316,21 @@ export default function Home() {
   const currentProfile = useMemo(() => {
     return profiles.find((profile) => profile.user_id === user?.id) ?? null;
   }, [profiles, user?.id]);
+  const profilesByUserId = useMemo(() => {
+    const nextProfilesByUserId = new Map<string, ProfileRow>();
+
+    for (const profile of profiles) {
+      nextProfilesByUserId.set(profile.user_id, profile);
+    }
+
+    return nextProfilesByUserId;
+  }, [profiles]);
+  const hiddenMessageIdSet = useMemo(() => {
+    return new Set(hiddenMessageIds);
+  }, [hiddenMessageIds]);
+  const selectedMessageIdSet = useMemo(() => {
+    return new Set(selectedMessageIds);
+  }, [selectedMessageIds]);
 
   useEffect(() => {
     currentProfileRef.current = currentProfile;
@@ -1380,6 +1395,9 @@ export default function Home() {
         .map(([messageId]) => messageId),
     );
   }, [messages]);
+  const sharedPinnedMessageIdSet = useMemo(() => {
+    return new Set(sharedPinnedMessageIds);
+  }, [sharedPinnedMessageIds]);
   const messageReceiptStatuses = useMemo(() => {
     const statuses = new Map<number, ReceiptMessagePayload["status"]>();
 
@@ -1399,6 +1417,32 @@ export default function Home() {
 
     return statuses;
   }, [messages, user?.id]);
+  const sentReceiptMessageIdSets = useMemo(() => {
+    const deliveredMessageIds = new Set<number>();
+    const readMessageIds = new Set<number>();
+
+    if (!user) {
+      return { deliveredMessageIds, readMessageIds };
+    }
+
+    for (const message of messages) {
+      const receiptPayload = getReceiptMessagePayload(message.text);
+
+      if (!receiptPayload || message.user_id !== user.id) {
+        continue;
+      }
+
+      if (receiptPayload.status === "delivered" || receiptPayload.status === "read") {
+        deliveredMessageIds.add(receiptPayload.messageId);
+      }
+
+      if (receiptPayload.status === "read") {
+        readMessageIds.add(receiptPayload.messageId);
+      }
+    }
+
+    return { deliveredMessageIds, readMessageIds };
+  }, [messages, user]);
   const incomingUnreadMessageIds = useMemo(() => {
     if (!user) {
       return new Set<number>();
@@ -1425,14 +1469,14 @@ export default function Home() {
             message.user_id &&
             isDirectMessageForUser(message, user.id) &&
             message.user_id !== user.id &&
-            !hiddenMessageIds.includes(message.id) &&
+            !hiddenMessageIdSet.has(message.id) &&
             !isServiceMessage(message.text) &&
             !readMessageIds.has(message.id)
           );
         })
         .map((message) => message.id),
     );
-  }, [hiddenMessageIds, messages, user]);
+  }, [hiddenMessageIdSet, messages, user]);
   const unreadMessageCountFromReceipts = incomingUnreadMessageIds.size;
   const totalUnreadMessageCount = Math.max(
     unreadMessageCount,
@@ -1543,7 +1587,7 @@ export default function Home() {
   const blockedByMeProfiles = useMemo(() => {
     return blockedByMeProfileIds
       .map((profileId) => {
-        const profile = profiles.find((currentProfile) => currentProfile.user_id === profileId);
+        const profile = profilesByUserId.get(profileId);
 
         return {
           avatarUrl: profile?.avatar_url ?? null,
@@ -1555,17 +1599,17 @@ export default function Home() {
       .sort((firstProfile, secondProfile) =>
         firstProfile.name.localeCompare(secondProfile.name, "ru"),
       );
-  }, [blockedByMeProfileIds, profiles]);
+  }, [blockedByMeProfileIds, profilesByUserId]);
   const visibleMessages = useMemo(() => {
     return messages.filter((message) => {
       return (
         user?.id &&
         isDirectMessageForUser(message, user.id) &&
-        !hiddenMessageIds.includes(message.id) &&
+        !hiddenMessageIdSet.has(message.id) &&
         !isServiceMessage(message.text)
       );
     });
-  }, [hiddenMessageIds, messages, user?.id]);
+  }, [hiddenMessageIdSet, messages, user?.id]);
   const activeDialogMessages = useMemo(() => {
     if (!user || !selectedChatUserId) {
       return [];
@@ -1580,22 +1624,27 @@ export default function Home() {
       return [];
     }
 
-    return activeDialogMessages.filter((message) =>
-      selectedMessageIds.includes(message.id),
-    );
-  }, [activeDialogMessages, selectedChatUserId, selectedMessageIds]);
+    return activeDialogMessages.filter((message) => selectedMessageIdSet.has(message.id));
+  }, [activeDialogMessages, selectedChatUserId, selectedMessageIdSet]);
   const isMessageSelectionMode = selectedDialogMessages.length > 0;
-  const activePinnedMessages = useMemo(() => {
+  const activePinnedMessageIdSet = useMemo(() => {
     const activeLocalPinnedMessageIds = selectedChatUserId
       ? pinnedMessageIdsByChat[selectedChatUserId] ?? []
       : [];
-    const pinnedIds = new Set([
-      ...activeLocalPinnedMessageIds,
-      ...Array.from(sharedPinnedMessageIds),
-    ]);
 
-    return activeDialogMessages.filter((message) => pinnedIds.has(message.id));
-  }, [activeDialogMessages, pinnedMessageIdsByChat, selectedChatUserId, sharedPinnedMessageIds]);
+    return new Set([
+      ...activeLocalPinnedMessageIds,
+      ...Array.from(sharedPinnedMessageIdSet),
+    ]);
+  }, [pinnedMessageIdsByChat, selectedChatUserId, sharedPinnedMessageIdSet]);
+  const activePinnedMessages = useMemo(() => {
+    return activeDialogMessages.filter((message) => activePinnedMessageIdSet.has(message.id));
+  }, [activeDialogMessages, activePinnedMessageIdSet]);
+
+  const visibleDialogMessages = isPinnedMessagesViewOpen
+    ? activePinnedMessages
+    : activeDialogMessages;
+  const visibleDialogMessagesCount = visibleDialogMessages.length;
   const unreadMessagesByUserId = useMemo(() => {
     const unreadByUserId = new Map<string, number>();
 
@@ -1631,6 +1680,24 @@ export default function Home() {
     }
 
     return profileIds;
+  }, [user, visibleMessages]);
+  const latestVisibleMessageByProfileId = useMemo(() => {
+    const latestMessagesByProfileId = new Map<string, MessageRow>();
+
+    if (!user) {
+      return latestMessagesByProfileId;
+    }
+
+    for (const message of visibleMessages) {
+      const profileId =
+        message.user_id === user.id ? message.recipient_id : message.user_id;
+
+      if (profileId && profileId !== user.id) {
+        latestMessagesByProfileId.set(profileId, message);
+      }
+    }
+
+    return latestMessagesByProfileId;
   }, [user, visibleMessages]);
   const chatProfiles = useMemo(() => {
     return profiles
@@ -1675,7 +1742,7 @@ export default function Home() {
       return null;
     }
 
-    const profileFriend = profiles.find((profile) => profile.user_id === selectedChatUserId);
+    const profileFriend = profilesByUserId.get(selectedChatUserId);
 
     if (profileFriend) {
       return {
@@ -1695,7 +1762,7 @@ export default function Home() {
       return null;
     }
 
-    const profile = profiles.find((item) => item.user_id === friendMessage.user_id);
+    const profile = friendMessage.user_id ? profilesByUserId.get(friendMessage.user_id) : null;
 
     return {
       avatarUrl: profile?.avatar_url ?? null,
@@ -1704,7 +1771,7 @@ export default function Home() {
       updatedAt: profile?.updated_at ?? null,
       userId: friendMessage.user_id,
     };
-  }, [profiles, selectedChatUserId, user?.id, visibleMessages]);
+  }, [profilesByUserId, selectedChatUserId, user?.id, visibleMessages]);
   const isSelectedChatBlockedByMe =
     selectedChatUserId !== null && blockedByMeProfileIds.includes(selectedChatUserId);
   const isSelectedChatBlockingMe =
@@ -1717,13 +1784,13 @@ export default function Home() {
       return null;
     }
 
-    const profile = profiles.find((item) => item.user_id === targetUserId);
+    const profile = profilesByUserId.get(targetUserId);
 
     return {
       name: profile?.display_name ?? friendProfile?.name ?? "Текущий чат",
       userId: targetUserId,
     };
-  }, [chatDeleteTargetUserId, friendProfile?.name, profiles, selectedChatUserId]);
+  }, [chatDeleteTargetUserId, friendProfile?.name, profilesByUserId, selectedChatUserId]);
   const isUsernameChangeAllowed = canChangeName(currentProfile?.username_changed_at ?? null);
   const nextUsernameChangeDate = getNextNameChangeDate(
     currentProfile?.username_changed_at ?? null,
@@ -1734,7 +1801,7 @@ export default function Home() {
     avatarGalleryIndex !== null ? avatarGalleryItems[avatarGalleryIndex] ?? null : null;
   const isAvatarGalleryOpen = avatarGalleryIndex !== null && Boolean(avatarGalleryUrl);
   const incomingCallerProfile = incomingCall
-    ? profiles.find((profile) => profile.user_id === incomingCall.sender_id)
+    ? profilesByUserId.get(incomingCall.sender_id)
     : null;
   const callStatusText =
     callStatus === "calling"
@@ -2969,24 +3036,8 @@ export default function Home() {
     });
 
     for (const message of friendMessages) {
-      const hasSentDeliveredReceipt = messages.some((currentMessage) => {
-        const receiptPayload = getReceiptMessagePayload(currentMessage.text);
-
-        return (
-          currentMessage.user_id === user.id &&
-          receiptPayload?.messageId === message.id &&
-          (receiptPayload.status === "delivered" || receiptPayload.status === "read")
-        );
-      });
-      const hasSentReadReceipt = messages.some((currentMessage) => {
-        const receiptPayload = getReceiptMessagePayload(currentMessage.text);
-
-        return (
-          currentMessage.user_id === user.id &&
-          receiptPayload?.messageId === message.id &&
-          receiptPayload.status === "read"
-        );
-      });
+      const hasSentDeliveredReceipt = sentReceiptMessageIdSets.deliveredMessageIds.has(message.id);
+      const hasSentReadReceipt = sentReceiptMessageIdSets.readMessageIds.has(message.id);
 
       if (!hasSentDeliveredReceipt && !sentDeliveryReceiptIdsRef.current.has(message.id)) {
         sentDeliveryReceiptIdsRef.current.add(message.id);
@@ -3005,7 +3056,7 @@ export default function Home() {
         void sendServiceMessage(createReceiptMessageText(message.id, "read"), message.user_id);
       }
     }
-  }, [activeView, messages, selectedChatUserId, sendServiceMessage, user, visibleMessages]);
+  }, [activeView, selectedChatUserId, sendServiceMessage, sentReceiptMessageIdSets, user, visibleMessages]);
 
   useEffect(() => {
     if (!user) {
@@ -4184,7 +4235,7 @@ export default function Home() {
     }
 
     const isSharedPinned = sharedPinnedMessageIds.has(messagePinTarget.id);
-    const isPinned = activePinnedMessages.some((message) => message.id === messagePinTarget.id);
+    const isPinned = activePinnedMessageIdSet.has(messagePinTarget.id);
 
     if (!shouldPinForBoth) {
       if (!user || !selectedChatUserId) {
@@ -6177,7 +6228,7 @@ export default function Home() {
                     const nextFavoriteItem = favoriteItems[favoriteItemIndex + 1];
                     const isPreviousSameAuthor = previousFavoriteItem?.user_id === favoriteItem.user_id;
                     const isNextSameAuthor = nextFavoriteItem?.user_id === favoriteItem.user_id;
-                    const isSelected = selectedMessageIds.includes(favoriteItem.id);
+                    const isSelected = selectedMessageIdSet.has(favoriteItem.id);
                     const reply = getMessageReply(favoriteItem.text);
                     const displayText = reply?.body ?? favoriteItem.text;
                     const imageUrl = getMessageImageUrl(displayText);
@@ -6803,12 +6854,7 @@ export default function Home() {
                   ) : null}
 
                   {chatProfiles.map((profile) => {
-                    const profileMessages = user
-                      ? visibleMessages.filter((message) =>
-                          isMessageBetweenUsers(message, user.id, profile.user_id),
-                        )
-                      : [];
-                    const latestProfileMessage = profileMessages.at(-1);
+                    const latestProfileMessage = latestVisibleMessageByProfileId.get(profile.user_id);
                     const profileUnreadCount = unreadMessagesByUserId.get(profile.user_id) ?? 0;
                     const previewText = latestProfileMessage
                       ? getChatPreviewText(latestProfileMessage.text)
@@ -7072,8 +7118,7 @@ export default function Home() {
                     <p className="text-[13px] text-[#a1a1aa]">Загружаю сообщения...</p>
                   ) : null}
 
-                  {!isLoadingMessages &&
-                  (isPinnedMessagesViewOpen ? activePinnedMessages : activeDialogMessages).length === 0 ? (
+                  {!isLoadingMessages && visibleDialogMessagesCount === 0 ? (
                     <p className="text-[13px] text-[#a1a1aa]">
                       {isPinnedMessagesViewOpen
                         ? "Закрепов пока нет."
@@ -7081,27 +7126,24 @@ export default function Home() {
                     </p>
                   ) : null}
 
-                  {(isPinnedMessagesViewOpen ? activePinnedMessages : activeDialogMessages).map((message, messageIndex) => {
+                  {visibleDialogMessages.map((message, messageIndex) => {
                     const isMine = message.user_id === user.id;
-                    const visibleDialogMessages = isPinnedMessagesViewOpen
-                      ? activePinnedMessages
-                      : activeDialogMessages;
                     const previousMessage = visibleDialogMessages[messageIndex - 1];
                     const nextMessage = visibleDialogMessages[messageIndex + 1];
                     const isPreviousSameAuthor =
                       previousMessage?.user_id === message.user_id;
                     const isNextSameAuthor = nextMessage?.user_id === message.user_id;
-                    const isSelected = selectedMessageIds.includes(message.id);
-                    const isPinned = activePinnedMessages.some((pinnedMessage) => pinnedMessage.id === message.id);
+                    const isSelected = selectedMessageIdSet.has(message.id);
+                    const isPinned = activePinnedMessageIdSet.has(message.id);
                     const receiptStatus =
                       isMine && message.id > 0
                         ? messageReceiptStatuses.get(message.id) ?? "delivered"
                         : isMine && message.id < 0
                           ? "delivered"
                           : null;
-                    const messageProfile = profiles.find(
-                      (profile) => profile.user_id === message.user_id,
-                    );
+                    const messageProfile = message.user_id
+                      ? profilesByUserId.get(message.user_id)
+                      : null;
                     const messageAuthor = messageProfile?.display_name ?? message.author;
                     const shouldShowFriendAvatar = !isMine && !isNextSameAuthor;
                     const shouldShowOwnAvatar = isMine && !isNextSameAuthor;
@@ -8267,7 +8309,7 @@ export default function Home() {
             <button
               className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
               onClick={() =>
-                activePinnedMessages.some((message) => message.id === messageContextMenu.message.id)
+                activePinnedMessageIdSet.has(messageContextMenu.message.id)
                   ? requestUnpinPinnedMessage(messageContextMenu.message)
                   : requestPinnedMessage(messageContextMenu.message)
               }
@@ -8277,7 +8319,7 @@ export default function Home() {
                 <path d="m14.5 4.5 5 5-3.4 1.1-4.8 4.8.7 3.6-7-7 3.6.7 4.8-4.8 1.1-3.4Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                 <path d="m9.5 14.5-4 4" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
               </svg>
-              {activePinnedMessages.some((message) => message.id === messageContextMenu.message.id) ? "Открепить" : "Закрепить"}
+              {activePinnedMessageIdSet.has(messageContextMenu.message.id) ? "Открепить" : "Закрепить"}
             </button>
             <button
               className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
@@ -8310,7 +8352,7 @@ export default function Home() {
               <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
                 <path d="M9 12.5 11 14.5 15.5 9.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
               </svg>
-              {selectedMessageIds.includes(messageContextMenu.message.id)
+              {selectedMessageIdSet.has(messageContextMenu.message.id)
                 ? "Снять выделение"
                 : "Выделить"}
             </button>
@@ -8324,7 +8366,7 @@ export default function Home() {
         <>
           {(() => {
             const isFavoritePinned = pinnedFavoriteItem?.id === favoriteContextMenu.item.id;
-            const isFavoriteSelected = selectedMessageIds.includes(favoriteContextMenu.item.id);
+            const isFavoriteSelected = selectedMessageIdSet.has(favoriteContextMenu.item.id);
 
             return (
               <>
@@ -8487,19 +8529,19 @@ export default function Home() {
               </span>
               <div className="min-w-0">
                 <h2 className="text-lg font-medium text-[#f4f4f5]">
-                  {activePinnedMessages.some((message) => message.id === messagePinTarget.id)
+                  {activePinnedMessageIdSet.has(messagePinTarget.id)
                     ? "Открепление сообщения"
                     : "Закрепление сообщения"}
                 </h2>
                 <p className="mt-1 text-[13px] leading-6 text-[#a1a1aa]">
-                  {activePinnedMessages.some((message) => message.id === messagePinTarget.id)
+                  {activePinnedMessageIdSet.has(messagePinTarget.id)
                     ? "Желаете открепить сообщение?"
                     : "Выберите, закрепить сообщение только у себя или сделать его общим для обоих участников переписки."}
                 </p>
               </div>
             </div>
 
-            {!activePinnedMessages.some((message) => message.id === messagePinTarget.id) ? (
+            {!activePinnedMessageIdSet.has(messagePinTarget.id) ? (
               <>
                 <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 p-3">
                   <p className="line-clamp-3 text-[13px] font-medium text-[#f4f4f5]">
@@ -8523,20 +8565,20 @@ export default function Home() {
               <button
                 className="min-h-12 rounded-xl bg-[#f4f4f5] px-4 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
                 onClick={
-                  activePinnedMessages.some((message) => message.id === messagePinTarget.id)
+                  activePinnedMessageIdSet.has(messagePinTarget.id)
                     ? confirmUnpinPinnedMessage
                     : confirmPinnedMessage
                 }
                 type="button"
               >
-                {activePinnedMessages.some((message) => message.id === messagePinTarget.id) ? "Да" : "Закрепить"}
+                {activePinnedMessageIdSet.has(messagePinTarget.id) ? "Да" : "Закрепить"}
               </button>
               <button
                 className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
                 onClick={() => setMessagePinTarget(null)}
                 type="button"
               >
-                {activePinnedMessages.some((message) => message.id === messagePinTarget.id) ? "Нет" : "Отмена"}
+                {activePinnedMessageIdSet.has(messagePinTarget.id) ? "Нет" : "Отмена"}
               </button>
             </div>
           </section>
