@@ -1167,7 +1167,9 @@ export default function Home() {
   const [messageText, setMessageText] = useState("");
   const [chatSearchQuery, setChatSearchQuery] = useState("");
   const [avatarHistory, setAvatarHistory] = useState<string[]>([]);
+  const [avatarGalleryItems, setAvatarGalleryItems] = useState<string[]>([]);
   const [avatarGalleryIndex, setAvatarGalleryIndex] = useState<number | null>(null);
+  const [canDeleteAvatarFromGallery, setCanDeleteAvatarFromGallery] = useState(false);
   const [isAvatarDeleteDialogOpen, setIsAvatarDeleteDialogOpen] = useState(false);
   const [typingNow, setTypingNow] = useState(() => Date.now());
   const [activeView, setActiveView] = useState<ActiveView>("profile");
@@ -1729,7 +1731,7 @@ export default function Home() {
   const profileNameInputValue = profileName || activeUserName;
   const profileUsernameInputValue = profileUsername ?? currentProfile?.username ?? "";
   const avatarGalleryUrl =
-    avatarGalleryIndex !== null ? avatarHistory[avatarGalleryIndex] ?? null : null;
+    avatarGalleryIndex !== null ? avatarGalleryItems[avatarGalleryIndex] ?? null : null;
   const isAvatarGalleryOpen = avatarGalleryIndex !== null && Boolean(avatarGalleryUrl);
   const incomingCallerProfile = incomingCall
     ? profiles.find((profile) => profile.user_id === incomingCall.sender_id)
@@ -1842,6 +1844,8 @@ export default function Home() {
     const frameId = window.requestAnimationFrame(() => {
     if (!user) {
       setAvatarHistory([]);
+      setAvatarGalleryItems([]);
+      setCanDeleteAvatarFromGallery(false);
       setAvatarGalleryIndex(null);
       return;
     }
@@ -2465,7 +2469,7 @@ export default function Home() {
   }, [closeTopFloatingLayer]);
 
   useEffect(() => {
-    if (!isAvatarGalleryOpen || avatarHistory.length < 2 || isAvatarDeleteDialogOpen) {
+    if (!isAvatarGalleryOpen || avatarGalleryItems.length < 2 || isAvatarDeleteDialogOpen) {
       return;
     }
 
@@ -2480,8 +2484,8 @@ export default function Home() {
         const safeIndex = currentIndex ?? 0;
 
         return event.key === "ArrowLeft"
-          ? (safeIndex - 1 + avatarHistory.length) % avatarHistory.length
-          : (safeIndex + 1) % avatarHistory.length;
+          ? (safeIndex - 1 + avatarGalleryItems.length) % avatarGalleryItems.length
+          : (safeIndex + 1) % avatarGalleryItems.length;
       });
     }
 
@@ -2490,7 +2494,7 @@ export default function Home() {
     return () => {
       window.removeEventListener("keydown", navigateAvatarGallery, true);
     };
-  }, [avatarHistory.length, isAvatarDeleteDialogOpen, isAvatarGalleryOpen]);
+  }, [avatarGalleryItems.length, isAvatarDeleteDialogOpen, isAvatarGalleryOpen]);
 
   useEffect(() => {
     return () => {
@@ -3207,6 +3211,8 @@ export default function Home() {
 
       setViewedProfile(null);
       setSelectedImageUrl(null);
+      setAvatarGalleryItems([]);
+      setCanDeleteAvatarFromGallery(false);
       setAvatarGalleryIndex(null);
       setIsAvatarDeleteDialogOpen(false);
       setProfileNotificationMenuUserId(null);
@@ -4717,6 +4723,8 @@ export default function Home() {
       ].slice(0, 20);
 
       setAvatarHistory(nextAvatarHistory);
+      setAvatarGalleryItems(nextAvatarHistory);
+      setCanDeleteAvatarFromGallery(true);
       window.localStorage.setItem(
         `hush-avatar-history-${user.id}`,
         JSON.stringify(nextAvatarHistory),
@@ -4746,17 +4754,58 @@ export default function Home() {
     }
 
     setAvatarHistory(nextAvatarHistory);
+    setAvatarGalleryItems(nextAvatarHistory);
+    setCanDeleteAvatarFromGallery(true);
     setAvatarGalleryIndex(0);
   }
 
+  async function openProfileAvatarGallery(profile: {
+    avatarUrl: string | null;
+    userId: string | null;
+  }) {
+    if (!profile.avatarUrl) {
+      return;
+    }
+
+    const avatarUrls = [profile.avatarUrl];
+
+    if (profile.userId) {
+      const { data } = await supabase.storage
+        .from("message-images")
+        .list(`${profile.userId}/avatars`, {
+          limit: 100,
+          sortBy: { column: "created_at", order: "desc" },
+        });
+
+      if (data) {
+        const storageAvatarUrls = data
+          .filter((file) => file.name && !file.name.endsWith("/"))
+          .map((file) => {
+            const { data: publicUrlData } = supabase.storage
+              .from("message-images")
+              .getPublicUrl(`${profile.userId}/avatars/${file.name}`);
+
+            return publicUrlData.publicUrl;
+          });
+
+        avatarUrls.push(...storageAvatarUrls);
+      }
+    }
+
+    setAvatarGalleryItems(Array.from(new Set(avatarUrls)).slice(0, 30));
+    setCanDeleteAvatarFromGallery(false);
+    setAvatarGalleryIndex(0);
+    setSelectedImageUrl(null);
+  }
+
   async function deleteAvatarFromGallery() {
-    if (!user || !avatarGalleryUrl) {
+    if (!user || !avatarGalleryUrl || !canDeleteAvatarFromGallery) {
       setIsAvatarDeleteDialogOpen(false);
       return;
     }
 
     const deletedAvatarUrl = avatarGalleryUrl;
-    const nextAvatarHistory = avatarHistory.filter((url) => url !== deletedAvatarUrl);
+    const nextAvatarHistory = avatarGalleryItems.filter((url) => url !== deletedAvatarUrl);
     const shouldUpdateProfileAvatar = currentProfile?.avatar_url === deletedAvatarUrl;
     const nextProfileAvatarUrl = shouldUpdateProfileAvatar
       ? nextAvatarHistory[0] ?? null
@@ -4800,6 +4849,7 @@ export default function Home() {
       JSON.stringify(nextAvatarHistory),
     );
     setAvatarHistory(nextAvatarHistory);
+    setAvatarGalleryItems(nextAvatarHistory);
     setIsAvatarDeleteDialogOpen(false);
     setAvatarGalleryIndex((currentIndex) => {
       if (nextAvatarHistory.length === 0) {
@@ -7860,17 +7910,19 @@ export default function Home() {
                 {"\u0410\u0432\u0430\u0442\u0430\u0440\u043a\u0438"}
               </p>
               <p className="mt-0.5 text-xs text-[#a1a1aa]">
-                {(avatarGalleryIndex ?? 0) + 1} / {avatarHistory.length}
+                {(avatarGalleryIndex ?? 0) + 1} / {avatarGalleryItems.length}
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <button
-                className="rounded-xl border border-red-400/35 bg-red-500/10 px-4 py-2 text-[13px] font-medium text-red-100 transition hover:bg-red-500/18"
-                onClick={() => setIsAvatarDeleteDialogOpen(true)}
-                type="button"
-              >
-                {"\u0423\u0434\u0430\u043b\u0438\u0442\u044c"}
-              </button>
+              {canDeleteAvatarFromGallery ? (
+                <button
+                  className="rounded-xl border border-red-400/35 bg-red-500/10 px-4 py-2 text-[13px] font-medium text-red-100 transition hover:bg-red-500/18"
+                  onClick={() => setIsAvatarDeleteDialogOpen(true)}
+                  type="button"
+                >
+                  {"\u0423\u0434\u0430\u043b\u0438\u0442\u044c"}
+                </button>
+              ) : null}
               <button
                 className="rounded-xl border border-[#3f3f46]/45 px-4 py-2 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
                 onClick={() => setAvatarGalleryIndex(null)}
@@ -7885,7 +7937,7 @@ export default function Home() {
             className="relative grid min-h-0 flex-1 place-items-center overflow-hidden rounded-2xl border border-[#3f3f46]/35 bg-[#050505]/72 p-3"
             onClick={(event) => event.stopPropagation()}
           >
-            {avatarHistory.length > 1 ? (
+            {avatarGalleryItems.length > 1 ? (
               <>
                 <button
                   aria-label="Previous avatar"
@@ -7894,7 +7946,7 @@ export default function Home() {
                     setAvatarGalleryIndex((currentIndex) =>
                       currentIndex === null
                         ? 0
-                        : (currentIndex - 1 + avatarHistory.length) % avatarHistory.length,
+                        : (currentIndex - 1 + avatarGalleryItems.length) % avatarGalleryItems.length,
                     )
                   }
                   type="button"
@@ -7908,7 +7960,7 @@ export default function Home() {
                   className="absolute right-3 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-[#3f3f46]/45 bg-[#111111]/88 text-[#f4f4f5] shadow-[0_12px_34px_rgba(0,0,0,0.35)] transition hover:bg-[#f4f4f5] hover:text-[#050505]"
                   onClick={() =>
                     setAvatarGalleryIndex((currentIndex) =>
-                      currentIndex === null ? 0 : (currentIndex + 1) % avatarHistory.length,
+                      currentIndex === null ? 0 : (currentIndex + 1) % avatarGalleryItems.length,
                     )
                   }
                   type="button"
@@ -7928,12 +7980,12 @@ export default function Home() {
             />
           </div>
 
-          {avatarHistory.length > 1 ? (
+          {avatarGalleryItems.length > 1 ? (
             <div
               className="scrollbar-hidden mt-3 flex shrink-0 gap-2 overflow-x-auto rounded-2xl border border-[#3f3f46]/35 bg-[#111111]/78 p-2"
               onClick={(event) => event.stopPropagation()}
             >
-              {avatarHistory.map((avatarUrl, avatarIndex) => (
+              {avatarGalleryItems.map((avatarUrl, avatarIndex) => (
                 <button
                   className={`h-14 w-14 shrink-0 overflow-hidden rounded-xl border transition ${
                     avatarIndex === avatarGalleryIndex
@@ -8795,7 +8847,7 @@ export default function Home() {
                   disabled={!viewedProfile.avatarUrl}
                   onClick={() => {
                     if (viewedProfile.avatarUrl) {
-                      setSelectedImageUrl(viewedProfile.avatarUrl);
+                      void openProfileAvatarGallery(viewedProfile);
                     }
                   }}
                   type="button"
