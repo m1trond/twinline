@@ -7913,7 +7913,7 @@ export default function Home() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               alt="Avatar preview"
-              className="h-full w-full rounded-2xl object-contain shadow-[0_28px_90px_rgba(0,0,0,0.55)]"
+              className="h-auto max-h-[calc(100dvh-220px)] w-auto max-w-[calc(100vw-120px)] rounded-2xl object-contain shadow-[0_28px_90px_rgba(0,0,0,0.55)]"
               src={avatarGalleryUrl}
             />
           </div>
