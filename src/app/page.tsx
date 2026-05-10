@@ -5896,7 +5896,7 @@ export default function Home() {
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-[#3f3f46]/35 pb-3 sm:mb-4 sm:gap-4 sm:pb-4">
                   <div className="flex min-w-0 items-center gap-3">
                     <button
-                      className="grid h-[68px] w-[68px] shrink-0 place-items-center overflow-hidden rounded-[20px] bg-[#18181b] text-lg font-medium text-[#f4f4f5] transition hover:scale-[1.03] focus:outline-none sm:h-[76px] sm:w-[76px] sm:rounded-[22px] sm:text-xl"
+                      className="grid h-[82px] w-[82px] shrink-0 place-items-center overflow-hidden rounded-[24px] bg-[#18181b] text-xl font-medium text-[#f4f4f5] transition hover:scale-[1.03] focus:outline-none sm:h-[96px] sm:w-[96px] sm:rounded-[28px] sm:text-2xl"
                       onClick={() => openAvatarGallery(currentProfile?.avatar_url)}
                       type="button"
                     >
