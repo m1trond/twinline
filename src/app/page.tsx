@@ -6890,7 +6890,7 @@ export default function Home() {
                         {friendProfile?.name ?? "Друг"}
                       </h2>
                       <p className="truncate text-xs text-[#a1a1aa] sm:text-[13px]">
-                        {isFriendTyping ? "печатает..." : "Приватный профиль собеседника"}
+                        {isFriendTyping ? "\u043f\u0435\u0447\u0430\u0442\u0430\u0435\u0442..." : formatLastSeen(friendProfile?.updatedAt ?? null)}
                       </p>
                     </div>
                   </div>
