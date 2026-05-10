@@ -2348,6 +2348,111 @@ export default function Home() {
     };
   }, [isSelectedDeleteDialogOpen, selectedMessageIds.length]);
 
+  const closeTopFloatingLayer = useCallback(() => {
+    if (avatarGalleryIndex !== null) {
+      setAvatarGalleryIndex(null);
+      return true;
+    }
+
+    if (selectedImageUrl) {
+      setSelectedImageUrl(null);
+      return true;
+    }
+
+    if (blockConfirmation) {
+      setBlockConfirmation(null);
+      return true;
+    }
+
+    if (profileNotificationMenuUserId) {
+      setProfileNotificationMenuUserId(null);
+      return true;
+    }
+
+    if (messagePinTarget) {
+      setMessagePinTarget(null);
+      return true;
+    }
+
+    if (isUnpinAllDialogOpen) {
+      setIsUnpinAllDialogOpen(false);
+      return true;
+    }
+
+    if (messageDeleteTarget) {
+      setMessageDeleteTarget(null);
+      return true;
+    }
+
+    if (isChatDeleteDialogOpen) {
+      setIsChatDeleteDialogOpen(false);
+      setChatDeleteTargetUserId(null);
+      return true;
+    }
+
+    if (isStickerPickerOpen) {
+      setIsStickerPickerOpen(false);
+      return true;
+    }
+
+    if (chatContextMenu) {
+      setChatContextMenu(null);
+      return true;
+    }
+
+    if (favoriteContextMenu) {
+      setFavoriteContextMenu(null);
+      return true;
+    }
+
+    if (messageContextMenu) {
+      setMessageContextMenu(null);
+      return true;
+    }
+
+    if (viewedProfile) {
+      setViewedProfile(null);
+      return true;
+    }
+
+    return false;
+  }, [
+    avatarGalleryIndex,
+    blockConfirmation,
+    chatContextMenu,
+    favoriteContextMenu,
+    isChatDeleteDialogOpen,
+    isStickerPickerOpen,
+    isUnpinAllDialogOpen,
+    messageContextMenu,
+    messageDeleteTarget,
+    messagePinTarget,
+    profileNotificationMenuUserId,
+    selectedImageUrl,
+    viewedProfile,
+  ]);
+
+  useEffect(() => {
+    function closeFloatingLayerOnEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      if (!closeTopFloatingLayer()) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    window.addEventListener("keydown", closeFloatingLayerOnEscape, true);
+
+    return () => {
+      window.removeEventListener("keydown", closeFloatingLayerOnEscape, true);
+    };
+  }, [closeTopFloatingLayer]);
+
   useEffect(() => {
     return () => {
       stopVoiceInputMeter();
@@ -7633,8 +7738,14 @@ export default function Home() {
         </aside>
       ) : null}
       {avatarGalleryUrl ? (
-        <div className="fixed inset-0 z-[125] flex flex-col bg-black/72 p-3 backdrop-blur-md sm:p-5">
-          <div className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/82 px-3 py-2 text-[#f4f4f5] shadow-[0_14px_45px_rgba(0,0,0,0.28)]">
+        <div
+          className="fixed inset-0 z-[125] flex flex-col bg-black/72 p-3 backdrop-blur-md sm:p-5"
+          onClick={() => setAvatarGalleryIndex(null)}
+        >
+          <div
+            className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/82 px-3 py-2 text-[#f4f4f5] shadow-[0_14px_45px_rgba(0,0,0,0.28)]"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="min-w-0">
               <p className="text-[13px] font-medium uppercase tracking-[0.16em] text-[#a1a1aa]">
                 {"\u0410\u0432\u0430\u0442\u0430\u0440\u043a\u0438"}
@@ -7652,7 +7763,10 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="relative grid min-h-0 flex-1 place-items-center overflow-hidden rounded-2xl border border-[#3f3f46]/35 bg-[#050505]/72 p-3">
+          <div
+            className="relative grid min-h-0 flex-1 place-items-center overflow-hidden rounded-2xl border border-[#3f3f46]/35 bg-[#050505]/72 p-3"
+            onClick={(event) => event.stopPropagation()}
+          >
             {avatarHistory.length > 1 ? (
               <>
                 <button
@@ -7697,7 +7811,10 @@ export default function Home() {
           </div>
 
           {avatarHistory.length > 1 ? (
-            <div className="scrollbar-hidden mt-3 flex shrink-0 gap-2 overflow-x-auto rounded-2xl border border-[#3f3f46]/35 bg-[#111111]/78 p-2">
+            <div
+              className="scrollbar-hidden mt-3 flex shrink-0 gap-2 overflow-x-auto rounded-2xl border border-[#3f3f46]/35 bg-[#111111]/78 p-2"
+              onClick={(event) => event.stopPropagation()}
+            >
               {avatarHistory.map((avatarUrl, avatarIndex) => (
                 <button
                   className={`h-14 w-14 shrink-0 overflow-hidden rounded-xl border transition ${
