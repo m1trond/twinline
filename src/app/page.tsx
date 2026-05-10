@@ -6166,7 +6166,7 @@ export default function Home() {
                           } ${isSelected ? "ring-2 ring-[#f4f4f5]/80" : ""}`}
                         >
                           {reply ? (
-                            <div className="mb-2 block w-full rounded-xl border-l-4 border-[#050505]/45 bg-[#050505]/12 px-3 py-2 text-left">
+                            <div className="hush-reply-preview mb-2 block w-full rounded-xl border-l-4 border-[#050505]/45 bg-[#050505]/12 px-3 py-2 text-left">
                               <p className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-55">
                                 {reply.author}
                               </p>
@@ -7179,7 +7179,7 @@ export default function Home() {
                           ) : null}
                           {reply ? (
                             <button
-                              className={`mb-2 block w-full rounded-xl border-l-4 px-3 py-2 text-left transition hover:scale-[1.01] ${
+                              className={`hush-reply-preview mb-2 block w-full rounded-xl border-l-4 px-3 py-2 text-left transition hover:scale-[1.01] ${
                                 isMine
                                   ? "border-[#050505]/45 bg-[#050505]/12 hover:bg-[#050505]/18"
                                   : "border-[#f4f4f5]/45 bg-white/8 hover:bg-white/12"
@@ -8027,7 +8027,7 @@ export default function Home() {
             type="button"
           />
           <div
-            className="fixed z-[90] w-[min(286px,calc(100vw-24px))] overflow-visible rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 text-[#f4f4f5] shadow-[0_22px_70px_rgba(0,0,0,0.58)] backdrop-blur-xl"
+            className="hush-context-menu fixed z-[90] w-[min(286px,calc(100vw-24px))] overflow-visible rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 text-[#f4f4f5] shadow-[0_22px_70px_rgba(0,0,0,0.58)] backdrop-blur-xl"
             onClick={(event) => event.stopPropagation()}
             onContextMenu={(event) => event.preventDefault()}
             style={{ left: chatContextMenu.left, top: chatContextMenu.top }}
@@ -8058,7 +8058,7 @@ export default function Home() {
                   <path d="m9 18 6-6-6-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                 </svg>
               </button>
-              <div className="invisible absolute left-[calc(100%-6px)] top-0 z-[91] w-[220px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
+              <div className="hush-context-menu invisible absolute left-[calc(100%-6px)] top-0 z-[91] w-[220px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
                 <button className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10" onClick={() => runChatMenuStub("Создание папок скоро подключим.")} type="button">
                   <span className="grid h-5 w-5 place-items-center">+</span>
                   Новая папка
@@ -8118,7 +8118,7 @@ export default function Home() {
                       <path d="m9 18 6-6-6-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                     </svg>
                   </button>
-                  <div className="invisible absolute left-[calc(100%-6px)] top-0 z-[91] w-[260px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
+                  <div className="hush-context-menu invisible absolute left-[calc(100%-6px)] top-0 z-[91] w-[260px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
                     {[
                       { durationMs: 30 * 60 * 1000, label: "Выключить на 30 минут" },
                       { durationMs: 60 * 60 * 1000, label: "Выключить на 1 час" },
@@ -8182,7 +8182,7 @@ export default function Home() {
             type="button"
           />
           <div
-            className="fixed z-[90] w-[min(220px,calc(100vw-24px))] overflow-hidden rounded-lg border border-white/10 bg-[#18181b] py-1.5 text-[#f4f4f5] shadow-[0_18px_60px_rgba(0,0,0,0.55)]"
+            className="hush-context-menu fixed z-[90] w-[min(220px,calc(100vw-24px))] overflow-hidden rounded-lg border border-white/10 bg-[#18181b] py-1.5 text-[#f4f4f5] shadow-[0_18px_60px_rgba(0,0,0,0.55)]"
             onClick={(event) => event.stopPropagation()}
             onContextMenu={(event) => event.preventDefault()}
             style={{
@@ -8287,7 +8287,7 @@ export default function Home() {
                   type="button"
                 />
                 <div
-                  className="fixed z-[90] w-[min(220px,calc(100vw-24px))] overflow-hidden rounded-lg border border-white/10 bg-[#18181b] py-1.5 text-[#f4f4f5] shadow-[0_18px_60px_rgba(0,0,0,0.55)]"
+                  className="hush-context-menu fixed z-[90] w-[min(220px,calc(100vw-24px))] overflow-hidden rounded-lg border border-white/10 bg-[#18181b] py-1.5 text-[#f4f4f5] shadow-[0_18px_60px_rgba(0,0,0,0.55)]"
                   onClick={(event) => event.stopPropagation()}
                   onContextMenu={(event) => event.preventDefault()}
                   style={{
