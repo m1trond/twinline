@@ -23,7 +23,7 @@ export function ChatListView({
 }: ChatListViewProps) {
   return (
     <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
-      <div className="mb-3 border-b border-[#3f3f46]/35 pb-3 sm:mb-4 sm:pb-4">
+      <div className="mb-3 flex h-[60px] min-h-[60px] items-center border-b border-[#3f3f46]/35 sm:mb-4">
         <h2 className="text-lg font-medium sm:text-xl">Сообщения</h2>
       </div>
 
@@ -90,9 +90,7 @@ export function ChatListView({
                 <div className="mt-1 flex items-center justify-between gap-3">
                   <p
                     className={`truncate text-xs sm:text-[13px] ${
-                      profileUnreadCount > 0
-                        ? "font-medium text-[#f4f4f5]"
-                        : "text-[#a1a1aa]"
+                      profileUnreadCount > 0 ? "font-medium text-[#f4f4f5]" : "text-[#a1a1aa]"
                     }`}
                   >
                     {profileUnreadCount > 0
