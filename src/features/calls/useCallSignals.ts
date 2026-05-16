@@ -183,7 +183,7 @@ export function useCallSignals({
 
     const callSignalsInterval = window.setInterval(() => {
       syncMissedCallSignals();
-    }, 1800);
+    }, 10_000);
 
     const channel = supabase
       .channel(`call-signals-${signedInUserId}`)

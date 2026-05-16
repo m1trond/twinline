@@ -247,7 +247,7 @@ export function useMessagesRealtimeState({
       if (document.visibilityState === "visible") {
         syncNewMessages();
       }
-    }, 900);
+    }, 15_000);
 
     const fullSyncInterval = window.setInterval(() => {
       if (document.visibilityState === "visible") {
