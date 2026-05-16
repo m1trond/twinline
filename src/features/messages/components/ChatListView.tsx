@@ -4,6 +4,14 @@ import { formatMessageTime } from "@/shared/utils/format";
 import { getChatPreviewText } from "@/shared/utils/messages";
 import { isProfileOnline } from "@/shared/utils/profile";
 
+const messagesTitle = "\u0421\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u044f";
+const emptyChatsTitle = "\u0414\u0438\u0430\u043b\u043e\u0433\u043e\u0432 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442";
+const emptyChatsText =
+  "\u041d\u0430\u0439\u0434\u0438 \u0447\u0435\u043b\u043e\u0432\u0435\u043a\u0430 \u043f\u043e @\u043d\u0438\u043a\u0443 \u0432\u044b\u0448\u0435 \u0438 \u043d\u0430\u0447\u043d\u0438 \u043f\u0435\u0440\u0435\u043f\u0438\u0441\u043a\u0443. \u041d\u043e\u0432\u044b\u0435 \u0430\u043a\u043a\u0430\u0443\u043d\u0442\u044b \u0431\u043e\u043b\u044c\u0448\u0435 \u043d\u0435 \u0432\u0438\u0434\u044f\u0442 \u0447\u0443\u0436\u0438\u0435 \u0447\u0430\u0442\u044b.";
+const openChatText = "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u0435\u0440\u0435\u043f\u0438\u0441\u043a\u0443";
+const avatarAltPrefix = "\u0410\u0432\u0430\u0442\u0430\u0440";
+const unreadPrefix = "\u041d\u0435\u043f\u0440\u043e\u0447\u0438\u0442\u0430\u043d\u043d\u043e\u0435 \u043e\u0442";
+
 type ChatListViewProps = {
   chatProfiles: ProfileRow[];
   latestVisibleMessageByProfileId: Map<string, MessageRow>;
@@ -22,18 +30,16 @@ export function ChatListView({
   unreadMessagesByUserId,
 }: ChatListViewProps) {
   return (
-    <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
-      <div className="mb-3 flex h-[60px] min-h-[60px] items-center border-b border-[#3f3f46]/35 sm:mb-4">
-        <h2 className="text-lg font-medium sm:text-xl">Сообщения</h2>
+    <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-3 pb-3 pt-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:px-5 sm:pb-5 sm:pt-4">
+      <div className="mb-3 border-b border-[#3f3f46]/35 pb-3 sm:mb-4 sm:pb-4">
+        <h2 className="text-lg font-medium sm:text-xl">{messagesTitle}</h2>
       </div>
 
       <div className="grid gap-2">
         {chatProfiles.length === 0 ? (
           <article className="rounded-xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-4 text-center sm:rounded-2xl sm:p-6">
-            <p className="text-sm font-medium">Диалогов пока нет</p>
-            <p className="mt-2 text-[13px] leading-6 text-[#a1a1aa]">
-              Найди человека по @нику выше и начни переписку. Новые аккаунты больше не видят чужие чаты.
-            </p>
+            <p className="text-sm font-medium">{emptyChatsTitle}</p>
+            <p className="mt-2 text-[13px] leading-6 text-[#a1a1aa]">{emptyChatsText}</p>
           </article>
         ) : null}
 
@@ -42,7 +48,7 @@ export function ChatListView({
           const profileUnreadCount = unreadMessagesByUserId.get(profile.user_id) ?? 0;
           const previewText = latestProfileMessage
             ? getChatPreviewText(latestProfileMessage.text)
-            : "Открыть переписку";
+            : openChatText;
 
           return (
             <button
@@ -64,7 +70,7 @@ export function ChatListView({
                   {profile.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      alt={`Аватар ${profile.display_name}`}
+                      alt={`${avatarAltPrefix} ${profile.display_name}`}
                       className="h-full w-full object-cover"
                       src={profile.avatar_url}
                     />
@@ -94,7 +100,7 @@ export function ChatListView({
                     }`}
                   >
                     {profileUnreadCount > 0
-                      ? `Непрочитанное от ${profile.display_name}: ${previewText}`
+                      ? `${unreadPrefix} ${profile.display_name}: ${previewText}`
                       : previewText}
                   </p>
                   {profileUnreadCount > 0 ? (
