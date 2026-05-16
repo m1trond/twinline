@@ -52,6 +52,10 @@ function areMessagesEqual(firstMessages: MessageRow[], secondMessages: MessageRo
   });
 }
 
+function getPendingOptimisticMessages(messages: MessageRow[]) {
+  return messages.filter((message) => message.id < 0);
+}
+
 export function useMessagesRealtimeState({
   activeViewRef,
   blockedProfileIdsRef,
@@ -199,9 +203,16 @@ export function useMessagesRealtimeState({
       } else {
         const nextMessages = data ?? [];
 
-        setMessages((currentMessages) =>
-          areMessagesEqual(currentMessages, nextMessages) ? currentMessages : nextMessages,
-        );
+        setMessages((currentMessages) => {
+          const mergedMessages = mergeMessages(
+            nextMessages,
+            getPendingOptimisticMessages(currentMessages),
+          );
+
+          return areMessagesEqual(currentMessages, mergedMessages)
+            ? currentMessages
+            : mergedMessages;
+        });
         setErrorMessage("");
       }
 
@@ -247,7 +258,7 @@ export function useMessagesRealtimeState({
       if (document.visibilityState === "visible") {
         syncNewMessages();
       }
-    }, 15_000);
+    }, 900);
 
     const fullSyncInterval = window.setInterval(() => {
       if (document.visibilityState === "visible") {

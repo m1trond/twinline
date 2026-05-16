@@ -1731,7 +1731,7 @@ export default function Home() {
         (message) => message.id !== optimisticMessage.id,
       );
 
-      return mergeMessages(withoutOptimisticMessage, data ? [data] : []);
+      return data ? mergeMessages(withoutOptimisticMessage, [data]) : currentMessages;
     });
   }
 
@@ -2998,7 +2998,7 @@ export default function Home() {
           (message) => message.id !== optimisticMessage.id,
         );
 
-        return mergeMessages(withoutOptimisticMessage, data ? [data] : []);
+        return data ? mergeMessages(withoutOptimisticMessage, [data]) : currentMessages;
       });
       setErrorMessage("");
     }
@@ -3062,7 +3062,7 @@ export default function Home() {
         (message) => message.id !== optimisticMessage.id,
       );
 
-      return mergeMessages(withoutOptimisticMessage, data ? [data] : []);
+      return data ? mergeMessages(withoutOptimisticMessage, [data]) : currentMessages;
     });
     setErrorMessage("");
   }
@@ -3167,7 +3167,7 @@ export default function Home() {
           (message) => message.id !== optimisticMessage.id,
         );
 
-        return mergeMessages(withoutOptimisticMessage, data ? [data] : []);
+        return data ? mergeMessages(withoutOptimisticMessage, [data]) : currentMessages;
       });
     }
   }
@@ -3255,7 +3255,7 @@ export default function Home() {
           (message) => message.id !== optimisticMessage.id,
         );
 
-        return mergeMessages(withoutOptimisticMessage, data ? [data] : []);
+        return data ? mergeMessages(withoutOptimisticMessage, [data]) : currentMessages;
       });
     }
   }
