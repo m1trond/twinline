@@ -55,7 +55,7 @@ export function ChatListView({
               className={`flex w-full items-center gap-2.5 rounded-xl border p-2.5 text-left transition hover:border-[#3f3f46]/55 hover:bg-[#f4f4f5]/8 sm:gap-3 sm:rounded-2xl sm:p-3 ${
                 profileUnreadCount > 0
                   ? "border-[#f4f4f5]/20 bg-[#f4f4f5]/10"
-                  : "border-transparent bg-transparent"
+                  : "border-transparent bg-[#050505]/52"
               }`}
               key={profile.user_id}
               onClick={() => {
