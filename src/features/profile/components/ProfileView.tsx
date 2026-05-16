@@ -52,7 +52,7 @@ export function ProfileView({
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-[#3f3f46]/35 pb-3 sm:mb-4 sm:gap-4 sm:pb-4">
         <div className="flex min-w-0 items-center gap-3">
           <button
-            className="grid h-[82px] w-[82px] shrink-0 place-items-center overflow-hidden rounded-[24px] bg-[#18181b] text-xl font-medium text-[#f4f4f5] transition hover:scale-[1.03] focus:outline-none sm:h-[96px] sm:w-[96px] sm:rounded-[28px] sm:text-2xl"
+            className="grid h-[82px] w-[82px] shrink-0 place-items-center overflow-hidden rounded-[24px] bg-[#18181b] text-base font-medium text-[#f4f4f5] transition hover:scale-[1.03] focus:outline-none sm:h-[96px] sm:w-[96px] sm:rounded-[28px] sm:text-base"
             onClick={() => openAvatarGallery(currentProfile?.avatar_url)}
             type="button"
           >
@@ -68,10 +68,10 @@ export function ProfileView({
             )}
           </button>
           <div className="min-w-0">
-            <h2 className="truncate text-lg font-medium sm:text-xl">
+            <h2 className="truncate text-base font-medium sm:text-base">
               {activeUserName}
             </h2>
-            <p className="mt-0.5 text-[13px] font-medium text-[#a1a1aa]">
+            <p className="mt-0.5 text-sm font-medium text-[#a1a1aa]">
               {currentProfile?.username ? `@${currentProfile.username}` : "@ник не задан"}
             </p>
             <input
@@ -100,7 +100,7 @@ export function ProfileView({
           </p>
           <form className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={updateProfileName}>
             <input
-              className="min-h-9 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-[13px] outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] disabled:cursor-not-allowed disabled:opacity-60"
+              className="min-h-9 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] disabled:cursor-not-allowed disabled:opacity-60"
               maxLength={24}
               minLength={2}
               onChange={(event) => setProfileName(event.target.value)}
@@ -109,7 +109,7 @@ export function ProfileView({
               value={profileNameInputValue}
             />
             <button
-              className="min-h-9 rounded-xl bg-[#f4f4f5] px-4 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
+              className="min-h-9 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
               disabled={!profileName.trim() || profileName.trim() === activeUserName}
               type="submit"
             >
@@ -123,7 +123,7 @@ export function ProfileView({
             Ник Hush
           </p>
           <form className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={updateProfileUsername}>
-            <label className="flex min-h-9 items-center rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-[13px] focus-within:border-[#f4f4f5]">
+            <label className="flex min-h-9 items-center rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-sm focus-within:border-[#f4f4f5]">
               <span className="font-medium text-[#a1a1aa]">@</span>
               <input
                 aria-label="Ник Hush"
@@ -140,7 +140,7 @@ export function ProfileView({
               />
             </label>
             <button
-              className="min-h-9 rounded-xl bg-[#f4f4f5] px-4 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
+              className="min-h-9 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
               disabled={
                 !profileUsernameInputValue.trim() ||
                 normalizeUsername(profileUsernameInputValue) === currentProfile?.username
@@ -162,7 +162,7 @@ export function ProfileView({
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
             Email
           </p>
-          <p className="mt-1.5 break-words text-[13px] font-medium">
+          <p className="mt-1.5 break-words text-sm font-medium">
             {user.email}
           </p>
           <p className="mt-1 text-xs leading-5 text-[#a1a1aa]">
@@ -177,7 +177,7 @@ export function ProfileView({
           <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(120px,0.36fr)_1fr_auto]">
             <select
               aria-label="Страна"
-              className="min-h-9 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-[13px] outline-none focus:border-[#f4f4f5]"
+              className="min-h-9 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none focus:border-[#f4f4f5]"
               defaultValue="+7"
             >
               <option value="+7">RU +7</option>
@@ -188,13 +188,13 @@ export function ProfileView({
             </select>
             <input
               aria-label="Номер телефона"
-              className="min-h-9 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-[13px] outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5]"
+              className="min-h-9 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5]"
               inputMode="tel"
               placeholder="999 123-45-67"
               type="tel"
             />
             <button
-              className="min-h-9 rounded-xl bg-[#52525b] px-4 text-[13px] font-medium text-[#050505] opacity-70"
+              className="min-h-9 rounded-xl bg-[#52525b] px-4 text-sm font-medium text-[#050505] opacity-70"
               disabled
               type="button"
             >

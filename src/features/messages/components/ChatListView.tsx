@@ -32,14 +32,14 @@ export function ChatListView({
   return (
     <div className="flex min-h-0 flex-col overflow-hidden">
       <div className="mb-2 flex h-[60px] min-h-[60px] items-center rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
-        <h2 className="text-lg font-medium sm:text-xl">{messagesTitle}</h2>
+        <h2 className="text-base font-medium sm:text-base">{messagesTitle}</h2>
       </div>
 
       <div className="scrollbar-hidden grid min-h-0 flex-1 content-start gap-2 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4">
         {chatProfiles.length === 0 ? (
           <article className="rounded-xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-4 text-center sm:rounded-2xl sm:p-6">
             <p className="text-sm font-medium">{emptyChatsTitle}</p>
-            <p className="mt-2 text-[13px] leading-6 text-[#a1a1aa]">{emptyChatsText}</p>
+            <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">{emptyChatsText}</p>
           </article>
         ) : null}
 
@@ -66,7 +66,7 @@ export function ChatListView({
               type="button"
             >
               <div className="relative h-10 w-10 shrink-0 sm:h-12 sm:w-12">
-                <div className="grid h-full w-full place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-[13px] font-medium text-[#050505] sm:text-sm">
+                <div className="grid h-full w-full place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-sm font-medium text-[#050505] sm:text-sm">
                   {profile.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -84,18 +84,18 @@ export function ChatListView({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="truncate text-[13px] font-medium text-[#f4f4f5] sm:text-sm">
+                  <p className="truncate text-sm font-medium text-[#f4f4f5] sm:text-sm">
                     {profile.display_name}
                   </p>
                   {latestProfileMessage ? (
-                    <span className="shrink-0 text-[11px] font-medium text-[#a1a1aa] sm:text-xs">
+                    <span className="shrink-0 text-xs font-medium text-[#a1a1aa] sm:text-xs">
                       {formatMessageTime(latestProfileMessage.created_at)}
                     </span>
                   ) : null}
                 </div>
                 <div className="mt-1 flex items-center justify-between gap-3">
                   <p
-                    className={`truncate text-xs sm:text-[13px] ${
+                    className={`truncate text-xs sm:text-sm ${
                       profileUnreadCount > 0 ? "font-medium text-[#f4f4f5]" : "text-[#a1a1aa]"
                     }`}
                   >

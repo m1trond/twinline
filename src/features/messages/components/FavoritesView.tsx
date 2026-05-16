@@ -85,7 +85,7 @@ export function FavoritesView({
 }: FavoritesViewProps) {
   return (<div className="flex min-h-0 flex-col overflow-hidden">
                 <div className="mb-2 flex h-[60px] min-h-[60px] items-center rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
-                  <h2 className="text-lg font-medium sm:text-xl">
+                  <h2 className="text-base font-medium sm:text-base">
                     Избранное
                   </h2>
                 </div>
@@ -118,7 +118,7 @@ export function FavoritesView({
                       <span className="block text-xs font-medium uppercase tracking-[0.16em] text-[#e5e5e5]">
                         Закреплено
                       </span>
-                      <span className="mt-0.5 block truncate text-[13px] font-medium text-[#f4f4f5]">
+                      <span className="mt-0.5 block truncate text-sm font-medium text-[#f4f4f5]">
                         {getReadableMessageText(pinnedFavoriteItem.text)}
                       </span>
                     </div>
@@ -139,7 +139,7 @@ export function FavoritesView({
                         <p className="text-sm font-medium">
                           Избранное пока пустое
                         </p>
-                        <p className="mt-2 text-[13px] leading-6 text-[#a1a1aa]">
+                        <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
                           Напиши сюда первую заметку или прикрепи файл.
                         </p>
                       </div>
@@ -191,7 +191,7 @@ export function FavoritesView({
                         >
                           {reply ? (
                             <div className="hush-reply-preview mb-2 block w-full rounded-xl border-l-4 border-[#050505]/45 bg-[#050505]/12 px-3 py-2 text-left">
-                              <p className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-55">
+                              <p className="text-xs font-medium uppercase tracking-[0.12em] opacity-55">
                                 {reply.author}
                               </p>
                               <p className="mt-0.5 line-clamp-2 text-xs font-medium opacity-70">
@@ -231,7 +231,7 @@ export function FavoritesView({
                             <FileAttachment file={filePayload} isMine />
                           ) : callDurationSeconds !== null ? (
                             <div className="min-w-[min(230px,70vw)] rounded-xl bg-[#262626] px-3 py-2 text-[#f4f4f5] sm:min-w-[min(260px,70vw)] sm:rounded-2xl">
-                              <p className="text-[13px] font-medium opacity-75">
+                              <p className="text-sm font-medium opacity-75">
                                 Звонок
                               </p>
                               <p className="text-xs font-medium opacity-60">
@@ -245,10 +245,10 @@ export function FavoritesView({
                               </span>
                             </div>
                           ) : (
-                            <p className="whitespace-pre-wrap break-words text-[13px] leading-6 sm:text-[15px]">
+                            <p className="whitespace-pre-wrap break-words text-sm leading-6 sm:text-base">
                               {displayText}
                               <span className="ml-2 inline-flex translate-y-[1px] items-center gap-1 align-baseline">
-                                <span className="text-[11px] font-medium leading-none text-[#404040]">
+                                <span className="text-xs font-medium leading-none text-[#404040]">
                                   {formatMessageTime(favoriteItem.created_at)}
                                 </span>
                               </span>
@@ -257,7 +257,7 @@ export function FavoritesView({
 
                           {!hasStandaloneBubble && hasAttachment ? (
                             <div className="mt-2 flex items-center justify-end gap-3 px-1">
-                              <p className={`text-right text-[11px] font-medium ${hasFramedMedia ? "text-[#a1a1aa]" : "text-[#404040]"}`}>
+                              <p className={`text-right text-xs font-medium ${hasFramedMedia ? "text-[#a1a1aa]" : "text-[#404040]"}`}>
                                 {formatMessageTime(favoriteItem.created_at)}
                               </p>
                             </div>
@@ -273,7 +273,7 @@ export function FavoritesView({
                   <div className="mt-2 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl">
                     {isSelectedChatBlockedByMe ? (
                       <button
-                        className="min-h-11 w-full rounded-lg bg-[#f4f4f5] px-4 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5] sm:rounded-xl"
+                        className="min-h-11 w-full rounded-lg bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] sm:rounded-xl"
                         onClick={() => {
                           if (selectedChatUserId && friendProfile?.name) {
                             requestBlockChange(
@@ -289,7 +289,7 @@ export function FavoritesView({
                         Разблокировать
                       </button>
                     ) : (
-                      <div className="flex min-h-11 items-center justify-center rounded-lg bg-[#f4f4f5]/12 px-4 text-[13px] font-medium text-[#a1a1aa] sm:rounded-xl">
+                      <div className="flex min-h-11 items-center justify-center rounded-lg bg-[#f4f4f5]/12 px-4 text-sm font-medium text-[#a1a1aa] sm:rounded-xl">
                         Вы были заблокированы
                       </div>
                     )}
@@ -334,7 +334,7 @@ export function FavoritesView({
                   </button>
 
                   {isRecordingVoice ? (
-                    <div className="relative col-span-3 flex min-h-10 min-w-0 flex-1 items-center rounded-lg border border-red-400/35 bg-red-500/10 px-3 text-[13px] text-[#f4f4f5] sm:col-span-1">
+                    <div className="relative col-span-3 flex min-h-10 min-w-0 flex-1 items-center rounded-lg border border-red-400/35 bg-red-500/10 px-3 text-sm text-[#f4f4f5] sm:col-span-1">
                       <div className="flex min-w-[86px] items-center gap-2">
                         <span className="h-2.5 w-2.5 rounded-full bg-red-300 shadow-[0_0_14px_rgba(252,165,165,0.65)]" />
                         <span className="font-medium tabular-nums text-red-100">
@@ -353,7 +353,7 @@ export function FavoritesView({
                     <>
                       <input
                         aria-label="Текст избранного"
-                        className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] focus:bg-[#f4f4f5]/18 sm:px-4 sm:text-[13px]"
+                        className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] focus:bg-[#f4f4f5]/18 sm:px-4 sm:text-sm"
                         onChange={handleMessageTextChange}
                         placeholder={
                           editingMessage
@@ -455,7 +455,7 @@ export function FavoritesView({
                 ) : null}
 
                 {replyTarget || editingMessage ? (
-                  <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-2.5 text-[13px] shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
+                  <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-2.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
                     <div className="min-w-0">
                       <p className="text-xs font-medium uppercase tracking-[0.14em] text-[#e5e5e5]">
                         {editingMessage ? "Редактирование" : "Ответ"}

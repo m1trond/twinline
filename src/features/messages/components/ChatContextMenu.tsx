@@ -72,7 +72,7 @@ export function ChatContextMenu({
         </MenuButton>
         <div className="group relative">
           <button
-            className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
+            className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
             type="button"
           >
             <FolderIcon />
@@ -116,7 +116,7 @@ export function ChatContextMenu({
           ) : (
             <>
               <button
-                className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition hover:bg-white/10"
+                className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
                 type="button"
               >
                 <MuteIcon />
@@ -169,7 +169,7 @@ function MenuButton({
 }) {
   return (
     <button
-      className={`flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition ${
+      className={`flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition ${
         danger ? "text-red-100 hover:bg-red-500/18" : "hover:bg-white/10"
       }`}
       onClick={onClick}
@@ -192,7 +192,7 @@ function SubMenuButton({
 }) {
   return (
     <button
-      className={`flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition ${
+      className={`flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition ${
         danger ? "text-red-100 hover:bg-red-500/18" : "hover:bg-white/10"
       }`}
       onClick={onClick}

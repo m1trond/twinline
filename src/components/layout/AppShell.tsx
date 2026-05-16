@@ -93,7 +93,7 @@ export function AppShell({
                   </svg>
                   <input
                     aria-label="User search by username"
-                    className="min-w-0 flex-1 bg-transparent text-[13px] text-[#f4f4f5] outline-none placeholder:text-[#a1a1aa]/75"
+                    className="min-w-0 flex-1 bg-transparent text-sm text-[#f4f4f5] outline-none placeholder:text-[#a1a1aa]/75"
                     onChange={(event) => setChatSearchQuery(event.target.value)}
                     placeholder="Найти..."
                     type="text"
@@ -141,7 +141,7 @@ export function AppShell({
                             )}
                           </span>
                           <span className="min-w-0">
-                            <span className="block truncate text-[13px] font-medium text-[#f4f4f5]">
+                            <span className="block truncate text-sm font-medium text-[#f4f4f5]">
                               {profile.display_name}
                             </span>
                             <span className="block truncate text-xs text-[#a1a1aa]">
@@ -156,7 +156,7 @@ export function AppShell({
               </div>
 
               <div className="mb-4">
-                <p className="text-[13px] font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
+                <p className="text-sm font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
                   Меню
                 </p>
               </div>
@@ -173,7 +173,7 @@ export function AppShell({
                 ))}
               </nav>
               <button
-                className={`mt-auto rounded-xl px-4 py-2.5 text-left text-[13px] font-medium transition ${
+                className={`mt-auto rounded-xl px-4 py-2.5 text-left text-sm font-medium transition ${
                   activeView === settingsNavItem.view
                     ? "bg-[#f4f4f5] text-[#050505]"
                     : "border border-[#3f3f46]/25 text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"

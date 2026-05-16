@@ -89,7 +89,7 @@ export function ViewedProfileModal({
           <div className="flex min-w-0 items-center gap-4">
             <button
               aria-label="Открыть аватар"
-              className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-[24px] bg-[#f4f4f5] text-2xl font-medium text-[#050505] shadow-[0_18px_45px_rgba(0,0,0,0.35)] transition hover:scale-[1.03] disabled:cursor-default disabled:hover:scale-100 sm:h-24 sm:w-24"
+              className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-[24px] bg-[#f4f4f5] text-base font-medium text-[#050505] shadow-[0_18px_45px_rgba(0,0,0,0.35)] transition hover:scale-[1.03] disabled:cursor-default disabled:hover:scale-100 sm:h-24 sm:w-24"
               disabled={!viewedProfile.avatarUrl}
               onClick={() => {
                 if (viewedProfile.avatarUrl) {
@@ -113,7 +113,7 @@ export function ViewedProfileModal({
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#a1a1aa]">
                 Профиль
               </p>
-              <h2 className="mt-1 truncate text-2xl font-medium leading-none text-[#f4f4f5] sm:text-3xl">
+              <h2 className="mt-1 truncate text-base font-medium leading-none text-[#f4f4f5] sm:text-base">
                 {viewedProfile.name}
               </h2>
               <p className="mt-2 truncate text-sm font-medium text-[#a1a1aa]">
@@ -160,7 +160,7 @@ export function ViewedProfileModal({
                 strokeWidth="2"
               />
             </svg>
-            <span className="text-[11px] font-medium leading-none text-[#d4d4d8]">Чат</span>
+            <span className="text-xs font-medium leading-none text-[#d4d4d8]">Чат</span>
           </button>
           <button
             aria-label="Позвонить"
@@ -184,7 +184,7 @@ export function ViewedProfileModal({
                 strokeWidth="2"
               />
             </svg>
-            <span className="text-[11px] font-medium leading-none text-[#d4d4d8]">Телефон</span>
+            <span className="text-xs font-medium leading-none text-[#d4d4d8]">Телефон</span>
           </button>
           <div className="relative">
             <button
@@ -216,7 +216,7 @@ export function ViewedProfileModal({
                   strokeWidth="2"
                 />
               </svg>
-              <span className="text-[11px] font-medium leading-none text-[#d4d4d8]">
+              <span className="text-xs font-medium leading-none text-[#d4d4d8]">
                 {isMuted ? "Без звука" : "Уведомл."}
               </span>
             </button>
@@ -231,7 +231,7 @@ export function ViewedProfileModal({
                 <div className="absolute left-1/2 top-[calc(100%+8px)] z-[110] w-64 -translate-x-1/2 rounded-2xl border border-[#3f3f46]/55 bg-[#171717]/98 p-1.5 text-left shadow-[0_18px_55px_rgba(0,0,0,0.55)] backdrop-blur-xl">
                   {isMuted ? (
                     <button
-                      className="min-h-10 w-full rounded-xl px-3 text-left text-[13px] font-medium text-emerald-100 transition hover:bg-emerald-400/10"
+                      className="min-h-10 w-full rounded-xl px-3 text-left text-sm font-medium text-emerald-100 transition hover:bg-emerald-400/10"
                       onClick={() => unmuteProfileNotifications(viewedProfile.userId!)}
                       type="button"
                     >
@@ -240,7 +240,7 @@ export function ViewedProfileModal({
                   ) : (
                     muteOptions.map((option) => (
                       <button
-                        className="min-h-10 w-full whitespace-nowrap rounded-xl px-3 text-left text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
+                        className="min-h-10 w-full whitespace-nowrap rounded-xl px-3 text-left text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
                         key={option.label}
                         onClick={() =>
                           viewedProfile.userId
@@ -286,7 +286,7 @@ export function ViewedProfileModal({
                 strokeWidth="2"
               />
             </svg>
-            <span className="text-[11px] font-medium leading-none text-[#d4d4d8]">
+            <span className="text-xs font-medium leading-none text-[#d4d4d8]">
               {isBlockedByMe ? "Разблок" : "Блок"}
             </span>
           </button>
@@ -297,7 +297,7 @@ export function ViewedProfileModal({
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#e5e5e5]">
               О себе
             </p>
-            <p className="mt-2 text-[13px] leading-6 text-[#a1a1aa]">
+            <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
               Пока ничего не написал о себе.
             </p>
           </article>
@@ -306,7 +306,7 @@ export function ViewedProfileModal({
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#e5e5e5]">
               Телефон
             </p>
-            <p className="mt-2 text-[13px] leading-6 text-[#a1a1aa]">
+            <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
               Скрыт настройками приватности. Позже добавим показ только с разрешения пользователя.
             </p>
           </article>
@@ -315,7 +315,7 @@ export function ViewedProfileModal({
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#e5e5e5]">
               Общие данные
             </p>
-            <p className="mt-2 text-[13px] leading-6 text-[#a1a1aa]">
+            <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
               Общие чаты и группы появятся здесь позже.
             </p>
           </article>

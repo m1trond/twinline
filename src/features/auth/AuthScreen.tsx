@@ -62,14 +62,14 @@ export function AuthScreen({
             />
           </div>
           <div>
-            <h1 className="text-lg font-medium sm:text-xl">Hush</h1>
-            <p className="text-[13px] text-[#a1a1aa]">Вход в приватное пространство</p>
+            <h1 className="text-base font-medium sm:text-base">Hush</h1>
+            <p className="text-sm text-[#a1a1aa]">Вход в приватное пространство</p>
           </div>
         </div>
 
         <div className="mb-4 grid grid-cols-2 rounded-xl border border-[#3f3f46]/35 bg-black/20 p-1">
           <button
-            className={`rounded-lg px-4 py-2 text-[13px] font-medium ${
+            className={`rounded-lg px-4 py-2 text-sm font-medium ${
               authMode === "sign-in"
                 ? "bg-[#f4f4f5] text-[#050505]"
                 : "text-[#f4f4f5]"
@@ -84,7 +84,7 @@ export function AuthScreen({
             Вход
           </button>
           <button
-            className={`rounded-lg px-4 py-2 text-[13px] font-medium ${
+            className={`rounded-lg px-4 py-2 text-sm font-medium ${
               authMode === "sign-up"
                 ? "bg-[#f4f4f5] text-[#050505]"
                 : "text-[#f4f4f5]"
@@ -106,7 +106,7 @@ export function AuthScreen({
             { label: "Телефон", method: "phone" as const },
           ].map((item) => (
             <button
-              className={`rounded-lg px-4 py-2 text-[13px] font-medium transition ${
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
                 authContactMethod === item.method
                   ? "bg-[#f4f4f5] text-[#050505]"
                   : "text-[#f4f4f5] hover:bg-white/10"
@@ -144,7 +144,7 @@ export function AuthScreen({
                 />
               </div>
               {authUsernameError ? (
-                <span className="text-[13px] font-medium text-red-300">
+                <span className="text-sm font-medium text-red-300">
                   {authUsernameError}
                 </span>
               ) : (
@@ -193,7 +193,7 @@ export function AuthScreen({
                   value={authPhone}
                 />
               </div>
-              <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-300/20 bg-amber-300/8 p-3 text-[13px] leading-5 text-amber-100">
+              <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-300/20 bg-amber-300/8 p-3 text-sm leading-5 text-amber-100">
                 <svg
                   aria-hidden="true"
                   className="mt-0.5 h-4 w-4 shrink-0"
@@ -215,7 +215,7 @@ export function AuthScreen({
             </div>
           )}
           <button
-            className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b] disabled:text-[#a1a1aa] sm:min-h-12"
+            className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b] disabled:text-[#a1a1aa] sm:min-h-12"
             disabled={authContactMethod === "phone"}
             type="submit"
           >
@@ -228,7 +228,7 @@ export function AuthScreen({
         </form>
 
         {errorMessage ? (
-          <p className="mt-4 text-[13px] font-medium text-[#e5e5e5]">
+          <p className="mt-4 text-sm font-medium text-[#e5e5e5]">
             {errorMessage}
           </p>
         ) : null}

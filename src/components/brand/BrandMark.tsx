@@ -18,7 +18,7 @@ export function BrandMark({
           width={40}
         />
       </div>
-      <h1 className={`${compact ? "text-lg sm:text-xl" : "text-lg"} min-w-0 font-medium tracking-normal`}>
+      <h1 className={`${compact ? "text-base sm:text-base" : "text-base"} min-w-0 font-medium tracking-normal`}>
         Hush
       </h1>
     </div>

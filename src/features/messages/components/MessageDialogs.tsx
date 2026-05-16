@@ -102,10 +102,10 @@ export function MessagePinDialog({
             </svg>
           </span>
           <div className="min-w-0">
-            <h2 className="text-lg font-medium text-[#f4f4f5]">
+            <h2 className="text-base font-medium text-[#f4f4f5]">
               {isPinned ? "Открепить сообщение?" : "Закрепить сообщение?"}
             </h2>
-            <p className="mt-1 text-[13px] leading-6 text-[#a1a1aa]">
+            <p className="mt-1 text-sm leading-6 text-[#a1a1aa]">
               {isPinned
                 ? "Сообщение исчезнет из закрепа в этом чате."
                 : "Сообщение будет видно сверху переписки."}
@@ -116,12 +116,12 @@ export function MessagePinDialog({
         {!isPinned ? (
           <>
             <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 p-3">
-              <p className="line-clamp-3 text-[13px] font-medium text-[#f4f4f5]">
+              <p className="line-clamp-3 text-sm font-medium text-[#f4f4f5]">
                 {getReadableMessageText(messagePinTarget.text)}
               </p>
             </div>
 
-            <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-2xl border border-[#3f3f46]/35 bg-[#f4f4f5]/8 p-3 text-[13px] font-medium text-[#f4f4f5]">
+            <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-2xl border border-[#3f3f46]/35 bg-[#f4f4f5]/8 p-3 text-sm font-medium text-[#f4f4f5]">
               <input
                 checked={shouldPinForBoth}
                 className="h-5 w-5 accent-[#f4f4f5]"
@@ -135,14 +135,14 @@ export function MessagePinDialog({
 
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
           <button
-            className="min-h-12 rounded-xl bg-[#f4f4f5] px-4 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
+            className="min-h-12 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
             onClick={isPinned ? confirmUnpinPinnedMessage : confirmPinnedMessage}
             type="button"
           >
             {isPinned ? "Да" : "Закрепить"}
           </button>
           <button
-            className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
+            className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
             onClick={() => setMessagePinTarget(null)}
             type="button"
           >
@@ -179,31 +179,31 @@ export function MessageDeleteDialog({
             <DeleteIcon />
           </span>
           <div className="min-w-0">
-            <h2 className="text-lg font-medium text-[#f4f4f5]">
+            <h2 className="text-base font-medium text-[#f4f4f5]">
               Удаление сообщения
             </h2>
-            <p className="mt-1 text-[13px] leading-6 text-[#a1a1aa]">
+            <p className="mt-1 text-sm leading-6 text-[#a1a1aa]">
               Выберите, удалить сообщение только у себя или у обоих участников переписки.
             </p>
           </div>
         </div>
 
         <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 p-3">
-          <p className="line-clamp-3 text-[13px] font-medium text-[#f4f4f5]">
+          <p className="line-clamp-3 text-sm font-medium text-[#f4f4f5]">
             {getReadableMessageText(messageDeleteTarget.text)}
           </p>
         </div>
 
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
           <button
-            className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
+            className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
             onClick={() => hideMessageForMe(messageDeleteTarget)}
             type="button"
           >
             Только у себя
           </button>
           <button
-            className="min-h-12 rounded-xl bg-red-500 px-4 text-[13px] font-medium text-white transition hover:bg-red-400"
+            className="min-h-12 rounded-xl bg-red-500 px-4 text-sm font-medium text-white transition hover:bg-red-400"
             onClick={() => deleteMessage(messageDeleteTarget)}
             type="button"
           >
@@ -212,7 +212,7 @@ export function MessageDeleteDialog({
         </div>
 
         <button
-          className="mt-3 min-h-11 w-full rounded-xl px-4 text-[13px] font-medium text-[#a1a1aa] transition hover:bg-white/10 hover:text-[#f4f4f5]"
+          className="mt-3 min-h-11 w-full rounded-xl px-4 text-sm font-medium text-[#a1a1aa] transition hover:bg-white/10 hover:text-[#f4f4f5]"
           onClick={() => setMessageDeleteTarget(null)}
           type="button"
         >
@@ -249,17 +249,17 @@ export function SelectedMessagesDeleteDialog({
             <DeleteIcon />
           </span>
           <div className="min-w-0">
-            <h2 className="text-lg font-medium text-[#f4f4f5]">
+            <h2 className="text-base font-medium text-[#f4f4f5]">
               Удаление сообщений
             </h2>
-            <p className="mt-1 text-[13px] leading-6 text-[#a1a1aa]">
+            <p className="mt-1 text-sm leading-6 text-[#a1a1aa]">
               Выбери, удалить выделенные только у себя или у обоих участников переписки.
             </p>
           </div>
         </div>
 
         <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 p-3">
-          <p className="text-[13px] font-medium text-[#f4f4f5]">
+          <p className="text-sm font-medium text-[#f4f4f5]">
             {selectedDialogMessages.length} сообщ.
           </p>
           <p className="mt-1 line-clamp-2 text-xs text-[#a1a1aa]">
@@ -269,14 +269,14 @@ export function SelectedMessagesDeleteDialog({
 
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
           <button
-            className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
+            className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
             onClick={hideSelectedMessagesForMe}
             type="button"
           >
             Только у себя
           </button>
           <button
-            className="min-h-12 rounded-xl bg-red-500 px-4 text-[13px] font-medium text-white transition hover:bg-red-400"
+            className="min-h-12 rounded-xl bg-red-500 px-4 text-sm font-medium text-white transition hover:bg-red-400"
             onClick={deleteSelectedMessagesForBoth}
             type="button"
           >
@@ -285,7 +285,7 @@ export function SelectedMessagesDeleteDialog({
         </div>
 
         <button
-          className="mt-3 min-h-11 w-full rounded-xl px-4 text-[13px] font-medium text-[#a1a1aa] transition hover:bg-white/10 hover:text-[#f4f4f5]"
+          className="mt-3 min-h-11 w-full rounded-xl px-4 text-sm font-medium text-[#a1a1aa] transition hover:bg-white/10 hover:text-[#f4f4f5]"
           onClick={() => setIsSelectedDeleteDialogOpen(false)}
           type="button"
         >
@@ -326,17 +326,17 @@ export function ChatDeleteDialog({
               <DeleteIcon />
             </span>
             <div className="min-w-0">
-              <h2 className="text-lg font-medium text-[#f4f4f5]">
+              <h2 className="text-base font-medium text-[#f4f4f5]">
                 Удалить чат у двоих?
               </h2>
-              <p className="mt-2 text-[13px] leading-6 text-[#a1a1aa]">
+              <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
                 Сообщения этой переписки исчезнут у тебя и собеседника. Отменить действие не получится.
               </p>
             </div>
           </div>
 
           <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/24 p-3">
-            <p className="text-[13px] font-medium text-[#f4f4f5]">
+            <p className="text-sm font-medium text-[#f4f4f5]">
               {chatDeleteTargetProfile?.name
                 ? `Чат с ${chatDeleteTargetProfile.name}`
                 : "Текущий чат"}
@@ -345,14 +345,14 @@ export function ChatDeleteDialog({
 
           <div className="mt-5 grid gap-2 sm:grid-cols-2">
             <button
-              className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
+              className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
               onClick={onClose}
               type="button"
             >
               Оставить
             </button>
             <button
-              className="min-h-12 rounded-xl bg-red-500 px-4 text-[13px] font-medium text-white shadow-[0_14px_34px_rgba(239,68,68,0.22)] transition hover:bg-red-400 disabled:cursor-not-allowed disabled:opacity-60"
+              className="min-h-12 rounded-xl bg-red-500 px-4 text-sm font-medium text-white shadow-[0_14px_34px_rgba(239,68,68,0.22)] transition hover:bg-red-400 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isDeletingChat}
               onClick={confirmDeleteChat}
               type="button"
@@ -401,31 +401,31 @@ export function UnpinAllDialog({
               </svg>
             </span>
             <div className="min-w-0">
-              <h2 className="text-lg font-medium text-[#f4f4f5]">
+              <h2 className="text-base font-medium text-[#f4f4f5]">
                 Открепить все закрепы?
               </h2>
-              <p className="mt-1 text-[13px] leading-6 text-[#a1a1aa]">
+              <p className="mt-1 text-sm leading-6 text-[#a1a1aa]">
                 Закрепы исчезнут из списка этого чата. Общие закрепы открепятся для обоих.
               </p>
             </div>
           </div>
 
           <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/22 px-3 py-2.5">
-            <p className="text-[13px] font-medium text-[#f4f4f5]">
+            <p className="text-sm font-medium text-[#f4f4f5]">
               {messageCount} сообщ.
             </p>
           </div>
 
           <div className="mt-5 grid gap-2 sm:grid-cols-2">
             <button
-              className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
+              className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
               onClick={onCancel}
               type="button"
             >
               Оставить
             </button>
             <button
-              className="min-h-12 rounded-xl bg-red-500 px-4 text-[13px] font-medium text-white transition hover:bg-red-400"
+              className="min-h-12 rounded-xl bg-red-500 px-4 text-sm font-medium text-white transition hover:bg-red-400"
               onClick={onConfirm}
               type="button"
             >

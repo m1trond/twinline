@@ -106,8 +106,8 @@ export function SettingsView({
   return (
     <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
       <div className="mb-4 border-b border-[#3f3f46]/35 pb-4 sm:mb-5 sm:pb-5">
-        <h2 className="text-lg font-medium sm:text-xl">Настройки</h2>
-        <p className="mt-1 text-[13px] leading-5 text-[#a1a1aa]">
+        <h2 className="text-base font-medium sm:text-base">Настройки</h2>
+        <p className="mt-1 text-sm leading-5 text-[#a1a1aa]">
           Уведомления, приватность, аккаунт и внешний вид.
         </p>
       </div>
@@ -127,7 +127,7 @@ export function SettingsView({
           <div className="rounded-xl border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2.5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-[13px] font-medium">Отключенные чаты</p>
+                <p className="text-sm font-medium">Отключенные чаты</p>
                 <p className="mt-0.5 text-xs leading-5 text-[#a1a1aa]">
                   Управляются в профиле каждого пользователя.
                 </p>
@@ -164,7 +164,7 @@ export function SettingsView({
           tone="danger"
         >
           {blockedByMeProfiles.length === 0 ? (
-            <div className="rounded-xl border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-3 text-[13px] text-[#a1a1aa]">
+            <div className="rounded-xl border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-3 text-sm text-[#a1a1aa]">
               Черный список пуст.
             </div>
           ) : null}
@@ -175,7 +175,7 @@ export function SettingsView({
               key={profile.userId}
             >
               <div className="flex min-w-0 items-center gap-2.5">
-                <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-[12px] font-medium text-[#050505]">
+                <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505]">
                   {profile.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -188,7 +188,7 @@ export function SettingsView({
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-[13px] font-medium text-[#f4f4f5]">
+                  <p className="truncate text-sm font-medium text-[#f4f4f5]">
                     {profile.name}
                   </p>
                   <p className="truncate text-xs text-[#a1a1aa]">
@@ -218,7 +218,7 @@ export function SettingsView({
             value={`${activeUserName}${currentProfile?.username ? ` · @${currentProfile.username}` : ""}`}
           />
           <button
-            className="mt-1 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-red-400/40 bg-red-500/15 px-4 text-[13px] font-medium text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-1 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-red-400/40 bg-red-500/15 px-4 text-sm font-medium text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isSigningOut}
             onClick={() => void handleSignOut()}
             type="button"
@@ -299,7 +299,7 @@ function SettingRow({
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2.5">
       <div className="min-w-0">
-        <p className="text-[13px] font-medium">{label}</p>
+        <p className="text-sm font-medium">{label}</p>
         <p className="mt-0.5 text-xs leading-5 text-[#a1a1aa]">{description}</p>
       </div>
       <button
@@ -323,10 +323,10 @@ function SettingRow({
 function InfoBlock({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2.5">
-      <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#a1a1aa]">
+      <p className="text-xs font-medium uppercase tracking-[0.16em] text-[#a1a1aa]">
         {label}
       </p>
-      <p className="mt-1 truncate text-[13px] font-medium text-[#f4f4f5]">
+      <p className="mt-1 truncate text-sm font-medium text-[#f4f4f5]">
         {value}
       </p>
     </div>

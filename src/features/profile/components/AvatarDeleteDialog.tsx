@@ -29,24 +29,24 @@ export function AvatarDeleteDialog({
             </svg>
           </span>
           <div className="min-w-0">
-            <h2 className="text-lg font-medium leading-tight text-[#f4f4f5]">
+            <h2 className="text-base font-medium leading-tight text-[#f4f4f5]">
               Удалить аватарку?
             </h2>
-            <p className="mt-2 text-[13px] leading-6 text-[#a1a1aa]">
+            <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
               Аватарка исчезнет из этой галереи. Если это текущая аватарка, Hush поставит следующую или очистит ее.
             </p>
           </div>
         </div>
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
           <button
-            className="min-h-12 rounded-2xl bg-red-500 px-4 text-[13px] font-medium text-white transition hover:bg-red-400"
+            className="min-h-12 rounded-2xl bg-red-500 px-4 text-sm font-medium text-white transition hover:bg-red-400"
             onClick={onConfirm}
             type="button"
           >
             Удалить
           </button>
           <button
-            className="min-h-12 rounded-2xl border border-[#3f3f46]/45 bg-white/[0.03] px-4 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-white/10"
+            className="min-h-12 rounded-2xl border border-[#3f3f46]/45 bg-white/[0.03] px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
             onClick={onCancel}
             type="button"
           >

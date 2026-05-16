@@ -15,7 +15,7 @@ export function ImagePreviewOverlay({ imageUrl, onClose }: ImagePreviewOverlayPr
       onClick={onClose}
       type="button"
     >
-      <span className="absolute right-4 top-4 rounded-full border border-[#3f3f46]/45 bg-[#111111]/90 px-4 py-2 text-[13px] font-medium text-[#f4f4f5]">
+      <span className="absolute right-4 top-4 rounded-full border border-[#3f3f46]/45 bg-[#111111]/90 px-4 py-2 text-sm font-medium text-[#f4f4f5]">
         Закрыть
       </span>
       {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -187,7 +187,7 @@ export function OpenChatView({
                       }}
                       type="button"
                     >
-                      <span className="grid h-full w-full place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-[13px] font-medium text-[#050505] sm:text-sm">
+                      <span className="grid h-full w-full place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-sm font-medium text-[#050505] sm:text-sm">
                         {friendProfile?.avatarUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -204,10 +204,10 @@ export function OpenChatView({
                       ) : null}
                     </button>
                     <div className="min-w-0">
-                      <h2 className="truncate text-sm font-medium sm:text-lg">
+                      <h2 className="truncate text-sm font-medium sm:text-base">
                         {friendProfile?.name ?? "Друг"}
                       </h2>
-                      <p className="truncate text-xs text-[#a1a1aa] sm:text-[13px]">
+                      <p className="truncate text-xs text-[#a1a1aa] sm:text-sm">
                         {isFriendTyping ? "\u043f\u0435\u0447\u0430\u0442\u0430\u0435\u0442..." : formatLastSeen(friendProfile?.updatedAt ?? null)}
                       </p>
                     </div>
@@ -268,7 +268,7 @@ export function OpenChatView({
                 </div>
                 {isMessageSelectionMode ? (
                   <div className="mb-2 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/88 px-3 py-2 text-[#f4f4f5] shadow-[0_12px_35px_rgba(0,0,0,0.25)] backdrop-blur-md sm:mb-3">
-                    <div className="flex min-w-0 items-center gap-2 text-[13px] font-medium text-[#d4d4d8]">
+                    <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-[#d4d4d8]">
                       <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#f4f4f5] text-[#050505]">
                         {selectedDialogMessages.length}
                       </span>
@@ -278,7 +278,7 @@ export function OpenChatView({
                     </div>
                     <div className="flex flex-1 justify-end gap-2 sm:flex-none">
                       <button
-                        className="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-[#3f3f46]/55 bg-[#f4f4f5]/10 px-3 text-[13px] font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/16 sm:flex-none"
+                        className="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-[#3f3f46]/55 bg-[#f4f4f5]/10 px-3 text-sm font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/16 sm:flex-none"
                         onClick={forwardSelectedMessages}
                         type="button"
                       >
@@ -288,7 +288,7 @@ export function OpenChatView({
                         Переслать
                       </button>
                       <button
-                        className="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-red-400/45 bg-red-500/16 px-3 text-[13px] font-medium text-red-100 transition hover:bg-red-500/25 sm:flex-none"
+                        className="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-red-400/45 bg-red-500/16 px-3 text-sm font-medium text-red-100 transition hover:bg-red-500/25 sm:flex-none"
                         onClick={() => setIsSelectedDeleteDialogOpen(true)}
                         type="button"
                       >
@@ -301,7 +301,7 @@ export function OpenChatView({
                   </div>
                 ) : null}
                 {activePinnedMessages.length > 0 ? (
-                  <div className="mb-2 flex min-h-9 shrink-0 overflow-hidden rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 text-[13px] text-[#e5e5e5] shadow-[0_10px_30px_rgba(0,0,0,0.18)] sm:mb-3">
+                  <div className="mb-2 flex min-h-9 shrink-0 overflow-hidden rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 text-sm text-[#e5e5e5] shadow-[0_10px_30px_rgba(0,0,0,0.18)] sm:mb-3">
                     <button
                       className="flex min-w-0 flex-1 items-center gap-2 px-3 py-1.5 text-left transition hover:bg-white/[0.08]"
                       onClick={scrollToNextPinnedMessage}
@@ -337,11 +337,11 @@ export function OpenChatView({
                   ref={messagesListRef}
                 >
                   {isLoadingMessages ? (
-                    <p className="text-[13px] text-[#a1a1aa]">Загружаю сообщения...</p>
+                    <p className="text-sm text-[#a1a1aa]">Загружаю сообщения...</p>
                   ) : null}
 
                   {!isLoadingMessages && visibleDialogMessagesCount === 0 ? (
-                    <p className="text-[13px] text-[#a1a1aa]">
+                    <p className="text-sm text-[#a1a1aa]">
                       {isPinnedMessagesViewOpen
                         ? "Закрепов пока нет."
                         : "Сообщений пока нет. Напиши первое."}
@@ -416,7 +416,7 @@ export function OpenChatView({
                         {!isMine ? (
                           shouldShowFriendAvatar ? (
                             <button
-                              className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-[11px] font-medium text-[#050505] transition hover:scale-105 sm:h-8 sm:w-8 sm:text-xs"
+                              className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505] transition hover:scale-105 sm:h-8 sm:w-8 sm:text-xs"
                               onClick={() =>
                                 setViewedProfile({
                                   avatarUrl: messageProfile?.avatar_url ?? null,
@@ -487,7 +487,7 @@ export function OpenChatView({
                           onContextMenu={(event) => openMessageContextMenu(event, message)}
                         >
                           {!hasStandaloneBubble && !isMine && !isPreviousSameAuthor ? (
-                            <p className={`${hasAttachment ? "mb-1.5 px-1" : "mb-0.5"} text-[11px] font-medium leading-4 opacity-55`}>
+                            <p className={`${hasAttachment ? "mb-1.5 px-1" : "mb-0.5"} text-xs font-medium leading-4 opacity-55`}>
                               {messageAuthor}
                             </p>
                           ) : null}
@@ -501,7 +501,7 @@ export function OpenChatView({
                               onClick={() => scrollToReplyMessage(reply)}
                               type="button"
                             >
-                              <p className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-55">
+                              <p className="text-xs font-medium uppercase tracking-[0.12em] opacity-55">
                                 {reply.author}
                               </p>
                               <p className="mt-0.5 line-clamp-2 text-xs font-medium opacity-70">
@@ -564,7 +564,7 @@ export function OpenChatView({
                                 </svg>
                               </div>
                               <div>
-                                <p className="text-[13px] font-medium opacity-75">
+                                <p className="text-sm font-medium opacity-75">
                                   Звонок
                                 </p>
                                 <p className="text-xs font-medium opacity-60">
@@ -581,12 +581,12 @@ export function OpenChatView({
                           </div>
                         ) : (
                             <p
-                              className="whitespace-pre-wrap break-words text-[13px] leading-6 sm:text-[15px]"
+                              className="whitespace-pre-wrap break-words text-sm leading-6 sm:text-base"
                             >
                               {displayText}
                               <span className="ml-2 inline-flex translate-y-[1px] items-center gap-1 align-baseline">
                                 <span
-                                  className={`text-[11px] font-medium leading-none ${
+                                  className={`text-xs font-medium leading-none ${
                                     isMine ? "text-[#404040]" : "text-[#71717a]"
                                   }`}
                                 >
@@ -638,7 +638,7 @@ export function OpenChatView({
                           {!hasStandaloneBubble && hasAttachment ? (
                           <div className={`${hasAttachment ? "mt-2 px-1" : "mt-1"} flex items-center justify-end gap-3`}>
                             <p
-                              className={`text-right text-[11px] font-medium ${
+                              className={`text-right text-xs font-medium ${
                                 hasFramedMedia
                                   ? "text-[#a1a1aa]"
                                   : isMine ? "text-[#404040]" : "text-[#71717a]"
@@ -700,7 +700,7 @@ export function OpenChatView({
                         {isMine ? (
                           shouldShowOwnAvatar ? (
                             <button
-                              className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-[11px] font-medium text-[#050505] transition hover:scale-105 sm:h-8 sm:w-8 sm:text-xs"
+                              className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505] transition hover:scale-105 sm:h-8 sm:w-8 sm:text-xs"
                               onClick={() =>
                                 setViewedProfile({
                                   avatarUrl: currentProfile?.avatar_url ?? null,
@@ -771,7 +771,7 @@ export function OpenChatView({
                     )}
                   </button>
                   {isRecordingVoice ? (
-                    <div className="relative col-span-3 flex min-h-10 min-w-0 flex-1 items-center rounded-lg border border-red-400/35 bg-red-500/10 px-3 text-[13px] text-[#f4f4f5] sm:col-span-1">
+                    <div className="relative col-span-3 flex min-h-10 min-w-0 flex-1 items-center rounded-lg border border-red-400/35 bg-red-500/10 px-3 text-sm text-[#f4f4f5] sm:col-span-1">
                       <div className="flex min-w-[86px] items-center gap-2">
                         <span className="h-2.5 w-2.5 rounded-full bg-red-300 shadow-[0_0_14px_rgba(252,165,165,0.65)]" />
                         <span className="font-medium tabular-nums text-red-100">
@@ -790,7 +790,7 @@ export function OpenChatView({
                     <>
                       <input
                         aria-label="Текст сообщения"
-                        className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] focus:bg-[#f4f4f5]/18 sm:px-4 sm:text-[13px]"
+                        className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] focus:bg-[#f4f4f5]/18 sm:px-4 sm:text-sm"
                         disabled={isSelectedChatBlocked}
                         onChange={handleMessageTextChange}
                         placeholder={
@@ -915,7 +915,7 @@ export function OpenChatView({
 
                 {isPinnedMessagesViewOpen && activePinnedMessages.length > 0 ? (
                   <button
-                    className="mt-2 min-h-11 w-full rounded-xl border border-red-400/25 bg-red-500/10 px-4 text-[13px] font-medium text-red-100 shadow-[0_14px_40px_rgba(0,0,0,0.18)] transition hover:border-red-300/40 hover:bg-red-500/16 sm:rounded-2xl"
+                    className="mt-2 min-h-11 w-full rounded-xl border border-red-400/25 bg-red-500/10 px-4 text-sm font-medium text-red-100 shadow-[0_14px_40px_rgba(0,0,0,0.18)] transition hover:border-red-300/40 hover:bg-red-500/16 sm:rounded-2xl"
                     onClick={() => setIsUnpinAllDialogOpen(true)}
                     type="button"
                   >
@@ -924,7 +924,7 @@ export function OpenChatView({
                 ) : null}
 
                 {!isPinnedMessagesViewOpen && (replyTarget || editingMessage) ? (
-                  <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-2.5 text-[13px] shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
+                  <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-2.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
                     <div className="min-w-0">
                       <p className="text-xs font-medium uppercase tracking-[0.14em] text-[#e5e5e5]">
                         {editingMessage ? "Редактирование" : "Ответ"}
@@ -948,7 +948,7 @@ export function OpenChatView({
                 ) : null}
 
                 {errorMessage ? (
-                  <p className="mt-2 text-[13px] font-medium text-[#e5e5e5]">
+                  <p className="mt-2 text-sm font-medium text-[#e5e5e5]">
                     {errorMessage}
                   </p>
                 ) : null}

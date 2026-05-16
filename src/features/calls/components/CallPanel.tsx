@@ -95,7 +95,7 @@ export function CallPanel({
 
       {isCallPanelCollapsed ? (
         <div className="flex items-center gap-3 pr-[84px] text-left">
-          <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-[#e5e5e5] text-lg font-medium text-[#111111] shadow-[0_8px_22px_rgba(0,0,0,0.32)] ring-2 ring-[#f4f4f5]/25">
+          <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-[#e5e5e5] text-base font-medium text-[#111111] shadow-[0_8px_22px_rgba(0,0,0,0.32)] ring-2 ring-[#f4f4f5]/25">
             {callPanelProfile.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -109,7 +109,7 @@ export function CallPanel({
             )}
           </div>
           <div className="min-w-0 flex-1 select-none rounded-2xl py-1 text-left">
-            <p className="truncate text-[13px] font-medium text-[#f4f4f5]">
+            <p className="truncate text-sm font-medium text-[#f4f4f5]">
               {callPanelProfile.name}
             </p>
             <p className="mt-1 flex items-center gap-1.5 truncate text-xs font-medium text-[#a1a1aa]">
@@ -129,7 +129,7 @@ export function CallPanel({
         </div>
       ) : (
         <>
-          <div className="mx-auto mb-3 grid h-20 w-20 place-items-center overflow-hidden rounded-full bg-[#e5e5e5] text-sm font-medium text-[#111111] sm:mb-4 sm:h-24 sm:w-24 sm:text-xl">
+          <div className="mx-auto mb-3 grid h-20 w-20 place-items-center overflow-hidden rounded-full bg-[#e5e5e5] text-sm font-medium text-[#111111] sm:mb-4 sm:h-24 sm:w-24 sm:text-base">
             {callPanelProfile.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -143,10 +143,10 @@ export function CallPanel({
             )}
           </div>
 
-          <p className="truncate text-lg font-medium text-[#f4f4f5]">
+          <p className="truncate text-base font-medium text-[#f4f4f5]">
             {callPanelProfile.name}
           </p>
-          <p className="mt-1 text-[13px] font-medium text-[#a1a1aa]">
+          <p className="mt-1 text-sm font-medium text-[#a1a1aa]">
             {statusText}
           </p>
 
@@ -154,7 +154,7 @@ export function CallPanel({
             {callStatus === "incoming" ? (
               <>
                 <button
-                  className="min-h-11 rounded-xl bg-[#f4f4f5] px-5 text-[13px] font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
+                  className="min-h-11 rounded-xl bg-[#f4f4f5] px-5 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
                   onClick={acceptCall}
                   onPointerDown={(event) => event.stopPropagation()}
                   type="button"
@@ -162,7 +162,7 @@ export function CallPanel({
                   Принять
                 </button>
                 <button
-                  className="min-h-11 rounded-xl border border-red-400/50 bg-red-500/15 px-5 text-[13px] font-medium text-red-100 transition hover:bg-red-500/25"
+                  className="min-h-11 rounded-xl border border-red-400/50 bg-red-500/15 px-5 text-sm font-medium text-red-100 transition hover:bg-red-500/25"
                   onClick={() => closeCall(true)}
                   onPointerDown={(event) => event.stopPropagation()}
                   type="button"
@@ -186,7 +186,7 @@ export function CallPanel({
                   <MicIcon muted={isCallMicMuted} />
                 </button>
                 <button
-                  className="min-h-12 rounded-full bg-red-500 px-5 text-[13px] font-medium text-white transition hover:bg-red-400"
+                  className="min-h-12 rounded-full bg-red-500 px-5 text-sm font-medium text-white transition hover:bg-red-400"
                   onClick={() => closeCall(true)}
                   onPointerDown={(event) => event.stopPropagation()}
                   type="button"
@@ -198,7 +198,7 @@ export function CallPanel({
           </div>
 
           {callStatus !== "incoming" ? (
-            <p className="mt-4 text-[13px] font-medium text-[#a1a1aa]">
+            <p className="mt-4 text-sm font-medium text-[#a1a1aa]">
               {isCallMicMuted ? "Микрофон выключен" : "Микрофон включен"}
             </p>
           ) : null}

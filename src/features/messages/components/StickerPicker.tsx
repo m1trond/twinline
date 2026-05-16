@@ -40,7 +40,7 @@ export function StickerPicker({
         }}
       >
         <div className="flex items-center justify-between gap-3 px-1">
-          <p className="text-[13px] font-medium uppercase tracking-[0.16em] text-[#e5e5e5]">
+          <p className="text-sm font-medium uppercase tracking-[0.16em] text-[#e5e5e5]">
             Стикеры
           </p>
           <button
@@ -54,7 +54,7 @@ export function StickerPicker({
         <div className="mt-3 grid grid-cols-4 gap-2">
           {stickers.map((sticker) => (
             <button
-              className="grid h-14 place-items-center rounded-xl bg-[#f4f4f5]/10 text-3xl leading-none transition hover:scale-[1.03] hover:bg-[#f4f4f5]/18 active:scale-95"
+              className="grid h-14 place-items-center rounded-xl bg-[#f4f4f5]/10 text-base leading-none transition hover:scale-[1.03] hover:bg-[#f4f4f5]/18 active:scale-95"
               key={sticker}
               onClick={() => onSendSticker(sticker)}
               type="button"

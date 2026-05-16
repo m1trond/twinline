@@ -207,7 +207,7 @@ function MenuButton({
 }) {
   return (
     <button
-      className={`flex min-h-10 w-full items-center gap-3 px-4 text-left text-[13px] font-medium transition ${
+      className={`flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition ${
         danger ? "text-red-100 hover:bg-red-500/18" : "hover:bg-white/10"
       }`}
       onClick={onClick}
