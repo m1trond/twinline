@@ -124,7 +124,6 @@ import {
 } from "@/shared/utils/viewport";
 
 export default function Home() {
-  const typingNow = useTypingClock();
   const {
     authMode,
     setAuthMode,
@@ -564,6 +563,7 @@ export default function Home() {
 
     return latestFriendTypingExpiresAt;
   }, [messages, selectedChatUserId, user]);
+  const typingNow = useTypingClock(friendTypingUntilFromMessages);
   const isFriendTyping = friendTypingUntilFromMessages > typingNow;
   const blockState = useMemo(() => {
     const blockedByMeIds = new Set<string>();

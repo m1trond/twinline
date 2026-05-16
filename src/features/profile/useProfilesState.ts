@@ -11,11 +11,39 @@ type UseProfilesStateParams = {
 };
 
 function mergeProfile(currentProfiles: ProfileRow[], nextProfile: ProfileRow) {
+  const currentProfile = currentProfiles.find(
+    (profile) => profile.user_id === nextProfile.user_id,
+  );
+
+  if (currentProfile && areProfilesEqual([currentProfile], [nextProfile])) {
+    return currentProfiles;
+  }
+
   const withoutProfile = currentProfiles.filter(
     (profile) => profile.user_id !== nextProfile.user_id,
   );
 
   return [...withoutProfile, nextProfile];
+}
+
+function areProfilesEqual(firstProfiles: ProfileRow[], secondProfiles: ProfileRow[]) {
+  if (firstProfiles.length !== secondProfiles.length) {
+    return false;
+  }
+
+  return firstProfiles.every((firstProfile, profileIndex) => {
+    const secondProfile = secondProfiles[profileIndex];
+
+    return (
+      firstProfile.user_id === secondProfile.user_id &&
+      firstProfile.display_name === secondProfile.display_name &&
+      firstProfile.username === secondProfile.username &&
+      firstProfile.username_changed_at === secondProfile.username_changed_at &&
+      firstProfile.avatar_url === secondProfile.avatar_url &&
+      firstProfile.name_changed_at === secondProfile.name_changed_at &&
+      firstProfile.updated_at === secondProfile.updated_at
+    );
+  });
 }
 
 export function useProfilesState({
@@ -129,7 +157,11 @@ export function useProfilesState({
         return;
       }
 
-      setProfiles(data ?? []);
+      const nextProfiles = data ?? [];
+
+      setProfiles((currentProfiles) =>
+        areProfilesEqual(currentProfiles, nextProfiles) ? currentProfiles : nextProfiles,
+      );
     }
 
     syncProfiles();

@@ -33,6 +33,25 @@ type UseMessagesRealtimeStateParams = {
   user: User | null;
 };
 
+function areMessagesEqual(firstMessages: MessageRow[], secondMessages: MessageRow[]) {
+  if (firstMessages.length !== secondMessages.length) {
+    return false;
+  }
+
+  return firstMessages.every((firstMessage, messageIndex) => {
+    const secondMessage = secondMessages[messageIndex];
+
+    return (
+      firstMessage.id === secondMessage.id &&
+      firstMessage.author === secondMessage.author &&
+      firstMessage.text === secondMessage.text &&
+      firstMessage.created_at === secondMessage.created_at &&
+      firstMessage.user_id === secondMessage.user_id &&
+      firstMessage.recipient_id === secondMessage.recipient_id
+    );
+  });
+}
+
 export function useMessagesRealtimeState({
   activeViewRef,
   blockedProfileIdsRef,
@@ -174,7 +193,11 @@ export function useMessagesRealtimeState({
       if (error) {
         setErrorMessage("Не получилось загрузить сообщения.");
       } else {
-        setMessages(data ?? []);
+        const nextMessages = data ?? [];
+
+        setMessages((currentMessages) =>
+          areMessagesEqual(currentMessages, nextMessages) ? currentMessages : nextMessages,
+        );
         setErrorMessage("");
       }
 
