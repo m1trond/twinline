@@ -86,7 +86,7 @@ export function FavoritesView({
   return (<div className="flex min-h-0 flex-col overflow-hidden">
                 <div className="mb-2 flex min-h-[58px] items-center rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
                   <h2 className="text-lg font-medium sm:text-xl">
-                    РР·Р±СЂР°РЅРЅРѕРµ
+                    Избранное
                   </h2>
                 </div>
 
@@ -116,7 +116,7 @@ export function FavoritesView({
                     </div>
                     <div className="min-w-0 flex-1">
                       <span className="block text-xs font-medium uppercase tracking-[0.16em] text-[#e5e5e5]">
-                        Р—Р°РєСЂРµРїР»РµРЅРѕ
+                        Закреплено
                       </span>
                       <span className="mt-0.5 block truncate text-[13px] font-medium text-[#f4f4f5]">
                         {getReadableMessageText(pinnedFavoriteItem.text)}
@@ -127,7 +127,7 @@ export function FavoritesView({
                       onClick={() => setPinnedFavoriteItem(null)}
                       type="button"
                     >
-                      РћС‚РєСЂРµРїРёС‚СЊ
+                      Открепить
                     </button>
                   </article>
                 ) : null}
@@ -137,10 +137,10 @@ export function FavoritesView({
                     <div className="grid flex-1 place-items-center text-center">
                       <div className="max-w-sm rounded-2xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-5">
                         <p className="text-sm font-medium">
-                          РР·Р±СЂР°РЅРЅРѕРµ РїРѕРєР° РїСѓСЃС‚РѕРµ
+                          Избранное пока пустое
                         </p>
                         <p className="mt-2 text-[13px] leading-6 text-[#a1a1aa]">
-                          РќР°РїРёС€Рё СЃСЋРґР° РїРµСЂРІСѓСЋ Р·Р°РјРµС‚РєСѓ РёР»Рё РїСЂРёРєСЂРµРїРё С„Р°Р№Р».
+                          Напиши сюда первую заметку или прикрепи файл.
                         </p>
                       </div>
                     </div>
@@ -208,7 +208,7 @@ export function FavoritesView({
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
-                                alt="РР·Р±СЂР°РЅРЅРѕРµ РёР·РѕР±СЂР°Р¶РµРЅРёРµ"
+                                alt="Избранное изображение"
                                 className="max-h-[58dvh] w-full object-cover sm:max-h-[420px]"
                                 src={imageUrl}
                               />
@@ -232,10 +232,10 @@ export function FavoritesView({
                           ) : callDurationSeconds !== null ? (
                             <div className="min-w-[min(230px,70vw)] rounded-xl bg-[#262626] px-3 py-2 text-[#f4f4f5] sm:min-w-[min(260px,70vw)] sm:rounded-2xl">
                               <p className="text-[13px] font-medium opacity-75">
-                                Р—РІРѕРЅРѕРє
+                                Звонок
                               </p>
                               <p className="text-xs font-medium opacity-60">
-                                Р Р°Р·РіРѕРІРѕСЂ {formatCallDuration(callDurationSeconds)}
+                                Разговор {formatCallDuration(callDurationSeconds)}
                               </p>
                             </div>
                           ) : sticker ? (
@@ -286,11 +286,11 @@ export function FavoritesView({
                         }}
                         type="button"
                       >
-                        Р Р°Р·Р±Р»РѕРєРёСЂРѕРІР°С‚СЊ
+                        Разблокировать
                       </button>
                     ) : (
                       <div className="flex min-h-11 items-center justify-center rounded-lg bg-[#f4f4f5]/12 px-4 text-[13px] font-medium text-[#a1a1aa] sm:rounded-xl">
-                        Р’С‹ Р±С‹Р»Рё Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅС‹
+                        Вы были заблокированы
                       </div>
                     )}
                   </div>
@@ -307,7 +307,7 @@ export function FavoritesView({
                     type="file"
                   />
                   <button
-                    aria-label="РџСЂРёРєСЂРµРїРёС‚СЊ С„Р°Р№Р»"
+                    aria-label="Прикрепить файл"
                     className="grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 text-[#f4f4f5] transition hover:bg-[#f4f4f5]/18 disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={isUploadingAttachment || isRecordingVoice}
                     onClick={() => imageInputRef.current?.click()}
@@ -346,28 +346,28 @@ export function FavoritesView({
                         onClick={cancelVoiceRecording}
                         type="button"
                       >
-                        РћС‚РјРµРЅР°
+                        Отмена
                       </button>
                     </div>
                   ) : (
                     <>
                       <input
-                        aria-label="РўРµРєСЃС‚ РёР·Р±СЂР°РЅРЅРѕРіРѕ"
+                        aria-label="Текст избранного"
                         className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] focus:bg-[#f4f4f5]/18 sm:px-4 sm:text-[13px]"
                         onChange={handleMessageTextChange}
                         placeholder={
                           editingMessage
-                            ? "РР·РјРµРЅРё СЃРѕРѕР±С‰РµРЅРёРµ..."
+                            ? "Измени сообщение..."
                             : replyTarget
-                              ? "РћС‚РІРµС‚СЊ РЅР° СЃРѕРѕР±С‰РµРЅРёРµ..."
-                              : "РќР°РїРёС€Рё РІ РёР·Р±СЂР°РЅРЅРѕРµ..."
+                              ? "Ответь на сообщение..."
+                              : "Напиши в избранное..."
                         }
                         ref={messageInputRef}
                         type="text"
                         value={messageText}
                       />
                       <button
-                        aria-label="РЎС‚РёРєРµСЂС‹"
+                        aria-label="Стикеры"
                         className="grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 text-[#f4f4f5] transition hover:bg-[#f4f4f5]/18 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={isUploadingAttachment}
                         onClick={toggleStickerPicker}
@@ -400,7 +400,7 @@ export function FavoritesView({
                   )}
 
                   <button
-                    aria-label={isRecordingVoice ? "РћС‚РїСЂР°РІРёС‚СЊ РіРѕР»РѕСЃРѕРІРѕРµ" : "Р—Р°РїРёСЃР°С‚СЊ РіРѕР»РѕСЃРѕРІРѕРµ"}
+                    aria-label={isRecordingVoice ? "Отправить голосовое" : "Записать голосовое"}
                     className={`relative grid min-h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg border text-[#f4f4f5] transition disabled:cursor-not-allowed disabled:opacity-50 ${
                       isRecordingVoice
                         ? "border-red-400/60 bg-red-500/85 text-white hover:bg-red-400"
@@ -458,7 +458,7 @@ export function FavoritesView({
                   <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-2.5 text-[13px] shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
                     <div className="min-w-0">
                       <p className="text-xs font-medium uppercase tracking-[0.14em] text-[#e5e5e5]">
-                        {editingMessage ? "Р РµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ" : "РћС‚РІРµС‚"}
+                        {editingMessage ? "Редактирование" : "Ответ"}
                       </p>
                       <p className="mt-1 truncate font-medium text-[#f4f4f5]">
                         {getReadableMessageText((editingMessage ?? replyTarget)?.text ?? "")}
@@ -473,7 +473,7 @@ export function FavoritesView({
                       }}
                       type="button"
                     >
-                      РћС‚РјРµРЅР°
+                      Отмена
                     </button>
                   </div>
                 ) : null}

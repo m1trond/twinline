@@ -7,10 +7,10 @@ export function formatMessageTime(createdAt: string) {
 
 export function formatFileSize(size: number) {
   if (!Number.isFinite(size) || size <= 0) {
-    return "Р¤Р°Р№Р»";
+    return "Файл";
   }
 
-  const units = ["Р‘", "РљР‘", "РњР‘", "Р“Р‘"];
+  const units = ["Б", "КБ", "МБ", "ГБ"];
   let fileSize = size;
   let unitIndex = 0;
 

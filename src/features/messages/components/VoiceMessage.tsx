@@ -64,7 +64,7 @@ export function VoiceMessage({
       />
       <div className="flex items-center gap-3">
         <button
-          aria-label={isPlaying ? "РџР°СѓР·Р°" : "Р’РѕСЃРїСЂРѕРёР·РІРµСЃС‚Рё РіРѕР»РѕСЃРѕРІРѕРµ"}
+          aria-label={isPlaying ? "Пауза" : "Воспроизвести голосовое"}
           className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#f4f4f5] text-[#050505] shadow-[0_10px_24px_rgba(0,0,0,0.22)] transition hover:scale-105"
           onClick={togglePlayback}
           type="button"
@@ -96,7 +96,7 @@ export function VoiceMessage({
               })}
             </div>
             <input
-              aria-label="РџРѕР·РёС†РёСЏ РіРѕР»РѕСЃРѕРІРѕРіРѕ СЃРѕРѕР±С‰РµРЅРёСЏ"
+              aria-label="Позиция голосового сообщения"
               className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
               max={duration || 0}
               min="0"

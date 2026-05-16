@@ -236,31 +236,31 @@ export function getReadableMessageText(text: string) {
   }
 
   if (isServiceMessage(text)) {
-    return "РЎР»СѓР¶РµР±РЅРѕРµ СЃРѕР±С‹С‚РёРµ";
+    return "Служебное событие";
   }
 
   if (text.startsWith(imageMessagePrefix)) {
-    return "РР·РѕР±СЂР°Р¶РµРЅРёРµ";
+    return "Изображение";
   }
 
   if (text.startsWith(videoMessagePrefix)) {
-    return "Р’РёРґРµРѕ";
+    return "Видео";
   }
 
   if (text.startsWith(audioMessagePrefix)) {
-    return "Р“РѕР»РѕСЃРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ";
+    return "Голосовое сообщение";
   }
 
   if (text.startsWith(fileMessagePrefix)) {
-    return getMessageFilePayload(text)?.name ?? "Р¤Р°Р№Р»";
+    return getMessageFilePayload(text)?.name ?? "Файл";
   }
 
   if (text.startsWith(callMessagePrefix)) {
-    return "Р—РІРѕРЅРѕРє";
+    return "Звонок";
   }
 
   if (text.startsWith(stickerMessagePrefix)) {
-    return getMessageSticker(text) ?? "РЎС‚РёРєРµСЂ";
+    return getMessageSticker(text) ?? "Стикер";
   }
 
   return text;
@@ -270,33 +270,33 @@ export function getNotificationMessageText(text: string) {
   const reply = getMessageReply(text);
 
   if (reply) {
-    return `РћС‚РІРµС‚: ${reply.body}`;
+    return `Ответ: ${reply.body}`;
   }
 
   if (text.startsWith(imageMessagePrefix)) {
-    return "РћС‚РїСЂР°РІР»РµРЅРѕ РёР·РѕР±СЂР°Р¶РµРЅРёРµ";
+    return "Отправлено изображение";
   }
 
   if (text.startsWith(videoMessagePrefix)) {
-    return "РћС‚РїСЂР°РІР»РµРЅРѕ РІРёРґРµРѕ";
+    return "Отправлено видео";
   }
 
   if (text.startsWith(audioMessagePrefix)) {
-    return "Р“РѕР»РѕСЃРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ";
+    return "Голосовое сообщение";
   }
 
   if (text.startsWith(fileMessagePrefix)) {
     const filePayload = getMessageFilePayload(text);
 
-    return filePayload ? `Р¤Р°Р№Р»: ${filePayload.name}` : "РћС‚РїСЂР°РІР»РµРЅ С„Р°Р№Р»";
+    return filePayload ? `Файл: ${filePayload.name}` : "Отправлен файл";
   }
 
   if (text.startsWith(callMessagePrefix)) {
-    return "Р—РІРѕРЅРѕРє Р·Р°РІРµСЂС€РµРЅ";
+    return "Звонок завершен";
   }
 
   if (text.startsWith(stickerMessagePrefix)) {
-    return "РЎС‚РёРєРµСЂ";
+    return "Стикер";
   }
 
   return text.length > 120 ? `${text.slice(0, 120)}...` : text;
@@ -307,29 +307,29 @@ export function getChatPreviewText(text: string) {
   const previewText = reply?.body ?? text;
 
   if (previewText.startsWith(imageMessagePrefix)) {
-    return "Р¤РѕС‚Рѕ";
+    return "Фото";
   }
 
   if (previewText.startsWith(videoMessagePrefix)) {
-    return "Р’РёРґРµРѕ";
+    return "Видео";
   }
 
   if (previewText.startsWith(audioMessagePrefix)) {
-    return "Р“РѕР»РѕСЃРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ";
+    return "Голосовое сообщение";
   }
 
   if (previewText.startsWith(fileMessagePrefix)) {
     const filePayload = getMessageFilePayload(previewText);
 
-    return filePayload ? `Р¤Р°Р№Р»: ${filePayload.name}` : "Р¤Р°Р№Р»";
+    return filePayload ? `Файл: ${filePayload.name}` : "Файл";
   }
 
   if (previewText.startsWith(callMessagePrefix)) {
-    return "Р—РІРѕРЅРѕРє";
+    return "Звонок";
   }
 
   if (previewText.startsWith(stickerMessagePrefix)) {
-    return `РЎС‚РёРєРµСЂ ${getMessageSticker(previewText) ?? ""}`.trim();
+    return `Стикер ${getMessageSticker(previewText) ?? ""}`.trim();
   }
 
   return getReadableMessageText(text);

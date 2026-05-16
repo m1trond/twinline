@@ -152,7 +152,7 @@ export function OpenChatView({
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
                   <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
                     <button
-                      aria-label="РќР°Р·Р°Рґ Рє С‡Р°С‚Р°Рј"
+                      aria-label="Назад к чатам"
                       className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 text-[#f4f4f5] transition hover:bg-white/10 sm:rounded-xl"
                       onClick={() => setSelectedChatUserId(null)}
                       type="button"
@@ -178,7 +178,7 @@ export function OpenChatView({
                         setViewedProfile(
                           friendProfile ?? {
                             avatarUrl: null,
-                            name: "Р”СЂСѓРі",
+                            name: "Друг",
                             username: null,
                             updatedAt: null,
                             userId: null,
@@ -191,12 +191,12 @@ export function OpenChatView({
                         {friendProfile?.avatarUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            alt="РђРІР°С‚Р°СЂ СЃРѕР±РµСЃРµРґРЅРёРєР°"
+                            alt="Аватар собеседника"
                             className="h-full w-full object-cover"
                             src={friendProfile.avatarUrl}
                           />
                         ) : (
-                          (friendProfile?.name ?? "Р”СЂСѓРі")[0]?.toUpperCase()
+                          (friendProfile?.name ?? "Друг")[0]?.toUpperCase()
                         )}
                       </span>
                       {isProfileOnline(friendProfile?.updatedAt ?? null) ? (
@@ -205,7 +205,7 @@ export function OpenChatView({
                     </button>
                     <div className="min-w-0">
                       <h2 className="truncate text-sm font-medium sm:text-lg">
-                        {friendProfile?.name ?? "Р”СЂСѓРі"}
+                        {friendProfile?.name ?? "Друг"}
                       </h2>
                       <p className="truncate text-xs text-[#a1a1aa] sm:text-[13px]">
                         {isFriendTyping ? "\u043f\u0435\u0447\u0430\u0442\u0430\u0435\u0442..." : formatLastSeen(friendProfile?.updatedAt ?? null)}
@@ -214,7 +214,7 @@ export function OpenChatView({
                   </div>
                   <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
                     <button
-                      aria-label="РЈРґР°Р»РёС‚СЊ РїРµСЂРµРїРёСЃРєСѓ"
+                      aria-label="Удалить переписку"
                       className="grid min-h-9 w-9 place-items-center rounded-lg border border-red-400/45 bg-red-500/15 text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-55 sm:min-h-10 sm:w-10 sm:rounded-xl"
                       disabled={isDeletingChat}
                       onClick={() => {
@@ -243,7 +243,7 @@ export function OpenChatView({
                       )}
                     </button>
                     <button
-                      aria-label={callStatus === "idle" ? "РџРѕР·РІРѕРЅРёС‚СЊ" : callStatusText}
+                      aria-label={callStatus === "idle" ? "Позвонить" : callStatusText}
                       className="grid min-h-9 w-9 place-items-center rounded-lg bg-[#f4f4f5] text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b] sm:min-h-10 sm:w-10 sm:rounded-xl"
                       disabled={!friendProfile?.userId || callStatus !== "idle"}
                       onClick={() => startCall()}
@@ -273,7 +273,7 @@ export function OpenChatView({
                         {selectedDialogMessages.length}
                       </span>
                       <span className="truncate">
-                        Р’С‹РґРµР»РµРЅРѕ СЃРѕРѕР±С‰РµРЅРёР№
+                        Выделено сообщений
                       </span>
                     </div>
                     <div className="flex flex-1 justify-end gap-2 sm:flex-none">
@@ -285,7 +285,7 @@ export function OpenChatView({
                         <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
                           <path d="m14 6 6 6-6 6M20 12H9a5 5 0 0 0-5 5v1" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                         </svg>
-                        РџРµСЂРµСЃР»Р°С‚СЊ
+                        Переслать
                       </button>
                       <button
                         className="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-red-400/45 bg-red-500/16 px-3 text-[13px] font-medium text-red-100 transition hover:bg-red-500/25 sm:flex-none"
@@ -295,7 +295,7 @@ export function OpenChatView({
                         <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
                           <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                         </svg>
-                        РЈРґР°Р»РёС‚СЊ
+                        Удалить
                       </button>
                     </div>
                   </div>
@@ -308,14 +308,14 @@ export function OpenChatView({
                       type="button"
                     >
                       <span className="shrink-0 font-medium text-[#f4f4f5]">
-                        Р—Р°РєСЂРµРїС‹: {activePinnedMessages.length}
+                        Закрепы: {activePinnedMessages.length}
                       </span>
                       <span className="min-w-0 truncate text-[#a1a1aa]">
                         {getReadableMessageText(activePinnedMessages.at(-1)?.text ?? "")}
                       </span>
                     </button>
                     <button
-                      aria-label="РћС‚РєСЂС‹С‚СЊ РІСЃРµ Р·Р°РєСЂРµРїС‹"
+                      aria-label="Открыть все закрепы"
                       className={`grid w-14 shrink-0 place-items-center border-l border-[#3f3f46]/35 transition ${
                         isPinnedMessagesViewOpen
                           ? "bg-[#f4f4f5]/14 text-[#f4f4f5]"
@@ -337,14 +337,14 @@ export function OpenChatView({
                   ref={messagesListRef}
                 >
                   {isLoadingMessages ? (
-                    <p className="text-[13px] text-[#a1a1aa]">Р—Р°РіСЂСѓР¶Р°СЋ СЃРѕРѕР±С‰РµРЅРёСЏ...</p>
+                    <p className="text-[13px] text-[#a1a1aa]">Загружаю сообщения...</p>
                   ) : null}
 
                   {!isLoadingMessages && visibleDialogMessagesCount === 0 ? (
                     <p className="text-[13px] text-[#a1a1aa]">
                       {isPinnedMessagesViewOpen
-                        ? "Р—Р°РєСЂРµРїРѕРІ РїРѕРєР° РЅРµС‚."
-                        : "РЎРѕРѕР±С‰РµРЅРёР№ РїРѕРєР° РЅРµС‚. РќР°РїРёС€Рё РїРµСЂРІРѕРµ."}
+                        ? "Закрепов пока нет."
+                        : "Сообщений пока нет. Напиши первое."}
                     </p>
                   ) : null}
 
@@ -431,7 +431,7 @@ export function OpenChatView({
                               {messageProfile?.avatar_url ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
-                                  alt="РђРІР°С‚Р°СЂ СЃРѕР±РµСЃРµРґРЅРёРєР°"
+                                  alt="Аватар собеседника"
                                   className="h-full w-full object-cover"
                                   src={messageProfile.avatar_url}
                                 />
@@ -517,7 +517,7 @@ export function OpenChatView({
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
-                                alt="РћС‚РїСЂР°РІР»РµРЅРЅРѕРµ РёР·РѕР±СЂР°Р¶РµРЅРёРµ"
+                                alt="Отправленное изображение"
                                 className="max-h-[58dvh] w-full object-cover sm:max-h-[420px]"
                                 src={imageUrl}
                               />
@@ -565,10 +565,10 @@ export function OpenChatView({
                               </div>
                               <div>
                                 <p className="text-[13px] font-medium opacity-75">
-                                  Р—РІРѕРЅРѕРє
+                                  Звонок
                                 </p>
                                 <p className="text-xs font-medium opacity-60">
-                                  Р Р°Р·РіРѕРІРѕСЂ {formatCallDuration(callDurationSeconds)}
+                                  Разговор {formatCallDuration(callDurationSeconds)}
                                 </p>
                               </div>
                             </div>
@@ -595,7 +595,7 @@ export function OpenChatView({
                                 {receiptStatus ? (
                                   <span
                                     aria-label={
-                                      receiptStatus === "read" ? "РџСЂРѕС‡РёС‚Р°РЅРѕ" : "Р”РѕСЃС‚Р°РІР»РµРЅРѕ"
+                                      receiptStatus === "read" ? "Прочитано" : "Доставлено"
                                     }
                                     className="inline-flex items-center text-[#262626]"
                                   >
@@ -649,7 +649,7 @@ export function OpenChatView({
                             {receiptStatus ? (
                               <span
                                 aria-label={
-                                  receiptStatus === "read" ? "РџСЂРѕС‡РёС‚Р°РЅРѕ" : "Р”РѕСЃС‚Р°РІР»РµРЅРѕ"
+                                  receiptStatus === "read" ? "Прочитано" : "Доставлено"
                                 }
                                 className={`inline-flex items-center ${hasFramedMedia ? "text-[#a1a1aa]" : "text-[#262626]"}`}
                               >
@@ -715,7 +715,7 @@ export function OpenChatView({
                               {currentProfile?.avatar_url ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
-                                  alt="РўРІРѕСЏ Р°РІР°С‚Р°СЂРєР°"
+                                  alt="Твоя аватарка"
                                   className="h-full w-full object-cover"
                                   src={currentProfile.avatar_url}
                                 />
@@ -745,7 +745,7 @@ export function OpenChatView({
                     type="file"
                   />
                   <button
-                    aria-label="РџСЂРёРєСЂРµРїРёС‚СЊ С„Р°Р№Р»"
+                    aria-label="Прикрепить файл"
                     className="grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 text-[#f4f4f5] transition hover:bg-[#f4f4f5]/18 disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={isUploadingAttachment || isRecordingVoice || isSelectedChatBlocked}
                     onClick={() => imageInputRef.current?.click()}
@@ -783,33 +783,33 @@ export function OpenChatView({
                         onClick={cancelVoiceRecording}
                         type="button"
                       >
-                        РћС‚РјРµРЅР°
+                        Отмена
                       </button>
                     </div>
                   ) : (
                     <>
                       <input
-                        aria-label="РўРµРєСЃС‚ СЃРѕРѕР±С‰РµРЅРёСЏ"
+                        aria-label="Текст сообщения"
                         className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] focus:bg-[#f4f4f5]/18 sm:px-4 sm:text-[13px]"
                         disabled={isSelectedChatBlocked}
                         onChange={handleMessageTextChange}
                         placeholder={
                           isSelectedChatBlockedByMe
-                            ? "РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅ"
+                            ? "Пользователь заблокирован"
                             : isSelectedChatBlockingMe
-                              ? "Р’С‹ Р±С‹Р»Рё Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅС‹"
+                              ? "Вы были заблокированы"
                             : editingMessage
-                            ? "РР·РјРµРЅРё СЃРѕРѕР±С‰РµРЅРёРµ..."
+                            ? "Измени сообщение..."
                             : replyTarget
-                              ? "РћС‚РІРµС‚СЊ РЅР° СЃРѕРѕР±С‰РµРЅРёРµ..."
-                              : "РќР°РїРёС€Рё СЃРѕРѕР±С‰РµРЅРёРµ..."
+                              ? "Ответь на сообщение..."
+                              : "Напиши сообщение..."
                         }
                         ref={messageInputRef}
                         type="text"
                         value={messageText}
                       />
                       <button
-                        aria-label="РЎС‚РёРєРµСЂС‹"
+                        aria-label="Стикеры"
                         className="grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 text-[#f4f4f5] transition hover:bg-[#f4f4f5]/18 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={isUploadingAttachment || isSelectedChatBlocked}
                         onClick={toggleStickerPicker}
@@ -841,7 +841,7 @@ export function OpenChatView({
                     </>
                   )}
                   <button
-                    aria-label={isRecordingVoice ? "РћС‚РїСЂР°РІРёС‚СЊ РіРѕР»РѕСЃРѕРІРѕРµ" : "Р—Р°РїРёСЃР°С‚СЊ РіРѕР»РѕСЃРѕРІРѕРµ"}
+                    aria-label={isRecordingVoice ? "Отправить голосовое" : "Записать голосовое"}
                     className={`relative grid min-h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg border text-[#f4f4f5] transition disabled:cursor-not-allowed disabled:opacity-50 ${
                       isRecordingVoice
                         ? "border-red-400/60 bg-red-500/85 text-white hover:bg-red-400"
@@ -919,7 +919,7 @@ export function OpenChatView({
                     onClick={() => setIsUnpinAllDialogOpen(true)}
                     type="button"
                   >
-                    РћС‚РєСЂРµРїРёС‚СЊ {activePinnedMessages.length} СЃРѕРѕР±С‰РµРЅРёР№
+                    Открепить {activePinnedMessages.length} сообщений
                   </button>
                 ) : null}
 
@@ -927,7 +927,7 @@ export function OpenChatView({
                   <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-2.5 text-[13px] shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
                     <div className="min-w-0">
                       <p className="text-xs font-medium uppercase tracking-[0.14em] text-[#e5e5e5]">
-                        {editingMessage ? "Р РµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ" : "РћС‚РІРµС‚"}
+                        {editingMessage ? "Редактирование" : "Ответ"}
                       </p>
                       <p className="mt-1 truncate font-medium text-[#f4f4f5]">
                         {getReadableMessageText((editingMessage ?? replyTarget)?.text ?? "")}
@@ -942,7 +942,7 @@ export function OpenChatView({
                       }}
                       type="button"
                     >
-                      РћС‚РјРµРЅР°
+                      Отмена
                     </button>
                   </div>
                 ) : null}

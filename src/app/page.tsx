@@ -624,7 +624,7 @@ export default function Home() {
 
         return {
           avatarUrl: profile?.avatar_url ?? null,
-          name: profile?.display_name ?? "РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ",
+          name: profile?.display_name ?? "Пользователь",
           username: profile?.username ?? null,
           userId: profileId,
         };
@@ -820,7 +820,7 @@ export default function Home() {
     const profile = profilesByUserId.get(targetUserId);
 
     return {
-      name: profile?.display_name ?? friendProfile?.name ?? "РўРµРєСѓС‰РёР№ С‡Р°С‚",
+      name: profile?.display_name ?? friendProfile?.name ?? "Текущий чат",
       userId: targetUserId,
     };
   }, [chatDeleteTargetUserId, friendProfile?.name, profilesByUserId, selectedChatUserId]);
@@ -861,23 +861,23 @@ export default function Home() {
     : null;
   const callStatusText =
     callStatus === "calling"
-      ? "Р—РІРѕРЅСЋ..."
+      ? "Звоню..."
       : callStatus === "incoming"
-        ? `Р—РІРѕРЅРёС‚ ${incomingCallerProfile?.display_name ?? "Р”СЂСѓРі"}`
+        ? `Звонит ${incomingCallerProfile?.display_name ?? "Друг"}`
         : callStatus === "connecting"
-          ? "РЎРѕРµРґРёРЅРµРЅРёРµ..."
+          ? "Соединение..."
           : callStatus === "connected"
-            ? "Р—РІРѕРЅРѕРє РёРґРµС‚"
+            ? "Звонок идет"
             : "";
   const callPanelProfile =
     callStatus === "incoming"
       ? {
           avatarUrl: incomingCallerProfile?.avatar_url ?? null,
-          name: incomingCallerProfile?.display_name ?? "Р”СЂСѓРі",
+          name: incomingCallerProfile?.display_name ?? "Друг",
         }
       : {
           avatarUrl: friendProfile?.avatarUrl ?? null,
-          name: friendProfile?.name ?? "Р”СЂСѓРі",
+          name: friendProfile?.name ?? "Друг",
         };
 
   useMessageViewportEffects({
@@ -1291,7 +1291,7 @@ export default function Home() {
     setAuthUsernameError("");
 
     if (authContactMethod === "phone") {
-      setErrorMessage("Р’С…РѕРґ Рё СЂРµРіРёСЃС‚СЂР°С†РёСЏ РїРѕ С‚РµР»РµС„РѕРЅСѓ СѓР¶Рµ РІ РёРЅС‚РµСЂС„РµР№СЃРµ, SMS-Р»РѕРіРёРєР° РїРѕРєР° РІ СЂР°Р·СЂР°Р±РѕС‚РєРµ.");
+      setErrorMessage("Вход и регистрация по телефону уже в интерфейсе, SMS-логика пока в разработке.");
       return;
     }
 
@@ -1307,12 +1307,12 @@ export default function Home() {
       const usernameOwner = await fetchUsernameOwner(nextUsername);
 
       if (usernameOwner.error) {
-        setAuthUsernameError("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ РїСЂРѕРІРµСЂРёС‚СЊ РЅРёРє. РџРѕРїСЂРѕР±СѓР№ РµС‰С‘ СЂР°Р·.");
+        setAuthUsernameError("Не получилось проверить ник. Попробуй ещё раз.");
         return;
       }
 
       if (usernameOwner.data) {
-        setAuthUsernameError("РўР°РєРѕР№ РЅРёРє СѓР¶Рµ Р·Р°РЅСЏС‚.");
+        setAuthUsernameError("Такой ник уже занят.");
         return;
       }
 
@@ -1329,7 +1329,7 @@ export default function Home() {
       });
 
       if (error) {
-        setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊСЃСЏ.");
+        setErrorMessage("Не получилось зарегистрироваться.");
       } else {
         if (data.user) {
           const { error: profileError } = await supabase.from("profiles").upsert({
@@ -1340,12 +1340,12 @@ export default function Home() {
           });
 
           if (profileError) {
-            setAuthUsernameError("РђРєРєР°СѓРЅС‚ СЃРѕР·РґР°РЅ, РЅРѕ РЅРёРє РЅРµ СЃРѕС…СЂР°РЅРёР»СЃСЏ. РџРѕРїСЂРѕР±СѓР№ РІРѕР№С‚Рё Рё СЃРѕС…СЂР°РЅРёС‚СЊ РЅРёРє РІ РїСЂРѕС„РёР»Рµ.");
+            setAuthUsernameError("Аккаунт создан, но ник не сохранился. Попробуй войти и сохранить ник в профиле.");
             return;
           }
         }
 
-        setErrorMessage("РђРєРєР°СѓРЅС‚ СЃРѕР·РґР°РЅ. Р•СЃР»Рё Supabase РїРѕРїСЂРѕСЃРёС‚, РїРѕРґС‚РІРµСЂРґРё email.");
+        setErrorMessage("Аккаунт создан. Если Supabase попросит, подтверди email.");
         setAuthUsername("");
         setAuthMode("sign-in");
       }
@@ -1359,7 +1359,7 @@ export default function Home() {
     });
 
     if (error) {
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ РІРѕР№С‚Рё. РџСЂРѕРІРµСЂСЊ email Рё РїР°СЂРѕР»СЊ.");
+      setErrorMessage("Не получилось войти. Проверь email и пароль.");
       return;
     }
 
@@ -1377,7 +1377,7 @@ export default function Home() {
 
     if (signedInProfileError) {
       await supabase.auth.signOut();
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ РїСЂРѕРІРµСЂРёС‚СЊ РїСЂРѕС„РёР»СЊ Р°РєРєР°СѓРЅС‚Р°.");
+      setErrorMessage("Не получилось проверить профиль аккаунта.");
       return;
     }
 
@@ -1390,7 +1390,7 @@ export default function Home() {
 
       if (profileError) {
         await supabase.auth.signOut();
-        setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ РїРѕРґРіРѕС‚РѕРІРёС‚СЊ РїСЂРѕС„РёР»СЊ Р°РєРєР°СѓРЅС‚Р°.");
+        setErrorMessage("Не получилось подготовить профиль аккаунта.");
       }
     }
   }
@@ -1431,7 +1431,7 @@ export default function Home() {
       const { error } = await supabase.auth.signOut();
 
       if (error) {
-        setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ РІС‹Р№С‚Рё РёР· Р°РєРєР°СѓРЅС‚Р°.");
+        setErrorMessage("Не получилось выйти из аккаунта.");
         return;
       }
 
@@ -1474,7 +1474,7 @@ export default function Home() {
       await audioElement.play();
       setErrorMessage("");
     } catch {
-      setErrorMessage("РќР°Р¶РјРё В«Р’РєР»СЋС‡РёС‚СЊ Р·РІСѓРєВ», С‡С‚РѕР±С‹ Р±СЂР°СѓР·РµСЂ СЂР°Р·СЂРµС€РёР» Р°СѓРґРёРѕ Р·РІРѕРЅРєР°.");
+      setErrorMessage("Нажми «Включить звук», чтобы браузер разрешил аудио звонка.");
     }
   }
 
@@ -1580,22 +1580,22 @@ export default function Home() {
     }
 
     if (!targetUserId || targetUserId === user.id) {
-      setErrorMessage("Р§С‚РѕР±С‹ РїРѕР·РІРѕРЅРёС‚СЊ, СЃРЅР°С‡Р°Р»Р° РЅСѓР¶РµРЅ С…РѕС‚СЏ Р±С‹ РѕРґРёРЅ РІС…РѕРґ РґСЂСѓРіР° РІ С‡Р°С‚.");
+      setErrorMessage("Чтобы позвонить, сначала нужен хотя бы один вход друга в чат.");
       return;
     }
 
     if (blockedByMeProfileIds.includes(targetUserId)) {
-      setErrorMessage("РЎРЅР°С‡Р°Р»Р° СЂР°Р·Р±Р»РѕРєРёСЂСѓР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ, С‡С‚РѕР±С‹ РїРѕР·РІРѕРЅРёС‚СЊ РµРјСѓ.");
+      setErrorMessage("Сначала разблокируй пользователя, чтобы позвонить ему.");
       return;
     }
 
     if (blockState.blockedMeIds.includes(targetUserId)) {
-      setErrorMessage("РўС‹ РЅРµ РјРѕР¶РµС€СЊ РїРѕР·РІРѕРЅРёС‚СЊ: РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ С‚РµР±СЏ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°Р».");
+      setErrorMessage("Ты не можешь позвонить: пользователь тебя заблокировал.");
       return;
     }
 
     if (!navigator.mediaDevices?.getUserMedia || typeof RTCPeerConnection === "undefined") {
-      setErrorMessage("Р­С‚РѕС‚ Р±СЂР°СѓР·РµСЂ РЅРµ РїРѕРґРґРµСЂР¶РёРІР°РµС‚ Р·РІРѕРЅРєРё.");
+      setErrorMessage("Этот браузер не поддерживает звонки.");
       return;
     }
 
@@ -1623,7 +1623,7 @@ export default function Home() {
       await sendCallSignal(targetUserId, "offer", offer);
     } catch {
       closeCall(false);
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ РЅР°С‡Р°С‚СЊ Р·РІРѕРЅРѕРє. РџСЂРѕРІРµСЂСЊ РґРѕСЃС‚СѓРї Рє РјРёРєСЂРѕС„РѕРЅСѓ.");
+      setErrorMessage("Не получилось начать звонок. Проверь доступ к микрофону.");
     }
   }
 
@@ -1633,7 +1633,7 @@ export default function Home() {
     }
 
     if (!navigator.mediaDevices?.getUserMedia || typeof RTCPeerConnection === "undefined") {
-      setErrorMessage("Р­С‚РѕС‚ Р±СЂР°СѓР·РµСЂ РЅРµ РїРѕРґРґРµСЂР¶РёРІР°РµС‚ Р·РІРѕРЅРєРё.");
+      setErrorMessage("Этот браузер не поддерживает звонки.");
       return;
     }
 
@@ -1675,7 +1675,7 @@ export default function Home() {
       markCallConnected();
     } catch {
       closeCall(false);
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ РїСЂРёРЅСЏС‚СЊ Р·РІРѕРЅРѕРє. РџСЂРѕРІРµСЂСЊ РґРѕСЃС‚СѓРї Рє РјРёРєСЂРѕС„РѕРЅСѓ.");
+      setErrorMessage("Не получилось принять звонок. Проверь доступ к микрофону.");
     }
   }
 
@@ -1722,7 +1722,7 @@ export default function Home() {
         currentMessages.filter((message) => message.id !== optimisticMessage.id),
       );
       hasSavedCallSummaryRef.current = false;
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ Р·Р°РїРёСЃСЊ Рѕ Р·РІРѕРЅРєРµ.");
+      setErrorMessage("Не получилось сохранить запись о звонке.");
       return;
     }
 
@@ -1775,7 +1775,7 @@ export default function Home() {
       const permission = await Notification.requestPermission();
 
       if (permission !== "granted") {
-        setErrorMessage("Р‘СЂР°СѓР·РµСЂ РЅРµ СЂР°Р·СЂРµС€РёР» СѓРІРµРґРѕРјР»РµРЅРёСЏ.");
+        setErrorMessage("Браузер не разрешил уведомления.");
         return;
       }
     }
@@ -1846,7 +1846,7 @@ export default function Home() {
     }
 
     if (!user) {
-      setErrorMessage("РЎРЅР°С‡Р°Р»Р° РІРѕР№РґРё РІ Р°РєРєР°СѓРЅС‚.");
+      setErrorMessage("Сначала войди в аккаунт.");
       return;
     }
 
@@ -1891,7 +1891,7 @@ export default function Home() {
       setMessages((currentMessages) =>
         currentMessages.filter((message) => message.id !== optimisticMessage.id),
       );
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ РёР·РјРµРЅРёС‚СЊ Р±Р»РѕРєРёСЂРѕРІРєСѓ. РџРѕРїСЂРѕР±СѓР№ РµС‰С‘ СЂР°Р·.");
+      setErrorMessage("Не получилось изменить блокировку. Попробуй ещё раз.");
       return;
     }
 
@@ -1977,7 +1977,7 @@ export default function Home() {
       setSelectedMessageIds(previousSelectedMessageIds);
       setIsDeletingChat(false);
       isDeletingChatRef.current = false;
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ СѓРґР°Р»РёС‚СЊ РїРµСЂРµРїРёСЃРєСѓ Сѓ РґРІРѕРёС….");
+      setErrorMessage("Не получилось удалить переписку у двоих.");
       return;
     }
 
@@ -2101,7 +2101,7 @@ export default function Home() {
       await navigator.clipboard.writeText(getReadableMessageText(message.text));
       setErrorMessage("");
     } catch {
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ СЃРєРѕРїРёСЂРѕРІР°С‚СЊ С‚РµРєСЃС‚.");
+      setErrorMessage("Не получилось скопировать текст.");
     }
 
     setMessageContextMenu(null);
@@ -2112,14 +2112,14 @@ export default function Home() {
       await navigator.clipboard.writeText(getReadableMessageText(item.text));
       setErrorMessage("");
     } catch {
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ СЃРєРѕРїРёСЂРѕРІР°С‚СЊ С‚РµРєСЃС‚.");
+      setErrorMessage("Не получилось скопировать текст.");
     }
 
     setFavoriteContextMenu(null);
   }
   function addFavoriteChatMessage(text: string) {
     if (!user) {
-      setErrorMessage("РЎРЅР°С‡Р°Р»Р° РІРѕР№РґРё РІ Р°РєРєР°СѓРЅС‚.");
+      setErrorMessage("Сначала войди в аккаунт.");
       return;
     }
 
@@ -2210,7 +2210,7 @@ export default function Home() {
 
   function scrollToReplyMessage(reply: ReplyMessagePayload) {
     if (!reply.messageId) {
-      setErrorMessage("Рљ СЌС‚РѕРјСѓ СЃС‚Р°СЂРѕРјСѓ РѕС‚РІРµС‚Сѓ РЅРµР»СЊР·СЏ РїРµСЂРµР№С‚Рё: РѕРЅ Р±С‹Р» СЃРѕР·РґР°РЅ РґРѕ РїСЂРёРІСЏР·РєРё СЃРѕРѕР±С‰РµРЅРёР№.");
+      setErrorMessage("К этому старому ответу нельзя перейти: он был создан до привязки сообщений.");
       return;
     }
 
@@ -2219,7 +2219,7 @@ export default function Home() {
     );
 
     if (!targetMessage) {
-      setErrorMessage("РСЃС…РѕРґРЅРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ РЅРµ РЅР°Р№РґРµРЅРѕ.");
+      setErrorMessage("Исходное сообщение не найдено.");
       return;
     }
 
@@ -2280,7 +2280,7 @@ export default function Home() {
 
   function startEditingMessage(message: MessageRow) {
     if (!user || message.user_id !== user.id) {
-      setErrorMessage("РњРѕР¶РЅРѕ РёР·РјРµРЅСЏС‚СЊ С‚РѕР»СЊРєРѕ СЃРІРѕРё СЃРѕРѕР±С‰РµРЅРёСЏ.");
+      setErrorMessage("Можно изменять только свои сообщения.");
       setMessageContextMenu(null);
       return;
     }
@@ -2368,7 +2368,7 @@ export default function Home() {
 
     if (!shouldPinForBoth) {
       if (!user || !selectedChatUserId) {
-        setErrorMessage("РЎРЅР°С‡Р°Р»Р° РѕС‚РєСЂРѕР№ РЅСѓР¶РЅС‹Р№ С‡Р°С‚.");
+        setErrorMessage("Сначала открой нужный чат.");
         return;
       }
 
@@ -2389,12 +2389,12 @@ export default function Home() {
     }
 
     if (!user) {
-      setErrorMessage("РЎРЅР°С‡Р°Р»Р° РІРѕР№РґРё РІ Р°РєРєР°СѓРЅС‚.");
+      setErrorMessage("Сначала войди в аккаунт.");
       return;
     }
 
     if (!selectedChatUserId) {
-      setErrorMessage("РЎРЅР°С‡Р°Р»Р° РѕС‚РєСЂРѕР№ РЅСѓР¶РЅС‹Р№ С‡Р°С‚.");
+      setErrorMessage("Сначала открой нужный чат.");
       return;
     }
 
@@ -2428,7 +2428,7 @@ export default function Home() {
       setMessages((currentMessages) =>
         currentMessages.filter((message) => message.id !== optimisticMessage.id),
       );
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ Р·Р°РєСЂРµРїР»РµРЅРёРµ РґР»СЏ РґРІРѕРёС….");
+      setErrorMessage("Не получилось сохранить закрепление для двоих.");
       return;
     }
 
@@ -2497,7 +2497,7 @@ export default function Home() {
           (message) => !optimisticMessages.some((optimisticMessage) => optimisticMessage.id === message.id),
         ),
       );
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ РѕС‚РєСЂРµРїРёС‚СЊ РѕР±С‰РёРµ Р·Р°РєСЂРµРїС‹.");
+      setErrorMessage("Не получилось открепить общие закрепы.");
       return;
     }
 
@@ -2541,7 +2541,7 @@ export default function Home() {
       return;
     }
 
-    setErrorMessage("РџРµСЂРµСЃС‹Р»РєСѓ СЃРѕРѕР±С‰РµРЅРёР№ РїРѕРґРєР»СЋС‡РёРј СЃР»РµРґСѓСЋС‰РёРј С€Р°РіРѕРј.");
+    setErrorMessage("Пересылку сообщений подключим следующим шагом.");
   }
 
   function hideSelectedMessagesForMe() {
@@ -2700,7 +2700,7 @@ export default function Home() {
     }
 
     if (nextName.length < 2 || nextName.length > 24) {
-      setErrorMessage("РРјСЏ РґРѕР»Р¶РЅРѕ Р±С‹С‚СЊ РѕС‚ 2 РґРѕ 24 СЃРёРјРІРѕР»РѕРІ.");
+      setErrorMessage("Имя должно быть от 2 до 24 символов.");
       return;
     }
 
@@ -2720,7 +2720,7 @@ export default function Home() {
       .single();
 
     if (error) {
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ РёР·РјРµРЅРёС‚СЊ РёРјСЏ.");
+      setErrorMessage("Не получилось изменить имя.");
       return;
     }
 
@@ -2772,7 +2772,7 @@ export default function Home() {
 
     if (!isUsernameChangeAllowed) {
       setProfileUsernameError(
-        `РќРёРє СЃРЅРѕРІР° РјРѕР¶РЅРѕ Р±СѓРґРµС‚ РёР·РјРµРЅРёС‚СЊ ${nextUsernameChangeDate ?? "РїРѕР·Р¶Рµ"}.`,
+        `Ник снова можно будет изменить ${nextUsernameChangeDate ?? "позже"}.`,
       );
       return;
     }
@@ -2780,12 +2780,12 @@ export default function Home() {
     const usernameOwner = await fetchUsernameOwner(nextUsername);
 
     if (usernameOwner.error) {
-      setProfileUsernameError("РЎРЅР°С‡Р°Р»Р° РЅСѓР¶РЅРѕ РґРѕР±Р°РІРёС‚СЊ РєРѕР»РѕРЅРєСѓ username РІ Supabase.");
+      setProfileUsernameError("Сначала нужно добавить колонку username в Supabase.");
       return;
     }
 
     if (usernameOwner.data && usernameOwner.data.user_id !== user.id) {
-      setProfileUsernameError("РўР°РєРѕР№ РЅРёРє СѓР¶Рµ Р·Р°РЅСЏС‚.");
+      setProfileUsernameError("Такой ник уже занят.");
       return;
     }
 
@@ -2805,7 +2805,7 @@ export default function Home() {
       .single();
 
     if (error) {
-      setProfileUsernameError("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ РЅРёРє.");
+      setProfileUsernameError("Не получилось сохранить ник.");
       return;
     }
 
@@ -2856,7 +2856,7 @@ export default function Home() {
     event.preventDefault();
 
     if (!user) {
-      setErrorMessage("РЎРЅР°С‡Р°Р»Р° РІРѕР№РґРё РІ Р°РєРєР°СѓРЅС‚.");
+      setErrorMessage("Сначала войди в аккаунт.");
       return;
     }
 
@@ -2897,17 +2897,17 @@ export default function Home() {
     }
 
     if (!selectedChatUserId) {
-      setErrorMessage("РЎРЅР°С‡Р°Р»Р° РІС‹Р±РµСЂРё СЃРѕР±РµСЃРµРґРЅРёРєР°.");
+      setErrorMessage("Сначала выбери собеседника.");
       return;
     }
 
     if (isSelectedChatBlockedByMe) {
-      setErrorMessage("РЎРЅР°С‡Р°Р»Р° СЂР°Р·Р±Р»РѕРєРёСЂСѓР№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ, С‡С‚РѕР±С‹ РЅР°РїРёСЃР°С‚СЊ РµРјСѓ.");
+      setErrorMessage("Сначала разблокируй пользователя, чтобы написать ему.");
       return;
     }
 
     if (isSelectedChatBlockingMe) {
-      setErrorMessage("РўС‹ РЅРµ РјРѕР¶РµС€СЊ РЅР°РїРёСЃР°С‚СЊ: РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ С‚РµР±СЏ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°Р».");
+      setErrorMessage("Ты не можешь написать: пользователь тебя заблокировал.");
       return;
     }
 
@@ -2942,7 +2942,7 @@ export default function Home() {
         setMessages(previousMessages);
         setEditingMessage(editingMessage);
         setMessageText(trimmedText);
-        setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ РёР·РјРµРЅРёС‚СЊ СЃРѕРѕР±С‰РµРЅРёРµ. Р’РѕР·РјРѕР¶РЅРѕ, РЅСѓР¶РЅРѕ СЂР°Р·СЂРµС€РёС‚СЊ UPDATE РІ Supabase.");
+        setErrorMessage("Не получилось изменить сообщение. Возможно, нужно разрешить UPDATE в Supabase.");
       } else {
         setMessages((currentMessages) =>
           currentMessages.map((message) =>
@@ -2991,7 +2991,7 @@ export default function Home() {
       );
       setMessageText(trimmedText);
       setReplyTarget(replyTarget);
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ РѕС‚РїСЂР°РІРёС‚СЊ СЃРѕРѕР±С‰РµРЅРёРµ.");
+      setErrorMessage("Не получилось отправить сообщение.");
     } else {
       setMessages((currentMessages) => {
         const withoutOptimisticMessage = currentMessages.filter(
@@ -3006,7 +3006,7 @@ export default function Home() {
 
   async function sendSticker(sticker: string) {
     if (!user) {
-      setErrorMessage("РЎРЅР°С‡Р°Р»Р° РІРѕР№РґРё РІ Р°РєРєР°СѓРЅС‚.");
+      setErrorMessage("Сначала войди в аккаунт.");
       return;
     }
 
@@ -3019,7 +3019,7 @@ export default function Home() {
     }
 
     if (!selectedChatUserId) {
-      setErrorMessage("РЎРЅР°С‡Р°Р»Р° РІС‹Р±РµСЂРё СЃРѕР±РµСЃРµРґРЅРёРєР°.");
+      setErrorMessage("Сначала выбери собеседника.");
       setIsStickerPickerOpen(false);
       return;
     }
@@ -3053,7 +3053,7 @@ export default function Home() {
       setMessages((currentMessages) =>
         currentMessages.filter((message) => message.id !== optimisticMessage.id),
       );
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ РѕС‚РїСЂР°РІРёС‚СЊ СЃС‚РёРєРµСЂ.");
+      setErrorMessage("Не получилось отправить стикер.");
       return;
     }
 
@@ -3069,7 +3069,7 @@ export default function Home() {
 
   async function sendAttachment(file: File) {
     if (!user) {
-      setErrorMessage("РЎРЅР°С‡Р°Р»Р° РІРѕР№РґРё РІ Р°РєРєР°СѓРЅС‚.");
+      setErrorMessage("Сначала войди в аккаунт.");
       return;
     }
 
@@ -3077,7 +3077,7 @@ export default function Home() {
     const isVideo = file.type.startsWith("video/");
 
     if (file.size > maxAttachmentSize) {
-      setErrorMessage("Р¤Р°Р№Р» РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ РјРµРЅСЊС€Рµ 50 РњР‘.");
+      setErrorMessage("Файл должен быть меньше 50 МБ.");
       return;
     }
 
@@ -3098,7 +3098,7 @@ export default function Home() {
     if (uploadError) {
       console.error("Hush file upload failed:", uploadError.message);
       setIsUploadingAttachment(false);
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ С„Р°Р№Р».");
+      setErrorMessage("Не получилось загрузить файл.");
       return;
     }
 
@@ -3112,7 +3112,7 @@ export default function Home() {
       : isVideo
         ? `${videoMessagePrefix}${attachmentUrl}`
         : createFileMessageText({
-            name: file.name || "Р¤Р°Р№Р»",
+            name: file.name || "Файл",
             size: file.size,
             type: file.type,
             url: attachmentUrl,
@@ -3126,7 +3126,7 @@ export default function Home() {
 
     if (!selectedChatUserId) {
       setIsUploadingAttachment(false);
-      setErrorMessage("РЎРЅР°С‡Р°Р»Р° РІС‹Р±РµСЂРё СЃРѕР±РµСЃРµРґРЅРёРєР°.");
+      setErrorMessage("Сначала выбери собеседника.");
       return;
     }
 
@@ -3160,7 +3160,7 @@ export default function Home() {
       setMessages((currentMessages) =>
         currentMessages.filter((message) => message.id !== optimisticMessage.id),
       );
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ РѕС‚РїСЂР°РІРёС‚СЊ С„Р°Р№Р».");
+      setErrorMessage("Не получилось отправить файл.");
     } else {
       setMessages((currentMessages) => {
         const withoutOptimisticMessage = currentMessages.filter(
@@ -3174,12 +3174,12 @@ export default function Home() {
 
   async function sendVoiceMessage(audioBlob: Blob) {
     if (!user) {
-      setErrorMessage("РЎРЅР°С‡Р°Р»Р° РІРѕР№РґРё РІ Р°РєРєР°СѓРЅС‚.");
+      setErrorMessage("Сначала войди в аккаунт.");
       return;
     }
 
     if (audioBlob.size > maxAttachmentSize) {
-      setErrorMessage("Р“РѕР»РѕСЃРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ РґРѕР»Р¶РЅРѕ Р±С‹С‚СЊ РјРµРЅСЊС€Рµ 50 РњР‘.");
+      setErrorMessage("Голосовое сообщение должно быть меньше 50 МБ.");
       return;
     }
 
@@ -3198,7 +3198,7 @@ export default function Home() {
 
     if (uploadError) {
       setIsUploadingAttachment(false);
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РіРѕР»РѕСЃРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ.");
+      setErrorMessage("Не получилось загрузить голосовое сообщение.");
       return;
     }
 
@@ -3214,7 +3214,7 @@ export default function Home() {
 
     if (!selectedChatUserId) {
       setIsUploadingAttachment(false);
-      setErrorMessage("РЎРЅР°С‡Р°Р»Р° РІС‹Р±РµСЂРё СЃРѕР±РµСЃРµРґРЅРёРєР°.");
+      setErrorMessage("Сначала выбери собеседника.");
       return;
     }
 
@@ -3248,7 +3248,7 @@ export default function Home() {
       setMessages((currentMessages) =>
         currentMessages.filter((message) => message.id !== optimisticMessage.id),
       );
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ РѕС‚РїСЂР°РІРёС‚СЊ РіРѕР»РѕСЃРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ.");
+      setErrorMessage("Не получилось отправить голосовое сообщение.");
     } else {
       setMessages((currentMessages) => {
         const withoutOptimisticMessage = currentMessages.filter(
@@ -3316,12 +3316,12 @@ export default function Home() {
 
   async function startVoiceRecording() {
     if (!user) {
-      setErrorMessage("РЎРЅР°С‡Р°Р»Р° РІРѕР№РґРё РІ Р°РєРєР°СѓРЅС‚.");
+      setErrorMessage("Сначала войди в аккаунт.");
       return;
     }
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      setErrorMessage("Р‘СЂР°СѓР·РµСЂ РЅРµ РїРѕРґРґРµСЂР¶РёРІР°РµС‚ Р·Р°РїРёСЃСЊ РіРѕР»РѕСЃР°.");
+      setErrorMessage("Браузер не поддерживает запись голоса.");
       return;
     }
 
@@ -3367,7 +3367,7 @@ export default function Home() {
       setVoiceRecordingDuration(0);
       setErrorMessage("");
     } catch {
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ РїРѕР»СѓС‡РёС‚СЊ РґРѕСЃС‚СѓРї Рє РјРёРєСЂРѕС„РѕРЅСѓ.");
+      setErrorMessage("Не получилось получить доступ к микрофону.");
     }
   }
 
@@ -3430,7 +3430,7 @@ export default function Home() {
     setMessageDeleteTarget(null);
 
     if (!user || message.user_id !== user.id) {
-      setErrorMessage("РњРѕР¶РЅРѕ СѓРґР°Р»СЏС‚СЊ С‚РѕР»СЊРєРѕ СЃРІРѕРё СЃРѕРѕР±С‰РµРЅРёСЏ.");
+      setErrorMessage("Можно удалять только свои сообщения.");
       return;
     }
 
@@ -3450,7 +3450,7 @@ export default function Home() {
 
     if (error || !data) {
       setMessages(previousMessages);
-      setErrorMessage("РќРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ СѓРґР°Р»РёС‚СЊ СЃРѕРѕР±С‰РµРЅРёРµ РёР· Р±Р°Р·С‹.");
+      setErrorMessage("Не получилось удалить сообщение из базы.");
     } else {
       removeLocalPinnedMessageId(message.id, message.user_id === user.id ? selectedChatUserId : message.user_id);
       setSelectedMessageIds((currentIds) =>

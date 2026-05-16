@@ -15,11 +15,11 @@ export function formatUsernameInput(username: string) {
 
 export function getUsernameError(username: string) {
   if (!username) {
-    return "РќРёРє РѕР±СЏР·Р°С‚РµР»РµРЅ.";
+    return "Ник обязателен.";
   }
 
   if (!usernamePattern.test(username)) {
-    return "РќРёРє РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ РѕС‚ 3 РґРѕ 24 СЃРёРјРІРѕР»РѕРІ: Р»Р°С‚РёРЅРёС†Р°, С†РёС„СЂС‹ Рё РїРѕРґС‡С‘СЂРєРёРІР°РЅРёРµ.";
+    return "Ник должен быть от 3 до 24 символов: латиница, цифры и подчёркивание.";
   }
 
   return "";
@@ -27,14 +27,14 @@ export function getUsernameError(username: string) {
 
 export function formatLastSeen(updatedAt: string | null) {
   if (!updatedAt) {
-    return "Р±С‹Р» РЅРµРґР°РІРЅРѕ";
+    return "был недавно";
   }
 
   const updatedDate = new Date(updatedAt);
   const updatedTime = updatedDate.getTime();
 
   if (!Number.isFinite(updatedTime)) {
-    return "Р±С‹Р» РЅРµРґР°РІРЅРѕ";
+    return "был недавно";
   }
 
   const now = Date.now();
@@ -42,17 +42,17 @@ export function formatLastSeen(updatedAt: string | null) {
   const diffMinutes = Math.floor(diffSeconds / 60);
 
   if (diffSeconds < 90) {
-    return "РІ СЃРµС‚Рё";
+    return "в сети";
   }
 
   if (diffMinutes < 60) {
-    return `Р±С‹Р» ${Math.max(1, diffMinutes)} РјРёРЅ. РЅР°Р·Р°Рґ`;
+    return `был ${Math.max(1, diffMinutes)} мин. назад`;
   }
 
   const diffHours = Math.floor(diffMinutes / 60);
 
   if (diffHours < 24) {
-    return `Р±С‹Р» ${diffHours} С‡. РЅР°Р·Р°Рґ`;
+    return `был ${diffHours} ч. назад`;
   }
 
   const today = new Date(now);
@@ -71,18 +71,18 @@ export function formatLastSeen(updatedAt: string | null) {
   }).format(updatedDate);
 
   if (isSameDate(updatedDate, today)) {
-    return `Р±С‹Р» СЃРµРіРѕРґРЅСЏ РІ ${formattedTime}`;
+    return `был сегодня в ${formattedTime}`;
   }
 
   if (isSameDate(updatedDate, yesterday)) {
-    return `Р±С‹Р» РІС‡РµСЂР° РІ ${formattedTime}`;
+    return `был вчера в ${formattedTime}`;
   }
 
-  return `Р±С‹Р» ${new Intl.DateTimeFormat("ru-RU", {
+  return `был ${new Intl.DateTimeFormat("ru-RU", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-  }).format(updatedDate)} РІ ${formattedTime}`;
+  }).format(updatedDate)} в ${formattedTime}`;
 }
 
 export function isProfileOnline(updatedAt: string | null) {
@@ -102,7 +102,7 @@ export function getDisplayName(user: User | null) {
     return metadataName.trim();
   }
 
-  return user?.email?.split("@")[0] ?? "Р“РѕСЃС‚СЊ";
+  return user?.email?.split("@")[0] ?? "Гость";
 }
 
 export function canChangeName(nameChangedAt: string | null) {
