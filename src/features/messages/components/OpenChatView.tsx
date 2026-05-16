@@ -149,7 +149,7 @@ export function OpenChatView({
   voiceRecordingDuration,
 }: OpenChatViewProps) {
   return (<div className="flex min-h-0 flex-col overflow-hidden">
-                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
+                <div className="mb-2 flex h-[64px] min-h-[64px] items-center justify-between gap-2 overflow-hidden rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
                   <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
                     <button
                       aria-label="Назад к чатам"
@@ -212,7 +212,7 @@ export function OpenChatView({
                       </p>
                     </div>
                   </div>
-                  <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
+                  <div className="flex shrink-0 items-center justify-end gap-2">
                     <button
                       aria-label="Удалить переписку"
                       className="grid min-h-9 w-9 place-items-center rounded-lg border border-red-400/45 bg-red-500/15 text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-55 sm:min-h-10 sm:w-10 sm:rounded-xl"

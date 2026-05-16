@@ -84,7 +84,7 @@ export function FavoritesView({
   voiceRecordingDuration,
 }: FavoritesViewProps) {
   return (<div className="flex min-h-0 flex-col overflow-hidden">
-                <div className="mb-2 flex min-h-[64px] items-center rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
+                <div className="mb-2 flex h-[64px] min-h-[64px] items-center rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
                   <h2 className="text-lg font-medium sm:text-xl">
                     Избранное
                   </h2>
