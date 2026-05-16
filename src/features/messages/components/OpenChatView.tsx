@@ -348,7 +348,7 @@ export function OpenChatView({
                     </p>
                   ) : null}
 
-                  {visibleDialogMessages.map((message, messageIndex) => {
+                  {!isLoadingMessages && visibleDialogMessages.map((message, messageIndex) => {
                     const isMine = message.user_id === user.id;
                     const previousMessage = visibleDialogMessages[messageIndex - 1];
                     const nextMessage = visibleDialogMessages[messageIndex + 1];
