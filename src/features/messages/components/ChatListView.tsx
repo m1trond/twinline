@@ -35,7 +35,7 @@ export function ChatListView({
         <h2 className="text-lg font-medium sm:text-xl">{messagesTitle}</h2>
       </div>
 
-      <div className="scrollbar-hidden grid min-h-0 flex-1 content-start gap-2 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#050505]/82 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4">
+      <div className="scrollbar-hidden grid min-h-0 flex-1 content-start gap-2 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4">
         {chatProfiles.length === 0 ? (
           <article className="rounded-xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-4 text-center sm:rounded-2xl sm:p-6">
             <p className="text-sm font-medium">{emptyChatsTitle}</p>
@@ -55,7 +55,7 @@ export function ChatListView({
               className={`flex w-full items-center gap-2.5 rounded-xl border p-2.5 text-left transition hover:border-[#3f3f46]/55 hover:bg-[#f4f4f5]/8 sm:gap-3 sm:rounded-2xl sm:p-3 ${
                 profileUnreadCount > 0
                   ? "border-[#f4f4f5]/20 bg-[#f4f4f5]/10"
-                  : "border-transparent bg-[#050505]/52"
+                  : "border-transparent bg-transparent"
               }`}
               key={profile.user_id}
               onClick={() => {
