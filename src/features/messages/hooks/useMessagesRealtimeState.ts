@@ -175,7 +175,9 @@ export function useMessagesRealtimeState({
 
     async function syncAllMessages(showLoading = false) {
       if (isDeletingChatRef.current) {
-        setIsLoadingMessages(false);
+        if (showLoading) {
+          setIsLoadingMessages(false);
+        }
         return;
       }
 
@@ -186,7 +188,9 @@ export function useMessagesRealtimeState({
       const { data, error } = await fetchMessages(signedInUser.id);
 
       if (!isMounted || isDeletingChatRef.current) {
-        setIsLoadingMessages(false);
+        if (showLoading) {
+          setIsLoadingMessages(false);
+        }
         return;
       }
 
@@ -201,7 +205,9 @@ export function useMessagesRealtimeState({
         setErrorMessage("");
       }
 
-      setIsLoadingMessages(false);
+      if (showLoading) {
+        setIsLoadingMessages(false);
+      }
     }
 
     async function syncNewMessages() {
@@ -247,7 +253,7 @@ export function useMessagesRealtimeState({
       if (document.visibilityState === "visible") {
         syncAllMessages();
       }
-    }, 10000);
+    }, 60_000);
 
     const channel = supabase
       .channel("messages-channel")

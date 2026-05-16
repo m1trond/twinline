@@ -31,8 +31,16 @@ function areProfilesEqual(firstProfiles: ProfileRow[], secondProfiles: ProfileRo
     return false;
   }
 
-  return firstProfiles.every((firstProfile, profileIndex) => {
-    const secondProfile = secondProfiles[profileIndex];
+  const secondProfilesByUserId = new Map(
+    secondProfiles.map((profile) => [profile.user_id, profile]),
+  );
+
+  return firstProfiles.every((firstProfile) => {
+    const secondProfile = secondProfilesByUserId.get(firstProfile.user_id);
+
+    if (!secondProfile) {
+      return false;
+    }
 
     return (
       firstProfile.user_id === secondProfile.user_id &&
@@ -170,7 +178,7 @@ export function useProfilesState({
       if (document.visibilityState === "visible") {
         syncProfiles();
       }
-    }, 5000);
+    }, 30_000);
 
     const channel = supabase
       .channel("profiles-channel")
