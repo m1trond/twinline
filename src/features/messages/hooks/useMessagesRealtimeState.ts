@@ -58,6 +58,56 @@ function getPendingOptimisticMessages(messages: MessageRow[]) {
   return messages.filter((message) => message.id < 0);
 }
 
+function getStoredMessagesKey(userId: string) {
+  return `twinline-messages-cache-${userId}`;
+}
+
+function isStoredMessageRow(item: unknown): item is MessageRow {
+  if (!item || typeof item !== "object") {
+    return false;
+  }
+
+  const message = item as MessageRow;
+
+  return (
+    Number.isInteger(message.id) &&
+    typeof message.author === "string" &&
+    typeof message.text === "string" &&
+    typeof message.created_at === "string" &&
+    (typeof message.user_id === "string" || message.user_id === null) &&
+    (typeof message.recipient_id === "string" || message.recipient_id === null)
+  );
+}
+
+function readStoredMessages(userId: string) {
+  const storedMessages = window.localStorage.getItem(getStoredMessagesKey(userId));
+
+  if (!storedMessages) {
+    return [];
+  }
+
+  try {
+    const parsedMessages = JSON.parse(storedMessages);
+
+    return Array.isArray(parsedMessages)
+      ? parsedMessages.filter(isStoredMessageRow)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeStoredMessages(userId: string, messages: MessageRow[]) {
+  const cacheableMessages = messages
+    .filter((message) => message.id > 0)
+    .slice(-800);
+
+  window.localStorage.setItem(
+    getStoredMessagesKey(userId),
+    JSON.stringify(cacheableMessages),
+  );
+}
+
 export function useMessagesRealtimeState({
   activeViewRef,
   blockedProfileIdsRef,
@@ -95,6 +145,40 @@ export function useMessagesRealtimeState({
       };
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      const storedMessages = readStoredMessages(user.id);
+
+      if (storedMessages.length === 0) {
+        return;
+      }
+
+      setMessages((currentMessages) => {
+        const mergedMessages = mergeMessages(storedMessages, currentMessages);
+
+        return areMessagesEqual(currentMessages, mergedMessages)
+          ? currentMessages
+          : mergedMessages;
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || messages.length === 0) {
+      return;
+    }
+
+    writeStoredMessages(user.id, messages);
+  }, [messages, user]);
 
   useEffect(() => {
     if (!user || !selectedChatUserId) {
