@@ -14,6 +14,16 @@ export async function fetchMessages(userId: string) {
     .order("created_at", { ascending: true });
 }
 
+export async function fetchDialogMessages(userId: string, friendId: string) {
+  return supabase
+    .from("messages")
+    .select(messageColumns)
+    .or(
+      `and(user_id.eq.${userId},recipient_id.eq.${friendId}),and(user_id.eq.${friendId},recipient_id.eq.${userId})`,
+    )
+    .order("created_at", { ascending: true });
+}
+
 export async function fetchMessagesAfter(createdAt: string, userId: string) {
   return supabase
     .from("messages")

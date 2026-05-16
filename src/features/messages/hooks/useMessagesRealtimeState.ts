@@ -3,6 +3,7 @@ import type { MutableRefObject } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import {
+  fetchDialogMessages,
   fetchMessages,
   fetchMessagesAfter,
 } from "@/features/messages/queries";
@@ -22,6 +23,7 @@ type UseMessagesRealtimeStateParams = {
   isDeletingChatRef: MutableRefObject<boolean>;
   mutedProfilesRef: MutableRefObject<MutedProfileUntil>;
   notificationsEnabledRef: MutableRefObject<boolean>;
+  selectedChatUserId: string | null;
   selectedChatUserIdRef: MutableRefObject<string | null>;
   setActiveView: (view: ActiveView) => void;
   setErrorMessage: (message: string) => void;
@@ -62,6 +64,7 @@ export function useMessagesRealtimeState({
   isDeletingChatRef,
   mutedProfilesRef,
   notificationsEnabledRef,
+  selectedChatUserId,
   selectedChatUserIdRef,
   setActiveView,
   setErrorMessage,
@@ -92,6 +95,60 @@ export function useMessagesRealtimeState({
       };
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!user || !selectedChatUserId) {
+      return;
+    }
+
+    const signedInUser = user;
+    const activeChatUserId = selectedChatUserId;
+    let isMounted = true;
+
+    async function syncSelectedDialogMessages() {
+      setIsLoadingMessages(true);
+
+      const { data, error } = await fetchDialogMessages(
+        signedInUser.id,
+        activeChatUserId,
+      );
+
+      if (!isMounted || isDeletingChatRef.current) {
+        setIsLoadingMessages(false);
+        return;
+      }
+
+      if (error) {
+        setErrorMessage("Не получилось загрузить сообщения.");
+      } else {
+        setMessages((currentMessages) => {
+          const mergedMessages = mergeMessages(
+            currentMessages,
+            data ?? [],
+          );
+
+          return areMessagesEqual(currentMessages, mergedMessages)
+            ? currentMessages
+            : mergedMessages;
+        });
+        setErrorMessage("");
+      }
+
+      setIsLoadingMessages(false);
+    }
+
+    syncSelectedDialogMessages();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    isDeletingChatRef,
+    selectedChatUserId,
+    setErrorMessage,
+    setIsLoadingMessages,
+    user,
+  ]);
 
   useEffect(() => {
     if (!user) {
@@ -252,7 +309,15 @@ export function useMessagesRealtimeState({
     }
 
     ensureCurrentProfile();
-    syncAllMessages(true);
+    syncAllMessages(selectedChatUserIdRef.current === null);
+
+    const startupSyncTimeouts = [350, 1200, 2500].map((delay) =>
+      window.setTimeout(() => {
+        if (document.visibilityState === "visible") {
+          syncNewMessages();
+        }
+      }, delay),
+    );
 
     const newMessagesInterval = window.setInterval(() => {
       if (document.visibilityState === "visible") {
@@ -328,6 +393,9 @@ export function useMessagesRealtimeState({
 
     return () => {
       isMounted = false;
+      for (const timeoutId of startupSyncTimeouts) {
+        window.clearTimeout(timeoutId);
+      }
       window.clearInterval(newMessagesInterval);
       window.clearInterval(fullSyncInterval);
       supabase.removeChannel(channel);

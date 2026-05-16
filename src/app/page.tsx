@@ -346,6 +346,7 @@ export default function Home() {
     isDeletingChatRef,
     mutedProfilesRef,
     notificationsEnabledRef,
+    selectedChatUserId,
     selectedChatUserIdRef,
     setActiveView,
     setErrorMessage,
