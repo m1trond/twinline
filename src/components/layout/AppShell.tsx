@@ -394,7 +394,7 @@ export function AppShell({
                 ) : null}
               </div>
 
-              <div className={`mb-4 h-5 w-full ${isSidebarCollapsed ? "invisible" : ""}`}>
+              <div className={`w-full ${isSidebarCollapsed ? "mb-4 h-0 overflow-hidden" : "mb-4 h-5"}`}>
                 <p className="text-sm font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
                   Меню
                 </p>
