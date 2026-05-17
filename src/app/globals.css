@@ -78,7 +78,7 @@ a,
 
 .hush-shell .hush-sidebar-resize-handle:active {
   scale: 1;
-  translate: 0 -50%;
+  translate: 0 0;
 }
 
 .hush-context-menu {
