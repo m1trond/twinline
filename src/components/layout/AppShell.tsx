@@ -23,7 +23,7 @@ type AppShellProps = {
 const sidebarStorageKey = "twinline-sidebar-width";
 const defaultSidebarWidth = 270;
 const minSidebarWidth = 72;
-const collapsedSidebarThreshold = 140;
+const collapsedSidebarThreshold = 190;
 
 function getMaxSidebarWidth() {
   if (typeof window === "undefined") {
