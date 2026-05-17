@@ -59,9 +59,8 @@ export function AppShell({
 
     return clampSidebarWidth(Number.isFinite(storedWidth) && storedWidth > 0 ? storedWidth : defaultSidebarWidth);
   });
-  const [isSidebarResizing, setIsSidebarResizing] = useState(false);
   const isSidebarCollapsed = sidebarWidth <= collapsedSidebarThreshold;
-  const isSidebarIconMode = isSidebarCollapsed || isSidebarResizing || sidebarWidth < defaultSidebarWidth;
+  const isSidebarIconMode = isSidebarCollapsed;
   const [isCollapsedSearchOpen, setIsCollapsedSearchOpen] = useState(false);
   const isCollapsedSearchVisible = isSidebarIconMode && isCollapsedSearchOpen;
   const collapsedSearchButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -137,7 +136,6 @@ export function AppShell({
 
   function startSidebarResize(event: PointerEvent<HTMLDivElement>) {
     event.preventDefault();
-    setIsSidebarResizing(true);
     const startX = event.clientX;
     const startWidth = sidebarWidth;
     const pointerId = event.pointerId;
@@ -149,7 +147,6 @@ export function AppShell({
     }
 
     function stopSidebarResize() {
-      setIsSidebarResizing(false);
       window.removeEventListener("pointermove", resizeSidebar);
       window.removeEventListener("pointerup", stopSidebarResize);
       window.removeEventListener("pointercancel", stopSidebarResize);
@@ -205,7 +202,7 @@ export function AppShell({
                   <button
                     aria-expanded={isCollapsedSearchVisible}
                     aria-label="Открыть поиск"
-                    className="grid h-10 min-h-10 w-full place-items-center rounded-xl text-[#f4f4f5] opacity-80 transition hover:bg-white/10 hover:opacity-100"
+                    className="mx-auto grid h-10 min-h-10 w-10 place-items-center rounded-xl text-[#f4f4f5] opacity-80 transition hover:bg-white/10 hover:opacity-100"
                     onClick={() => setIsCollapsedSearchOpen((isOpen) => !isOpen)}
                     ref={collapsedSearchButtonRef}
                     type="button"
@@ -419,7 +416,7 @@ export function AppShell({
               <button
                 aria-label={isSidebarIconMode ? settingsNavItem.label : undefined}
                 title={isSidebarIconMode ? settingsNavItem.label : undefined}
-                className={`mt-auto ${isSidebarIconMode ? "grid min-h-10 w-full place-items-center px-0 py-0" : "flex min-h-10 items-center px-4 py-2.5 text-left"} rounded-xl text-sm font-medium leading-none transition ${
+                className={`mt-auto ${isSidebarIconMode ? "mx-auto grid h-10 min-h-10 w-10 place-items-center px-0 py-0" : "flex min-h-10 items-center px-4 py-2.5 text-left"} rounded-xl text-sm font-medium leading-none transition ${
                   activeView === settingsNavItem.view
                     ? "bg-[#f4f4f5] text-[#050505]"
                     : "border border-[#3f3f46]/25 text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
