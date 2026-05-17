@@ -78,7 +78,7 @@ export function CallPanel({
         onPointerDown={(event) => event.stopPropagation()}
         type="button"
       >
-        <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+        <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
           {isCallPanelCollapsed ? (
             <path
               d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"
@@ -124,7 +124,7 @@ export function CallPanel({
             onPointerDown={(event) => event.stopPropagation()}
             type="button"
           >
-            <PhoneIcon className="h-4 w-4" />
+            <PhoneIcon className="h-5 w-5" />
           </button>
         </div>
       ) : (

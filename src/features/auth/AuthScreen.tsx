@@ -196,7 +196,7 @@ export function AuthScreen({
               <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-300/20 bg-amber-300/8 p-3 text-sm leading-5 text-amber-100">
                 <svg
                   aria-hidden="true"
-                  className="mt-0.5 h-4 w-4 shrink-0"
+                  className="mt-0.5 h-5 w-5 shrink-0"
                   fill="none"
                   viewBox="0 0 24 24"
                 >

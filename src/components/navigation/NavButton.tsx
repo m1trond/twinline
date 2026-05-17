@@ -1,7 +1,7 @@
 import type { ActiveView } from "@/shared/types";
 
 export function NavIcon({ view }: { view: ActiveView }) {
-  const iconClassName = "h-[18px] w-[18px] shrink-0";
+  const iconClassName = "h-5 w-5 shrink-0";
 
   if (view === "profile") {
     return (

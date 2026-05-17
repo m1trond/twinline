@@ -79,7 +79,7 @@ export function AppShell({
                 <label className="flex min-h-10 items-center gap-2 rounded-lg bg-[#f4f4f5]/10 px-3 text-[#a1a1aa] transition focus-within:bg-[#f4f4f5]/14 focus-within:text-[#f4f4f5]">
                   <svg
                     aria-hidden="true"
-                    className="h-4 w-4 shrink-0"
+                    className="h-5 w-5 shrink-0"
                     fill="none"
                     viewBox="0 0 24 24"
                   >

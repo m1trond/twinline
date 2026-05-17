@@ -212,7 +212,7 @@ function FolderIcon() {
 }
 
 function ChevronIcon() {
-  return <svg aria-hidden="true" className="h-4 w-4 shrink-0 text-[#a1a1aa]" fill="none" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>;
+  return <svg aria-hidden="true" className="h-5 w-5 shrink-0 text-[#a1a1aa]" fill="none" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>;
 }
 
 function LockIcon() {

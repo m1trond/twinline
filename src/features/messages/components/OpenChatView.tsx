@@ -282,7 +282,7 @@ export function OpenChatView({
                         onClick={forwardSelectedMessages}
                         type="button"
                       >
-                        <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
                           <path d="m14 6 6 6-6 6M20 12H9a5 5 0 0 0-5 5v1" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                         </svg>
                         Переслать
@@ -292,7 +292,7 @@ export function OpenChatView({
                         onClick={() => setIsSelectedDeleteDialogOpen(true)}
                         type="button"
                       >
-                        <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
                           <path d="M10 11v6M14 11v6M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                         </svg>
                         Удалить
@@ -324,7 +324,7 @@ export function OpenChatView({
                       onClick={() => setIsPinnedMessagesViewOpen((isOpen) => !isOpen)}
                       type="button"
                     >
-                      <svg aria-hidden="true" className="h-6 w-6" fill="none" viewBox="0 0 28 24">
+                      <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 28 24">
                         <path d="m9.2 4.4 4 4-2.4.9-3.7 3.7.4 2.8-5.2-5.2 2.8.4 3.7-3.7.4-2.9Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
                         <path d="M16 7.5h8M16 12h8M16 16.5h8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
                       </svg>
