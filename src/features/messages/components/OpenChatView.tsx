@@ -293,7 +293,7 @@ export function OpenChatView({
                   <div className="flex shrink-0 items-center justify-end gap-2">
                     <button
                       aria-label="Удалить переписку"
-                      className="grid min-h-9 w-9 place-items-center rounded-lg border border-[#3f3f46]/45 bg-[#f4f4f5]/10 text-[#f4f4f5] transition hover:border-red-400/55 hover:bg-red-500/15 hover:text-red-100 disabled:cursor-not-allowed disabled:opacity-55 sm:min-h-10 sm:w-10 sm:rounded-xl"
+                      className="grid min-h-9 w-9 place-items-center rounded-lg text-[#f4f4f5] transition hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-55 sm:min-h-10 sm:w-10 sm:rounded-xl"
                       disabled={isDeletingChat}
                       onClick={() => {
                         setChatDeleteTargetUserId(selectedChatUserId);
@@ -322,7 +322,7 @@ export function OpenChatView({
                     </button>
                     <button
                       aria-label={callStatus === "idle" ? "Позвонить" : callStatusText}
-                      className="grid min-h-9 w-9 place-items-center rounded-lg bg-[#f4f4f5] text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b] sm:min-h-10 sm:w-10 sm:rounded-xl"
+                      className="grid min-h-9 w-9 place-items-center rounded-lg text-[#f4f4f5] transition hover:text-white disabled:cursor-not-allowed disabled:text-[#71717a] sm:min-h-10 sm:w-10 sm:rounded-xl"
                       disabled={!friendProfile?.userId || callStatus !== "idle"}
                       onClick={() => startCall()}
                       type="button"
