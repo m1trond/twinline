@@ -1,6 +1,6 @@
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { BrandMark } from "@/components/brand/BrandMark";
-import { NavButton } from "@/components/navigation/NavButton";
+import { NavButton, NavIcon } from "@/components/navigation/NavButton";
 import { navItems, settingsNavItem } from "@/shared/constants";
 import type { ActiveView, ProfileRow } from "@/shared/types";
 import type { ViewedProfileState } from "@/features/navigation/useNavigationState";
@@ -181,7 +181,10 @@ export function AppShell({
                 onClick={() => setActiveView(settingsNavItem.view)}
                 type="button"
               >
-                {settingsNavItem.label}
+                <span className="inline-flex min-w-0 items-center gap-2.5">
+                  <NavIcon view={settingsNavItem.view} />
+                  <span className="truncate">{settingsNavItem.label}</span>
+                </span>
               </button>
             </aside>
 
