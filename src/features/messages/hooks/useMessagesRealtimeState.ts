@@ -12,6 +12,7 @@ import { getDisplayName, normalizeUsername } from "@/shared/utils/profile";
 import {
   getNotificationMessageText,
   isDirectMessageForUser,
+  isMessageBetweenUsers,
   isServiceMessage,
   mergeMessages,
 } from "@/shared/utils/messages";
@@ -62,6 +63,10 @@ function getStoredMessagesKey(userId: string) {
   return `twinline-messages-cache-${userId}`;
 }
 
+function getStoredMessagesUserKey() {
+  return "twinline-messages-cache-user";
+}
+
 function isStoredMessageRow(item: unknown): item is MessageRow {
   if (!item || typeof item !== "object") {
     return false;
@@ -80,6 +85,10 @@ function isStoredMessageRow(item: unknown): item is MessageRow {
 }
 
 function readStoredMessages(userId: string) {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
   const storedMessages = window.localStorage.getItem(getStoredMessagesKey(userId));
 
   if (!storedMessages) {
@@ -106,6 +115,17 @@ function writeStoredMessages(userId: string, messages: MessageRow[]) {
     getStoredMessagesKey(userId),
     JSON.stringify(cacheableMessages),
   );
+  window.localStorage.setItem(getStoredMessagesUserKey(), userId);
+}
+
+function readInitialStoredMessages() {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  const storedUserId = window.localStorage.getItem(getStoredMessagesUserKey());
+
+  return storedUserId ? readStoredMessages(storedUserId) : [];
 }
 
 export function useMessagesRealtimeState({
@@ -123,16 +143,28 @@ export function useMessagesRealtimeState({
   setUnreadMessageCount,
   user,
 }: UseMessagesRealtimeStateParams) {
-  const [messages, setMessages] = useState<MessageRow[]>([]);
+  const [messages, setMessages] = useState<MessageRow[]>(readInitialStoredMessages);
+  const hadSignedInUserRef = useRef(false);
+  const messagesRef = useRef<MessageRow[]>(messages);
   const latestMessageCreatedAtRef = useRef<string | null>(null);
   const notifiedMessageIdsRef = useRef<Set<number>>(new Set());
 
   useEffect(() => {
+    messagesRef.current = messages;
     latestMessageCreatedAtRef.current =
       messages.filter((message) => message.id > 0).at(-1)?.created_at ?? null;
   }, [messages]);
 
   useEffect(() => {
+    if (user) {
+      hadSignedInUserRef.current = true;
+      return;
+    }
+
+    if (!hadSignedInUserRef.current) {
+      return;
+    }
+
     if (!user) {
       const frameId = window.requestAnimationFrame(() => {
         setMessages([]);
@@ -190,7 +222,13 @@ export function useMessagesRealtimeState({
     let isMounted = true;
 
     async function syncSelectedDialogMessages() {
-      setIsLoadingMessages(true);
+      const hasCachedDialogMessages = messagesRef.current.some((message) =>
+        isMessageBetweenUsers(message, signedInUser.id, activeChatUserId),
+      );
+
+      if (!hasCachedDialogMessages) {
+        setIsLoadingMessages(true);
+      }
 
       const { data, error } = await fetchDialogMessages(
         signedInUser.id,
@@ -198,7 +236,9 @@ export function useMessagesRealtimeState({
       );
 
       if (!isMounted || isDeletingChatRef.current) {
-        setIsLoadingMessages(false);
+        if (!hasCachedDialogMessages) {
+          setIsLoadingMessages(false);
+        }
         return;
       }
 
@@ -218,7 +258,9 @@ export function useMessagesRealtimeState({
         setErrorMessage("");
       }
 
-      setIsLoadingMessages(false);
+      if (!hasCachedDialogMessages) {
+        setIsLoadingMessages(false);
+      }
     }
 
     syncSelectedDialogMessages();

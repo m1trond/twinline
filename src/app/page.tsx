@@ -921,7 +921,7 @@ export default function Home() {
     sendServiceMessage,
     sentReceiptMessageIdSets,
     userId: user?.id,
-    visibleMessages,
+    visibleMessages: activeDialogMessages,
   });
 
 

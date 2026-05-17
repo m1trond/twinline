@@ -5,23 +5,47 @@ import {
   profileColumns,
   usernameProfileColumns,
 } from "@/shared/constants";
+import type { MessageRow } from "@/shared/types";
+
+function sortMessagesAscending(messages: MessageRow[] | null) {
+  return messages
+    ? [...messages].sort((firstMessage, secondMessage) => {
+        return (
+          new Date(firstMessage.created_at).getTime() -
+          new Date(secondMessage.created_at).getTime()
+        );
+      })
+    : messages;
+}
 
 export async function fetchMessages(userId: string) {
-  return supabase
+  const response = await supabase
     .from("messages")
     .select(messageColumns)
     .or(`user_id.eq.${userId},recipient_id.eq.${userId}`)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false })
+    .limit(1000);
+
+  return {
+    ...response,
+    data: sortMessagesAscending(response.data as MessageRow[] | null),
+  };
 }
 
 export async function fetchDialogMessages(userId: string, friendId: string) {
-  return supabase
+  const response = await supabase
     .from("messages")
     .select(messageColumns)
     .or(
       `and(user_id.eq.${userId},recipient_id.eq.${friendId}),and(user_id.eq.${friendId},recipient_id.eq.${userId})`,
     )
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false })
+    .limit(400);
+
+  return {
+    ...response,
+    data: sortMessagesAscending(response.data as MessageRow[] | null),
+  };
 }
 
 export async function fetchMessagesAfter(createdAt: string, userId: string) {
