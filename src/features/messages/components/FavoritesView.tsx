@@ -83,15 +83,15 @@ export function FavoritesView({
   voiceInputLevel,
   voiceRecordingDuration,
 }: FavoritesViewProps) {
-  return (<div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4">
-                <div className="mb-2 flex h-[60px] min-h-[60px] items-center rounded-xl border border-[#3f3f46]/35 bg-[#050505]/42 px-2.5 py-2 sm:rounded-2xl sm:px-4">
+  return (<div className="flex min-h-0 flex-col overflow-hidden">
+                <div className="mb-2 flex h-[60px] min-h-[60px] items-center rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
                   <h2 className="text-base font-medium sm:text-base">
                     Избранное
                   </h2>
                 </div>
 
                 {pinnedFavoriteItem ? (
-                  <article className="mb-2 flex shrink-0 items-center gap-2.5 rounded-xl border border-[#3f3f46]/35 bg-[#050505]/42 px-3 py-2.5 text-left sm:mb-3 sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
+                  <article className="mb-2 flex shrink-0 items-center gap-2.5 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 px-3 py-2.5 text-left shadow-[0_14px_45px_rgba(0,0,0,0.22)] backdrop-blur-md sm:mb-3 sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
                     <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#f4f4f5]/18 text-[#e5e5e5] sm:h-9 sm:w-9 sm:rounded-xl">
                       <svg
                         aria-hidden="true"
@@ -132,7 +132,7 @@ export function FavoritesView({
                   </article>
                 ) : null}
 
-                <div className="scrollbar-hidden flex min-h-0 flex-1 flex-col overflow-y-auto rounded-xl border border-[#3f3f46]/35 bg-[#050505]/42 p-2.5 [overflow-anchor:none] sm:rounded-2xl sm:p-4">
+                <div className="scrollbar-hidden flex min-h-0 flex-1 flex-col overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#050505]/82 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] [overflow-anchor:none] backdrop-blur-md sm:rounded-2xl sm:p-4">
                   {favoriteItems.length === 0 ? (
                     <div className="grid flex-1 place-items-center text-center">
                       <div className="max-w-sm rounded-2xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-5">
@@ -270,7 +270,7 @@ export function FavoritesView({
                 </div>
 
                 {isSelectedChatBlocked ? (
-                  <div className="mt-2 rounded-xl border border-[#3f3f46]/35 bg-[#050505]/42 p-1.5 sm:rounded-2xl">
+                  <div className="mt-2 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl">
                     {isSelectedChatBlockedByMe ? (
                       <button
                         className="min-h-11 w-full rounded-lg bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] sm:rounded-xl"
@@ -296,7 +296,7 @@ export function FavoritesView({
                   </div>
                 ) : !isPinnedMessagesViewOpen ? (
                 <form
-                  className="mt-2 grid grid-cols-[auto_1fr_auto_auto_auto] gap-1.5 rounded-xl border border-[#3f3f46]/35 bg-[#050505]/42 p-1.5 sm:flex sm:gap-2 sm:rounded-2xl"
+                  className="mt-2 grid grid-cols-[auto_1fr_auto_auto_auto] gap-1.5 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:flex sm:gap-2 sm:rounded-2xl"
                   onSubmit={sendMessage}
                 >
                   <input
@@ -455,7 +455,7 @@ export function FavoritesView({
                 ) : null}
 
                 {replyTarget || editingMessage ? (
-                  <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#050505]/42 px-3 py-2.5 text-sm sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
+                  <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-2.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
                     <div className="min-w-0">
                       <p className="text-xs font-medium uppercase tracking-[0.14em] text-[#e5e5e5]">
                         {editingMessage ? "Редактирование" : "Ответ"}
