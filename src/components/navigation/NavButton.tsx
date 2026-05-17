@@ -102,7 +102,7 @@ export function NavButton({
     <button
       aria-label={iconOnly ? item.label : undefined}
       title={iconOnly ? item.label : undefined}
-      className={`${iconOnly ? "relative grid min-h-11 w-full place-items-center rounded-xl px-0 py-0" : isMobile ? "shrink-0 rounded-lg px-3 py-2 sm:rounded-xl sm:px-4 sm:py-2.5" : "rounded-xl px-4 py-2.5 text-left"} text-sm font-medium transition ${
+      className={`${iconOnly ? "relative grid min-h-10 w-full place-items-center rounded-xl px-0 py-0" : isMobile ? "shrink-0 rounded-lg px-3 py-2 sm:rounded-xl sm:px-4 sm:py-2.5" : "rounded-xl px-4 py-2.5 text-left"} text-sm font-medium transition ${
         isActive
           ? "bg-[#f4f4f5] text-[#050505]"
           : `${isMobile || iconOnly ? "" : "border border-transparent"} text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100`

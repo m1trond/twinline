@@ -189,19 +189,19 @@ export function AppShell({
             className="grid min-h-0 flex-1 gap-2 overflow-hidden lg:overflow-visible lg:grid-cols-[var(--sidebar-width)_minmax(0,1fr)]"
             style={sidebarGridStyle}
           >
-            <aside className={`relative z-[70] hidden min-h-0 flex-col rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md transition-[padding] lg:flex ${
-              isSidebarCollapsed ? "items-center p-2" : "p-3"
+            <aside className={`relative z-[70] hidden min-h-0 flex-col rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:flex ${
+              isSidebarCollapsed ? "items-center" : ""
             }`}>
-              <div className={`mb-5 flex items-center ${isSidebarCollapsed ? "justify-center" : "gap-3"}`}>
+              <div className={`mb-5 flex h-10 w-full items-center ${isSidebarCollapsed ? "justify-center" : "gap-3"}`}>
                 <BrandMark iconOnly={isSidebarCollapsed} />
               </div>
 
               {isSidebarCollapsed ? (
-                <div className="relative mb-4 w-full">
+                <div className="relative mb-4 h-10 w-full">
                   <button
                     aria-expanded={isCollapsedSearchVisible}
                     aria-label="Открыть поиск"
-                    className="grid min-h-11 w-full place-items-center rounded-xl text-[#f4f4f5] opacity-80 transition hover:bg-white/10 hover:opacity-100"
+                    className="grid h-10 min-h-10 w-full place-items-center rounded-xl text-[#f4f4f5] opacity-80 transition hover:bg-white/10 hover:opacity-100"
                     onClick={() => setIsCollapsedSearchOpen((isOpen) => !isOpen)}
                     ref={collapsedSearchButtonRef}
                     type="button"
@@ -394,7 +394,7 @@ export function AppShell({
                 ) : null}
               </div>
 
-              <div className={`mb-4 w-full ${isSidebarCollapsed ? "hidden" : ""}`}>
+              <div className={`mb-4 h-5 w-full ${isSidebarCollapsed ? "invisible" : ""}`}>
                 <p className="text-sm font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
                   Меню
                 </p>
@@ -415,7 +415,7 @@ export function AppShell({
               <button
                 aria-label={isSidebarCollapsed ? settingsNavItem.label : undefined}
                 title={isSidebarCollapsed ? settingsNavItem.label : undefined}
-                className={`mt-auto ${isSidebarCollapsed ? "grid min-h-11 w-full place-items-center px-0 py-0" : "flex min-h-10 items-center px-4 py-2.5 text-left"} rounded-xl text-sm font-medium leading-none transition ${
+                className={`mt-auto ${isSidebarCollapsed ? "grid min-h-10 w-full place-items-center px-0 py-0" : "flex min-h-10 items-center px-4 py-2.5 text-left"} rounded-xl text-sm font-medium leading-none transition ${
                   activeView === settingsNavItem.view
                     ? "bg-[#f4f4f5] text-[#050505]"
                     : "border border-[#3f3f46]/25 text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
