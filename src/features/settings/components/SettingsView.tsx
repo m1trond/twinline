@@ -104,7 +104,7 @@ export function SettingsView({
   ];
 
   return (
-    <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
+    <div className="hush-panel-transition min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
       <div className="mb-4 border-b border-[#3f3f46]/35 pb-4 sm:mb-5 sm:pb-5">
         <h2 className="text-base font-medium sm:text-base">Настройки</h2>
         <p className="mt-1 text-sm leading-5 text-[#a1a1aa]">

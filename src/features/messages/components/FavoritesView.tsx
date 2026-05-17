@@ -142,7 +142,7 @@ export function FavoritesView({
     }
   }
   return (<div
-                className="relative flex min-h-0 flex-col overflow-hidden"
+                className="hush-panel-transition relative flex min-h-0 flex-col overflow-hidden"
                 onDragEnter={handleAttachmentDragEnter}
                 onDragLeave={handleAttachmentDragLeave}
                 onDragOver={handleAttachmentDragOver}

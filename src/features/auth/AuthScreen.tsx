@@ -50,7 +50,7 @@ export function AuthScreen({
         aria-hidden="true"
         className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(244,244,245,0.12),transparent_32%),linear-gradient(135deg,#050505_0%,#111111_48%,#000000_100%)]"
       />
-      <section className="relative w-full max-w-[min(28rem,calc(100vw-1.5rem))] rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/86 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-md sm:rounded-3xl sm:p-5">
+      <section className="hush-modal-transition relative w-full max-w-[min(28rem,calc(100vw-1.5rem))] rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/86 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-md sm:rounded-3xl sm:p-5">
         <div className="mb-5 flex items-center gap-3 sm:mb-6">
           <div className="grid h-10 w-10 place-items-center overflow-hidden rounded-xl bg-white sm:h-11 sm:w-11">
             <Image

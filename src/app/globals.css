@@ -76,6 +76,11 @@ a,
   translate: 0;
 }
 
+.hush-context-menu {
+  animation: hush-menu-enter 140ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transform-origin: top left;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hush-shell *,
   .hush-shell *::before,
@@ -120,6 +125,16 @@ video {
   min-width: 0;
 }
 
+.hush-panel-transition {
+  animation: hush-panel-enter 190ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transform-origin: center top;
+}
+
+.hush-modal-transition {
+  animation: hush-modal-enter 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transform-origin: center;
+}
+
 @keyframes hush-view-enter {
   from {
     filter: blur(2px);
@@ -131,6 +146,59 @@ video {
     filter: blur(0);
     opacity: 1;
     translate: 0 0;
+  }
+}
+
+@keyframes hush-panel-enter {
+  from {
+    filter: blur(2px);
+    opacity: 0;
+    scale: 0.992;
+    translate: 0 8px;
+  }
+
+  to {
+    filter: blur(0);
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes hush-modal-enter {
+  from {
+    filter: blur(2px);
+    opacity: 0;
+  }
+
+  to {
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+
+@keyframes hush-menu-enter {
+  from {
+    filter: blur(1px);
+    opacity: 0;
+    scale: 0.98;
+    translate: 0 4px;
+  }
+
+  to {
+    filter: blur(0);
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hush-view-transition,
+  .hush-panel-transition,
+  .hush-modal-transition,
+  .hush-context-menu {
+    animation-duration: 1ms;
   }
 }
 

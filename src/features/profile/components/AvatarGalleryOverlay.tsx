@@ -25,7 +25,7 @@ export function AvatarGalleryOverlay({
 
   return (
     <div
-      className="fixed inset-0 z-[125] flex flex-col bg-black/72 p-3 backdrop-blur-md sm:p-5"
+      className="hush-panel-transition fixed inset-0 z-[125] flex flex-col bg-black/72 p-3 backdrop-blur-md sm:p-5"
       onClick={onClose}
     >
       <div
@@ -132,4 +132,3 @@ export function AvatarGalleryOverlay({
     </div>
   );
 }
-

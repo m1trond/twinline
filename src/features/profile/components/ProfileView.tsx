@@ -48,7 +48,7 @@ export function ProfileView({
   user,
 }: ProfileViewProps) {
   return (
-    <div className="min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4">
+    <div className="hush-panel-transition min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-[#3f3f46]/35 pb-3 sm:mb-4 sm:gap-4 sm:pb-4">
         <div className="flex min-w-0 items-center gap-3">
           <button

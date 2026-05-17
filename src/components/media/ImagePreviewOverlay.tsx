@@ -21,7 +21,7 @@ export function ImagePreviewOverlay({ imageUrl, onClose }: ImagePreviewOverlayPr
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         alt="Просмотр изображения"
-        className="max-h-[78dvh] max-w-[92vw] rounded-xl border border-[#3f3f46]/35 object-contain shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:max-w-[82vw] sm:rounded-2xl"
+        className="hush-modal-transition max-h-[78dvh] max-w-[92vw] rounded-xl border border-[#3f3f46]/35 object-contain shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:max-w-[82vw] sm:rounded-2xl"
         onClick={(event) => event.stopPropagation()}
         src={imageUrl}
       />

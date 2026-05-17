@@ -87,7 +87,7 @@ export function MessagePinDialog({
         onClick={() => setMessagePinTarget(null)}
         type="button"
       />
-      <section className="fixed left-1/2 top-1/2 z-[96] max-h-[calc(100dvh-24px)] w-[min(448px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:w-[min(448px,calc(100vw-32px))] sm:rounded-3xl sm:p-5">
+      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] max-h-[calc(100dvh-24px)] w-[min(448px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:w-[min(448px,calc(100vw-32px))] sm:rounded-3xl sm:p-5">
         <div className="mb-4 flex items-start gap-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#f4f4f5]/14 text-[#f4f4f5]">
             <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -173,7 +173,7 @@ export function MessageDeleteDialog({
         onClick={() => setMessageDeleteTarget(null)}
         type="button"
       />
-      <section className="fixed left-1/2 top-1/2 z-[96] max-h-[calc(100dvh-24px)] w-[min(448px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:w-[min(448px,calc(100vw-32px))] sm:rounded-3xl sm:p-5">
+      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] max-h-[calc(100dvh-24px)] w-[min(448px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:w-[min(448px,calc(100vw-32px))] sm:rounded-3xl sm:p-5">
         <div className="mb-4 flex items-start gap-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-red-500/14 text-red-100">
             <DeleteIcon />
@@ -243,7 +243,7 @@ export function SelectedMessagesDeleteDialog({
         onClick={() => setIsSelectedDeleteDialogOpen(false)}
         type="button"
       />
-      <section className="fixed left-1/2 top-1/2 z-[96] max-h-[calc(100dvh-24px)] w-[min(448px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:w-[min(448px,calc(100vw-32px))] sm:rounded-3xl sm:p-5">
+      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] max-h-[calc(100dvh-24px)] w-[min(448px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:w-[min(448px,calc(100vw-32px))] sm:rounded-3xl sm:p-5">
         <div className="mb-4 flex items-start gap-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-red-500/14 text-red-100">
             <DeleteIcon />
@@ -315,7 +315,7 @@ export function ChatDeleteDialog({
         onClick={onClose}
         type="button"
       />
-      <section className="fixed left-1/2 top-1/2 z-[96] w-[min(460px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-red-400/25 bg-[#111111]/96 p-4 text-left shadow-[0_24px_90px_rgba(0,0,0,0.65)] sm:rounded-3xl sm:p-5">
+      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] w-[min(460px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-red-400/25 bg-[#111111]/96 p-4 text-left shadow-[0_24px_90px_rgba(0,0,0,0.65)] sm:rounded-3xl sm:p-5">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(248,113,113,0.18),transparent_34%),linear-gradient(135deg,rgba(244,244,245,0.04),transparent_54%)]"
@@ -384,7 +384,7 @@ export function UnpinAllDialog({
         onClick={onCancel}
         type="button"
       />
-      <section className="fixed left-1/2 top-1/2 z-[96] w-[min(440px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-red-400/25 bg-[#111111]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:rounded-3xl sm:p-5">
+      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] w-[min(440px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-red-400/25 bg-[#111111]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:rounded-3xl sm:p-5">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(239,68,68,0.18),transparent_36%),linear-gradient(145deg,rgba(255,255,255,0.05),transparent_48%)]" />
         <div className="relative">
           <div className="mb-4 flex items-start gap-3">

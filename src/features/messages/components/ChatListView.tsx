@@ -30,7 +30,7 @@ export function ChatListView({
   unreadMessagesByUserId,
 }: ChatListViewProps) {
   return (
-    <div className="flex min-h-0 flex-col overflow-hidden">
+    <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
       <div className="mb-2 flex h-[60px] min-h-[60px] items-center rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
         <h2 className="text-base font-medium sm:text-base">{messagesTitle}</h2>
       </div>

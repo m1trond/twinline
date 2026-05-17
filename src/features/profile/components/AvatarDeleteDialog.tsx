@@ -21,7 +21,7 @@ export function AvatarDeleteDialog({
         onClick={onCancel}
         type="button"
       />
-      <section className="fixed left-1/2 top-1/2 z-[131] w-[min(430px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 rounded-[28px] border border-red-400/25 bg-[#101010]/98 p-5 text-left shadow-[0_28px_90px_rgba(0,0,0,0.68)] backdrop-blur-xl">
+      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[131] w-[min(430px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 rounded-[28px] border border-red-400/25 bg-[#101010]/98 p-5 text-left shadow-[0_28px_90px_rgba(0,0,0,0.68)] backdrop-blur-xl">
         <div className="flex items-start gap-4">
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-red-300/35 bg-red-500/14 text-red-100">
             <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
