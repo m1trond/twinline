@@ -173,7 +173,7 @@ export function AppShell({
                 ))}
               </nav>
               <button
-                className={`mt-auto rounded-xl px-4 py-2.5 text-left text-sm font-medium transition ${
+                className={`mt-auto flex min-h-10 items-center rounded-xl px-4 py-2.5 text-left text-sm font-medium leading-none transition ${
                   activeView === settingsNavItem.view
                     ? "bg-[#f4f4f5] text-[#050505]"
                     : "border border-[#3f3f46]/25 text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
