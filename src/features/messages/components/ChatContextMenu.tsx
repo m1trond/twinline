@@ -79,7 +79,7 @@ export function ChatContextMenu({
             <span className="min-w-0 flex-1">Добавить в папку</span>
             <ChevronIcon />
           </button>
-          <div className="hush-context-menu invisible absolute left-[calc(100%+8px)] top-0 z-[91] w-[220px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
+          <div className="hush-context-menu invisible absolute left-full top-0 z-[91] w-[220px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
             <SubMenuButton onClick={() => runChatMenuStub("Создание папок скоро подключим.")}>
               <span className="grid h-5 w-5 place-items-center">+</span>
               Новая папка
@@ -123,7 +123,7 @@ export function ChatContextMenu({
                 <span className="min-w-0 flex-1">Выключить уведомления</span>
                 <ChevronIcon />
               </button>
-              <div className="hush-context-menu invisible absolute left-[calc(100%+8px)] top-0 z-[91] w-[260px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
+              <div className="hush-context-menu invisible absolute left-full top-0 z-[91] w-[260px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
                 {muteOptions.map((option) => (
                   <SubMenuButton
                     key={option.label}
