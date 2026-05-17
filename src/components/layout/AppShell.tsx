@@ -24,17 +24,32 @@ const sidebarStorageKey = "twinline-sidebar-width";
 const defaultSidebarWidth = 270;
 const minSidebarWidth = 72;
 const collapsedSidebarThreshold = 190;
+const sidebarGridGap = 8;
 
-function getMaxSidebarWidth() {
+function getMaxSidebarWidth(availableWidth?: number) {
+  const gridWidth =
+    availableWidth ??
+    (typeof window === "undefined" ? defaultSidebarWidth * 2 + sidebarGridGap : window.innerWidth);
+
+  const halfGridWidth = Math.floor((gridWidth - sidebarGridGap) / 2);
+
+  return Math.max(minSidebarWidth, halfGridWidth);
+}
+
+function getCurrentMaxSidebarWidth(gridElement: HTMLElement | null) {
+  if (gridElement) {
+    return getMaxSidebarWidth(gridElement.clientWidth);
+  }
+
   if (typeof window === "undefined") {
     return defaultSidebarWidth;
   }
 
-  return Math.max(defaultSidebarWidth, Math.floor(window.innerWidth / 2));
+  return getMaxSidebarWidth();
 }
 
-function clampSidebarWidth(width: number) {
-  return Math.min(Math.max(width, minSidebarWidth), getMaxSidebarWidth());
+function clampSidebarWidth(width: number, gridElement: HTMLElement | null = null) {
+  return Math.min(Math.max(width, minSidebarWidth), getCurrentMaxSidebarWidth(gridElement));
 }
 
 export function AppShell({
@@ -65,15 +80,17 @@ export function AppShell({
   const isCollapsedSearchVisible = isSidebarIconMode && isCollapsedSearchOpen;
   const collapsedSearchButtonRef = useRef<HTMLButtonElement | null>(null);
   const collapsedSearchPopoverRef = useRef<HTMLDivElement | null>(null);
+  const sidebarGridRef = useRef<HTMLElement | null>(null);
   const sidebarGridStyle = {
     "--sidebar-width": `${sidebarWidth}px`,
   } as CSSProperties;
 
   useEffect(() => {
     function handleWindowResize() {
-      setSidebarWidth((currentWidth) => clampSidebarWidth(currentWidth));
+      setSidebarWidth((currentWidth) => clampSidebarWidth(currentWidth, sidebarGridRef.current));
     }
 
+    handleWindowResize();
     window.addEventListener("resize", handleWindowResize);
 
     return () => window.removeEventListener("resize", handleWindowResize);
@@ -143,7 +160,7 @@ export function AppShell({
     event.currentTarget.setPointerCapture(pointerId);
 
     function resizeSidebar(nextEvent: globalThis.PointerEvent) {
-      setSidebarWidth(clampSidebarWidth(startWidth + nextEvent.clientX - startX));
+      setSidebarWidth(clampSidebarWidth(startWidth + nextEvent.clientX - startX, sidebarGridRef.current));
     }
 
     function stopSidebarResize() {
@@ -188,6 +205,7 @@ export function AppShell({
 
           <section
             className="grid min-h-0 flex-1 gap-2 overflow-hidden lg:overflow-visible lg:grid-cols-[var(--sidebar-width)_minmax(0,1fr)]"
+            ref={sidebarGridRef}
             style={sidebarGridStyle}
           >
             <aside className={`relative z-[70] hidden min-h-0 flex-col rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:flex ${
