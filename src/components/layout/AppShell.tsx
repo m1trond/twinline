@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, Dispatch, PointerEvent, ReactNode, SetStateAction } from "react";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { NavButton, NavIcon } from "@/components/navigation/NavButton";
@@ -62,6 +62,8 @@ export function AppShell({
   const isSidebarCollapsed = sidebarWidth <= collapsedSidebarThreshold;
   const [isCollapsedSearchOpen, setIsCollapsedSearchOpen] = useState(false);
   const isCollapsedSearchVisible = isSidebarCollapsed && isCollapsedSearchOpen;
+  const collapsedSearchButtonRef = useRef<HTMLButtonElement | null>(null);
+  const collapsedSearchPopoverRef = useRef<HTMLDivElement | null>(null);
   const sidebarGridStyle = {
     "--sidebar-width": `${sidebarWidth}px`,
   } as CSSProperties;
@@ -94,6 +96,33 @@ export function AppShell({
     window.addEventListener("keydown", handleEscapeKey);
 
     return () => window.removeEventListener("keydown", handleEscapeKey);
+  }, [isCollapsedSearchVisible]);
+
+  useEffect(() => {
+    if (!isCollapsedSearchVisible) {
+      return;
+    }
+
+    function handleOutsidePointerDown(event: globalThis.PointerEvent) {
+      const target = event.target;
+
+      if (!(target instanceof Node)) {
+        return;
+      }
+
+      if (
+        collapsedSearchButtonRef.current?.contains(target) ||
+        collapsedSearchPopoverRef.current?.contains(target)
+      ) {
+        return;
+      }
+
+      setIsCollapsedSearchOpen(false);
+    }
+
+    window.addEventListener("pointerdown", handleOutsidePointerDown);
+
+    return () => window.removeEventListener("pointerdown", handleOutsidePointerDown);
   }, [isCollapsedSearchVisible]);
 
   function selectView(view: ActiveView) {
@@ -174,6 +203,7 @@ export function AppShell({
                     aria-label="Открыть поиск"
                     className="grid min-h-11 w-full place-items-center rounded-xl text-[#f4f4f5] opacity-80 transition hover:bg-white/10 hover:opacity-100"
                     onClick={() => setIsCollapsedSearchOpen((isOpen) => !isOpen)}
+                    ref={collapsedSearchButtonRef}
                     type="button"
                   >
                     <svg
@@ -199,14 +229,10 @@ export function AppShell({
                     </svg>
                   </button>
                   {isCollapsedSearchVisible ? (
-                    <>
-                      <button
-                        aria-label="Закрыть поиск"
-                        className="fixed inset-0 z-40 cursor-default bg-transparent"
-                        onClick={() => setIsCollapsedSearchOpen(false)}
-                        type="button"
-                      />
-                      <div className="hush-modal-transition absolute left-[calc(100%+12px)] top-0 z-50 w-[min(320px,calc(100vw-112px))] rounded-2xl border border-[#3f3f46]/55 bg-[#111111]/96 p-2 shadow-[0_22px_70px_rgba(0,0,0,0.58)] backdrop-blur-xl">
+                    <div
+                      className="hush-modal-transition absolute left-[calc(100%+12px)] top-0 z-50 w-[min(320px,calc(100vw-112px))] rounded-2xl border border-[#3f3f46]/55 bg-[#111111]/96 p-2 shadow-[0_22px_70px_rgba(0,0,0,0.58)] backdrop-blur-xl"
+                      ref={collapsedSearchPopoverRef}
+                    >
                         <label className="flex h-10 items-center rounded-xl bg-[#f4f4f5]/10 px-3 text-[#a1a1aa] transition focus-within:bg-[#f4f4f5]/14 focus-within:text-[#f4f4f5]">
                           <input
                             aria-label="User search by username"
@@ -276,8 +302,7 @@ export function AppShell({
                             Найди пользователя по нику.
                           </p>
                         )}
-                      </div>
-                    </>
+                    </div>
                   ) : null}
                 </div>
               ) : null}
