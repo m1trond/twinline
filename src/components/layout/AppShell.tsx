@@ -60,6 +60,8 @@ export function AppShell({
     return clampSidebarWidth(Number.isFinite(storedWidth) && storedWidth > 0 ? storedWidth : defaultSidebarWidth);
   });
   const isSidebarCollapsed = sidebarWidth <= collapsedSidebarThreshold;
+  const [isCollapsedSearchOpen, setIsCollapsedSearchOpen] = useState(false);
+  const isCollapsedSearchVisible = isSidebarCollapsed && isCollapsedSearchOpen;
   const sidebarGridStyle = {
     "--sidebar-width": `${sidebarWidth}px`,
   } as CSSProperties;
@@ -148,6 +150,142 @@ export function AppShell({
               <div className={`mb-5 flex items-center ${isSidebarCollapsed ? "justify-center" : "gap-3"}`}>
                 <BrandMark iconOnly={isSidebarCollapsed} />
               </div>
+
+              {isSidebarCollapsed ? (
+                <div className="relative mb-4 w-full">
+                  <button
+                    aria-expanded={isCollapsedSearchVisible}
+                    aria-label="Открыть поиск"
+                    className="grid min-h-11 w-full place-items-center rounded-xl text-[#f4f4f5] opacity-80 transition hover:bg-white/10 hover:opacity-100"
+                    onClick={() => setIsCollapsedSearchOpen((isOpen) => !isOpen)}
+                    type="button"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        d="m21 21-4.34-4.34"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                      />
+                      <circle
+                        cx="11"
+                        cy="11"
+                        r="8"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                    </svg>
+                  </button>
+                  {isCollapsedSearchVisible ? (
+                    <>
+                      <button
+                        aria-label="Закрыть поиск"
+                        className="fixed inset-0 z-40 cursor-default bg-transparent"
+                        onClick={() => setIsCollapsedSearchOpen(false)}
+                        type="button"
+                      />
+                      <div className="hush-modal-transition absolute left-[calc(100%+12px)] top-0 z-50 w-[min(320px,calc(100vw-112px))] rounded-2xl border border-[#3f3f46]/55 bg-[#111111]/96 p-2 shadow-[0_22px_70px_rgba(0,0,0,0.58)] backdrop-blur-xl">
+                        <label className="flex h-10 items-center gap-2 rounded-xl bg-[#f4f4f5]/10 px-3 text-[#a1a1aa] transition focus-within:bg-[#f4f4f5]/14 focus-within:text-[#f4f4f5]">
+                          <svg
+                            aria-hidden="true"
+                            className="h-5 w-5 shrink-0"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              d="m21 21-4.34-4.34"
+                              stroke="currentColor"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                            />
+                            <circle
+                              cx="11"
+                              cy="11"
+                              r="8"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            />
+                          </svg>
+                          <input
+                            aria-label="User search by username"
+                            autoFocus
+                            className="h-5 min-w-0 flex-1 bg-transparent text-sm leading-5 text-[#f4f4f5] outline-none placeholder:text-[#a1a1aa]/75"
+                            onChange={(event) => setChatSearchQuery(event.target.value)}
+                            placeholder="Найти..."
+                            type="text"
+                            value={chatSearchQuery}
+                          />
+                        </label>
+                        {chatSearchQuery.trim().length > 0 ? (
+                          <div className="mt-2 grid max-h-72 gap-1.5 overflow-y-auto pr-1">
+                            {chatSearchQuery.trim().replace(/^@+/, "").length < 2 ? (
+                              <p className="px-2 py-1 text-xs text-[#a1a1aa]">
+                                Введи минимум 2 символа после @.
+                              </p>
+                            ) : searchableProfiles.length === 0 ? (
+                              <p className="px-2 py-1 text-xs text-[#a1a1aa]">
+                                Пользователь не найден.
+                              </p>
+                            ) : (
+                              searchableProfiles.map((profile) => (
+                                <button
+                                  className="flex items-center gap-2 rounded-lg px-2 py-2 text-left transition hover:bg-[#f4f4f5]/10"
+                                  key={"collapsed-search-" + profile.user_id}
+                                  onClick={() => {
+                                    setViewedProfile({
+                                      avatarUrl: profile.avatar_url,
+                                      name: profile.display_name,
+                                      username: profile.username,
+                                      updatedAt: profile.updated_at,
+                                      userId: profile.user_id,
+                                    });
+                                    setChatSearchQuery("");
+                                    setUnreadMessageCount(0);
+                                    setIsCollapsedSearchOpen(false);
+                                  }}
+                                  type="button"
+                                >
+                                  <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505]">
+                                    {profile.avatar_url ? (
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img
+                                        alt={"Avatar " + profile.display_name}
+                                        className="h-full w-full object-cover"
+                                        src={profile.avatar_url}
+                                      />
+                                    ) : (
+                                      profile.display_name[0]?.toUpperCase()
+                                    )}
+                                  </span>
+                                  <span className="min-w-0">
+                                    <span className="block truncate text-sm font-medium text-[#f4f4f5]">
+                                      {profile.display_name}
+                                    </span>
+                                    <span className="block truncate text-xs text-[#a1a1aa]">
+                                      {profile.username ? "@" + profile.username : "@ник пока не выбран"}
+                                    </span>
+                                  </span>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        ) : (
+                          <p className="px-2 py-2 text-xs leading-5 text-[#a1a1aa]">
+                            Найди пользователя по нику.
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
 
               <div className={`mb-4 w-full ${isSidebarCollapsed ? "hidden" : ""}`}>
                 <label className="flex h-10 min-h-10 items-center gap-2 rounded-lg bg-[#f4f4f5]/10 px-3 text-[#a1a1aa] transition focus-within:bg-[#f4f4f5]/14 focus-within:text-[#f4f4f5]">
