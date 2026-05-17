@@ -60,12 +60,10 @@ export function AppShell({
     return clampSidebarWidth(Number.isFinite(storedWidth) && storedWidth > 0 ? storedWidth : defaultSidebarWidth);
   });
   const [isSidebarResizing, setIsSidebarResizing] = useState(false);
-  const [didSidebarResizeStartCollapsed, setDidSidebarResizeStartCollapsed] = useState(false);
-  const isSidebarCollapsed =
-    sidebarWidth <= collapsedSidebarThreshold ||
-    (isSidebarResizing && didSidebarResizeStartCollapsed);
+  const isSidebarCollapsed = sidebarWidth <= collapsedSidebarThreshold;
+  const isSidebarIconMode = isSidebarCollapsed || isSidebarResizing || sidebarWidth < defaultSidebarWidth;
   const [isCollapsedSearchOpen, setIsCollapsedSearchOpen] = useState(false);
-  const isCollapsedSearchVisible = isSidebarCollapsed && isCollapsedSearchOpen;
+  const isCollapsedSearchVisible = isSidebarIconMode && isCollapsedSearchOpen;
   const collapsedSearchButtonRef = useRef<HTMLButtonElement | null>(null);
   const collapsedSearchPopoverRef = useRef<HTMLDivElement | null>(null);
   const sidebarGridStyle = {
@@ -140,7 +138,6 @@ export function AppShell({
   function startSidebarResize(event: PointerEvent<HTMLDivElement>) {
     event.preventDefault();
     setIsSidebarResizing(true);
-    setDidSidebarResizeStartCollapsed(sidebarWidth <= collapsedSidebarThreshold);
     const startX = event.clientX;
     const startWidth = sidebarWidth;
     const pointerId = event.pointerId;
@@ -153,7 +150,6 @@ export function AppShell({
 
     function stopSidebarResize() {
       setIsSidebarResizing(false);
-      setDidSidebarResizeStartCollapsed(false);
       window.removeEventListener("pointermove", resizeSidebar);
       window.removeEventListener("pointerup", stopSidebarResize);
       window.removeEventListener("pointercancel", stopSidebarResize);
@@ -198,13 +194,13 @@ export function AppShell({
             style={sidebarGridStyle}
           >
             <aside className={`relative z-[70] hidden min-h-0 flex-col rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:flex ${
-              isSidebarCollapsed ? "items-center" : ""
+              isSidebarIconMode ? "items-center" : ""
             }`}>
-              <div className={`flex h-10 w-full items-center ${isSidebarCollapsed ? "mb-4 justify-center" : "mb-5 gap-3"}`}>
-                <BrandMark iconOnly={isSidebarCollapsed} />
+              <div className={`flex h-10 w-full items-center ${isSidebarIconMode ? "mb-4 justify-center" : "mb-5 gap-3"}`}>
+                <BrandMark iconOnly={isSidebarIconMode} />
               </div>
 
-              {isSidebarCollapsed ? (
+              {isSidebarIconMode ? (
                 <div className="relative mb-4 h-10 w-full">
                   <button
                     aria-expanded={isCollapsedSearchVisible}
@@ -315,7 +311,7 @@ export function AppShell({
                 </div>
               ) : null}
 
-              <div className={`mb-4 w-full ${isSidebarCollapsed ? "hidden" : ""}`}>
+              <div className={`mb-4 w-full ${isSidebarIconMode ? "hidden" : ""}`}>
                 <label className="flex h-10 min-h-10 items-center gap-2 rounded-lg bg-[#f4f4f5]/10 px-3 text-[#a1a1aa] transition focus-within:bg-[#f4f4f5]/14 focus-within:text-[#f4f4f5]">
                   <svg
                     aria-hidden="true"
@@ -402,17 +398,17 @@ export function AppShell({
                 ) : null}
               </div>
 
-              <div className={`w-full ${isSidebarCollapsed ? "h-0 overflow-hidden" : "mb-4 h-5"}`}>
+              <div className={`w-full ${isSidebarIconMode ? "h-0 overflow-hidden" : "mb-4 h-5"}`}>
                 <p className="text-sm font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
                   Меню
                 </p>
               </div>
 
-              <nav className={`grid w-full gap-2 ${isSidebarCollapsed ? "justify-items-center" : ""}`}>
+              <nav className={`grid w-full gap-2 ${isSidebarIconMode ? "justify-items-center" : ""}`}>
                 {navItems.map((item) => (
                   <NavButton
                     activeView={activeView}
-                    iconOnly={isSidebarCollapsed}
+                    iconOnly={isSidebarIconMode}
                     item={item}
                     key={item.view}
                     onSelect={selectView}
@@ -421,9 +417,9 @@ export function AppShell({
                 ))}
               </nav>
               <button
-                aria-label={isSidebarCollapsed ? settingsNavItem.label : undefined}
-                title={isSidebarCollapsed ? settingsNavItem.label : undefined}
-                className={`mt-auto ${isSidebarCollapsed ? "grid min-h-10 w-full place-items-center px-0 py-0" : "flex min-h-10 items-center px-4 py-2.5 text-left"} rounded-xl text-sm font-medium leading-none transition ${
+                aria-label={isSidebarIconMode ? settingsNavItem.label : undefined}
+                title={isSidebarIconMode ? settingsNavItem.label : undefined}
+                className={`mt-auto ${isSidebarIconMode ? "grid min-h-10 w-full place-items-center px-0 py-0" : "flex min-h-10 items-center px-4 py-2.5 text-left"} rounded-xl text-sm font-medium leading-none transition ${
                   activeView === settingsNavItem.view
                     ? "bg-[#f4f4f5] text-[#050505]"
                     : "border border-[#3f3f46]/25 text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
@@ -433,7 +429,7 @@ export function AppShell({
               >
                 <span className="inline-flex min-w-0 items-center gap-2.5">
                   <NavIcon view={settingsNavItem.view} />
-                  {isSidebarCollapsed ? null : <span className="truncate">{settingsNavItem.label}</span>}
+                  {isSidebarIconMode ? null : <span className="truncate">{settingsNavItem.label}</span>}
                 </span>
               </button>
               <div
