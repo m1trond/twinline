@@ -39,8 +39,9 @@ export function BlockConfirmationDialog({
             }`}
           >
             <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
               <path
-                d="M18 11H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2ZM8 11V7a4 4 0 0 1 8 0v4"
+                d="M4.929 4.929 19.07 19.071"
                 stroke="currentColor"
                 strokeLinecap="round"
                 strokeLinejoin="round"
