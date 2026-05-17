@@ -272,7 +272,7 @@ export function AppShell({
               </button>
               <button
                 aria-label="Изменить ширину панели"
-                className="group absolute -right-1.5 top-1/2 hidden h-28 w-3 -translate-y-1/2 cursor-col-resize touch-none rounded-full text-transparent transition lg:grid lg:place-items-center"
+                className="hush-sidebar-resize-handle group absolute -right-1.5 top-1/2 hidden h-28 w-3 -translate-y-1/2 cursor-col-resize touch-none rounded-full text-transparent transition lg:grid lg:place-items-center"
                 onPointerDown={startSidebarResize}
                 type="button"
               >
