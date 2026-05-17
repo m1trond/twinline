@@ -76,10 +76,10 @@ export function AppShell({
               </div>
 
               <div className="mb-4">
-                <label className="flex min-h-10 items-center gap-2 rounded-lg bg-[#f4f4f5]/10 px-3 text-[#a1a1aa] transition focus-within:bg-[#f4f4f5]/14 focus-within:text-[#f4f4f5]">
+                <label className="flex h-10 min-h-10 items-center gap-2 rounded-lg bg-[#f4f4f5]/10 px-3 text-[#a1a1aa] transition focus-within:bg-[#f4f4f5]/14 focus-within:text-[#f4f4f5]">
                   <svg
                     aria-hidden="true"
-                    className="h-5 w-5 shrink-0"
+                    className="h-5 w-5 shrink-0 self-center"
                     fill="none"
                     viewBox="0 0 24 24"
                   >
@@ -98,12 +98,12 @@ export function AppShell({
                       strokeWidth="2"
                     />
                   </svg>
-                  <span className="shrink-0 text-sm font-medium text-[#a1a1aa]">
+                  <span className="flex h-5 shrink-0 items-center text-sm font-medium leading-5 text-[#a1a1aa]">
                     @
                   </span>
                   <input
                     aria-label="User search by username"
-                    className="min-w-0 flex-1 bg-transparent text-sm text-[#f4f4f5] outline-none placeholder:text-[#a1a1aa]/75"
+                    className="h-5 min-w-0 flex-1 bg-transparent text-sm leading-5 text-[#f4f4f5] outline-none placeholder:text-[#a1a1aa]/75"
                     onChange={(event) => setChatSearchQuery(event.target.value)}
                     placeholder="Найти..."
                     type="text"
