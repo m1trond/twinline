@@ -60,9 +60,10 @@ export function AppShell({
     return clampSidebarWidth(Number.isFinite(storedWidth) && storedWidth > 0 ? storedWidth : defaultSidebarWidth);
   });
   const [isSidebarResizing, setIsSidebarResizing] = useState(false);
+  const [didSidebarResizeStartCollapsed, setDidSidebarResizeStartCollapsed] = useState(false);
   const isSidebarCollapsed =
     sidebarWidth <= collapsedSidebarThreshold ||
-    (isSidebarResizing && sidebarWidth < defaultSidebarWidth);
+    (isSidebarResizing && didSidebarResizeStartCollapsed);
   const [isCollapsedSearchOpen, setIsCollapsedSearchOpen] = useState(false);
   const isCollapsedSearchVisible = isSidebarCollapsed && isCollapsedSearchOpen;
   const collapsedSearchButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -139,6 +140,7 @@ export function AppShell({
   function startSidebarResize(event: PointerEvent<HTMLDivElement>) {
     event.preventDefault();
     setIsSidebarResizing(true);
+    setDidSidebarResizeStartCollapsed(sidebarWidth <= collapsedSidebarThreshold);
     const startX = event.clientX;
     const startWidth = sidebarWidth;
     const pointerId = event.pointerId;
@@ -151,6 +153,7 @@ export function AppShell({
 
     function stopSidebarResize() {
       setIsSidebarResizing(false);
+      setDidSidebarResizeStartCollapsed(false);
       window.removeEventListener("pointermove", resizeSidebar);
       window.removeEventListener("pointerup", stopSidebarResize);
       window.removeEventListener("pointercancel", stopSidebarResize);
