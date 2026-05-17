@@ -1784,7 +1784,7 @@ export default function Home() {
 
     setAreNotificationsEnabled(nextValue);
     window.localStorage.setItem(
-      "twinline-notifications",
+      "hush-notifications",
       nextValue ? "enabled" : "disabled",
     );
     setErrorMessage("");
@@ -1863,7 +1863,7 @@ export default function Home() {
         : localBlockedProfileIds.filter((profileId) => profileId !== userId);
 
     setLocalBlockedProfileIds(nextLocalBlockedProfileIds);
-    writeStoredStringList("twinline-blocked-profiles", nextLocalBlockedProfileIds);
+    writeStoredStringList("hush-blocked-profiles", nextLocalBlockedProfileIds);
 
     const optimisticMessage: MessageRow = {
       author: activeUserName,
@@ -2565,7 +2565,7 @@ export default function Home() {
         const nextIds = Array.from(new Set([...currentIds, ...positiveIds]));
 
         window.localStorage.setItem(
-          "twinline-hidden-messages-" + user.id,
+          "hush-hidden-messages-" + user.id,
           JSON.stringify(nextIds),
         );
 
@@ -3479,7 +3479,7 @@ export default function Home() {
         : [...currentIds, message.id];
 
       window.localStorage.setItem(
-        `twinline-hidden-messages-${user.id}`,
+        `hush-hidden-messages-${user.id}`,
         JSON.stringify(nextIds),
       );
 

@@ -1,12 +1,36 @@
 import type { MutedProfileUntil, PinnedMessageIdsByChat } from "../types";
 
-export function readStoredStringList(key: string) {
+function readStoredValue(key: string, legacyKey?: string) {
+  const storedValue = window.localStorage.getItem(key);
+
+  if (storedValue !== null) {
+    return storedValue;
+  }
+
+  if (!legacyKey) {
+    return null;
+  }
+
+  const legacyValue = window.localStorage.getItem(legacyKey);
+
+  if (legacyValue !== null) {
+    try {
+      window.localStorage.setItem(key, legacyValue);
+    } catch {
+      // Local storage can be unavailable in private or restricted browser modes.
+    }
+  }
+
+  return legacyValue;
+}
+
+export function readStoredStringList(key: string, legacyKey?: string) {
   if (typeof window === "undefined") {
     return [];
   }
 
   try {
-    const storedValue = window.localStorage.getItem(key);
+    const storedValue = readStoredValue(key, legacyKey);
     const parsedValue = storedValue ? JSON.parse(storedValue) : [];
 
     return Array.isArray(parsedValue)
@@ -25,12 +49,12 @@ export function writeStoredStringList(key: string, value: string[]) {
   }
 }
 
-export function readStoredBoolean(key: string, defaultValue: boolean) {
+export function readStoredBoolean(key: string, defaultValue: boolean, legacyKey?: string) {
   if (typeof window === "undefined") {
     return defaultValue;
   }
 
-  const storedValue = window.localStorage.getItem(key);
+  const storedValue = readStoredValue(key, legacyKey);
 
   if (storedValue === "true") {
     return true;
@@ -73,7 +97,7 @@ export function readStoredMutedProfiles() {
   }
 
   try {
-    const storedValue = window.localStorage.getItem("twinline-muted-profiles");
+    const storedValue = readStoredValue("hush-muted-profiles", "twinline-muted-profiles");
     const parsedValue = storedValue ? JSON.parse(storedValue) : {};
 
     if (Array.isArray(parsedValue)) {
@@ -105,7 +129,7 @@ export function readStoredMutedProfiles() {
 
 export function writeStoredMutedProfiles(value: MutedProfileUntil) {
   try {
-    window.localStorage.setItem("twinline-muted-profiles", JSON.stringify(value));
+    window.localStorage.setItem("hush-muted-profiles", JSON.stringify(value));
   } catch {
     // Local storage can be unavailable in private or restricted browser modes.
   }

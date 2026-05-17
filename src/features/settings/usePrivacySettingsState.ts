@@ -12,7 +12,15 @@ export function usePrivacySettingsState() {
       return false;
     }
 
-    return window.localStorage.getItem("twinline-notifications") === "enabled";
+    const storedValue =
+      window.localStorage.getItem("hush-notifications") ??
+      window.localStorage.getItem("twinline-notifications");
+
+    if (storedValue !== null) {
+      window.localStorage.setItem("hush-notifications", storedValue);
+    }
+
+    return storedValue === "enabled";
   });
   const [isOnlineStatusVisible, setIsOnlineStatusVisible] = useState(() =>
     readStoredBoolean("hush-settings-online-status-visible", true),
@@ -33,7 +41,7 @@ export function usePrivacySettingsState() {
     readStoredMutedProfiles(),
   );
   const [localBlockedProfileIds, setLocalBlockedProfileIds] = useState<string[]>(() =>
-    readStoredStringList("twinline-blocked-profiles"),
+    readStoredStringList("hush-blocked-profiles", "twinline-blocked-profiles"),
   );
 
   return {

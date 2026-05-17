@@ -47,14 +47,18 @@ export function useStoredMessageState(userId: string | null | undefined) {
     }
 
     frameId = window.requestAnimationFrame(() => {
-      const storedHiddenMessageIds = window.localStorage.getItem(
-        `twinline-hidden-messages-${userId}`,
-      );
+      const hiddenMessagesKey = `hush-hidden-messages-${userId}`;
+      const legacyHiddenMessagesKey = `twinline-hidden-messages-${userId}`;
+      const storedHiddenMessageIds =
+        window.localStorage.getItem(hiddenMessagesKey) ??
+        window.localStorage.getItem(legacyHiddenMessagesKey);
 
       if (!storedHiddenMessageIds) {
         setHiddenMessageIds([]);
         return;
       }
+
+      window.localStorage.setItem(hiddenMessagesKey, storedHiddenMessageIds);
 
       try {
         const parsedHiddenMessageIds = JSON.parse(storedHiddenMessageIds);

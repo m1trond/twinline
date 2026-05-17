@@ -20,7 +20,8 @@ type AppShellProps = {
   totalUnreadMessageCount: number;
 };
 
-const sidebarStorageKey = "twinline-sidebar-width";
+const sidebarStorageKey = "hush-sidebar-width";
+const legacySidebarStorageKey = "twinline-sidebar-width";
 const defaultSidebarWidth = 270;
 const minSidebarWidth = 72;
 const collapsedSidebarThreshold = 190;
@@ -70,7 +71,14 @@ export function AppShell({
       return defaultSidebarWidth;
     }
 
-    const storedWidth = Number(window.localStorage.getItem(sidebarStorageKey));
+    const storedSidebarWidth =
+      window.localStorage.getItem(sidebarStorageKey) ??
+      window.localStorage.getItem(legacySidebarStorageKey);
+    const storedWidth = Number(storedSidebarWidth);
+
+    if (storedSidebarWidth !== null) {
+      window.localStorage.setItem(sidebarStorageKey, storedSidebarWidth);
+    }
 
     return clampSidebarWidth(Number.isFinite(storedWidth) && storedWidth > 0 ? storedWidth : defaultSidebarWidth);
   });

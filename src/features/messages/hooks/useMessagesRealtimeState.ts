@@ -60,10 +60,18 @@ function getPendingOptimisticMessages(messages: MessageRow[]) {
 }
 
 function getStoredMessagesKey(userId: string) {
+  return `hush-messages-cache-${userId}`;
+}
+
+function getLegacyStoredMessagesKey(userId: string) {
   return `twinline-messages-cache-${userId}`;
 }
 
 function getStoredMessagesUserKey() {
+  return "hush-messages-cache-user";
+}
+
+function getLegacyStoredMessagesUserKey() {
   return "twinline-messages-cache-user";
 }
 
@@ -89,11 +97,15 @@ function readStoredMessages(userId: string) {
     return [];
   }
 
-  const storedMessages = window.localStorage.getItem(getStoredMessagesKey(userId));
+  const storedMessages =
+    window.localStorage.getItem(getStoredMessagesKey(userId)) ??
+    window.localStorage.getItem(getLegacyStoredMessagesKey(userId));
 
   if (!storedMessages) {
     return [];
   }
+
+  window.localStorage.setItem(getStoredMessagesKey(userId), storedMessages);
 
   try {
     const parsedMessages = JSON.parse(storedMessages);
@@ -123,7 +135,13 @@ function readInitialStoredMessages() {
     return [];
   }
 
-  const storedUserId = window.localStorage.getItem(getStoredMessagesUserKey());
+  const storedUserId =
+    window.localStorage.getItem(getStoredMessagesUserKey()) ??
+    window.localStorage.getItem(getLegacyStoredMessagesUserKey());
+
+  if (storedUserId) {
+    window.localStorage.setItem(getStoredMessagesUserKey(), storedUserId);
+  }
 
   return storedUserId ? readStoredMessages(storedUserId) : [];
 }

@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://twinline.vercel.app"),
+  metadataBase: new URL("https://hush.vercel.app"),
   title: "Hush",
   applicationName: "Hush",
   description: "Hush - private social space",
