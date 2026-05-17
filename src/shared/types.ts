@@ -67,7 +67,7 @@ export type BlockMessagePayload = {
   blockedId: string;
 };
 
-export type ActiveView = "profile" | "messages" | "favorites" | "settings";
+export type ActiveView = "profile" | "messages" | "favorites" | "music" | "settings";
 export type AuthMode = "sign-in" | "sign-up";
 export type AuthContactMethod = "email" | "phone";
 export type CallStatus = "idle" | "calling" | "incoming" | "connecting" | "connected";

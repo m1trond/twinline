@@ -61,6 +61,27 @@ export function NavIcon({ view }: { view: ActiveView }) {
     );
   }
 
+  if (view === "music") {
+    return (
+      <svg
+        aria-hidden="true"
+        className={iconClassName}
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M9 18V5l12-2v13"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+        />
+        <circle cx="6" cy="18" r="3" stroke="currentColor" strokeWidth="2" />
+        <circle cx="18" cy="16" r="3" stroke="currentColor" strokeWidth="2" />
+      </svg>
+    );
+  }
+
   return (
     <svg
       aria-hidden="true"

@@ -48,6 +48,7 @@ import { useMessageViewportEffects } from "@/features/messages/hooks/useMessageV
 import { useStoredMessageState } from "@/features/messages/hooks/useStoredMessageState";
 import { useTypingClock } from "@/features/messages/hooks/useTypingClock";
 import { useNavigationState } from "@/features/navigation/useNavigationState";
+import { MusicView } from "@/features/music/components/MusicView";
 import { AvatarDeleteDialog } from "@/features/profile/components/AvatarDeleteDialog";
 import { AvatarGalleryOverlay } from "@/features/profile/components/AvatarGalleryOverlay";
 import { ProfileView } from "@/features/profile/components/ProfileView";
@@ -3592,6 +3593,8 @@ export default function Home() {
           voiceInputLevel={voiceInputLevel}
           voiceRecordingDuration={voiceRecordingDuration}
         />
+      ) : activeView === "music" ? (
+        <MusicView />
       ) : activeView === "settings" ? (
         <SettingsView
           activeUserName={activeUserName}
