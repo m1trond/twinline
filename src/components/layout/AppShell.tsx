@@ -192,7 +192,7 @@ export function AppShell({
             <aside className={`relative z-[70] hidden min-h-0 flex-col rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:flex ${
               isSidebarCollapsed ? "items-center" : ""
             }`}>
-              <div className={`mb-5 flex h-10 w-full items-center ${isSidebarCollapsed ? "justify-center" : "gap-3"}`}>
+              <div className={`flex h-10 w-full items-center ${isSidebarCollapsed ? "mb-4 justify-center" : "mb-5 gap-3"}`}>
                 <BrandMark iconOnly={isSidebarCollapsed} />
               </div>
 
@@ -394,7 +394,7 @@ export function AppShell({
                 ) : null}
               </div>
 
-              <div className={`w-full ${isSidebarCollapsed ? "mb-4 h-0 overflow-hidden" : "mb-4 h-5"}`}>
+              <div className={`w-full ${isSidebarCollapsed ? "h-0 overflow-hidden" : "mb-4 h-5"}`}>
                 <p className="text-sm font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
                   Меню
                 </p>
