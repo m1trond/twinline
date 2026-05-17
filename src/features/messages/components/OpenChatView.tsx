@@ -361,7 +361,8 @@ export function OpenChatView({
                         type="button"
                       >
                         <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                          <path d="m14 6 6 6-6 6M20 12H9a5 5 0 0 0-5 5v1" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                          <path d="m15 14 5-5-5-5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                          <path d="M4 20v-7a4 4 0 0 1 4-4h12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                         </svg>
                         Переслать
                       </button>
@@ -486,9 +487,7 @@ export function OpenChatView({
                                 : "border-[#3f3f46]/70 bg-[#111111]/88 text-transparent"
                             }`}
                           >
-                            <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 16 16">
-                              <path d="m3.5 8.2 2.8 2.8 6.2-6.2" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                            </svg>
+                            <MessageCircleCheckIcon />
                           </span>
                         ) : null}
                         {!isMine ? (
@@ -529,13 +528,11 @@ export function OpenChatView({
                                 : "border-[#3f3f46]/70 bg-[#111111]/88 text-transparent"
                             }`}
                           >
-                            <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 16 16">
-                              <path d="m3.5 8.2 2.8 2.8 6.2-6.2" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                            </svg>
+                            <MessageCircleCheckIcon />
                           </span>
                         ) : null}
                         {isPinned && isMine ? (
-                          <span className="mb-1 grid h-6 w-6 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/55 bg-[#111111]/94 text-[#f4f4f5] shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+                          <span className="mb-1 grid h-6 w-6 shrink-0 place-items-center text-[#f4f4f5]">
                             <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
                               <path d="M12 17v5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                               <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
@@ -678,29 +675,16 @@ export function OpenChatView({
                                     className="inline-flex items-center text-[#262626]"
                                   >
                                     {receiptStatus === "read" ? (
-                                      <svg
-                                        aria-hidden="true"
-                                        className="h-3.5 w-6"
-                                        fill="none"
-                                        viewBox="0 0 24 16"
-                                      >
-                                        <path
-                                          d="m3 8 3 3 7-7M11 11l8-8"
-                                          stroke="currentColor"
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth="2"
-                                        />
-                                      </svg>
+                                      <CheckCheckIcon className="h-4 w-4" />
                                     ) : (
                                       <svg
                                         aria-hidden="true"
-                                        className="h-3.5 w-3.5"
+                                        className="h-4 w-4"
                                         fill="none"
-                                        viewBox="0 0 16 16"
+                                        viewBox="0 0 24 24"
                                       >
                                         <path
-                                          d="m3 8 3 3 7-7"
+                                          d="m9 12 2 2 4-4"
                                           stroke="currentColor"
                                           strokeLinecap="round"
                                           strokeLinejoin="round"
@@ -732,29 +716,16 @@ export function OpenChatView({
                                 className={`inline-flex items-center ${hasFramedMedia ? "text-[#a1a1aa]" : "text-[#262626]"}`}
                               >
                                 {receiptStatus === "read" ? (
-                                  <svg
-                                    aria-hidden="true"
-                                    className="h-3.5 w-6"
-                                    fill="none"
-                                    viewBox="0 0 24 16"
-                                  >
-                                    <path
-                                      d="m3 8 3 3 7-7M11 11l8-8"
-                                      stroke="currentColor"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth="2"
-                                    />
-                                  </svg>
+                                  <CheckCheckIcon className="h-4 w-4" />
                                 ) : (
                                   <svg
                                     aria-hidden="true"
-                                    className="h-3.5 w-3.5"
+                                    className="h-4 w-4"
                                     fill="none"
-                                    viewBox="0 0 16 16"
+                                    viewBox="0 0 24 24"
                                   >
                                     <path
-                                      d="m3 8 3 3 7-7"
+                                      d="m9 12 2 2 4-4"
                                       stroke="currentColor"
                                       strokeLinecap="round"
                                       strokeLinejoin="round"
@@ -768,7 +739,7 @@ export function OpenChatView({
                           ) : null}
                         </div>
                         {isPinned && !isMine ? (
-                          <span className="mb-1 grid h-6 w-6 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/55 bg-[#111111]/94 text-[#f4f4f5] shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+                          <span className="mb-1 grid h-6 w-6 shrink-0 place-items-center text-[#f4f4f5]">
                             <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
                               <path d="M12 17v5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                               <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
@@ -1032,5 +1003,47 @@ export function OpenChatView({
                 ) : null}
               </div>
 
+  );
+}
+
+function CheckCheckIcon({ className }: { className: string }) {
+  return (
+    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 24 24">
+      <path
+        d="M18 6 7 17l-5-5"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+      <path
+        d="m22 10-7.5 7.5L13 16"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
+function MessageCircleCheckIcon() {
+  return (
+    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+      <path
+        d="m9 12 2 2 4-4"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
   );
 }
