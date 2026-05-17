@@ -195,7 +195,12 @@ export function AppShell({
               </button>
             </aside>
 
-            <div className="hush-view-transition" key={activeView}>
+            <div
+              className={`hush-view-transition ${
+                activeView === "favorites" ? "hush-view-transition-compact" : ""
+              }`}
+              key={activeView}
+            >
               {children}
             </div>
           </section>

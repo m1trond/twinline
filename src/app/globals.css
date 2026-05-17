@@ -120,6 +120,14 @@ video {
   min-width: 0;
 }
 
+.hush-view-transition-compact {
+  display: block;
+}
+
+.hush-view-transition-compact > * {
+  flex: initial;
+}
+
 @keyframes hush-view-enter {
   from {
     filter: blur(2px);
