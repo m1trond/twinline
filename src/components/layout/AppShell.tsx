@@ -141,10 +141,10 @@ export function AppShell({
           </nav>
 
           <section
-            className="grid min-h-0 flex-1 gap-2 overflow-hidden lg:grid-cols-[var(--sidebar-width)_minmax(0,1fr)]"
+            className="grid min-h-0 flex-1 gap-2 overflow-hidden lg:overflow-visible lg:grid-cols-[var(--sidebar-width)_minmax(0,1fr)]"
             style={sidebarGridStyle}
           >
-            <aside className={`relative hidden min-h-0 flex-col rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md transition-[padding] lg:flex ${
+            <aside className={`relative z-[70] hidden min-h-0 flex-col rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md transition-[padding] lg:flex ${
               isSidebarCollapsed ? "items-center p-2" : "p-3"
             }`}>
               <div className={`mb-5 flex items-center ${isSidebarCollapsed ? "justify-center" : "gap-3"}`}>
