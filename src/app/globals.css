@@ -104,6 +104,24 @@ video {
   width: 100%;
 }
 
+.hush-view-transition {
+  animation: hush-view-enter 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes hush-view-enter {
+  from {
+    filter: blur(2px);
+    opacity: 0;
+    translate: 0 6px;
+  }
+
+  to {
+    filter: blur(0);
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
 @supports (padding: max(0px)) {
   .safe-bottom {
     padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
