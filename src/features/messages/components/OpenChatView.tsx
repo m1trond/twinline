@@ -402,9 +402,9 @@ export function OpenChatView({
                       onClick={() => setIsPinnedMessagesViewOpen((isOpen) => !isOpen)}
                       type="button"
                     >
-                      <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 28 24">
-                        <path d="m9.2 4.4 4 4-2.4.9-3.7 3.7.4 2.8-5.2-5.2 2.8.4 3.7-3.7.4-2.9Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
-                        <path d="M16 7.5h8M16 12h8M16 16.5h8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+                      <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                        <path d="M12 17v5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                        <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                       </svg>
                     </button>
                   </div>
@@ -536,9 +536,9 @@ export function OpenChatView({
                         ) : null}
                         {isPinned && isMine ? (
                           <span className="mb-1 grid h-6 w-6 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/55 bg-[#111111]/94 text-[#f4f4f5] shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
-                            <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 20 20">
-                              <path d="m12.8 2.6 4.6 4.6-3 .9-4.5 4.5.5 3.5-6.5-6.5 3.5.5 4.5-4.5.9-3Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
-                              <path d="m8.8 12.4-3.6 3.6" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+                            <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                              <path d="M12 17v5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                              <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                             </svg>
                           </span>
                         ) : null}
@@ -769,9 +769,9 @@ export function OpenChatView({
                         </div>
                         {isPinned && !isMine ? (
                           <span className="mb-1 grid h-6 w-6 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/55 bg-[#111111]/94 text-[#f4f4f5] shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
-                            <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 20 20">
-                              <path d="m12.8 2.6 4.6 4.6-3 .9-4.5 4.5.5 3.5-6.5-6.5 3.5.5 4.5-4.5.9-3Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
-                              <path d="m8.8 12.4-3.6 3.6" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+                            <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                              <path d="M12 17v5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                              <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                             </svg>
                           </span>
                         ) : null}
