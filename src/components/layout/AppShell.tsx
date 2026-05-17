@@ -80,6 +80,22 @@ export function AppShell({
     window.localStorage.setItem(sidebarStorageKey, String(Math.round(sidebarWidth)));
   }, [sidebarWidth]);
 
+  useEffect(() => {
+    if (!isCollapsedSearchVisible) {
+      return;
+    }
+
+    function handleEscapeKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsCollapsedSearchOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleEscapeKey);
+
+    return () => window.removeEventListener("keydown", handleEscapeKey);
+  }, [isCollapsedSearchVisible]);
+
   function selectView(view: ActiveView) {
     setActiveView(view);
 
@@ -191,28 +207,7 @@ export function AppShell({
                         type="button"
                       />
                       <div className="hush-modal-transition absolute left-[calc(100%+12px)] top-0 z-50 w-[min(320px,calc(100vw-112px))] rounded-2xl border border-[#3f3f46]/55 bg-[#111111]/96 p-2 shadow-[0_22px_70px_rgba(0,0,0,0.58)] backdrop-blur-xl">
-                        <label className="flex h-10 items-center gap-2 rounded-xl bg-[#f4f4f5]/10 px-3 text-[#a1a1aa] transition focus-within:bg-[#f4f4f5]/14 focus-within:text-[#f4f4f5]">
-                          <svg
-                            aria-hidden="true"
-                            className="h-5 w-5 shrink-0"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              d="m21 21-4.34-4.34"
-                              stroke="currentColor"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                            />
-                            <circle
-                              cx="11"
-                              cy="11"
-                              r="8"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                            />
-                          </svg>
+                        <label className="flex h-10 items-center rounded-xl bg-[#f4f4f5]/10 px-3 text-[#a1a1aa] transition focus-within:bg-[#f4f4f5]/14 focus-within:text-[#f4f4f5]">
                           <input
                             aria-label="User search by username"
                             autoFocus
