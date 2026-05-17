@@ -293,7 +293,7 @@ export function OpenChatView({
                   <div className="flex shrink-0 items-center justify-end gap-2">
                     <button
                       aria-label="Удалить переписку"
-                      className="grid min-h-9 w-9 place-items-center rounded-lg border border-red-400/45 bg-red-500/15 text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-55 sm:min-h-10 sm:w-10 sm:rounded-xl"
+                      className="grid min-h-9 w-9 place-items-center rounded-lg border border-[#3f3f46]/45 bg-[#f4f4f5]/10 text-[#f4f4f5] transition hover:border-red-400/55 hover:bg-red-500/15 hover:text-red-100 disabled:cursor-not-allowed disabled:opacity-55 sm:min-h-10 sm:w-10 sm:rounded-xl"
                       disabled={isDeletingChat}
                       onClick={() => {
                         setChatDeleteTargetUserId(selectedChatUserId);
