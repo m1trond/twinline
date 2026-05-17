@@ -98,6 +98,9 @@ export function AppShell({
                       strokeWidth="2"
                     />
                   </svg>
+                  <span className="shrink-0 text-sm font-medium text-[#a1a1aa]">
+                    @
+                  </span>
                   <input
                     aria-label="User search by username"
                     className="min-w-0 flex-1 bg-transparent text-sm text-[#f4f4f5] outline-none placeholder:text-[#a1a1aa]/75"
