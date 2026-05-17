@@ -1,4 +1,5 @@
-﻿import type { ChangeEvent, Dispatch, FormEvent, MouseEvent, RefObject, SetStateAction } from "react";
+import { useState } from "react";
+import type { ChangeEvent, Dispatch, DragEvent, FormEvent, MouseEvent, RefObject, SetStateAction } from "react";
 import type { ViewedProfileState } from "@/features/navigation/useNavigationState";
 import type { FavoriteItem, MessageRow } from "@/shared/types";
 import { FileAttachment } from "@/features/messages/components/FileAttachment";
@@ -21,6 +22,7 @@ type FavoritesViewProps = {
   friendProfile: ViewedProfileState | null;
   getReadableMessageText: (text: string) => string;
   handleAttachmentChange: (event: ChangeEvent<HTMLInputElement>) => void | Promise<void>;
+  handleAttachmentDrop: (files: FileList | File[]) => void | Promise<void>;
   handleMessageTextChange: (event: ChangeEvent<HTMLInputElement>) => void;
   imageInputRef: RefObject<HTMLInputElement | null>;
   isPinnedMessagesViewOpen: boolean;
@@ -56,6 +58,7 @@ export function FavoritesView({
   friendProfile,
   getReadableMessageText,
   handleAttachmentChange,
+  handleAttachmentDrop,
   handleMessageTextChange,
   imageInputRef,
   isPinnedMessagesViewOpen,
@@ -83,7 +86,80 @@ export function FavoritesView({
   voiceInputLevel,
   voiceRecordingDuration,
 }: FavoritesViewProps) {
-  return (<div className="flex min-h-0 flex-col overflow-hidden">
+  const [isDraggingAttachment, setIsDraggingAttachment] = useState(false);
+  const isAttachmentDropDisabled = isUploadingAttachment || isRecordingVoice || isSelectedChatBlocked;
+
+  function hasDraggedFiles(event: DragEvent<HTMLDivElement>) {
+    return Array.from(event.dataTransfer.types).includes("Files");
+  }
+
+  function handleAttachmentDragEnter(event: DragEvent<HTMLDivElement>) {
+    if (!hasDraggedFiles(event)) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (!isAttachmentDropDisabled) {
+      setIsDraggingAttachment(true);
+    }
+  }
+
+  function handleAttachmentDragOver(event: DragEvent<HTMLDivElement>) {
+    if (!hasDraggedFiles(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = isAttachmentDropDisabled ? "none" : "copy";
+
+    if (!isAttachmentDropDisabled) {
+      setIsDraggingAttachment(true);
+    }
+  }
+
+  function handleAttachmentDragLeave(event: DragEvent<HTMLDivElement>) {
+    if (
+      event.relatedTarget instanceof Node &&
+      event.currentTarget.contains(event.relatedTarget)
+    ) {
+      return;
+    }
+
+    setIsDraggingAttachment(false);
+  }
+
+  function handleAttachmentDropEvent(event: DragEvent<HTMLDivElement>) {
+    if (!hasDraggedFiles(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    setIsDraggingAttachment(false);
+
+    if (!isAttachmentDropDisabled && event.dataTransfer.files.length > 0) {
+      void handleAttachmentDrop(event.dataTransfer.files);
+    }
+  }
+  return (<div
+                className="relative flex min-h-0 flex-col overflow-hidden"
+                onDragEnter={handleAttachmentDragEnter}
+                onDragLeave={handleAttachmentDragLeave}
+                onDragOver={handleAttachmentDragOver}
+                onDrop={handleAttachmentDropEvent}
+              >
+                {isDraggingAttachment ? (
+                  <div className="pointer-events-none absolute inset-0 z-30 grid place-items-center rounded-xl border border-[#f4f4f5]/25 bg-black/70 p-4 backdrop-blur-sm sm:rounded-2xl">
+                    <div className="grid max-w-sm place-items-center rounded-2xl border border-dashed border-[#f4f4f5]/35 bg-[#111111]/88 px-6 py-5 text-center shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
+                      <p className="text-base font-medium text-[#f4f4f5]">
+                        Перенесите файл сюда
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
+                        Фото, видео и документы сохранятся в избранном.
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
                 <div className="mb-2 flex h-[60px] min-h-[60px] items-center rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
                   <h2 className="text-base font-medium sm:text-base">
                     Избранное

@@ -3426,6 +3426,12 @@ export default function Home() {
     event.target.value = "";
   }
 
+  async function handleAttachmentDrop(files: FileList | File[]) {
+    for (const file of Array.from(files)) {
+      await sendAttachment(file);
+    }
+  }
+
   async function deleteMessage(message: MessageRow) {
     setMessageContextMenu(null);
     setMessageDeleteTarget(null);
@@ -3558,6 +3564,7 @@ export default function Home() {
           friendProfile={friendProfile}
           getReadableMessageText={getReadableMessageText}
           handleAttachmentChange={handleAttachmentChange}
+          handleAttachmentDrop={handleAttachmentDrop}
           handleMessageTextChange={handleMessageTextChange}
           imageInputRef={imageInputRef}
           isPinnedMessagesViewOpen={isPinnedMessagesViewOpen}
@@ -3633,6 +3640,7 @@ export default function Home() {
           friendProfile={friendProfile}
           getReadableMessageText={getReadableMessageText}
           handleAttachmentChange={handleAttachmentChange}
+          handleAttachmentDrop={handleAttachmentDrop}
           handleMessageSelectionClick={handleMessageSelectionClick}
           handleMessageTextChange={handleMessageTextChange}
           highlightedMessageId={highlightedMessageId}
