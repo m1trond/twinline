@@ -481,10 +481,10 @@ export function OpenChatView({
                       >
                         {isMessageSelectionMode && isMine ? (
                           <span
-                            className={`mb-1 grid h-6 w-6 shrink-0 place-items-center rounded-full border transition ${
+                            className={`mb-1 grid h-6 w-6 shrink-0 place-items-center transition ${
                               isSelected
-                                ? "border-[#f4f4f5] bg-[#f4f4f5] text-[#050505]"
-                                : "border-[#3f3f46]/70 bg-[#111111]/88 text-transparent"
+                                ? "text-[#f4f4f5]"
+                                : "text-transparent"
                             }`}
                           >
                             <MessageCircleCheckIcon />
@@ -522,10 +522,10 @@ export function OpenChatView({
                         ) : null}
                         {isMessageSelectionMode && !isMine ? (
                           <span
-                            className={`mb-1 grid h-6 w-6 shrink-0 place-items-center rounded-full border transition ${
+                            className={`mb-1 grid h-6 w-6 shrink-0 place-items-center transition ${
                               isSelected
-                                ? "border-[#f4f4f5] bg-[#f4f4f5] text-[#050505]"
-                                : "border-[#3f3f46]/70 bg-[#111111]/88 text-transparent"
+                                ? "text-[#f4f4f5]"
+                                : "text-transparent"
                             }`}
                           >
                             <MessageCircleCheckIcon />
@@ -677,20 +677,7 @@ export function OpenChatView({
                                     {receiptStatus === "read" ? (
                                       <CheckCheckIcon className="h-4 w-4" />
                                     ) : (
-                                      <svg
-                                        aria-hidden="true"
-                                        className="h-4 w-4"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <path
-                                          d="m9 12 2 2 4-4"
-                                          stroke="currentColor"
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth="2"
-                                        />
-                                      </svg>
+                                      <CheckIcon className="h-4 w-4" />
                                     )}
                                   </span>
                                 ) : null}
@@ -718,20 +705,7 @@ export function OpenChatView({
                                 {receiptStatus === "read" ? (
                                   <CheckCheckIcon className="h-4 w-4" />
                                 ) : (
-                                  <svg
-                                    aria-hidden="true"
-                                    className="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      d="m9 12 2 2 4-4"
-                                      stroke="currentColor"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth="2"
-                                    />
-                                  </svg>
+                                  <CheckIcon className="h-4 w-4" />
                                 )}
                               </span>
                             ) : null}
@@ -1018,6 +992,20 @@ function CheckCheckIcon({ className }: { className: string }) {
       />
       <path
         d="m22 10-7.5 7.5L13 16"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
+function CheckIcon({ className }: { className: string }) {
+  return (
+    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 24 24">
+      <path
+        d="M20 6 9 17l-5-5"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
