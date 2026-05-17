@@ -1,4 +1,5 @@
-import type { Dispatch, ReactNode, SetStateAction } from "react";
+import { useEffect, useState } from "react";
+import type { CSSProperties, Dispatch, PointerEvent, ReactNode, SetStateAction } from "react";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { NavButton, NavIcon } from "@/components/navigation/NavButton";
 import { navItems, settingsNavItem } from "@/shared/constants";
@@ -19,6 +20,23 @@ type AppShellProps = {
   totalUnreadMessageCount: number;
 };
 
+const sidebarStorageKey = "twinline-sidebar-width";
+const defaultSidebarWidth = 270;
+const minSidebarWidth = 72;
+const collapsedSidebarThreshold = 112;
+
+function getMaxSidebarWidth() {
+  if (typeof window === "undefined") {
+    return defaultSidebarWidth;
+  }
+
+  return Math.max(defaultSidebarWidth, Math.floor(window.innerWidth / 2));
+}
+
+function clampSidebarWidth(width: number) {
+  return Math.min(Math.max(width, minSidebarWidth), getMaxSidebarWidth());
+}
+
 export function AppShell({
   activeView,
   chatSearchQuery,
@@ -32,12 +50,63 @@ export function AppShell({
   setViewedProfile,
   totalUnreadMessageCount,
 }: AppShellProps) {
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    if (typeof window === "undefined") {
+      return defaultSidebarWidth;
+    }
+
+    const storedWidth = Number(window.localStorage.getItem(sidebarStorageKey));
+
+    return clampSidebarWidth(Number.isFinite(storedWidth) && storedWidth > 0 ? storedWidth : defaultSidebarWidth);
+  });
+  const isSidebarCollapsed = sidebarWidth <= collapsedSidebarThreshold;
+  const sidebarGridStyle = {
+    "--sidebar-width": `${sidebarWidth}px`,
+  } as CSSProperties;
+
+  useEffect(() => {
+    function handleWindowResize() {
+      setSidebarWidth((currentWidth) => clampSidebarWidth(currentWidth));
+    }
+
+    window.addEventListener("resize", handleWindowResize);
+
+    return () => window.removeEventListener("resize", handleWindowResize);
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(sidebarStorageKey, String(Math.round(sidebarWidth)));
+  }, [sidebarWidth]);
+
   function selectView(view: ActiveView) {
     setActiveView(view);
 
     if (view === "messages") {
       setSelectedChatUserId(null);
     }
+  }
+
+  function startSidebarResize(event: PointerEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = sidebarWidth;
+    const pointerId = event.pointerId;
+
+    event.currentTarget.setPointerCapture(pointerId);
+
+    function resizeSidebar(nextEvent: globalThis.PointerEvent) {
+      setSidebarWidth(clampSidebarWidth(startWidth + nextEvent.clientX - startX));
+    }
+
+    function stopSidebarResize() {
+      window.removeEventListener("pointermove", resizeSidebar);
+      window.removeEventListener("pointerup", stopSidebarResize);
+      window.removeEventListener("pointercancel", stopSidebarResize);
+    }
+
+    window.addEventListener("pointermove", resizeSidebar);
+    window.addEventListener("pointerup", stopSidebarResize);
+    window.addEventListener("pointercancel", stopSidebarResize);
   }
 
   return (
@@ -69,13 +138,18 @@ export function AppShell({
             ))}
           </nav>
 
-          <section className="grid min-h-0 flex-1 gap-2 overflow-hidden lg:grid-cols-[250px_minmax(0,1fr)] xl:grid-cols-[270px_minmax(0,1fr)]">
-            <aside className="hidden min-h-0 flex-col rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:flex">
-              <div className="mb-5 flex items-center gap-3">
-                <BrandMark />
+          <section
+            className="grid min-h-0 flex-1 gap-2 overflow-hidden lg:grid-cols-[var(--sidebar-width)_minmax(0,1fr)]"
+            style={sidebarGridStyle}
+          >
+            <aside className={`relative hidden min-h-0 flex-col rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md transition-[padding] lg:flex ${
+              isSidebarCollapsed ? "items-center p-2" : "p-3"
+            }`}>
+              <div className={`mb-5 flex items-center ${isSidebarCollapsed ? "justify-center" : "gap-3"}`}>
+                <BrandMark iconOnly={isSidebarCollapsed} />
               </div>
 
-              <div className="mb-4">
+              <div className={`mb-4 w-full ${isSidebarCollapsed ? "hidden" : ""}`}>
                 <label className="flex h-10 min-h-10 items-center gap-2 rounded-lg bg-[#f4f4f5]/10 px-3 text-[#a1a1aa] transition focus-within:bg-[#f4f4f5]/14 focus-within:text-[#f4f4f5]">
                   <svg
                     aria-hidden="true"
@@ -162,16 +236,17 @@ export function AppShell({
                 ) : null}
               </div>
 
-              <div className="mb-4">
+              <div className={`mb-4 w-full ${isSidebarCollapsed ? "hidden" : ""}`}>
                 <p className="text-sm font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
                   Меню
                 </p>
               </div>
 
-              <nav className="grid gap-2">
+              <nav className={`grid w-full gap-2 ${isSidebarCollapsed ? "justify-items-center" : ""}`}>
                 {navItems.map((item) => (
                   <NavButton
                     activeView={activeView}
+                    iconOnly={isSidebarCollapsed}
                     item={item}
                     key={item.view}
                     onSelect={selectView}
@@ -180,7 +255,9 @@ export function AppShell({
                 ))}
               </nav>
               <button
-                className={`mt-auto flex min-h-10 items-center rounded-xl px-4 py-2.5 text-left text-sm font-medium leading-none transition ${
+                aria-label={isSidebarCollapsed ? settingsNavItem.label : undefined}
+                title={isSidebarCollapsed ? settingsNavItem.label : undefined}
+                className={`mt-auto ${isSidebarCollapsed ? "grid min-h-11 w-full place-items-center px-0 py-0" : "flex min-h-10 items-center px-4 py-2.5 text-left"} rounded-xl text-sm font-medium leading-none transition ${
                   activeView === settingsNavItem.view
                     ? "bg-[#f4f4f5] text-[#050505]"
                     : "border border-[#3f3f46]/25 text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
@@ -190,8 +267,16 @@ export function AppShell({
               >
                 <span className="inline-flex min-w-0 items-center gap-2.5">
                   <NavIcon view={settingsNavItem.view} />
-                  <span className="truncate">{settingsNavItem.label}</span>
+                  {isSidebarCollapsed ? null : <span className="truncate">{settingsNavItem.label}</span>}
                 </span>
+              </button>
+              <button
+                aria-label="Изменить ширину панели"
+                className="group absolute -right-1.5 top-0 hidden h-full w-3 cursor-col-resize touch-none rounded-full text-transparent transition hover:bg-[#f4f4f5]/12 lg:grid lg:place-items-center"
+                onPointerDown={startSidebarResize}
+                type="button"
+              >
+                <span className="h-10 w-0.5 rounded-full bg-[#f4f4f5]/18 transition group-hover:bg-[#f4f4f5]/35" />
               </button>
             </aside>
 

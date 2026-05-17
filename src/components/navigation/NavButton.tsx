@@ -82,12 +82,14 @@ export function NavIcon({ view }: { view: ActiveView }) {
 
 export function NavButton({
   activeView,
+  iconOnly = false,
   item,
   onSelect,
   unreadCount = 0,
   variant = "sidebar",
 }: {
   activeView: ActiveView;
+  iconOnly?: boolean;
   item: { label: string; view: ActiveView };
   onSelect: (view: ActiveView) => void;
   unreadCount?: number;
@@ -98,21 +100,23 @@ export function NavButton({
 
   return (
     <button
-      className={`${isMobile ? "shrink-0 rounded-lg px-3 py-2 sm:rounded-xl sm:px-4 sm:py-2.5" : "rounded-xl px-4 py-2.5 text-left"} text-sm font-medium transition ${
+      aria-label={iconOnly ? item.label : undefined}
+      title={iconOnly ? item.label : undefined}
+      className={`${iconOnly ? "relative grid min-h-11 w-full place-items-center rounded-xl px-0 py-0" : isMobile ? "shrink-0 rounded-lg px-3 py-2 sm:rounded-xl sm:px-4 sm:py-2.5" : "rounded-xl px-4 py-2.5 text-left"} text-sm font-medium transition ${
         isActive
           ? "bg-[#f4f4f5] text-[#050505]"
-          : `${isMobile ? "" : "border border-transparent"} text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100`
+          : `${isMobile || iconOnly ? "" : "border border-transparent"} text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100`
       }`}
       onClick={() => onSelect(item.view)}
       type="button"
     >
-      <span className={`${isMobile ? "inline-flex" : "flex"} items-center justify-between gap-3`}>
+      <span className={`${iconOnly ? "grid place-items-center" : isMobile ? "inline-flex" : "flex"} items-center justify-between gap-3`}>
         <span className="inline-flex min-w-0 items-center gap-2.5">
           <NavIcon view={item.view} />
-          <span className="truncate">{item.label}</span>
+          {iconOnly ? null : <span className="truncate">{item.label}</span>}
         </span>
         {item.view === "messages" && unreadCount > 0 ? (
-          <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-xs font-medium ${
+          <span className={`${iconOnly ? "absolute right-1 top-1" : ""} grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-xs font-medium ${
             isActive ? "bg-[#050505] text-[#f4f4f5]" : "bg-[#f4f4f5] text-[#050505]"
           }`}>
             {unreadCount > 99 ? "99+" : unreadCount}
