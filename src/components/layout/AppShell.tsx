@@ -86,7 +86,7 @@ export function AppShell({
     }
   }
 
-  function startSidebarResize(event: PointerEvent<HTMLButtonElement>) {
+  function startSidebarResize(event: PointerEvent<HTMLDivElement>) {
     event.preventDefault();
     const startX = event.clientX;
     const startWidth = sidebarWidth;
@@ -270,14 +270,15 @@ export function AppShell({
                   {isSidebarCollapsed ? null : <span className="truncate">{settingsNavItem.label}</span>}
                 </span>
               </button>
-              <button
+              <div
                 aria-label="Изменить ширину панели"
+                aria-orientation="vertical"
                 className="hush-sidebar-resize-handle group absolute -right-1.5 top-1/2 hidden h-28 w-3 -translate-y-1/2 cursor-col-resize touch-none rounded-full text-transparent transition lg:grid lg:place-items-center"
                 onPointerDown={startSidebarResize}
-                type="button"
+                role="separator"
               >
                 <span className="h-12 w-0.5 rounded-full bg-[#f4f4f5]/18 transition group-hover:bg-[#f4f4f5]/45" />
-              </button>
+              </div>
             </aside>
 
             <div className="hush-view-transition" key={activeView}>
