@@ -1,12 +1,16 @@
 import { ChangeEvent, useRef, useState } from "react";
+import { MessageReceiptIcon } from "@/features/messages/components/MessageReceiptIcon";
+import type { MessageReceiptStatus } from "@/features/messages/components/MessageReceiptIcon";
 import { formatAudioTime, formatMessageTime } from "@/shared/utils/format";
 
 export function VoiceMessage({
   isMine,
+  receiptStatus = null,
   sentAt,
   src,
 }: {
   isMine: boolean;
+  receiptStatus?: MessageReceiptStatus | null;
   sentAt: string;
   src: string;
 }) {
@@ -108,7 +112,12 @@ export function VoiceMessage({
           </div>
           <p className="mt-0.5 flex items-center justify-between gap-3 text-xs font-medium tabular-nums opacity-65">
             <span>{formatAudioTime(currentTime || duration)}</span>
-            <span>{formatMessageTime(sentAt)}</span>
+            <span className="inline-flex items-center gap-1">
+              {formatMessageTime(sentAt)}
+              {receiptStatus ? (
+                <MessageReceiptIcon className="h-4 w-4" status={receiptStatus} />
+              ) : null}
+            </span>
           </p>
         </div>
       </div>

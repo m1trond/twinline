@@ -1,13 +1,19 @@
 import type { MouseEvent } from "react";
+import { MessageReceiptIcon } from "@/features/messages/components/MessageReceiptIcon";
+import type { MessageReceiptStatus } from "@/features/messages/components/MessageReceiptIcon";
 import type { FileMessagePayload } from "@/shared/types";
-import { formatFileSize } from "@/shared/utils/format";
+import { formatFileSize, formatMessageTime } from "@/shared/utils/format";
 
 export function FileAttachment({
   file,
   isMine,
+  receiptStatus = null,
+  sentAt = null,
 }: {
   file: FileMessagePayload;
   isMine: boolean;
+  receiptStatus?: MessageReceiptStatus | null;
+  sentAt?: string | null;
 }) {
   async function downloadFile(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
@@ -59,7 +65,15 @@ export function FileAttachment({
         </span>
         <span className="block truncate text-xs font-medium opacity-60">
           {formatFileSize(file.size)}
-          {file.type ? ` В· ${file.type}` : ""}
+          {file.type ? ` · ${file.type}` : ""}
+          {sentAt ? (
+            <span className="ml-2 inline-flex items-center gap-1 align-baseline">
+              {formatMessageTime(sentAt)}
+              {receiptStatus ? (
+                <MessageReceiptIcon className="h-4 w-4" status={receiptStatus} />
+              ) : null}
+            </span>
+          ) : null}
         </span>
       </span>
       <button

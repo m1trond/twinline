@@ -12,6 +12,7 @@ import type { User } from "@supabase/supabase-js";
 import type { ViewedProfileState } from "@/features/navigation/useNavigationState";
 import type { MessageRow, ProfileRow, ReplyMessagePayload } from "@/shared/types";
 import { FileAttachment } from "@/features/messages/components/FileAttachment";
+import { MessageReceiptIcon } from "@/features/messages/components/MessageReceiptIcon";
 import { VoiceMessage } from "@/features/messages/components/VoiceMessage";
 import { formatAudioTime, formatCallDuration, formatMessageTime } from "@/shared/utils/format";
 import { formatLastSeen, isProfileOnline } from "@/shared/utils/profile";
@@ -608,11 +609,17 @@ export function OpenChatView({
                         ) : audioUrl ? (
                           <VoiceMessage
                             isMine={isMine}
+                            receiptStatus={receiptStatus}
                             sentAt={message.created_at}
                             src={audioUrl}
                           />
                         ) : filePayload ? (
-                          <FileAttachment file={filePayload} isMine={isMine} />
+                          <FileAttachment
+                            file={filePayload}
+                            isMine={isMine}
+                            receiptStatus={receiptStatus}
+                            sentAt={message.created_at}
+                          />
                         ) : callDurationSeconds !== null ? (
                           <div
                             className={`min-w-[min(230px,70vw)] rounded-xl px-3 py-2 sm:min-w-[min(260px,70vw)] sm:rounded-2xl ${
@@ -675,9 +682,9 @@ export function OpenChatView({
                                     className="inline-flex items-center text-[#262626]"
                                   >
                                     {receiptStatus === "read" ? (
-                                      <CheckCheckIcon className="h-4 w-4" />
+                                      <MessageReceiptIcon className="h-4 w-4" status="read" />
                                     ) : (
-                                      <CheckIcon className="h-4 w-4" />
+                                      <MessageReceiptIcon className="h-4 w-4" status="delivered" />
                                     )}
                                   </span>
                                 ) : null}
@@ -703,9 +710,9 @@ export function OpenChatView({
                                 className={`inline-flex items-center ${hasFramedMedia ? "text-[#a1a1aa]" : "text-[#262626]"}`}
                               >
                                 {receiptStatus === "read" ? (
-                                  <CheckCheckIcon className="h-4 w-4" />
+                                  <MessageReceiptIcon className="h-4 w-4" status="read" />
                                 ) : (
-                                  <CheckIcon className="h-4 w-4" />
+                                  <MessageReceiptIcon className="h-4 w-4" status="delivered" />
                                 )}
                               </span>
                             ) : null}
@@ -977,41 +984,6 @@ export function OpenChatView({
                 ) : null}
               </div>
 
-  );
-}
-
-function CheckCheckIcon({ className }: { className: string }) {
-  return (
-    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 24 24">
-      <path
-        d="M18 6 7 17l-5-5"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      />
-      <path
-        d="m22 10-7.5 7.5L13 16"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      />
-    </svg>
-  );
-}
-
-function CheckIcon({ className }: { className: string }) {
-  return (
-    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 24 24">
-      <path
-        d="M20 6 9 17l-5-5"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      />
-    </svg>
   );
 }
 
