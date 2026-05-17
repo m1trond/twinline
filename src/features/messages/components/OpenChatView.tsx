@@ -322,7 +322,7 @@ export function OpenChatView({
                     </button>
                     <button
                       aria-label={callStatus === "idle" ? "Позвонить" : callStatusText}
-                      className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 text-[#f4f4f5] transition hover:border-[#f4f4f5]/35 hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:border-[#3f3f46]/25 disabled:text-[#71717a] sm:rounded-xl"
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:border-[#3f3f46]/25 disabled:text-[#71717a] sm:rounded-xl"
                       disabled={!friendProfile?.userId || callStatus !== "idle"}
                       onClick={() => startCall()}
                       type="button"
