@@ -43,6 +43,57 @@ textarea {
   min-width: 0;
 }
 
+button,
+a,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hush-shell button:not(:disabled),
+.hush-shell a,
+.hush-shell [role="button"] {
+  transition-property: background-color, border-color, box-shadow, color, filter, opacity, scale, translate;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.hush-shell button:not(:disabled):active,
+.hush-shell a:active,
+.hush-shell [role="button"]:active {
+  scale: 0.985;
+  translate: 0 1px;
+}
+
+.hush-shell button:not(:disabled):focus-visible,
+.hush-shell a:focus-visible,
+.hush-shell [role="button"]:focus-visible {
+  outline: 2px solid rgba(244, 244, 245, 0.72);
+  outline-offset: 2px;
+}
+
+.hush-context-menu button:not(:disabled):active {
+  scale: 0.99;
+  translate: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hush-shell *,
+  .hush-shell *::before,
+  .hush-shell *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .hush-shell button:not(:disabled):active,
+  .hush-shell a:active,
+  .hush-shell [role="button"]:active {
+    scale: 1;
+    translate: 0;
+  }
+}
+
 img,
 video {
   max-width: 100%;
