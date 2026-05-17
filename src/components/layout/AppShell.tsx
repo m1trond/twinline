@@ -195,7 +195,7 @@ export function AppShell({
               </button>
             </aside>
 
-            <div className="hush-view-transition min-h-0 overflow-hidden" key={activeView}>
+            <div className="hush-view-transition" key={activeView}>
               {children}
             </div>
           </section>
