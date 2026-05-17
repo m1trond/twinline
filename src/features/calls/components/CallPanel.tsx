@@ -80,13 +80,36 @@ export function CallPanel({
       >
         <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
           {isCallPanelCollapsed ? (
-            <path
-              d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-            />
+            <>
+              <path
+                d="M8 3H5a2 2 0 0 0-2 2v3"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+              />
+              <path
+                d="M21 8V5a2 2 0 0 0-2-2h-3"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+              />
+              <path
+                d="M3 16v3a2 2 0 0 0 2 2h3"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+              />
+              <path
+                d="M16 21h3a2 2 0 0 0 2-2v-3"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+              />
+            </>
           ) : (
             <path d="M5 12h14" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
           )}
@@ -225,23 +248,80 @@ function PhoneIcon({ className }: { className: string }) {
 function MicIcon({ muted }: { muted: boolean }) {
   return (
     <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-      <path
-        d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      />
-      <path
-        d="M19 11a7 7 0 0 1-14 0M12 18v3M9 21h6"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      />
       {muted ? (
-        <path d="M4 4l16 16" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
-      ) : null}
+        <>
+          <path
+            d="M12 19v3"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+          />
+          <path
+            d="M15 9.34V5a3 3 0 0 0-5.68-1.33"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+          />
+          <path
+            d="M16.95 16.95A7 7 0 0 1 5 12v-2"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+          />
+          <path
+            d="M18.89 13.23A7 7 0 0 0 19 12v-2"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+          />
+          <path
+            d="m2 2 20 20"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+          />
+          <path
+            d="M9 9v3a3 3 0 0 0 5.12 2.12"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+          />
+        </>
+      ) : (
+        <>
+          <path
+            d="M12 19v3"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+          />
+          <path
+            d="M19 10v2a7 7 0 0 1-14 0v-2"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+          />
+          <rect
+            height="13"
+            rx="3"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            width="6"
+            x="9"
+            y="2"
+          />
+        </>
+      )}
     </svg>
   );
 }
