@@ -662,6 +662,12 @@ export function OpenChatView({
                             <span className="block text-6xl leading-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.25)] sm:text-7xl">
                               {sticker}
                             </span>
+                            <span className="mt-1 flex items-center justify-end gap-1 text-xs font-medium text-[#a1a1aa]">
+                              {formatMessageTime(message.created_at)}
+                              {receiptStatus ? (
+                                <MessageReceiptIcon className="h-4 w-4" status={receiptStatus} />
+                              ) : null}
+                            </span>
                           </div>
                         ) : (
                             <p
