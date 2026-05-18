@@ -301,6 +301,7 @@ export default function Home() {
   const localCallStreamRef = useRef<MediaStream | null>(null);
   const callStartedAtRef = useRef<number | null>(null);
   const hasSavedCallSummaryRef = useRef(false);
+  const isSavingProfileBioRef = useRef(false);
   const pendingIceCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   const processedCallSignalIdsRef = useRef<Set<string>>(new Set());
   const latestCallSignalCreatedAtRef = useRef<string>("1970-01-01T00:00:00.000Z");
@@ -3049,17 +3050,15 @@ export default function Home() {
     setErrorMessage("");
   }
 
-  async function updateProfileBio(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!user) {
+  async function saveProfileBio() {
+    if (!user || isSavingProfileBioRef.current) {
       return;
     }
 
     const nextBio = profileBioInputValue.trim();
 
-    if (nextBio.length > 220) {
-      setErrorMessage("Описание должно быть не длиннее 220 символов.");
+    if (nextBio.length > 100) {
+      setErrorMessage("Описание должно быть не длиннее 100 символов.");
       return;
     }
 
@@ -3068,20 +3067,29 @@ export default function Home() {
     }
 
     const updatedAt = new Date().toISOString();
+    isSavingProfileBioRef.current = true;
+
     const { data, error } = await supabase
       .from("profiles")
-      .upsert({
-        avatar_url: currentProfile?.avatar_url ?? null,
-        bio: nextBio || null,
-        display_name: activeUserName,
-        name_changed_at: currentProfile?.name_changed_at ?? null,
-        updated_at: updatedAt,
-        user_id: user.id,
-        username: currentProfile?.username ?? null,
-        username_changed_at: currentProfile?.username_changed_at ?? null,
-      })
+      .upsert(
+        {
+          avatar_url: currentProfile?.avatar_url ?? null,
+          bio: nextBio || null,
+          display_name: activeUserName,
+          name_changed_at: currentProfile?.name_changed_at ?? null,
+          updated_at: updatedAt,
+          user_id: user.id,
+          username: currentProfile?.username ?? null,
+          username_changed_at: currentProfile?.username_changed_at ?? null,
+        },
+        {
+          onConflict: "user_id",
+        },
+      )
       .select(profileColumns)
       .single();
+
+    isSavingProfileBioRef.current = false;
 
     if (error) {
       setErrorMessage("Не получилось сохранить описание.");
@@ -3100,6 +3108,11 @@ export default function Home() {
 
     setProfileBio(null);
     setErrorMessage("");
+  }
+
+  async function updateProfileBio(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await saveProfileBio();
   }
 
   function handleMessageTextChange(event: ChangeEvent<HTMLInputElement>) {
@@ -3824,6 +3837,7 @@ export default function Home() {
           profileNameInputValue={profileNameInputValue}
           profileUsernameError={profileUsernameError}
           profileUsernameInputValue={profileUsernameInputValue}
+          saveProfileBio={saveProfileBio}
           setProfileBio={setProfileBio}
           setProfileName={setProfileName}
           setProfileUsername={setProfileUsername}
