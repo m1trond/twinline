@@ -164,7 +164,7 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
         {visibleProfiles.length > 0 ? (
           <div className="grid gap-1.5">
             <div className={`hidden px-3 text-[10px] font-medium uppercase leading-4 tracking-[0.16em] text-[#a1a1aa] sm:grid ${accessGridClass} sm:items-center sm:gap-3`}>
-              <span className="text-left">Ник + имя</span>
+              <span className="text-left">Имя + ник</span>
               <span className="text-left">Почта</span>
               <span className="text-left">Телефон</span>
               <span className="text-left">Регистрация</span>

@@ -61,83 +61,85 @@ export function ChatListView({
             ))}
           </div>
         ) : null}
-        {chatProfiles.length === 0 ? (
-          <article className="rounded-xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-4 text-center sm:rounded-2xl sm:p-6">
-            <p className="text-sm font-medium">{emptyChatsTitle}</p>
-            <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">{emptyChatsText}</p>
-          </article>
-        ) : null}
+        <div className="hush-panel-transition grid content-start gap-2" key={selectedChatFolderId ?? "all"}>
+          {chatProfiles.length === 0 ? (
+            <article className="rounded-xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-4 text-center sm:rounded-2xl sm:p-6">
+              <p className="text-sm font-medium">{emptyChatsTitle}</p>
+              <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">{emptyChatsText}</p>
+            </article>
+          ) : null}
 
-        {chatProfiles.map((profile) => {
-          const latestProfileMessage = latestVisibleMessageByProfileId.get(profile.user_id);
-          const profileUnreadCount = unreadMessagesByUserId.get(profile.user_id) ?? 0;
-          const previewText = latestProfileMessage
-            ? getChatPreviewText(latestProfileMessage.text)
-            : openChatText;
+          {chatProfiles.map((profile) => {
+            const latestProfileMessage = latestVisibleMessageByProfileId.get(profile.user_id);
+            const profileUnreadCount = unreadMessagesByUserId.get(profile.user_id) ?? 0;
+            const previewText = latestProfileMessage
+              ? getChatPreviewText(latestProfileMessage.text)
+              : openChatText;
 
-          return (
-            <button
-              className={`flex w-full items-center gap-2.5 rounded-xl border p-2.5 text-left transition hover:border-[#3f3f46]/55 hover:bg-[#f4f4f5]/8 sm:gap-3 sm:rounded-2xl sm:p-3 ${
-                profileUnreadCount > 0
-                  ? "border-[#f4f4f5]/20 bg-[#f4f4f5]/10"
-                  : "border-transparent bg-[#050505]/52"
-              }`}
-              key={profile.user_id}
-              onClick={() => {
-                setSelectedChatUserId(profile.user_id);
-                setUnreadMessageCount(0);
-              }}
-              onContextMenu={(event) => openChatContextMenu(event, profile)}
-              type="button"
-            >
-              <div className="relative h-10 w-10 shrink-0 sm:h-12 sm:w-12">
-                <div className="grid h-full w-full place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-sm font-medium text-[#050505] sm:text-sm">
-                  {profile.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      alt={`${avatarAltPrefix} ${profile.display_name}`}
-                      className="h-full w-full object-cover"
-                      src={profile.avatar_url}
-                    />
-                  ) : (
-                    profile.display_name[0]?.toUpperCase()
-                  )}
-                </div>
-                {isProfileOnline(profile.updated_at) ? (
-                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#050505] bg-emerald-300 shadow-[0_0_14px_rgba(110,231,183,0.8)] sm:h-3.5 sm:w-3.5" />
-                ) : null}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="truncate text-sm font-medium text-[#f4f4f5] sm:text-sm">
-                    {profile.display_name}
-                  </p>
-                  {latestProfileMessage ? (
-                    <span className="shrink-0 text-xs font-medium text-[#a1a1aa] sm:text-xs">
-                      {formatMessageTime(latestProfileMessage.created_at)}
-                    </span>
+            return (
+              <button
+                className={`flex w-full items-center gap-2.5 rounded-xl border p-2.5 text-left transition hover:border-[#3f3f46]/55 hover:bg-[#f4f4f5]/8 sm:gap-3 sm:rounded-2xl sm:p-3 ${
+                  profileUnreadCount > 0
+                    ? "border-[#f4f4f5]/20 bg-[#f4f4f5]/10"
+                    : "border-transparent bg-[#050505]/52"
+                }`}
+                key={profile.user_id}
+                onClick={() => {
+                  setSelectedChatUserId(profile.user_id);
+                  setUnreadMessageCount(0);
+                }}
+                onContextMenu={(event) => openChatContextMenu(event, profile)}
+                type="button"
+              >
+                <div className="relative h-10 w-10 shrink-0 sm:h-12 sm:w-12">
+                  <div className="grid h-full w-full place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-sm font-medium text-[#050505] sm:text-sm">
+                    {profile.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        alt={`${avatarAltPrefix} ${profile.display_name}`}
+                        className="h-full w-full object-cover"
+                        src={profile.avatar_url}
+                      />
+                    ) : (
+                      profile.display_name[0]?.toUpperCase()
+                    )}
+                  </div>
+                  {isProfileOnline(profile.updated_at) ? (
+                    <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#050505] bg-emerald-300 shadow-[0_0_14px_rgba(110,231,183,0.8)] sm:h-3.5 sm:w-3.5" />
                   ) : null}
                 </div>
-                <div className="mt-1 flex items-center justify-between gap-3">
-                  <p
-                    className={`truncate text-xs sm:text-sm ${
-                      profileUnreadCount > 0 ? "font-medium text-[#f4f4f5]" : "text-[#a1a1aa]"
-                    }`}
-                  >
-                    {profileUnreadCount > 0
-                      ? `${unreadPrefix} ${profile.display_name}: ${previewText}`
-                      : previewText}
-                  </p>
-                  {profileUnreadCount > 0 ? (
-                    <span className="grid h-6 min-w-6 shrink-0 place-items-center rounded-full bg-[#f4f4f5] px-2 text-xs font-medium text-[#050505]">
-                      {profileUnreadCount > 99 ? "99+" : profileUnreadCount}
-                    </span>
-                  ) : null}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="truncate text-sm font-medium text-[#f4f4f5] sm:text-sm">
+                      {profile.display_name}
+                    </p>
+                    {latestProfileMessage ? (
+                      <span className="shrink-0 text-xs font-medium text-[#a1a1aa] sm:text-xs">
+                        {formatMessageTime(latestProfileMessage.created_at)}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="mt-1 flex items-center justify-between gap-3">
+                    <p
+                      className={`truncate text-xs sm:text-sm ${
+                        profileUnreadCount > 0 ? "font-medium text-[#f4f4f5]" : "text-[#a1a1aa]"
+                      }`}
+                    >
+                      {profileUnreadCount > 0
+                        ? `${unreadPrefix} ${profile.display_name}: ${previewText}`
+                        : previewText}
+                    </p>
+                    {profileUnreadCount > 0 ? (
+                      <span className="grid h-6 min-w-6 shrink-0 place-items-center rounded-full bg-[#f4f4f5] px-2 text-xs font-medium text-[#050505]">
+                        {profileUnreadCount > 99 ? "99+" : profileUnreadCount}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
