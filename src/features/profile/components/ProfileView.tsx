@@ -11,6 +11,7 @@ type ProfileViewProps = {
   avatarInputRef: RefObject<HTMLInputElement | null>;
   currentProfile: ProfileRow | null | undefined;
   handleAvatarChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  isProfileBioChanged: boolean;
   isSavingProfileBio: boolean;
   isUploadingAvatar: boolean;
   isUsernameChangeAllowed: boolean;
@@ -45,6 +46,7 @@ export function ProfileView({
   avatarInputRef,
   currentProfile,
   handleAvatarChange,
+  isProfileBioChanged,
   isSavingProfileBio,
   isUploadingAvatar,
   isUsernameChangeAllowed,
@@ -187,7 +189,7 @@ export function ProfileView({
                 className={buttonClass}
                 disabled={
                   isSavingProfileBio ||
-                  profileBioInputValue.trim() === (currentProfile?.bio ?? "").trim()
+                  !isProfileBioChanged
                 }
                 type="submit"
               >

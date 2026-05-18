@@ -168,6 +168,10 @@ export default function Home() {
     setIsUploadingAvatar,
   } = useProfileEditorState();
   const [isSavingProfileBio, setIsSavingProfileBio] = useState(false);
+  const [profileBioSavedSnapshot, setProfileBioSavedSnapshot] = useState<{
+    bio: string;
+    userId: string;
+  } | null>(null);
   const {
     activeView,
     setActiveView,
@@ -965,6 +969,12 @@ export default function Home() {
   );
   const profileNameInputValue = profileName || activeUserName;
   const profileBioInputValue = profileBio ?? currentProfile?.bio ?? "";
+  const profileBioSavedValue =
+    profileBioSavedSnapshot && profileBioSavedSnapshot.userId === user?.id
+      ? profileBioSavedSnapshot.bio
+      : currentProfile?.bio ?? "";
+  const isProfileBioChanged =
+    profileBioInputValue.trim() !== profileBioSavedValue.trim();
   const profileUsernameInputValue = profileUsername ?? currentProfile?.username ?? "";
   const canViewAccess =
     currentProfile?.username?.toLowerCase() === accessOwnerUsername;
@@ -3063,7 +3073,7 @@ export default function Home() {
       return;
     }
 
-    if (nextBio === (currentProfile?.bio ?? "").trim()) {
+    if (nextBio === profileBioSavedValue.trim()) {
       return;
     }
 
@@ -3109,7 +3119,11 @@ export default function Home() {
       });
     }
 
-    setProfileBio(null);
+    setProfileBio(nextBio);
+    setProfileBioSavedSnapshot({
+      bio: nextBio,
+      userId: user.id,
+    });
     setErrorMessage("");
   }
 
@@ -3831,6 +3845,7 @@ export default function Home() {
           avatarInputRef={avatarInputRef}
           currentProfile={currentProfile}
           handleAvatarChange={handleAvatarChange}
+          isProfileBioChanged={isProfileBioChanged}
           isSavingProfileBio={isSavingProfileBio}
           isUploadingAvatar={isUploadingAvatar}
           isUsernameChangeAllowed={isUsernameChangeAllowed}
