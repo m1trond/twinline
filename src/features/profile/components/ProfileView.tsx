@@ -15,8 +15,8 @@ type ProfileViewProps = {
   isUsernameChangeAllowed: boolean;
   nextUsernameChangeDate: string | null;
   openAvatarGallery: (url: string | null | undefined) => void;
-  profileName: string;
   profileBioInputValue: string;
+  profileName: string;
   profileNameInputValue: string;
   profileUsernameError: string;
   profileUsernameInputValue: string;
@@ -39,8 +39,8 @@ export function ProfileView({
   isUsernameChangeAllowed,
   nextUsernameChangeDate,
   openAvatarGallery,
-  profileName,
   profileBioInputValue,
+  profileName,
   profileNameInputValue,
   profileUsernameError,
   profileUsernameInputValue,
@@ -100,11 +100,11 @@ export function ProfileView({
       </div>
 
       <div className="grid gap-2.5 sm:grid-cols-2">
-        <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-2.5 sm:col-span-2 sm:rounded-2xl">
+        <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-2.5 sm:rounded-2xl">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
             Имя профиля
           </p>
-          <form className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={updateProfileName}>
+          <form className="mt-2 grid gap-2" onSubmit={updateProfileName}>
             <input
               className="min-h-9 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] disabled:cursor-not-allowed disabled:opacity-60"
               maxLength={24}
@@ -115,7 +115,7 @@ export function ProfileView({
               value={profileNameInputValue}
             />
             <button
-              className="min-h-9 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
+              className="min-h-9 justify-self-start rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
               disabled={!profileName.trim() || profileName.trim() === activeUserName}
               type="submit"
             >
@@ -124,11 +124,11 @@ export function ProfileView({
           </form>
         </section>
 
-        <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-2.5 sm:col-span-2 sm:rounded-2xl">
+        <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-2.5 sm:rounded-2xl">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
             Ник Hush
           </p>
-          <form className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={updateProfileUsername}>
+          <form className="mt-2 grid gap-2" onSubmit={updateProfileUsername}>
             <label className="flex min-h-9 items-center rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 text-sm focus-within:border-[#f4f4f5]">
               <span className="font-medium text-[#a1a1aa]">@</span>
               <input
@@ -146,7 +146,7 @@ export function ProfileView({
               />
             </label>
             <button
-              className="min-h-9 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
+              className="min-h-9 justify-self-start rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
               disabled={
                 !profileUsernameInputValue.trim() ||
                 normalizeUsername(profileUsernameInputValue) === currentProfile?.username
@@ -168,25 +168,22 @@ export function ProfileView({
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
             О себе
           </p>
-          <form className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={updateProfileBio}>
+          <form className="mt-2 grid gap-2" onSubmit={updateProfileBio}>
             <textarea
-              className="min-h-24 resize-none rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 py-2 text-sm leading-6 outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5]"
+              className="min-h-20 resize-none rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 py-2 text-sm leading-6 outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5]"
               maxLength={220}
               onChange={(event) => setProfileBio(event.target.value)}
               placeholder="Расскажи пару слов о себе"
               value={profileBioInputValue}
             />
             <button
-              className="min-h-9 self-start rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
+              className="min-h-9 justify-self-start rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
               disabled={profileBioInputValue.trim() === (currentProfile?.bio ?? "").trim()}
               type="submit"
             >
               Сохранить
             </button>
           </form>
-          <p className="mt-1.5 text-xs leading-5 text-[#a1a1aa]">
-            Этот текст будет виден в карточке твоего профиля.
-          </p>
         </section>
 
         <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-2.5 sm:rounded-2xl">
