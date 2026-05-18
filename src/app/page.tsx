@@ -167,6 +167,7 @@ export default function Home() {
     isUploadingAvatar,
     setIsUploadingAvatar,
   } = useProfileEditorState();
+  const [isSavingProfileBio, setIsSavingProfileBio] = useState(false);
   const {
     activeView,
     setActiveView,
@@ -3068,6 +3069,7 @@ export default function Home() {
 
     const updatedAt = new Date().toISOString();
     isSavingProfileBioRef.current = true;
+    setIsSavingProfileBio(true);
 
     const { data, error } = await supabase
       .from("profiles")
@@ -3090,6 +3092,7 @@ export default function Home() {
       .single();
 
     isSavingProfileBioRef.current = false;
+    setIsSavingProfileBio(false);
 
     if (error) {
       setErrorMessage("Не получилось сохранить описание.");
@@ -3828,6 +3831,7 @@ export default function Home() {
           avatarInputRef={avatarInputRef}
           currentProfile={currentProfile}
           handleAvatarChange={handleAvatarChange}
+          isSavingProfileBio={isSavingProfileBio}
           isUploadingAvatar={isUploadingAvatar}
           isUsernameChangeAllowed={isUsernameChangeAllowed}
           nextUsernameChangeDate={nextUsernameChangeDate}

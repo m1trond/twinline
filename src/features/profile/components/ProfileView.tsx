@@ -11,6 +11,7 @@ type ProfileViewProps = {
   avatarInputRef: RefObject<HTMLInputElement | null>;
   currentProfile: ProfileRow | null | undefined;
   handleAvatarChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  isSavingProfileBio: boolean;
   isUploadingAvatar: boolean;
   isUsernameChangeAllowed: boolean;
   nextUsernameChangeDate: string | null;
@@ -45,6 +46,7 @@ export function ProfileView({
   avatarInputRef,
   currentProfile,
   handleAvatarChange,
+  isSavingProfileBio,
   isUploadingAvatar,
   isUsernameChangeAllowed,
   nextUsernameChangeDate,
@@ -186,10 +188,14 @@ export function ProfileView({
               />
               <button
                 className={buttonClass}
-                disabled={profileBioInputValue.trim() === (currentProfile?.bio ?? "").trim()}
+                disabled={
+                  isSavingProfileBio ||
+                  profileBioInputValue.trim() === (currentProfile?.bio ?? "").trim()
+                }
+                onMouseDown={(event) => event.preventDefault()}
                 type="submit"
               >
-                Сохранить
+                {isSavingProfileBio ? "Сохраняю..." : "Сохранить"}
               </button>
             </form>
           </section>
