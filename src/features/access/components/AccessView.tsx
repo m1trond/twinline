@@ -24,7 +24,7 @@ function getProfileLabel(profile: AccessProfileRow) {
 }
 
 const accessGridClass =
-  "sm:grid-cols-[minmax(180px,1.05fr)_minmax(240px,1.1fr)_minmax(120px,0.55fr)_110px_40px]";
+  "sm:grid-cols-[minmax(180px,1fr)_minmax(260px,1fr)_minmax(150px,0.7fr)_minmax(120px,0.7fr)_40px]";
 
 export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
   const [profiles, setProfiles] = useState<AccessProfileRow[]>([]);
