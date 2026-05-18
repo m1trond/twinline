@@ -85,6 +85,12 @@ export type AccessProfileRow = {
   updated_at: string | null;
 };
 
+export type ChatFolder = {
+  id: string;
+  name: string;
+  createdAt: string;
+};
+
 export type StoredNavigationState = {
   activeView?: ActiveView;
   selectedChatUserId?: string | null;

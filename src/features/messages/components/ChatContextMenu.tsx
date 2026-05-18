@@ -1,5 +1,4 @@
-import type { ProfileRow } from "@/shared/types";
-import type { MutedProfileUntil } from "@/shared/types";
+import type { ChatFolder, MutedProfileUntil, ProfileRow } from "@/shared/types";
 import type { ReactNode } from "react";
 import { isProfileMuted } from "@/shared/utils/storage";
 
@@ -11,7 +10,10 @@ type ChatContextMenuState = {
 
 type ChatContextMenuProps = {
   blockedByMeProfileIds: string[];
+  chatFolders: ChatFolder[];
   contextMenu: ChatContextMenuState | null;
+  createChatFolderFromMenu: (profile: ProfileRow) => void;
+  addChatToFolderFromMenu: (profile: ProfileRow, folderId: string) => void;
   muteProfileNotifications: (profileUserId: string, durationMs: number | null) => void;
   mutedProfiles: MutedProfileUntil;
   requestBlockChange: (profileUserId: string, targetLabel: string) => void;
@@ -30,7 +32,10 @@ const muteOptions = [
 
 export function ChatContextMenu({
   blockedByMeProfileIds,
+  chatFolders,
   contextMenu,
+  createChatFolderFromMenu,
+  addChatToFolderFromMenu,
   muteProfileNotifications,
   mutedProfiles,
   requestBlockChange,
@@ -80,14 +85,25 @@ export function ChatContextMenu({
             <ChevronIcon />
           </button>
           <div className="hush-context-menu invisible absolute left-full top-0 z-[91] w-[220px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
-            <SubMenuButton onClick={() => runChatMenuStub("Создание папок скоро подключим.")}>
+            <SubMenuButton onClick={() => createChatFolderFromMenu(profile)}>
               <span className="grid h-5 w-5 place-items-center">+</span>
               Новая папка
             </SubMenuButton>
-            <SubMenuButton onClick={() => runChatMenuStub("Папки скоро подключим.")}>
-              <span className="grid h-5 w-5 place-items-center">#</span>
-              Выбрать папку
-            </SubMenuButton>
+            {chatFolders.length > 0 ? (
+              chatFolders.map((folder) => (
+                <SubMenuButton
+                  key={folder.id}
+                  onClick={() => addChatToFolderFromMenu(profile, folder.id)}
+                >
+                  <span className="grid h-5 w-5 place-items-center">#</span>
+                  <span className="min-w-0 truncate">{folder.name}</span>
+                </SubMenuButton>
+              ))
+            ) : (
+              <p className="px-4 py-2 text-xs font-medium text-[#a1a1aa]">
+                Папок пока нет
+              </p>
+            )}
           </div>
         </div>
         <MenuButton

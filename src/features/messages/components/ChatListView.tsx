@@ -1,5 +1,5 @@
 import type { MouseEvent } from "react";
-import type { MessageRow, ProfileRow } from "@/shared/types";
+import type { ChatFolder, MessageRow, ProfileRow } from "@/shared/types";
 import { formatMessageTime } from "@/shared/utils/format";
 import { getChatPreviewText } from "@/shared/utils/messages";
 import { isProfileOnline } from "@/shared/utils/profile";
@@ -13,18 +13,24 @@ const avatarAltPrefix = "\u0410\u0432\u0430\u0442\u0430\u0440";
 const unreadPrefix = "\u041d\u0435\u043f\u0440\u043e\u0447\u0438\u0442\u0430\u043d\u043d\u043e\u0435 \u043e\u0442";
 
 type ChatListViewProps = {
+  chatFolders: ChatFolder[];
   chatProfiles: ProfileRow[];
   latestVisibleMessageByProfileId: Map<string, MessageRow>;
   openChatContextMenu: (event: MouseEvent<HTMLElement>, profile: ProfileRow) => void;
+  selectedChatFolderId: string | null;
+  setSelectedChatFolderId: (folderId: string | null) => void;
   setSelectedChatUserId: (userId: string) => void;
   setUnreadMessageCount: (count: number) => void;
   unreadMessagesByUserId: Map<string, number>;
 };
 
 export function ChatListView({
+  chatFolders,
   chatProfiles,
   latestVisibleMessageByProfileId,
   openChatContextMenu,
+  selectedChatFolderId,
+  setSelectedChatFolderId,
   setSelectedChatUserId,
   setUnreadMessageCount,
   unreadMessagesByUserId,
@@ -36,6 +42,25 @@ export function ChatListView({
       </div>
 
       <div className="scrollbar-hidden grid min-h-0 flex-1 content-start gap-2 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4">
+        {chatFolders.length > 0 ? (
+          <div className="scrollbar-hidden mb-1 flex gap-1.5 overflow-x-auto pb-1">
+            <FolderFilterButton
+              isActive={selectedChatFolderId === null}
+              onClick={() => setSelectedChatFolderId(null)}
+            >
+              Все
+            </FolderFilterButton>
+            {chatFolders.map((folder) => (
+              <FolderFilterButton
+                isActive={selectedChatFolderId === folder.id}
+                key={folder.id}
+                onClick={() => setSelectedChatFolderId(folder.id)}
+              >
+                {folder.name}
+              </FolderFilterButton>
+            ))}
+          </div>
+        ) : null}
         {chatProfiles.length === 0 ? (
           <article className="rounded-xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-4 text-center sm:rounded-2xl sm:p-6">
             <p className="text-sm font-medium">{emptyChatsTitle}</p>
@@ -115,5 +140,29 @@ export function ChatListView({
         })}
       </div>
     </div>
+  );
+}
+
+function FolderFilterButton({
+  children,
+  isActive,
+  onClick,
+}: {
+  children: string;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className={`min-h-8 shrink-0 rounded-lg border px-3 text-xs font-medium transition ${
+        isActive
+          ? "border-[#f4f4f5]/60 bg-[#f4f4f5] text-[#050505]"
+          : "border-[#3f3f46]/35 bg-[#f4f4f5]/10 text-[#f4f4f5] hover:bg-[#f4f4f5]/18"
+      }`}
+      onClick={onClick}
+      type="button"
+    >
+      {children}
+    </button>
   );
 }

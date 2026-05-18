@@ -9,6 +9,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import { flushSync } from "react-dom";
 import { supabase } from "@/lib/supabase";
@@ -76,6 +77,7 @@ import type {
   ActiveView,
   CallSignalType,
   CallStatus,
+  ChatFolder,
   FavoriteItem,
   MessageRow,
   MutedProfileUntil,
@@ -277,6 +279,9 @@ export default function Home() {
     errorMessage,
     setErrorMessage,
   } = useFloatingUiState();
+  const [chatFolders, setChatFolders] = useState<ChatFolder[]>([]);
+  const [chatFolderAssignments, setChatFolderAssignments] = useState<Record<string, string>>({});
+  const [selectedChatFolderId, setSelectedChatFolderId] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const messageInputRef = useRef<HTMLInputElement | null>(null);
@@ -369,6 +374,71 @@ export default function Home() {
     setErrorMessage,
     user,
   });
+
+  useEffect(() => {
+    if (!user) {
+      const frameId = window.requestAnimationFrame(() => {
+        setChatFolders([]);
+        setChatFolderAssignments({});
+        setSelectedChatFolderId(null);
+      });
+
+      return () => window.cancelAnimationFrame(frameId);
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      try {
+        const storedFolders = window.localStorage.getItem(`hush-chat-folders-${user.id}`);
+        const storedAssignments = window.localStorage.getItem(`hush-chat-folder-assignments-${user.id}`);
+        const parsedFolders = storedFolders ? JSON.parse(storedFolders) : [];
+        const parsedAssignments = storedAssignments ? JSON.parse(storedAssignments) : {};
+
+        setChatFolders(
+          Array.isArray(parsedFolders)
+            ? parsedFolders.filter((folder): folder is ChatFolder => {
+                return (
+                  folder &&
+                  typeof folder.id === "string" &&
+                  typeof folder.name === "string" &&
+                  typeof folder.createdAt === "string"
+                );
+              })
+            : [],
+        );
+        setChatFolderAssignments(
+          parsedAssignments &&
+            typeof parsedAssignments === "object" &&
+            !Array.isArray(parsedAssignments)
+            ? Object.fromEntries(
+                Object.entries(parsedAssignments).filter(
+                  (entry): entry is [string, string] =>
+                    typeof entry[0] === "string" && typeof entry[1] === "string",
+                ),
+              )
+            : {},
+        );
+      } catch {
+        setChatFolders([]);
+        setChatFolderAssignments({});
+      }
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [user]);
+
+  useEffect(() => {
+    if (!selectedChatFolderId) {
+      return;
+    }
+
+    if (!chatFolders.some((folder) => folder.id === selectedChatFolderId)) {
+      const frameId = window.requestAnimationFrame(() => {
+        setSelectedChatFolderId(null);
+      });
+
+      return () => window.cancelAnimationFrame(frameId);
+    }
+  }, [chatFolders, selectedChatFolderId]);
 
   const selectedMessageIdSet = useMemo(() => {
     return new Set(selectedMessageIds);
@@ -745,6 +815,15 @@ export default function Home() {
         firstProfile.display_name.localeCompare(secondProfile.display_name, "ru"),
       );
   }, [dialogProfileIds, profiles, user?.id]);
+  const visibleChatProfiles = useMemo(() => {
+    if (!selectedChatFolderId) {
+      return chatProfiles;
+    }
+
+    return chatProfiles.filter(
+      (profile) => chatFolderAssignments[profile.user_id] === selectedChatFolderId,
+    );
+  }, [chatFolderAssignments, chatProfiles, selectedChatFolderId]);
   const searchableProfiles = useMemo(() => {
     const query = chatSearchQuery.trim().replace(/^@+/, "").toLowerCase();
 
@@ -2111,6 +2190,78 @@ export default function Home() {
   function runChatMenuStub(message: string) {
     setChatContextMenu(null);
     setErrorMessage(message);
+  }
+
+  function saveChatFolders(nextFolders: ChatFolder[]) {
+    if (!user) {
+      return;
+    }
+
+    setChatFolders(nextFolders);
+    window.localStorage.setItem(
+      `hush-chat-folders-${user.id}`,
+      JSON.stringify(nextFolders),
+    );
+  }
+
+  function saveChatFolderAssignments(nextAssignments: Record<string, string>) {
+    if (!user) {
+      return;
+    }
+
+    setChatFolderAssignments(nextAssignments);
+    window.localStorage.setItem(
+      `hush-chat-folder-assignments-${user.id}`,
+      JSON.stringify(nextAssignments),
+    );
+  }
+
+  function createChatFolderFromMenu(profile: ProfileRow) {
+    const folderName = window.prompt("Название папки");
+    const nextFolderName = folderName?.trim();
+
+    if (!nextFolderName) {
+      return;
+    }
+
+    const existingFolder = chatFolders.find(
+      (folder) => folder.name.toLowerCase() === nextFolderName.toLowerCase(),
+    );
+    const folder =
+      existingFolder ??
+      {
+        createdAt: new Date().toISOString(),
+        id: `folder-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        name: nextFolderName.slice(0, 28),
+      };
+    const nextFolders = existingFolder ? chatFolders : [...chatFolders, folder];
+
+    saveChatFolders(nextFolders);
+    saveChatFolderAssignments({
+      ...chatFolderAssignments,
+      [profile.user_id]: folder.id,
+    });
+    setSelectedChatFolderId(folder.id);
+    setChatContextMenu(null);
+    setErrorMessage(`Чат добавлен в папку «${folder.name}».`);
+  }
+
+  function addChatToFolderFromMenu(profile: ProfileRow, folderId: string) {
+    const folder = chatFolders.find((currentFolder) => currentFolder.id === folderId);
+
+    if (!folder) {
+      setErrorMessage("Папка не найдена.");
+      setChatContextMenu(null);
+      return;
+    }
+
+    saveChatFolderAssignments({
+      ...chatFolderAssignments,
+      [profile.user_id]: folder.id,
+    });
+    setSelectedChatFolderId(folder.id);
+    setChatContextMenu(null);
+    setErrorMessage(`Чат добавлен в папку «${folder.name}».`);
   }
 
   async function copyMessageText(message: MessageRow) {
@@ -3698,9 +3849,12 @@ export default function Home() {
         />
       ) : selectedChatUserId === null ? (
         <ChatListView
-          chatProfiles={chatProfiles}
+          chatFolders={chatFolders}
+          chatProfiles={visibleChatProfiles}
           latestVisibleMessageByProfileId={latestVisibleMessageByProfileId}
           openChatContextMenu={openChatContextMenu}
+          selectedChatFolderId={selectedChatFolderId}
+          setSelectedChatFolderId={setSelectedChatFolderId}
           setSelectedChatUserId={setSelectedChatUserId}
           setUnreadMessageCount={setUnreadMessageCount}
           unreadMessagesByUserId={unreadMessagesByUserId}
@@ -3808,7 +3962,10 @@ export default function Home() {
       />
       <ChatContextMenu
         blockedByMeProfileIds={blockedByMeProfileIds}
+        chatFolders={chatFolders}
         contextMenu={chatContextMenu}
+        createChatFolderFromMenu={createChatFolderFromMenu}
+        addChatToFolderFromMenu={addChatToFolderFromMenu}
         muteProfileNotifications={muteProfileNotifications}
         mutedProfiles={mutedProfiles}
         requestBlockChange={requestBlockChange}
