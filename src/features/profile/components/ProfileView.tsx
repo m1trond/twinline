@@ -63,8 +63,13 @@ export function ProfileView({
   user,
 }: ProfileViewProps) {
   return (
-    <div className="hush-panel-transition min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4">
-      <div className="w-full max-w-[760px]">
+    <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
+      <div className="mb-2 flex h-[50px] min-h-[50px] items-center rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
+        <h2 className="text-base font-medium text-[#f4f4f5]">Профиль</h2>
+      </div>
+
+      <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4">
+        <div className="w-full max-w-[760px]">
         <div className="mb-3 flex items-center gap-3 border-b border-[#3f3f46]/35 pb-3">
           <button
             className="grid h-[74px] w-[74px] shrink-0 place-items-center overflow-hidden rounded-[22px] bg-[#18181b] text-base font-medium text-[#f4f4f5] transition hover:scale-[1.03] focus:outline-none sm:h-[86px] sm:w-[86px] sm:rounded-[24px]"
@@ -227,6 +232,7 @@ export function ProfileView({
               Позже подключим вход по SMS.
             </p>
           </section>
+        </div>
         </div>
       </div>
     </div>
