@@ -168,6 +168,7 @@ export default function Home() {
     setIsUploadingAvatar,
   } = useProfileEditorState();
   const [isSavingProfileBio, setIsSavingProfileBio] = useState(false);
+  const [profileBioSaveError, setProfileBioSaveError] = useState("");
   const [profileBioSavedSnapshot, setProfileBioSavedSnapshot] = useState<{
     bio: string;
     userId: string;
@@ -978,6 +979,12 @@ export default function Home() {
   const profileUsernameInputValue = profileUsername ?? currentProfile?.username ?? "";
   const canViewAccess =
     currentProfile?.username?.toLowerCase() === accessOwnerUsername;
+
+  function handleProfileBioChange(nextBio: string) {
+    setProfileBio(nextBio.slice(0, 100));
+    setProfileBioSaveError("");
+  }
+
   const {
     avatarGalleryUrl,
     deleteAvatarFromGallery,
@@ -3069,7 +3076,7 @@ export default function Home() {
     const nextBio = profileBioInputValue.trim();
 
     if (nextBio.length > 100) {
-      setErrorMessage("Описание должно быть не длиннее 100 символов.");
+      setProfileBioSaveError("Описание должно быть не длиннее 100 символов.");
       return;
     }
 
@@ -3082,6 +3089,7 @@ export default function Home() {
 
     isSavingProfileBioRef.current = true;
     setIsSavingProfileBio(true);
+    setProfileBioSaveError("");
     setProfileBio(nextBio);
     setProfileBioSavedSnapshot({
       bio: nextBio,
@@ -3109,7 +3117,13 @@ export default function Home() {
     if (error) {
       setProfileBio(nextBio);
       setProfileBioSavedSnapshot(previousSavedSnapshot);
-      setErrorMessage("Не получилось сохранить описание.");
+      const bioErrorMessage =
+        error.message.includes("bio")
+          ? "В Supabase не применена колонка bio. Запусти SQL из supabase/add-profile-bio.sql."
+          : `Не получилось сохранить описание: ${error.message}`;
+
+      setProfileBioSaveError(bioErrorMessage);
+      setErrorMessage(bioErrorMessage);
       return;
     }
 
@@ -3124,6 +3138,7 @@ export default function Home() {
     }
 
     setErrorMessage("");
+    setProfileBioSaveError("");
   }
 
   async function updateProfileBio(event: FormEvent<HTMLFormElement>) {
@@ -3851,11 +3866,12 @@ export default function Home() {
           nextUsernameChangeDate={nextUsernameChangeDate}
           openAvatarGallery={openAvatarGallery}
           profileBioInputValue={profileBioInputValue}
+          profileBioSaveError={profileBioSaveError}
           profileName={profileName}
           profileNameInputValue={profileNameInputValue}
           profileUsernameError={profileUsernameError}
           profileUsernameInputValue={profileUsernameInputValue}
-          setProfileBio={setProfileBio}
+          setProfileBio={handleProfileBioChange}
           setProfileName={setProfileName}
           setProfileUsername={setProfileUsername}
           setProfileUsernameError={setProfileUsernameError}

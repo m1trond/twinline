@@ -18,6 +18,7 @@ type ProfileViewProps = {
   nextUsernameChangeDate: string | null;
   openAvatarGallery: (url: string | null | undefined) => void;
   profileBioInputValue: string;
+  profileBioSaveError: string;
   profileName: string;
   profileNameInputValue: string;
   profileUsernameError: string;
@@ -53,6 +54,7 @@ export function ProfileView({
   nextUsernameChangeDate,
   openAvatarGallery,
   profileBioInputValue,
+  profileBioSaveError,
   profileName,
   profileNameInputValue,
   profileUsernameError,
@@ -199,6 +201,11 @@ export function ProfileView({
               >
                 {isSavingProfileBio ? "Сохраняю..." : "Сохранить"}
               </button>
+              {profileBioSaveError ? (
+                <p className="text-xs font-medium leading-5 text-red-300">
+                  {profileBioSaveError}
+                </p>
+              ) : null}
             </form>
           </section>
 
