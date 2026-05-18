@@ -11,7 +11,6 @@ type ProfileViewProps = {
   avatarInputRef: RefObject<HTMLInputElement | null>;
   currentProfile: ProfileRow | null | undefined;
   handleAvatarChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  isProfileBioDirty: boolean;
   isSavingProfileBio: boolean;
   isUploadingAvatar: boolean;
   isUsernameChangeAllowed: boolean;
@@ -22,7 +21,6 @@ type ProfileViewProps = {
   profileNameInputValue: string;
   profileUsernameError: string;
   profileUsernameInputValue: string;
-  saveProfileBio: () => void | Promise<void>;
   setProfileBio: (bio: string) => void;
   setProfileName: (name: string) => void;
   setProfileUsername: (username: string) => void;
@@ -47,7 +45,6 @@ export function ProfileView({
   avatarInputRef,
   currentProfile,
   handleAvatarChange,
-  isProfileBioDirty,
   isSavingProfileBio,
   isUploadingAvatar,
   isUsernameChangeAllowed,
@@ -58,7 +55,6 @@ export function ProfileView({
   profileNameInputValue,
   profileUsernameError,
   profileUsernameInputValue,
-  saveProfileBio,
   setProfileBio,
   setProfileName,
   setProfileUsername,
@@ -183,7 +179,6 @@ export function ProfileView({
               <textarea
                 className="min-h-14 resize-none rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 py-2 text-sm leading-5 outline-none placeholder:text-[#a1a1aa]/65 focus:border-[#f4f4f5]"
                 maxLength={100}
-                onBlur={() => void saveProfileBio()}
                 onChange={(event) => setProfileBio(event.target.value.slice(0, 100))}
                 placeholder="Расскажи пару слов о себе"
                 value={profileBioInputValue}
@@ -192,9 +187,8 @@ export function ProfileView({
                 className={buttonClass}
                 disabled={
                   isSavingProfileBio ||
-                  !isProfileBioDirty
+                  profileBioInputValue.trim() === (currentProfile?.bio ?? "").trim()
                 }
-                onMouseDown={(event) => event.preventDefault()}
                 type="submit"
               >
                 {isSavingProfileBio ? "Сохраняю..." : "Сохранить"}

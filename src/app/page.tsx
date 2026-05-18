@@ -966,9 +966,6 @@ export default function Home() {
   const profileNameInputValue = profileName || activeUserName;
   const profileBioInputValue = profileBio ?? currentProfile?.bio ?? "";
   const profileUsernameInputValue = profileUsername ?? currentProfile?.username ?? "";
-  const isProfileBioDirty =
-    profileBio !== null &&
-    profileBio.trim() !== (currentProfile?.bio ?? "").trim();
   const canViewAccess =
     currentProfile?.username?.toLowerCase() === accessOwnerUsername;
   const {
@@ -3834,7 +3831,6 @@ export default function Home() {
           avatarInputRef={avatarInputRef}
           currentProfile={currentProfile}
           handleAvatarChange={handleAvatarChange}
-          isProfileBioDirty={isProfileBioDirty}
           isSavingProfileBio={isSavingProfileBio}
           isUploadingAvatar={isUploadingAvatar}
           isUsernameChangeAllowed={isUsernameChangeAllowed}
@@ -3845,7 +3841,6 @@ export default function Home() {
           profileNameInputValue={profileNameInputValue}
           profileUsernameError={profileUsernameError}
           profileUsernameInputValue={profileUsernameInputValue}
-          saveProfileBio={saveProfileBio}
           setProfileBio={setProfileBio}
           setProfileName={setProfileName}
           setProfileUsername={setProfileUsername}
