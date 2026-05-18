@@ -52,7 +52,7 @@ export function VoiceMessage({
 
   return (
     <div
-      className={`min-w-[min(320px,70vw)] rounded-2xl px-3 py-2 ${
+      className={`hush-voice-message min-w-[min(320px,70vw)] rounded-2xl px-3 py-2 ${
         isMine ? "bg-[#2f2f2f] text-[#f4f4f5]" : "bg-[#262626] text-[#f4f4f5]"
       }`}
     >

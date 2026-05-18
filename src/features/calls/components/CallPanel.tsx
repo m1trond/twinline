@@ -51,7 +51,7 @@ export function CallPanel({
 
   return (
     <aside
-      className={`fixed z-[60] cursor-move touch-none rounded-3xl border border-[#3f3f46]/70 bg-[#111111]/96 text-center shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-xl ${
+      className={`hush-call-panel fixed z-[60] cursor-move touch-none rounded-3xl border border-[#3f3f46]/70 bg-[#111111]/96 text-center shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-xl ${
         isCallPanelCollapsed
           ? "w-[min(286px,calc(100vw-16px))] border-[#3f3f46]/35 bg-[#18181b]/94 p-2.5 shadow-[0_18px_55px_rgba(0,0,0,0.42)]"
           : "w-[min(350px,calc(100vw-16px))] p-3 sm:w-[min(350px,calc(100vw-24px))] sm:p-5"

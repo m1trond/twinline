@@ -31,7 +31,7 @@ export function StickerPicker({
         type="button"
       />
       <div
-        className="fixed z-[80] w-[min(300px,calc(100vw-24px))] rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/98 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.58)] backdrop-blur-xl"
+        className="hush-sticker-picker fixed z-[80] w-[min(300px,calc(100vw-24px))] rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/98 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.58)] backdrop-blur-xl"
         onClick={(event) => event.stopPropagation()}
         onPointerDown={(event) => event.stopPropagation()}
         style={{

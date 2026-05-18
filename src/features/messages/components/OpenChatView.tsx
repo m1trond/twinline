@@ -658,7 +658,7 @@ export function OpenChatView({
                             </div>
                           </div>
                         ) : sticker ? (
-                          <div className="px-1 py-0.5">
+                          <div className="hush-sticker-message px-1 py-0.5">
                             <span className="block text-6xl leading-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.25)] sm:text-7xl">
                               {sticker}
                             </span>
