@@ -228,7 +228,7 @@ export function OpenChatView({
                     </div>
                   </div>
                 ) : null}
-                <div className="mb-2 flex h-[60px] min-h-[60px] items-center justify-between gap-2 overflow-hidden rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
+                <div className="mb-2 flex h-[50px] min-h-[50px] items-center justify-between gap-2 overflow-hidden rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
                   <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
                     <button
                       aria-label="Назад к чатам"

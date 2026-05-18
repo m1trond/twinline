@@ -104,15 +104,13 @@ export function SettingsView({
   ];
 
   return (
-    <div className="hush-panel-transition min-h-0 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
-      <div className="mb-4 border-b border-[#3f3f46]/35 pb-4 sm:mb-5 sm:pb-5">
+    <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
+      <div className="mb-2 flex h-[50px] min-h-[50px] items-center rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
         <h2 className="text-base font-medium sm:text-base">Настройки</h2>
-        <p className="mt-1 text-sm leading-5 text-[#a1a1aa]">
-          Уведомления, приватность, аккаунт и внешний вид.
-        </p>
       </div>
 
-      <div className="grid gap-3 sm:gap-4 xl:grid-cols-2">
+      <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
+        <div className="grid gap-3 sm:gap-4 xl:grid-cols-2">
         <SettingsCard
           description="Общие и личные уведомления."
           icon={<BellIcon />}
@@ -245,6 +243,7 @@ export function SettingsView({
             />
           ))}
         </SettingsCard>
+        </div>
       </div>
     </div>
   );
