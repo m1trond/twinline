@@ -19,6 +19,7 @@ import { ImagePreviewOverlay } from "@/components/media/ImagePreviewOverlay";
 import { AuthScreen } from "@/features/auth/AuthScreen";
 import { useAuthFormState } from "@/features/auth/useAuthFormState";
 import { useAuthSessionState } from "@/features/auth/useAuthSessionState";
+import { AccessView } from "@/features/access/components/AccessView";
 import { CallPanel } from "@/features/calls/components/CallPanel";
 import { useCallPanelEffects } from "@/features/calls/useCallPanelEffects";
 import { useCallSignals } from "@/features/calls/useCallSignals";
@@ -60,6 +61,7 @@ import { SettingsView } from "@/features/settings/components/SettingsView";
 import { usePrivacySettingsState } from "@/features/settings/usePrivacySettingsState";
 import {
   audioMessagePrefix,
+  accessOwnerUsername,
   callMessagePrefix,
   imageMessagePrefix,
   maxAttachmentSize,
@@ -837,6 +839,8 @@ export default function Home() {
   const profileNameInputValue = profileName || activeUserName;
   const profileBioInputValue = profileBio ?? currentProfile?.bio ?? "";
   const profileUsernameInputValue = profileUsername ?? currentProfile?.username ?? "";
+  const canViewAccess =
+    currentProfile?.username?.toLowerCase() === accessOwnerUsername;
   const {
     avatarGalleryUrl,
     deleteAvatarFromGallery,
@@ -863,6 +867,12 @@ export default function Home() {
     setSelectedImageUrl,
     user,
   });
+
+  useEffect(() => {
+    if (activeView === "access" && !canViewAccess) {
+      setActiveView("profile");
+    }
+  }, [activeView, canViewAccess, setActiveView]);
   const incomingCallerProfile = incomingCall
     ? profilesByUserId.get(incomingCall.sender_id)
     : null;
@@ -3587,6 +3597,7 @@ export default function Home() {
     <>
     <AppShell
       activeView={activeView}
+      canViewAccess={canViewAccess}
       chatSearchQuery={chatSearchQuery}
       isLightThemeEnabled={isLightThemeEnabled}
       searchableProfiles={searchableProfiles}
@@ -3659,6 +3670,8 @@ export default function Home() {
         />
       ) : activeView === "music" ? (
         <MusicView />
+      ) : activeView === "access" ? (
+        <AccessView canViewAccess={canViewAccess} />
       ) : activeView === "settings" ? (
         <SettingsView
           activeUserName={activeUserName}

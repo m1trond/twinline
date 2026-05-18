@@ -8,6 +8,7 @@ import type { ViewedProfileState } from "@/features/navigation/useNavigationStat
 
 type AppShellProps = {
   activeView: ActiveView;
+  canViewAccess: boolean;
   chatSearchQuery: string;
   children: ReactNode;
   isLightThemeEnabled: boolean;
@@ -55,6 +56,7 @@ function clampSidebarWidth(width: number, gridElement: HTMLElement | null = null
 
 export function AppShell({
   activeView,
+  canViewAccess,
   chatSearchQuery,
   children,
   isLightThemeEnabled,
@@ -89,6 +91,9 @@ export function AppShell({
   const collapsedSearchButtonRef = useRef<HTMLButtonElement | null>(null);
   const collapsedSearchPopoverRef = useRef<HTMLDivElement | null>(null);
   const sidebarGridRef = useRef<HTMLElement | null>(null);
+  const visibleNavItems = canViewAccess
+    ? navItems
+    : navItems.filter((item) => item.view !== "access");
   const sidebarGridStyle = {
     "--sidebar-width": `${sidebarWidth}px`,
   } as CSSProperties;
@@ -199,7 +204,7 @@ export function AppShell({
           </header>
 
           <nav className="scrollbar-hidden mb-2 flex shrink-0 gap-1.5 overflow-x-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.24)] backdrop-blur-md sm:mb-3 sm:gap-2 sm:rounded-2xl sm:p-2 lg:hidden">
-            {[...navItems, settingsNavItem].map((item) => (
+            {[...visibleNavItems, settingsNavItem].map((item) => (
               <NavButton
                 activeView={activeView}
                 item={item}
@@ -430,7 +435,7 @@ export function AppShell({
               </div>
 
               <nav className={`grid w-full gap-2 ${isSidebarIconMode ? "justify-items-center" : ""}`}>
-                {navItems.map((item) => (
+                {visibleNavItems.map((item) => (
                   <NavButton
                     activeView={activeView}
                     iconOnly={isSidebarIconMode}
