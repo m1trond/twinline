@@ -23,6 +23,9 @@ function getProfileLabel(profile: AccessProfileRow) {
   return profile.display_name?.trim() || profile.email || profile.phone || "Пользователь";
 }
 
+const accessGridClass =
+  "sm:grid-cols-[minmax(180px,1.05fr)_minmax(240px,1.1fr)_minmax(120px,0.55fr)_110px_40px]";
+
 export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
   const [profiles, setProfiles] = useState<AccessProfileRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -160,11 +163,11 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
 
         {visibleProfiles.length > 0 ? (
           <div className="grid gap-1.5">
-            <div className="hidden px-3 text-[10px] font-medium uppercase leading-4 tracking-[0.16em] text-[#a1a1aa] sm:grid sm:grid-cols-[minmax(180px,1.2fr)_minmax(160px,1fr)_minmax(170px,1fr)_minmax(120px,auto)_auto] sm:items-center">
-              <span>Ник + имя</span>
-              <span>Почта</span>
-              <span>Телефон</span>
-              <span className="text-right">Регистрация</span>
+            <div className={`hidden px-3 text-[10px] font-medium uppercase leading-4 tracking-[0.16em] text-[#a1a1aa] sm:grid ${accessGridClass} sm:items-center sm:gap-3`}>
+              <span className="text-left">Ник + имя</span>
+              <span className="text-left">Почта</span>
+              <span className="text-left">Телефон</span>
+              <span className="text-left">Регистрация</span>
               <span className="sr-only">Действия</span>
             </div>
             {visibleProfiles.map((profile) => {
@@ -172,7 +175,7 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
 
               return (
                 <article
-                  className="grid gap-2 rounded-xl border border-[#3f3f46]/35 bg-black/22 px-3 py-2 text-sm sm:grid-cols-[minmax(180px,1.2fr)_minmax(160px,1fr)_minmax(170px,1fr)_minmax(120px,auto)_auto] sm:items-center"
+                  className={`grid gap-2 rounded-xl border border-[#3f3f46]/35 bg-black/22 px-3 py-2 text-sm sm:grid ${accessGridClass} sm:items-center sm:gap-3`}
                   key={profile.user_id}
                 >
                   <div className="min-w-0">
@@ -193,7 +196,7 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
                       {profile.phone || "Не указан"}
                     </p>
                   </div>
-                  <div className="min-w-0 sm:text-right">
+                  <div className="min-w-0">
                     <p className="text-sm font-medium leading-5 text-[#f4f4f5]">
                       {formatAccessDate(profile.created_at)}
                     </p>
