@@ -186,7 +186,11 @@ export function ProfileView({
                 value={profileBioInputValue}
               />
               <button
-                className={buttonClass}
+                className={`min-h-8 justify-self-start rounded-lg px-3 text-xs font-medium text-[#050505] transition disabled:cursor-not-allowed ${
+                  isSavingProfileBio || !isProfileBioChanged
+                    ? "bg-[#52525b] opacity-70"
+                    : "bg-[#f4f4f5] hover:bg-[#e5e5e5]"
+                }`}
                 disabled={
                   isSavingProfileBio ||
                   !isProfileBioChanged

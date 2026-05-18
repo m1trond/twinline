@@ -3078,8 +3078,15 @@ export default function Home() {
     }
 
     const updatedAt = new Date().toISOString();
+    const previousSavedSnapshot = profileBioSavedSnapshot;
+
     isSavingProfileBioRef.current = true;
     setIsSavingProfileBio(true);
+    setProfileBio(nextBio);
+    setProfileBioSavedSnapshot({
+      bio: nextBio,
+      userId: user.id,
+    });
 
     const { data, error } = await supabase
       .from("profiles")
@@ -3105,6 +3112,8 @@ export default function Home() {
     setIsSavingProfileBio(false);
 
     if (error) {
+      setProfileBio(nextBio);
+      setProfileBioSavedSnapshot(previousSavedSnapshot);
       setErrorMessage("Не получилось сохранить описание.");
       return;
     }
@@ -3119,11 +3128,6 @@ export default function Home() {
       });
     }
 
-    setProfileBio(nextBio);
-    setProfileBioSavedSnapshot({
-      bio: nextBio,
-      userId: user.id,
-    });
     setErrorMessage("");
   }
 
