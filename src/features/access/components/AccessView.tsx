@@ -29,7 +29,7 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const userCountText = useMemo(() => {
-    const count = profiles.length;
+    const count = profiles.filter((profile) => profile.user_id !== currentUserId).length;
 
     if (count % 10 === 1 && count % 100 !== 11) {
       return `${count} пользователь`;
@@ -40,7 +40,11 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
     }
 
     return `${count} пользователей`;
-  }, [profiles.length]);
+  }, [currentUserId, profiles]);
+  const visibleProfiles = useMemo(
+    () => profiles.filter((profile) => profile.user_id !== currentUserId),
+    [currentUserId, profiles],
+  );
 
   async function loadProfiles() {
     setIsLoading(true);
@@ -148,16 +152,15 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
           </div>
         ) : null}
 
-        {!errorMessage && profiles.length === 0 && !isLoading ? (
+        {!errorMessage && visibleProfiles.length === 0 && !isLoading ? (
           <div className="rounded-xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-5 text-center sm:rounded-2xl">
             <p className="text-sm font-medium text-[#f4f4f5]">Пользователей пока нет</p>
           </div>
         ) : null}
 
-        {profiles.length > 0 ? (
+        {visibleProfiles.length > 0 ? (
           <div className="grid gap-1.5">
-            {profiles.map((profile) => {
-              const isSelf = profile.user_id === currentUserId;
+            {visibleProfiles.map((profile) => {
               const isDeleting = deletingUserId === profile.user_id;
 
               return (
@@ -198,12 +201,18 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
                     </p>
                   </div>
                   <button
-                    className="min-h-8 rounded-xl border border-red-400/30 bg-red-500/10 px-3 text-xs font-medium text-red-100 transition hover:bg-red-500/18 disabled:cursor-not-allowed disabled:opacity-45"
-                    disabled={isSelf || isDeleting}
+                    aria-label={`Удалить аккаунт ${profile.email || profile.username || profile.display_name || profile.user_id}`}
+                    className="grid h-8 w-8 place-items-center rounded-xl border border-red-400/30 bg-red-500/10 text-red-100 transition hover:bg-red-500/18 disabled:cursor-not-allowed disabled:opacity-45"
+                    disabled={isDeleting}
                     onClick={() => removeProfile(profile)}
+                    title="Удалить"
                     type="button"
                   >
-                    {isDeleting ? "Удаляю..." : isSelf ? "Это ты" : "Удалить"}
+                    {isDeleting ? (
+                      <span className="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent" />
+                    ) : (
+                      <TrashIcon />
+                    )}
                   </button>
                 </article>
               );
@@ -212,5 +221,40 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
         ) : null}
       </div>
     </div>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M3 6h18"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+      <path
+        d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+      <path
+        d="M19 6 18 20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+      <path
+        d="M10 11v6M14 11v6"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
   );
 }
