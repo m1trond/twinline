@@ -175,8 +175,8 @@ export function ProfileView({
             <p className={labelClass}>О себе</p>
             <form className="mt-2 grid gap-2" onSubmit={updateProfileBio}>
               <textarea
-                className="min-h-[76px] resize-none rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 py-2 text-sm leading-5 outline-none placeholder:text-[#a1a1aa]/65 focus:border-[#f4f4f5]"
-                maxLength={220}
+                className="min-h-14 resize-none rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 py-2 text-sm leading-5 outline-none placeholder:text-[#a1a1aa]/65 focus:border-[#f4f4f5]"
+                maxLength={100}
                 onChange={(event) => setProfileBio(event.target.value)}
                 placeholder="Расскажи пару слов о себе"
                 value={profileBioInputValue}
