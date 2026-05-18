@@ -11,6 +11,7 @@ type ProfileViewProps = {
   avatarInputRef: RefObject<HTMLInputElement | null>;
   currentProfile: ProfileRow | null | undefined;
   handleAvatarChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  isProfileBioDirty: boolean;
   isSavingProfileBio: boolean;
   isUploadingAvatar: boolean;
   isUsernameChangeAllowed: boolean;
@@ -46,6 +47,7 @@ export function ProfileView({
   avatarInputRef,
   currentProfile,
   handleAvatarChange,
+  isProfileBioDirty,
   isSavingProfileBio,
   isUploadingAvatar,
   isUsernameChangeAllowed,
@@ -190,7 +192,7 @@ export function ProfileView({
                 className={buttonClass}
                 disabled={
                   isSavingProfileBio ||
-                  profileBioInputValue.trim() === (currentProfile?.bio ?? "").trim()
+                  !isProfileBioDirty
                 }
                 onMouseDown={(event) => event.preventDefault()}
                 type="submit"
