@@ -63,11 +63,13 @@ export function FileAttachment({
         <span className="block truncate text-sm font-semibold leading-5">
           {file.name}
         </span>
-        <span className="block truncate text-xs font-medium opacity-60">
-          {formatFileSize(file.size)}
-          {file.type ? ` · ${file.type}` : ""}
+        <span className="flex min-w-0 items-center gap-2 text-xs font-medium opacity-60">
+          <span className="min-w-0 truncate">
+            {formatFileSize(file.size)}
+            {file.type ? ` · ${file.type}` : ""}
+          </span>
           {sentAt ? (
-            <span className="ml-2 inline-flex items-center gap-1 align-baseline">
+            <span className="inline-flex shrink-0 items-center gap-1">
               {formatMessageTime(sentAt)}
               {receiptStatus ? (
                 <MessageReceiptIcon className="h-4 w-4" status={receiptStatus} />
