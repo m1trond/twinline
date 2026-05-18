@@ -27,6 +27,7 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
   const [profiles, setProfiles] = useState<AccessProfileRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [detailsUserId, setDetailsUserId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const userCountText = useMemo(() => {
     const count = profiles.filter((profile) => profile.user_id !== currentUserId).length;
@@ -68,6 +69,12 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
 
     let isMounted = true;
 
+    function closeDetailsOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setDetailsUserId(null);
+      }
+    }
+
     async function syncProfiles() {
       setIsLoading(true);
       const { data, error } = await fetchAccessProfiles();
@@ -88,11 +95,13 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
     }
 
     syncProfiles();
+    window.addEventListener("keydown", closeDetailsOnEscape);
 
     const intervalId = window.setInterval(syncProfiles, 30_000);
 
     return () => {
       isMounted = false;
+      window.removeEventListener("keydown", closeDetailsOnEscape);
       window.clearInterval(intervalId);
     };
   }, [canViewAccess]);
@@ -200,20 +209,55 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
                       {formatAccessDate(profile.created_at)}
                     </p>
                   </div>
-                  <button
-                    aria-label={`Удалить аккаунт ${profile.email || profile.username || profile.display_name || profile.user_id}`}
-                    className="grid h-8 w-8 place-items-center rounded-xl border border-red-400/30 bg-red-500/10 text-red-100 transition hover:bg-red-500/18 disabled:cursor-not-allowed disabled:opacity-45"
-                    disabled={isDeleting}
-                    onClick={() => removeProfile(profile)}
-                    title="Удалить"
-                    type="button"
-                  >
-                    {isDeleting ? (
-                      <span className="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent" />
-                    ) : (
-                      <TrashIcon />
-                    )}
-                  </button>
+                  <div className="relative flex items-center gap-1.5 justify-self-start sm:justify-self-end">
+                    <button
+                      aria-expanded={detailsUserId === profile.user_id}
+                      aria-label={`Показать данные аккаунта ${profile.email || profile.username || profile.display_name || profile.user_id}`}
+                      className="grid h-8 w-8 place-items-center rounded-xl border border-[#3f3f46]/35 bg-[#f4f4f5]/10 text-[#f4f4f5] transition hover:bg-[#f4f4f5]/18"
+                      onClick={() =>
+                        setDetailsUserId((currentUserId) =>
+                          currentUserId === profile.user_id ? null : profile.user_id,
+                        )
+                      }
+                      title="Данные"
+                      type="button"
+                    >
+                      <KeyIcon />
+                    </button>
+                    <button
+                      aria-label={`Удалить аккаунт ${profile.email || profile.username || profile.display_name || profile.user_id}`}
+                      className="grid h-8 w-8 place-items-center rounded-xl border border-red-400/30 bg-red-500/10 text-red-100 transition hover:bg-red-500/18 disabled:cursor-not-allowed disabled:opacity-45"
+                      disabled={isDeleting}
+                      onClick={() => removeProfile(profile)}
+                      title="Удалить"
+                      type="button"
+                    >
+                      {isDeleting ? (
+                        <span className="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent" />
+                      ) : (
+                        <TrashIcon />
+                      )}
+                    </button>
+                    {detailsUserId === profile.user_id ? (
+                      <>
+                        <button
+                          aria-label="Закрыть данные аккаунта"
+                          className="fixed inset-0 z-[75] cursor-default bg-transparent"
+                          onClick={() => setDetailsUserId(null)}
+                          type="button"
+                        />
+                        <div className="absolute right-0 top-[calc(100%+8px)] z-[80] w-[min(300px,calc(100vw-32px))] rounded-2xl border border-[#3f3f46]/55 bg-[#111111]/98 p-3 text-left shadow-[0_18px_55px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+                          <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-[#e5e5e5]">
+                            Данные аккаунта
+                          </p>
+                          <AccessDetail label="Ник" value={profile.username ? `@${profile.username}` : "Не задан"} />
+                          <AccessDetail label="Почта" value={profile.email || "Не указана"} />
+                          <AccessDetail label="Телефон" value={profile.phone || "Не указан"} />
+                          <AccessDetail label="Пароль" value="Недоступен" />
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
                 </article>
               );
             })}
@@ -221,6 +265,41 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
         ) : null}
       </div>
     </div>
+  );
+}
+
+function AccessDetail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border-t border-[#3f3f46]/35 py-2 first:border-t-0 first:pt-0 last:pb-0">
+      <p className="text-[10px] font-medium uppercase leading-4 tracking-[0.16em] text-[#a1a1aa]">
+        {label}
+      </p>
+      <p className="mt-0.5 break-words text-sm font-medium leading-5 text-[#f4f4f5]">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function KeyIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+      <path
+        d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+      <path
+        d="m21 2-9.6 9.6"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+      <circle cx="7.5" cy="15.5" r="5.5" stroke="currentColor" strokeWidth="2" />
+    </svg>
   );
 }
 
