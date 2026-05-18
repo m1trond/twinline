@@ -215,6 +215,11 @@ export default function Home() {
     callPanelPosition,
     setCallPanelPosition,
   } = useCallState();
+  const [callPanelProfileSnapshot, setCallPanelProfileSnapshot] = useState<{
+    avatarUrl: string | null;
+    name: string;
+    userId: string | null;
+  } | null>(null);
   const {
     highlightedMessageId,
     setHighlightedMessageId,
@@ -892,6 +897,47 @@ export default function Home() {
       userId: friendMessage.user_id,
     };
   }, [profilesByUserId, selectedChatUserId, user?.id, visibleMessages]);
+  const getCallPanelProfileSnapshot = useCallback(
+    (targetUserId: string | null) => {
+      if (!targetUserId) {
+        return {
+          avatarUrl: null,
+          name: "Друг",
+          userId: null,
+        };
+      }
+
+      const targetProfile = profilesByUserId.get(targetUserId);
+
+      if (targetProfile) {
+        return {
+          avatarUrl: targetProfile.avatar_url,
+          name: targetProfile.display_name,
+          userId: targetProfile.user_id,
+        };
+      }
+
+      if (friendProfile?.userId === targetUserId) {
+        return {
+          avatarUrl: friendProfile.avatarUrl,
+          name: friendProfile.name,
+          userId: friendProfile.userId,
+        };
+      }
+
+      return {
+        avatarUrl: null,
+        name: "Друг",
+        userId: targetUserId,
+      };
+    },
+    [
+      friendProfile?.avatarUrl,
+      friendProfile?.name,
+      friendProfile?.userId,
+      profilesByUserId,
+    ],
+  );
   const isSelectedChatBlockedByMe =
     selectedChatUserId !== null && blockedByMeProfileIds.includes(selectedChatUserId);
   const isSelectedChatBlockingMe =
@@ -966,7 +1012,8 @@ export default function Home() {
             ? "Звонок идет"
             : "";
   const callPanelProfile =
-    callStatus === "incoming"
+    callPanelProfileSnapshot ??
+    (callStatus === "incoming"
       ? {
           avatarUrl: incomingCallerProfile?.avatar_url ?? null,
           name: incomingCallerProfile?.display_name ?? "Друг",
@@ -974,7 +1021,7 @@ export default function Home() {
       : {
           avatarUrl: friendProfile?.avatarUrl ?? null,
           name: friendProfile?.name ?? "Друг",
-        };
+        });
 
   useMessageViewportEffects({
     activeDialogMessagesCount: activeDialogMessages.length,
@@ -1697,6 +1744,7 @@ export default function Home() {
 
     try {
       setErrorMessage("");
+      setCallPanelProfileSnapshot(getCallPanelProfileSnapshot(targetUserId));
       callStatusRef.current = "calling";
       setIsCallPanelCollapsed(false);
       setCallPanelPosition(getCenteredCallPanelPosition(false));
@@ -1735,6 +1783,7 @@ export default function Home() {
 
     try {
       setErrorMessage("");
+      setCallPanelProfileSnapshot(getCallPanelProfileSnapshot(incomingCall.sender_id));
       callStatusRef.current = "connecting";
       setIsCallPanelCollapsed(false);
       setCallPanelPosition(getCenteredCallPanelPosition(false));
@@ -1862,6 +1911,7 @@ export default function Home() {
     setCallDuration(0);
     callStatusRef.current = "idle";
     setCallStatus("idle");
+    setCallPanelProfileSnapshot(null);
   }
 
   async function toggleNotifications() {
