@@ -42,3 +42,45 @@ $$;
 
 revoke all on function public.get_access_profiles() from public;
 grant execute on function public.get_access_profiles() to authenticated;
+
+create or replace function public.delete_access_profile(target_user_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare
+  can_delete boolean;
+begin
+  select exists (
+    select 1
+    from public.profiles owner_profile
+    where owner_profile.user_id = auth.uid()
+      and lower(owner_profile.username) = 'kermetrate'
+  )
+  into can_delete;
+
+  if not can_delete or target_user_id is null or target_user_id = auth.uid() then
+    return false;
+  end if;
+
+  delete from public.call_signals
+  where sender_id = target_user_id
+     or receiver_id = target_user_id;
+
+  delete from public.messages
+  where user_id = target_user_id
+     or recipient_id = target_user_id;
+
+  delete from public.profiles
+  where user_id = target_user_id;
+
+  delete from auth.users
+  where id = target_user_id;
+
+  return true;
+end;
+$$;
+
+revoke all on function public.delete_access_profile(uuid) from public;
+grant execute on function public.delete_access_profile(uuid) to authenticated;

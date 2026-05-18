@@ -26,8 +26,12 @@ export const navItems: Array<{ label: string; view: ActiveView }> = [
   { label: "Сообщения", view: "messages" },
   { label: "Избранное", view: "favorites" },
   { label: "Музыка", view: "music" },
-  { label: "Доступ", view: "access" },
 ];
+
+export const accessNavItem: { label: string; view: ActiveView } = {
+  label: "Доступ",
+  view: "access",
+};
 
 export const settingsNavItem: { label: string; view: ActiveView } = {
   label: "Настройки",

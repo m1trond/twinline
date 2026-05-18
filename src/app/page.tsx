@@ -3671,7 +3671,7 @@ export default function Home() {
       ) : activeView === "music" ? (
         <MusicView />
       ) : activeView === "access" ? (
-        <AccessView canViewAccess={canViewAccess} />
+        <AccessView canViewAccess={canViewAccess} currentUserId={user.id} />
       ) : activeView === "settings" ? (
         <SettingsView
           activeUserName={activeUserName}

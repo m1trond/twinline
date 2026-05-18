@@ -9,3 +9,9 @@ export async function fetchAccessProfiles() {
     data: (response.data ?? null) as AccessProfileRow[] | null,
   };
 }
+
+export async function deleteAccessProfile(userId: string) {
+  return supabase.rpc("delete_access_profile", {
+    target_user_id: userId,
+  });
+}

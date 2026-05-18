@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, Dispatch, PointerEvent, ReactNode, SetStateAction } from "react";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { NavButton, NavIcon } from "@/components/navigation/NavButton";
-import { navItems, settingsNavItem } from "@/shared/constants";
+import { accessNavItem, navItems, settingsNavItem } from "@/shared/constants";
 import type { ActiveView, ProfileRow } from "@/shared/types";
 import type { ViewedProfileState } from "@/features/navigation/useNavigationState";
 
@@ -91,9 +91,6 @@ export function AppShell({
   const collapsedSearchButtonRef = useRef<HTMLButtonElement | null>(null);
   const collapsedSearchPopoverRef = useRef<HTMLDivElement | null>(null);
   const sidebarGridRef = useRef<HTMLElement | null>(null);
-  const visibleNavItems = canViewAccess
-    ? navItems
-    : navItems.filter((item) => item.view !== "access");
   const sidebarGridStyle = {
     "--sidebar-width": `${sidebarWidth}px`,
   } as CSSProperties;
@@ -204,7 +201,7 @@ export function AppShell({
           </header>
 
           <nav className="scrollbar-hidden mb-2 flex shrink-0 gap-1.5 overflow-x-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.24)] backdrop-blur-md sm:mb-3 sm:gap-2 sm:rounded-2xl sm:p-2 lg:hidden">
-            {[...visibleNavItems, settingsNavItem].map((item) => (
+            {[...navItems, ...(canViewAccess ? [accessNavItem] : []), settingsNavItem].map((item) => (
               <NavButton
                 activeView={activeView}
                 item={item}
@@ -435,7 +432,7 @@ export function AppShell({
               </div>
 
               <nav className={`grid w-full gap-2 ${isSidebarIconMode ? "justify-items-center" : ""}`}>
-                {visibleNavItems.map((item) => (
+                {navItems.map((item) => (
                   <NavButton
                     activeView={activeView}
                     iconOnly={isSidebarIconMode}
@@ -446,22 +443,32 @@ export function AppShell({
                   />
                 ))}
               </nav>
-              <button
-                aria-label={isSidebarIconMode ? settingsNavItem.label : undefined}
-                title={isSidebarIconMode ? settingsNavItem.label : undefined}
-                className={`mt-auto ${isSidebarIconMode ? "mx-auto grid h-10 min-h-10 w-10 place-items-center px-0 py-0" : "flex min-h-10 items-center px-4 py-2.5 text-left"} rounded-xl text-sm font-medium leading-none transition ${
-                  activeView === settingsNavItem.view
-                    ? "bg-[#f4f4f5] text-[#050505]"
-                    : "border border-[#3f3f46]/25 text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
-                }`}
-                onClick={() => setActiveView(settingsNavItem.view)}
-                type="button"
-              >
-                <span className="inline-flex min-w-0 items-center gap-2.5">
-                  <NavIcon view={settingsNavItem.view} />
-                  {isSidebarIconMode ? null : <span className="truncate">{settingsNavItem.label}</span>}
-                </span>
-              </button>
+              <div className={`mt-auto grid w-full gap-2 ${isSidebarIconMode ? "justify-items-center" : ""}`}>
+                {canViewAccess ? (
+                  <NavButton
+                    activeView={activeView}
+                    iconOnly={isSidebarIconMode}
+                    item={accessNavItem}
+                    onSelect={selectView}
+                  />
+                ) : null}
+                <button
+                  aria-label={isSidebarIconMode ? settingsNavItem.label : undefined}
+                  title={isSidebarIconMode ? settingsNavItem.label : undefined}
+                  className={`${isSidebarIconMode ? "mx-auto grid h-10 min-h-10 w-10 place-items-center px-0 py-0" : "flex min-h-10 items-center px-4 py-2.5 text-left"} rounded-xl text-sm font-medium leading-none transition ${
+                    activeView === settingsNavItem.view
+                      ? "bg-[#f4f4f5] text-[#050505]"
+                      : "border border-[#3f3f46]/25 text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
+                  }`}
+                  onClick={() => setActiveView(settingsNavItem.view)}
+                  type="button"
+                >
+                  <span className="inline-flex min-w-0 items-center gap-2.5">
+                    <NavIcon view={settingsNavItem.view} />
+                    {isSidebarIconMode ? null : <span className="truncate">{settingsNavItem.label}</span>}
+                  </span>
+                </button>
+              </div>
               <div
                 aria-label="Изменить ширину панели"
                 aria-orientation="vertical"
