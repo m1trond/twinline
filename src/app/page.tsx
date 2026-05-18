@@ -144,6 +144,8 @@ export default function Home() {
   const {
     profileName,
     setProfileName,
+    profileBio,
+    setProfileBio,
     profileUsername,
     setProfileUsername,
     profileUsernameError,
@@ -782,6 +784,7 @@ export default function Home() {
     if (profileFriend) {
       return {
         avatarUrl: profileFriend.avatar_url,
+        bio: profileFriend.bio,
         name: profileFriend.display_name,
         username: profileFriend.username,
         updatedAt: profileFriend.updated_at,
@@ -801,6 +804,7 @@ export default function Home() {
 
     return {
       avatarUrl: profile?.avatar_url ?? null,
+      bio: profile?.bio ?? null,
       name: profile?.display_name ?? friendMessage.author,
       username: profile?.username ?? null,
       updatedAt: profile?.updated_at ?? null,
@@ -831,6 +835,7 @@ export default function Home() {
     currentProfile?.username_changed_at ?? null,
   );
   const profileNameInputValue = profileName || activeUserName;
+  const profileBioInputValue = profileBio ?? currentProfile?.bio ?? "";
   const profileUsernameInputValue = profileUsername ?? currentProfile?.username ?? "";
   const {
     avatarGalleryUrl,
@@ -2711,6 +2716,7 @@ export default function Home() {
       .from("profiles")
       .upsert({
         avatar_url: currentProfile?.avatar_url ?? null,
+        bio: currentProfile?.bio ?? null,
         display_name: nextName,
         name_changed_at: currentProfile?.name_changed_at ?? null,
         updated_at: updatedAt,
@@ -2796,6 +2802,7 @@ export default function Home() {
       .from("profiles")
       .upsert({
         avatar_url: currentProfile?.avatar_url ?? null,
+        bio: currentProfile?.bio ?? null,
         display_name: activeUserName,
         name_changed_at: updatedAt,
         updated_at: updatedAt,
@@ -2830,6 +2837,60 @@ export default function Home() {
     setProfileUsername(null);
     setErrorMessage("");
   }
+
+  async function updateProfileBio(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!user) {
+      return;
+    }
+
+    const nextBio = profileBioInputValue.trim();
+
+    if (nextBio.length > 220) {
+      setErrorMessage("Описание должно быть не длиннее 220 символов.");
+      return;
+    }
+
+    if (nextBio === (currentProfile?.bio ?? "").trim()) {
+      return;
+    }
+
+    const updatedAt = new Date().toISOString();
+    const { data, error } = await supabase
+      .from("profiles")
+      .upsert({
+        avatar_url: currentProfile?.avatar_url ?? null,
+        bio: nextBio || null,
+        display_name: activeUserName,
+        name_changed_at: currentProfile?.name_changed_at ?? null,
+        updated_at: updatedAt,
+        user_id: user.id,
+        username: currentProfile?.username ?? null,
+        username_changed_at: currentProfile?.username_changed_at ?? null,
+      })
+      .select(profileColumns)
+      .single();
+
+    if (error) {
+      setErrorMessage("Не получилось сохранить описание.");
+      return;
+    }
+
+    if (data) {
+      setProfiles((currentProfiles) => {
+        const withoutProfile = currentProfiles.filter(
+          (profile) => profile.user_id !== data.user_id,
+        );
+
+        return [...withoutProfile, data];
+      });
+    }
+
+    setProfileBio(null);
+    setErrorMessage("");
+  }
+
   function handleMessageTextChange(event: ChangeEvent<HTMLInputElement>) {
     const nextMessageText = event.target.value;
 
@@ -3546,13 +3607,16 @@ export default function Home() {
           isUsernameChangeAllowed={isUsernameChangeAllowed}
           nextUsernameChangeDate={nextUsernameChangeDate}
           openAvatarGallery={openAvatarGallery}
+          profileBioInputValue={profileBioInputValue}
           profileName={profileName}
           profileNameInputValue={profileNameInputValue}
           profileUsernameError={profileUsernameError}
           profileUsernameInputValue={profileUsernameInputValue}
+          setProfileBio={setProfileBio}
           setProfileName={setProfileName}
           setProfileUsername={setProfileUsername}
           setProfileUsernameError={setProfileUsernameError}
+          updateProfileBio={updateProfileBio}
           updateProfileName={updateProfileName}
           updateProfileUsername={updateProfileUsername}
           user={user}

@@ -13,7 +13,7 @@ export const typingMessagePrefix = "typing::";
 export const blockMessagePrefix = "block::";
 
 export const maxAttachmentSize = 50 * 1024 * 1024;
-export const profileColumns = "user_id, display_name, username, username_changed_at, avatar_url, name_changed_at, updated_at";
+export const profileColumns = "user_id, display_name, username, bio, username_changed_at, avatar_url, name_changed_at, updated_at";
 export const usernameProfileColumns = "user_id, display_name, username, avatar_url, name_changed_at, updated_at";
 export const legacyProfileColumns = "user_id, display_name, avatar_url, name_changed_at, updated_at";
 export const messageColumns = "id, author, text, created_at, user_id, recipient_id";

@@ -176,6 +176,7 @@ export function useAvatarActions({
       .from("profiles")
       .upsert({
         avatar_url: publicUrlData.publicUrl,
+        bio: currentProfile?.bio ?? null,
         display_name: activeUserName,
         name_changed_at: currentProfile?.name_changed_at ?? null,
         updated_at: new Date().toISOString(),
@@ -294,6 +295,7 @@ export function useAvatarActions({
         .from("profiles")
         .upsert({
           avatar_url: nextProfileAvatarUrl,
+          bio: currentProfile?.bio ?? null,
           display_name: activeUserName,
           name_changed_at: currentProfile?.name_changed_at ?? null,
           updated_at: new Date().toISOString(),

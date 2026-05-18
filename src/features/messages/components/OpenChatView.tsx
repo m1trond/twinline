@@ -257,6 +257,7 @@ export function OpenChatView({
                         setViewedProfile(
                           friendProfile ?? {
                             avatarUrl: null,
+                            bio: null,
                             name: "Друг",
                             username: null,
                             updatedAt: null,
@@ -498,6 +499,7 @@ export function OpenChatView({
                               onClick={() =>
                                 setViewedProfile({
                                   avatarUrl: messageProfile?.avatar_url ?? null,
+                                  bio: messageProfile?.bio ?? null,
                                   name: messageAuthor,
                                   username: messageProfile?.username ?? null,
                                   updatedAt: messageProfile?.updated_at ?? null,
@@ -734,6 +736,7 @@ export function OpenChatView({
                               onClick={() =>
                                 setViewedProfile({
                                   avatarUrl: currentProfile?.avatar_url ?? null,
+                                  bio: currentProfile?.bio ?? null,
                                   name: activeUserName,
                                   username: currentProfile?.username ?? null,
                                   updatedAt: currentProfile?.updated_at ?? null,

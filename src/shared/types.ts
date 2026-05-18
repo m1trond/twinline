@@ -15,6 +15,7 @@ export type ProfileRow = {
   user_id: string;
   display_name: string;
   username: string | null;
+  bio: string | null;
   username_changed_at: string | null;
   avatar_url: string | null;
   name_changed_at: string | null;

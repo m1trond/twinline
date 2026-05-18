@@ -305,6 +305,7 @@ export function useMessagesRealtimeState({
     async function ensureCurrentProfile() {
       await supabase.from("profiles").upsert(
         {
+          bio: null,
           display_name: getDisplayName(signedInUser),
           updated_at: new Date().toISOString(),
           username:

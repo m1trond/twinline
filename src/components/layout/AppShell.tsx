@@ -289,6 +289,7 @@ export function AppShell({
                                   onClick={() => {
                                     setViewedProfile({
                                       avatarUrl: profile.avatar_url,
+                                      bio: profile.bio,
                                       name: profile.display_name,
                                       username: profile.username,
                                       updatedAt: profile.updated_at,
@@ -384,6 +385,7 @@ export function AppShell({
                           onClick={() => {
                             setViewedProfile({
                               avatarUrl: profile.avatar_url,
+                              bio: profile.bio,
                               name: profile.display_name,
                               username: profile.username,
                               updatedAt: profile.updated_at,

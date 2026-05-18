@@ -46,6 +46,7 @@ function areProfilesEqual(firstProfiles: ProfileRow[], secondProfiles: ProfileRo
       firstProfile.user_id === secondProfile.user_id &&
       firstProfile.display_name === secondProfile.display_name &&
       firstProfile.username === secondProfile.username &&
+      firstProfile.bio === secondProfile.bio &&
       firstProfile.username_changed_at === secondProfile.username_changed_at &&
       firstProfile.avatar_url === secondProfile.avatar_url &&
       firstProfile.name_changed_at === secondProfile.name_changed_at &&
@@ -118,6 +119,7 @@ export function useProfilesState({
       if (error && currentProfileRef.current === null) {
         await supabase.from("profiles").upsert({
           avatar_url: null,
+          bio: null,
           display_name: getDisplayName(signedInUser),
           name_changed_at: null,
           updated_at: updatedAt,

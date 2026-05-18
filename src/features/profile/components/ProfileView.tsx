@@ -16,12 +16,15 @@ type ProfileViewProps = {
   nextUsernameChangeDate: string | null;
   openAvatarGallery: (url: string | null | undefined) => void;
   profileName: string;
+  profileBioInputValue: string;
   profileNameInputValue: string;
   profileUsernameError: string;
   profileUsernameInputValue: string;
+  setProfileBio: (bio: string) => void;
   setProfileName: (name: string) => void;
   setProfileUsername: (username: string) => void;
   setProfileUsernameError: (error: string) => void;
+  updateProfileBio: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
   updateProfileName: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
   updateProfileUsername: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
   user: User;
@@ -37,12 +40,15 @@ export function ProfileView({
   nextUsernameChangeDate,
   openAvatarGallery,
   profileName,
+  profileBioInputValue,
   profileNameInputValue,
   profileUsernameError,
   profileUsernameInputValue,
+  setProfileBio,
   setProfileName,
   setProfileUsername,
   setProfileUsernameError,
+  updateProfileBio,
   updateProfileName,
   updateProfileUsername,
   user,
@@ -155,6 +161,31 @@ export function ProfileView({
               (isUsernameChangeAllowed
                 ? "Ник можно менять один раз в месяц."
                 : `Ник снова можно будет изменить ${nextUsernameChangeDate ?? "позже"}.`)}
+          </p>
+        </section>
+
+        <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 px-3 py-2.5 sm:col-span-2 sm:rounded-2xl">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
+            О себе
+          </p>
+          <form className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={updateProfileBio}>
+            <textarea
+              className="min-h-24 resize-none rounded-xl border border-transparent bg-[#f4f4f5]/12 px-3 py-2 text-sm leading-6 outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5]"
+              maxLength={220}
+              onChange={(event) => setProfileBio(event.target.value)}
+              placeholder="Расскажи пару слов о себе"
+              value={profileBioInputValue}
+            />
+            <button
+              className="min-h-9 self-start rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]"
+              disabled={profileBioInputValue.trim() === (currentProfile?.bio ?? "").trim()}
+              type="submit"
+            >
+              Сохранить
+            </button>
+          </form>
+          <p className="mt-1.5 text-xs leading-5 text-[#a1a1aa]">
+            Этот текст будет виден в карточке твоего профиля.
           </p>
         </section>
 

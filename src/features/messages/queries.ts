@@ -75,6 +75,7 @@ export async function fetchProfiles() {
       ...profilesWithoutUsernameDate,
       data: profilesWithoutUsernameDate.data?.map((profile) => ({
         ...profile,
+        bio: null,
         username_changed_at: null,
       })) ?? null,
     };
@@ -88,6 +89,7 @@ export async function fetchProfiles() {
     ...legacyProfiles,
     data: legacyProfiles.data?.map((profile) => ({
       ...profile,
+      bio: null,
       username: null,
       username_changed_at: null,
     })) ?? null,

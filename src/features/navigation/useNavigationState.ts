@@ -3,6 +3,7 @@ import type { ActiveView } from "@/shared/types";
 
 export type ViewedProfileState = {
   avatarUrl: string | null;
+  bio: string | null;
   name: string;
   username: string | null;
   updatedAt: string | null;

@@ -65,6 +65,7 @@ export function ViewedProfileModal({
   const canUseProfileActions = Boolean(viewedProfile.userId && !isSelf);
   const canOpenChat = canUseProfileActions && !isBlocked;
   const canCall = canOpenChat && callStatus === "idle";
+  const profileBio = viewedProfile.bio?.trim() || "Пользователь ничего о себе не указывал";
 
   const openChat = () => {
     if (!viewedProfile.userId || isSelf) {
@@ -305,8 +306,8 @@ export function ViewedProfileModal({
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#e5e5e5]">
               О себе
             </p>
-            <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
-              Пока ничего не написал о себе.
+            <p className="mt-2 whitespace-pre-line text-sm leading-6 text-[#a1a1aa]">
+              {profileBio}
             </p>
           </article>
 

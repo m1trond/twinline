@@ -2,6 +2,7 @@ import { useState } from "react";
 
 export function useProfileEditorState() {
   const [profileName, setProfileName] = useState("");
+  const [profileBio, setProfileBio] = useState<string | null>(null);
   const [profileUsername, setProfileUsername] = useState<string | null>(null);
   const [profileUsernameError, setProfileUsernameError] = useState("");
   const [avatarHistory, setAvatarHistory] = useState<string[]>([]);
@@ -14,6 +15,8 @@ export function useProfileEditorState() {
   return {
     profileName,
     setProfileName,
+    profileBio,
+    setProfileBio,
     profileUsername,
     setProfileUsername,
     profileUsernameError,
