@@ -3090,21 +3090,16 @@ export default function Home() {
 
     const { data, error } = await supabase
       .from("profiles")
-      .upsert(
-        {
-          avatar_url: currentProfile?.avatar_url ?? null,
-          bio: nextBio || null,
-          display_name: activeUserName,
-          name_changed_at: currentProfile?.name_changed_at ?? null,
-          updated_at: updatedAt,
-          user_id: user.id,
-          username: currentProfile?.username ?? null,
-          username_changed_at: currentProfile?.username_changed_at ?? null,
-        },
-        {
-          onConflict: "user_id",
-        },
-      )
+      .upsert({
+        avatar_url: currentProfile?.avatar_url ?? null,
+        bio: nextBio || null,
+        display_name: activeUserName,
+        name_changed_at: currentProfile?.name_changed_at ?? null,
+        updated_at: updatedAt,
+        user_id: user.id,
+        username: currentProfile?.username ?? null,
+        username_changed_at: currentProfile?.username_changed_at ?? null,
+      })
       .select(profileColumns)
       .single();
 
