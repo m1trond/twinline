@@ -15,13 +15,15 @@ type ChatContextMenuProps = {
   contextMenu: ChatContextMenuState | null;
   openCreateChatFolderDialog: (profile: ProfileRow) => void;
   addChatToFolderFromMenu: (profile: ProfileRow, folderId: string) => void;
+  archiveChatProfile: (profile: ProfileRow) => void;
+  archivedProfileIds: string[];
   muteProfileNotifications: (profileUserId: string, durationMs: number | null) => void;
   mutedProfiles: MutedProfileUntil;
   requestBlockChange: (profileUserId: string, targetLabel: string) => void;
   requestChatDeleteFromMenu: (profile: ProfileRow) => void;
-  runChatMenuStub: (message: string) => void;
   setChatContextMenu: (menu: ChatContextMenuState | null) => void;
   unmuteProfileNotifications: (profileUserId: string) => void;
+  unarchiveChatProfile: (profile: ProfileRow) => void;
 };
 
 const muteOptions = [
@@ -37,15 +39,17 @@ export function ChatContextMenu({
   contextMenu,
   openCreateChatFolderDialog,
   addChatToFolderFromMenu,
+  archiveChatProfile,
+  archivedProfileIds,
   muteProfileNotifications,
   mutedProfiles,
   requestBlockChange,
   requestChatDeleteFromMenu,
-  runChatMenuStub,
   setChatContextMenu,
   unmuteProfileNotifications,
+  unarchiveChatProfile,
 }: ChatContextMenuProps) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
 
   if (!contextMenu) {
     return null;
@@ -53,6 +57,7 @@ export function ChatContextMenu({
 
   const { profile } = contextMenu;
   const isMuted = isProfileMuted(mutedProfiles, profile.user_id);
+  const isArchived = archivedProfileIds.includes(profile.user_id);
 
   return (
     <>
@@ -75,8 +80,19 @@ export function ChatContextMenu({
         <p className="truncate px-3.5 py-1.5 text-xs font-medium uppercase tracking-[0.14em] text-[#a1a1aa]">
           {t("chatWith")} {profile.display_name}
         </p>
-        <MenuButton icon={<ArchiveIcon />} onClick={() => runChatMenuStub(t("archiveSoon"))}>
-          {t("archive")}
+        <MenuButton
+          icon={<ArchiveIcon />}
+          onClick={() => {
+            if (isArchived) {
+              unarchiveChatProfile(profile);
+            } else {
+              archiveChatProfile(profile);
+            }
+          }}
+        >
+          {isArchived
+            ? language === "en" ? "Return from archive" : "Вернуть из архива"
+            : t("archive")}
         </MenuButton>
         <div className="group relative">
           <button

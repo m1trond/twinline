@@ -81,6 +81,7 @@ import { SettingsView } from "@/features/settings/components/SettingsView";
 import { usePrivacySettingsState } from "@/features/settings/usePrivacySettingsState";
 import {
   audioMessagePrefix,
+  archivedChatFolderId,
   callMessagePrefix,
   imageMessagePrefix,
   maxAttachmentSize,
@@ -332,6 +333,7 @@ export default function Home() {
   const [chatFolders, setChatFolders] = useState<ChatFolder[]>([]);
   const [chatFolderAssignments, setChatFolderAssignments] = useState<Record<string, string[]>>({});
   const [allChatFolderName, setAllChatFolderName] = useState("");
+  const [archivedChatProfileIds, setArchivedChatProfileIds] = useState<string[]>([]);
   const [folderContextMenu, setFolderContextMenu] = useState<FolderContextMenuState | null>(null);
   const [folderDialog, setFolderDialog] = useState<FolderDialogState | null>(null);
   const [folderDeleteTarget, setFolderDeleteTarget] = useState<ChatFolder | null>(null);
@@ -437,6 +439,7 @@ export default function Home() {
         setChatFolders([]);
         setChatFolderAssignments({});
         setAllChatFolderName("");
+        setArchivedChatProfileIds([]);
         setSelectedChatFolderId(null);
       });
 
@@ -448,8 +451,12 @@ export default function Home() {
         const storedFolders = window.localStorage.getItem(`hush-chat-folders-${user.id}`);
         const storedAssignments = window.localStorage.getItem(`hush-chat-folder-assignments-${user.id}`);
         const storedAllFolderName = window.localStorage.getItem(`hush-chat-all-folder-name-${user.id}`);
+        const storedArchivedChatProfileIds = window.localStorage.getItem(`hush-chat-archived-profiles-${user.id}`);
         const parsedFolders = storedFolders ? JSON.parse(storedFolders) : [];
         const parsedAssignments = storedAssignments ? JSON.parse(storedAssignments) : {};
+        const parsedArchivedChatProfileIds = storedArchivedChatProfileIds
+          ? JSON.parse(storedArchivedChatProfileIds)
+          : [];
 
         setAllChatFolderName(storedAllFolderName?.trim() || translations[interfaceLanguage].allChats);
         setChatFolders(
@@ -485,10 +492,22 @@ export default function Home() {
               )
             : {},
         );
+        setArchivedChatProfileIds(
+          Array.isArray(parsedArchivedChatProfileIds)
+            ? Array.from(
+                new Set(
+                  parsedArchivedChatProfileIds.filter(
+                    (profileId) => typeof profileId === "string",
+                  ),
+                ),
+              )
+            : [],
+        );
       } catch {
         setChatFolders([]);
         setChatFolderAssignments({});
         setAllChatFolderName("");
+        setArchivedChatProfileIds([]);
       }
     });
 
@@ -500,6 +519,18 @@ export default function Home() {
       return;
     }
 
+    if (selectedChatFolderId === archivedChatFolderId) {
+      if (archivedChatProfileIds.length === 0) {
+        const frameId = window.requestAnimationFrame(() => {
+          setSelectedChatFolderId(null);
+        });
+
+        return () => window.cancelAnimationFrame(frameId);
+      }
+
+      return;
+    }
+
     if (!chatFolders.some((folder) => folder.id === selectedChatFolderId)) {
       const frameId = window.requestAnimationFrame(() => {
         setSelectedChatFolderId(null);
@@ -507,7 +538,7 @@ export default function Home() {
 
       return () => window.cancelAnimationFrame(frameId);
     }
-  }, [chatFolders, selectedChatFolderId]);
+  }, [archivedChatProfileIds.length, chatFolders, selectedChatFolderId]);
 
   const selectedMessageIdSet = useMemo(() => {
     return new Set(selectedMessageIds);
@@ -884,15 +915,41 @@ export default function Home() {
         firstProfile.display_name.localeCompare(secondProfile.display_name, "ru"),
       );
   }, [dialogProfileIds, profiles, user?.id]);
+  const archivedChatProfilesCount = useMemo(() => {
+    return chatProfiles.filter((profile) =>
+      archivedChatProfileIds.includes(profile.user_id),
+    ).length;
+  }, [archivedChatProfileIds, chatProfiles]);
   const visibleChatProfiles = useMemo(() => {
+    if (selectedChatFolderId === archivedChatFolderId) {
+      return chatProfiles.filter((profile) =>
+        archivedChatProfileIds.includes(profile.user_id),
+      );
+    }
+
     if (!selectedChatFolderId) {
-      return chatProfiles;
+      return chatProfiles.filter(
+        (profile) => !archivedChatProfileIds.includes(profile.user_id),
+      );
     }
 
     return chatProfiles.filter((profile) =>
+      !archivedChatProfileIds.includes(profile.user_id) &&
       (chatFolderAssignments[profile.user_id] ?? []).includes(selectedChatFolderId),
     );
-  }, [chatFolderAssignments, chatProfiles, selectedChatFolderId]);
+  }, [archivedChatProfileIds, chatFolderAssignments, chatProfiles, selectedChatFolderId]);
+
+  useEffect(() => {
+    if (selectedChatFolderId !== archivedChatFolderId || archivedChatProfilesCount > 0) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      setSelectedChatFolderId(null);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [archivedChatProfilesCount, selectedChatFolderId, setSelectedChatFolderId]);
   const searchableProfiles = useMemo(() => {
     const query = chatSearchQuery.trim().replace(/^@+/, "").toLowerCase();
 
@@ -2338,9 +2395,19 @@ export default function Home() {
     setIsChatDeleteDialogOpen(true);
   }
 
-  function runChatMenuStub(message: string) {
+  function archiveChatProfile(profile: ProfileRow) {
+    saveArchivedChatProfileIds([...archivedChatProfileIds, profile.user_id]);
+    setSelectedChatFolderId(archivedChatFolderId);
     setChatContextMenu(null);
-    setErrorMessage(message);
+    setErrorMessage(`Чат с ${profile.display_name} отправлен в архив.`);
+  }
+
+  function unarchiveChatProfile(profile: ProfileRow) {
+    saveArchivedChatProfileIds(
+      archivedChatProfileIds.filter((profileId) => profileId !== profile.user_id),
+    );
+    setChatContextMenu(null);
+    setErrorMessage(`Чат с ${profile.display_name} возвращен из архива.`);
   }
 
   function saveChatFolders(nextFolders: ChatFolder[]) {
@@ -2364,6 +2431,20 @@ export default function Home() {
     window.localStorage.setItem(
       `hush-chat-folder-assignments-${user.id}`,
       JSON.stringify(nextAssignments),
+    );
+  }
+
+  function saveArchivedChatProfileIds(nextProfileIds: string[]) {
+    if (!user) {
+      return;
+    }
+
+    const normalizedProfileIds = Array.from(new Set(nextProfileIds));
+
+    setArchivedChatProfileIds(normalizedProfileIds);
+    window.localStorage.setItem(
+      `hush-chat-archived-profiles-${user.id}`,
+      JSON.stringify(normalizedProfileIds),
     );
   }
 
@@ -4246,6 +4327,7 @@ export default function Home() {
       ) : selectedChatUserId === null ? (
         <ChatListView
           allFolderName={allChatFolderName || translations[interfaceLanguage].allChats}
+          archivedChatCount={archivedChatProfilesCount}
           chatFolders={chatFolders}
           chatProfiles={visibleChatProfiles}
           latestVisibleMessageByProfileId={latestVisibleMessageByProfileId}
@@ -4361,6 +4443,8 @@ export default function Home() {
         onClose={() => setSelectedImageUrl(null)}
       />
       <ChatContextMenu
+        archiveChatProfile={archiveChatProfile}
+        archivedProfileIds={archivedChatProfileIds}
         blockedByMeProfileIds={blockedByMeProfileIds}
         chatFolders={chatFolders}
         contextMenu={chatContextMenu}
@@ -4370,8 +4454,8 @@ export default function Home() {
         mutedProfiles={mutedProfiles}
         requestBlockChange={requestBlockChange}
         requestChatDeleteFromMenu={requestChatDeleteFromMenu}
-        runChatMenuStub={runChatMenuStub}
         setChatContextMenu={setChatContextMenu}
+        unarchiveChatProfile={unarchiveChatProfile}
         unmuteProfileNotifications={unmuteProfileNotifications}
       />
       <FolderContextMenu

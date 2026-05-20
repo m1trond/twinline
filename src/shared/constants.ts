@@ -20,6 +20,7 @@ export const legacyProfileColumns = "user_id, display_name, avatar_url, name_cha
 export const messageColumns = "id, author, text, created_at, user_id, recipient_id";
 export const usernamePattern = /^[a-z0-9_]{3,24}$/;
 export const activeViews: ActiveView[] = ["profile", "messages", "favorites", "music", "access", "settings"];
+export const archivedChatFolderId = "system-archive";
 
 export const navItems: Array<{ label: string; view: ActiveView }> = [
   { label: "Профиль", view: "profile" },
