@@ -75,6 +75,13 @@ export function SettingsView({
       setter: setIsOnlineStatusVisible,
     },
     {
+      description: t("showPhoneDescription"),
+      enabled: isPhoneVisible,
+      key: "hush-settings-phone-visible",
+      label: t("showPhone"),
+      setter: setIsPhoneVisible,
+    },
+    {
       description: t("profileSearchDescription"),
       enabled: isProfileSearchable,
       key: "hush-settings-profile-searchable",
@@ -107,145 +114,137 @@ export function SettingsView({
       </div>
 
       <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-3">
-        <div className="grid auto-rows-min gap-2.5 lg:grid-cols-2 2xl:grid-cols-3">
-        <SettingsCard
-          description={t("notificationsDescription")}
-          icon={<BellIcon />}
-          title={t("notifications")}
-        >
-          <SettingRow
-            description={t("browserNotificationsDescription")}
-            enabled={areNotificationsEnabled}
-            label={t("browserNotifications")}
-            onToggle={() => void toggleNotifications()}
-          />
-          <SettingRow
-            description={t("showPhoneDescription")}
-            enabled={isPhoneVisible}
-            label={t("showPhone")}
-            onToggle={() =>
-              toggleStoredBooleanSetting(
-                "hush-settings-phone-visible",
-                setIsPhoneVisible,
-                isPhoneVisible,
-              )
-            }
-          />
-        </SettingsCard>
-
-        <SettingsCard
-          description={t("privacyDescription")}
-          icon={<ShieldIcon />}
-          title={t("privacy")}
-        >
-          {privacySettings.map((setting) => (
-            <SettingRow
-              description={setting.description}
-              enabled={setting.enabled}
-              key={setting.key}
-              label={setting.label}
-              onToggle={() =>
-                toggleStoredBooleanSetting(setting.key, setting.setter, setting.enabled)
-              }
-            />
-          ))}
-          <MutedChatsRow count={Object.keys(pruneMutedProfiles(mutedProfiles)).length} />
-        </SettingsCard>
-
-        <SettingsCard
-          description={t("blackListDescription")}
-          icon={<BlockIcon />}
-          title={t("blackList")}
-          tone="danger"
-        >
-          {blockedByMeProfiles.length === 0 ? (
-            <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2 text-xs text-[#a1a1aa]">
-              {t("blackListEmpty")}
-            </div>
-          ) : null}
-
-          {blockedByMeProfiles.map((profile) => (
-            <div
-              className="flex items-center justify-between gap-2 rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2"
-              key={profile.userId}
+        <div className="grid gap-2.5 lg:grid-cols-2">
+          <div className="grid auto-rows-min gap-2.5">
+            <SettingsCard
+              description={t("privacyDescription")}
+              icon={<ShieldIcon />}
+              title={t("privacy")}
             >
-              <div className="flex min-w-0 items-center gap-2">
-                <div className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505]">
-                  {profile.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      alt={`${t("avatarAlt")} ${profile.name}`}
-                      className="h-full w-full object-cover"
-                      src={profile.avatarUrl}
-                    />
-                  ) : (
-                    profile.name[0]?.toUpperCase()
-                  )}
+              {privacySettings.map((setting) => (
+                <SettingRow
+                  description={setting.description}
+                  enabled={setting.enabled}
+                  key={setting.key}
+                  label={setting.label}
+                  onToggle={() =>
+                    toggleStoredBooleanSetting(setting.key, setting.setter, setting.enabled)
+                  }
+                />
+              ))}
+            </SettingsCard>
+
+            <SettingsCard
+              description={t("appearanceDescription")}
+              icon={<PaletteIcon />}
+              title={t("appearance")}
+            >
+              <LanguageRow
+                currentLanguage={language}
+                description={t("chooseLanguage")}
+                label={t("interfaceLanguage")}
+                onChange={setLanguage}
+              />
+              {appearanceSettings.map((setting) => (
+                <SettingRow
+                  description={setting.description}
+                  enabled={setting.enabled}
+                  key={setting.key}
+                  label={setting.label}
+                  onToggle={() =>
+                    toggleStoredBooleanSetting(setting.key, setting.setter, setting.enabled)
+                  }
+                />
+              ))}
+            </SettingsCard>
+
+            <SettingsCard
+              description={t("blackListDescription")}
+              icon={<BlockIcon />}
+              title={t("blackList")}
+              tone="danger"
+            >
+              {blockedByMeProfiles.length === 0 ? (
+                <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2 text-xs text-[#a1a1aa]">
+                  {t("blackListEmpty")}
                 </div>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-[#f4f4f5]">
-                    {profile.name}
-                  </p>
-                  <p className="truncate text-xs text-[#a1a1aa]">
-                    {profile.username ? `@${profile.username}` : t("nicknameNotSet")}
-                  </p>
+              ) : null}
+
+              {blockedByMeProfiles.map((profile) => (
+                <div
+                  className="flex items-center justify-between gap-2 rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2"
+                  key={profile.userId}
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <div className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505]">
+                      {profile.avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          alt={`${t("avatarAlt")} ${profile.name}`}
+                          className="h-full w-full object-cover"
+                          src={profile.avatarUrl}
+                        />
+                      ) : (
+                        profile.name[0]?.toUpperCase()
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-[#f4f4f5]">
+                        {profile.name}
+                      </p>
+                      <p className="truncate text-xs text-[#a1a1aa]">
+                        {profile.username ? `@${profile.username}` : t("nicknameNotSet")}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    className="shrink-0 rounded-lg border border-[#3f3f46]/40 px-2.5 py-1.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
+                    onClick={() => requestBlockChange(profile.userId, profile.name)}
+                    type="button"
+                  >
+                    {t("unblockUser")}
+                  </button>
                 </div>
-              </div>
+              ))}
+            </SettingsCard>
+          </div>
+
+          <div className="grid auto-rows-min gap-2.5">
+            <SettingsCard
+              description={t("notificationsDescription")}
+              icon={<BellIcon />}
+              title={t("notifications")}
+            >
+              <SettingRow
+                description={t("browserNotificationsDescription")}
+                enabled={areNotificationsEnabled}
+                label={t("browserNotifications")}
+                onToggle={() => void toggleNotifications()}
+              />
+              <MutedChatsRow count={Object.keys(pruneMutedProfiles(mutedProfiles)).length} />
+            </SettingsCard>
+
+            <SettingsCard
+              description={t("accountDescription")}
+              icon={<UserIcon />}
+              title={t("account")}
+            >
+              <InfoBlock label={t("email")} value={userEmail ?? t("notSpecified")} />
+              <InfoBlock
+                label={t("profile")}
+                value={`${activeUserName}${currentProfile?.username ? ` · @${currentProfile.username}` : ""}`}
+              />
               <button
-                className="shrink-0 rounded-lg border border-[#3f3f46]/40 px-2.5 py-1.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
-                onClick={() => requestBlockChange(profile.userId, profile.name)}
+                className="mt-0.5 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-red-400/40 bg-red-500/15 px-3 text-xs font-medium text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isSigningOut}
+                onClick={() => void handleSignOut()}
                 type="button"
               >
-                {t("unblockUser")}
+                <SignOutIcon />
+                {isSigningOut ? t("signingOut") : t("signOut")}
               </button>
-            </div>
-          ))}
-        </SettingsCard>
-
-        <SettingsCard
-          description={t("accountDescription")}
-          icon={<UserIcon />}
-          title={t("account")}
-        >
-          <InfoBlock label={t("email")} value={userEmail ?? t("notSpecified")} />
-          <LanguageRow
-            currentLanguage={language}
-            description={t("chooseLanguage")}
-            label={t("interfaceLanguage")}
-            onChange={setLanguage}
-          />
-          <button
-            className="mt-0.5 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-red-400/40 bg-red-500/15 px-3 text-xs font-medium text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isSigningOut}
-            onClick={() => void handleSignOut()}
-            type="button"
-          >
-            <SignOutIcon />
-            {isSigningOut ? t("signingOut") : t("signOut")}
-          </button>
-        </SettingsCard>
-
-        <SettingsCard
-          description={t("appearanceDescription")}
-          icon={<PaletteIcon />}
-          title={t("appearance")}
-        >
-          <InfoBlock
-            label={t("profile")}
-            value={`${activeUserName}${currentProfile?.username ? ` · @${currentProfile.username}` : ""}`}
-          />
-          {appearanceSettings.map((setting) => (
-            <SettingRow
-              description={setting.description}
-              enabled={setting.enabled}
-              key={setting.key}
-              label={setting.label}
-              onToggle={() =>
-                toggleStoredBooleanSetting(setting.key, setting.setter, setting.enabled)
-              }
-            />
-          ))}
-        </SettingsCard>
+            </SettingsCard>
+          </div>
         </div>
       </div>
     </div>
