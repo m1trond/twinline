@@ -113,8 +113,8 @@ export function SettingsView({
         <h2 className="text-base font-medium sm:text-base">{t("settings")}</h2>
       </div>
 
-      <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-5">
-        <div className="grid gap-3 sm:gap-4 xl:grid-cols-2">
+      <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-3">
+        <div className="grid auto-rows-min gap-2.5 lg:grid-cols-2 2xl:grid-cols-3">
         <SettingsCard
           description={t("notificationsDescription")}
           icon={<BellIcon />}
@@ -166,18 +166,18 @@ export function SettingsView({
           tone="danger"
         >
           {blockedByMeProfiles.length === 0 ? (
-            <div className="rounded-xl border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-3 text-sm text-[#a1a1aa]">
+            <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2 text-xs text-[#a1a1aa]">
               {t("blackListEmpty")}
             </div>
           ) : null}
 
           {blockedByMeProfiles.map((profile) => (
             <div
-              className="flex items-center justify-between gap-3 rounded-xl border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2.5"
+              className="flex items-center justify-between gap-2 rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2"
               key={profile.userId}
             >
-              <div className="flex min-w-0 items-center gap-2.5">
-                <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505]">
+              <div className="flex min-w-0 items-center gap-2">
+                <div className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505]">
                   {profile.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -199,11 +199,11 @@ export function SettingsView({
                 </div>
               </div>
               <button
-                className="shrink-0 rounded-xl border border-[#3f3f46]/40 px-3 py-2 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
+                className="shrink-0 rounded-lg border border-[#3f3f46]/40 px-2.5 py-1.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
                 onClick={() => requestBlockChange(profile.userId, profile.name)}
                 type="button"
               >
-                {language === "en" ? "Unblock" : "Разблокировать"}
+                {t("unblockUser")}
               </button>
             </div>
           ))}
@@ -220,7 +220,7 @@ export function SettingsView({
             value={`${activeUserName}${currentProfile?.username ? ` · @${currentProfile.username}` : ""}`}
           />
           <button
-            className="mt-1 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-red-400/40 bg-red-500/15 px-4 text-sm font-medium text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-0.5 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-red-400/40 bg-red-500/15 px-3 text-xs font-medium text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isSigningOut}
             onClick={() => void handleSignOut()}
             type="button"
@@ -273,10 +273,10 @@ function SettingsCard({
   tone?: "danger" | "default";
 }) {
   return (
-    <section className="rounded-xl border border-[#3f3f46]/35 bg-black/20 p-3 sm:rounded-2xl sm:p-4">
-      <div className="mb-3 flex items-center gap-2">
+    <section className="rounded-xl border border-[#3f3f46]/35 bg-black/18 p-2.5 sm:p-3">
+      <div className="mb-2.5 flex items-center gap-2">
         <span
-          className={`grid h-9 w-9 place-items-center rounded-xl ${
+          className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${
             tone === "danger"
               ? "bg-red-500/12 text-red-100"
               : "bg-[#f4f4f5]/10 text-[#f4f4f5]"
@@ -285,11 +285,11 @@ function SettingsCard({
           {icon}
         </span>
         <div>
-          <p className="text-sm font-medium">{title}</p>
-          <p className="text-xs text-[#a1a1aa]">{description}</p>
+          <p className="text-sm font-medium leading-5">{title}</p>
+          <p className="text-xs leading-4 text-[#a1a1aa]">{description}</p>
         </div>
       </div>
-      <div className="grid gap-2">{children}</div>
+      <div className="grid gap-1.5">{children}</div>
     </section>
   );
 }
@@ -306,14 +306,14 @@ function SettingRow({
   onToggle: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2.5">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
       <div className="min-w-0">
-        <p className="text-sm font-medium">{label}</p>
-        <p className="mt-0.5 text-xs leading-5 text-[#a1a1aa]">{description}</p>
+        <p className="text-sm font-medium leading-5">{label}</p>
+        <p className="text-xs leading-4 text-[#a1a1aa]">{description}</p>
       </div>
       <button
         aria-label={label}
-        className={`flex h-7 w-12 shrink-0 items-center rounded-full p-1 transition ${
+        className={`flex h-6 w-10 shrink-0 items-center rounded-full p-0.5 transition ${
           enabled ? "justify-end bg-[#f4f4f5]" : "justify-start bg-[#f4f4f5]/18"
         }`}
         onClick={onToggle}
@@ -341,15 +341,15 @@ function LanguageRow({
   onChange: Dispatch<SetStateAction<InterfaceLanguage>>;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2.5">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
       <div className="min-w-0">
-        <p className="text-sm font-medium">{label}</p>
-        <p className="mt-0.5 text-xs leading-5 text-[#a1a1aa]">{description}</p>
+        <p className="text-sm font-medium leading-5">{label}</p>
+        <p className="text-xs leading-4 text-[#a1a1aa]">{description}</p>
       </div>
-      <div className="grid shrink-0 grid-cols-2 overflow-hidden rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/10 p-1">
+      <div className="grid shrink-0 grid-cols-2 overflow-hidden rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/10 p-0.5">
         {(["ru", "en"] as const).map((language) => (
           <button
-            className={`min-h-8 rounded-md px-3 text-xs font-medium transition ${
+            className={`min-h-7 rounded-md px-2.5 text-xs font-medium transition ${
               currentLanguage === language
                 ? "bg-[#f4f4f5] text-[#050505]"
                 : "text-[#d4d4d8] hover:bg-white/10"
@@ -368,11 +368,11 @@ function LanguageRow({
 
 function InfoBlock({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2.5">
-      <p className="text-xs font-medium uppercase tracking-[0.16em] text-[#a1a1aa]">
+    <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
+      <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#a1a1aa]">
         {label}
       </p>
-      <p className="mt-1 truncate text-sm font-medium text-[#f4f4f5]">
+      <p className="mt-0.5 truncate text-sm font-medium leading-5 text-[#f4f4f5]">
         {value}
       </p>
     </div>
