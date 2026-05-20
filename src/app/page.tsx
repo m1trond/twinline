@@ -38,6 +38,14 @@ import { ChatContextMenu } from "@/features/messages/components/ChatContextMenu"
 import { ChatListView } from "@/features/messages/components/ChatListView";
 import { FavoritesView } from "@/features/messages/components/FavoritesView";
 import {
+  FolderContextMenu,
+  FolderDialog,
+} from "@/features/messages/components/FolderMenus";
+import type {
+  FolderContextMenuState,
+  FolderDialogState,
+} from "@/features/messages/components/FolderMenus";
+import {
   FavoriteContextMenu,
   MessageContextMenu,
 } from "@/features/messages/components/MessageContextMenu";
@@ -316,6 +324,10 @@ export default function Home() {
   } = useFloatingUiState();
   const [chatFolders, setChatFolders] = useState<ChatFolder[]>([]);
   const [chatFolderAssignments, setChatFolderAssignments] = useState<Record<string, string>>({});
+  const [allChatFolderName, setAllChatFolderName] = useState("");
+  const [folderContextMenu, setFolderContextMenu] = useState<FolderContextMenuState | null>(null);
+  const [folderDialog, setFolderDialog] = useState<FolderDialogState | null>(null);
+  const [folderNameDraft, setFolderNameDraft] = useState("");
   const [selectedChatFolderId, setSelectedChatFolderId] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
@@ -416,6 +428,7 @@ export default function Home() {
       const frameId = window.requestAnimationFrame(() => {
         setChatFolders([]);
         setChatFolderAssignments({});
+        setAllChatFolderName("");
         setSelectedChatFolderId(null);
       });
 
@@ -426,9 +439,11 @@ export default function Home() {
       try {
         const storedFolders = window.localStorage.getItem(`hush-chat-folders-${user.id}`);
         const storedAssignments = window.localStorage.getItem(`hush-chat-folder-assignments-${user.id}`);
+        const storedAllFolderName = window.localStorage.getItem(`hush-chat-all-folder-name-${user.id}`);
         const parsedFolders = storedFolders ? JSON.parse(storedFolders) : [];
         const parsedAssignments = storedAssignments ? JSON.parse(storedAssignments) : {};
 
+        setAllChatFolderName(storedAllFolderName?.trim() || translations[interfaceLanguage].allChats);
         setChatFolders(
           Array.isArray(parsedFolders)
             ? parsedFolders.filter((folder): folder is ChatFolder => {
@@ -438,7 +453,10 @@ export default function Home() {
                   typeof folder.name === "string" &&
                   typeof folder.createdAt === "string"
                 );
-              })
+              }).map((folder) => ({
+                ...folder,
+                color: typeof folder.color === "string" ? folder.color : undefined,
+              }))
             : [],
         );
         setChatFolderAssignments(
@@ -456,11 +474,12 @@ export default function Home() {
       } catch {
         setChatFolders([]);
         setChatFolderAssignments({});
+        setAllChatFolderName("");
       }
     });
 
     return () => window.cancelAnimationFrame(frameId);
-  }, [user]);
+  }, [interfaceLanguage, user]);
 
   useEffect(() => {
     if (!selectedChatFolderId) {
@@ -2333,11 +2352,68 @@ export default function Home() {
     );
   }
 
-  function createChatFolderFromMenu(profile: ProfileRow) {
-    const folderName = window.prompt("Название папки");
-    const nextFolderName = folderName?.trim();
+  function saveAllChatFolderName(nextName: string) {
+    if (!user) {
+      return;
+    }
+
+    setAllChatFolderName(nextName);
+    window.localStorage.setItem(`hush-chat-all-folder-name-${user.id}`, nextName);
+  }
+
+  function openFolderContextMenu(event: MouseEvent<HTMLElement>, folder: ChatFolder | null) {
+    event.preventDefault();
+    setFolderContextMenu({
+      folder,
+      left: event.clientX,
+      top: event.clientY,
+    });
+  }
+
+  function openCreateChatFolderDialog(profile: ProfileRow) {
+    setFolderNameDraft("");
+    setFolderDialog({
+      folder: null,
+      mode: "create",
+      profileUserId: profile.user_id,
+    });
+    setChatContextMenu(null);
+  }
+
+  function openRenameFolderDialog(folder: ChatFolder | null) {
+    setFolderNameDraft(folder?.name ?? allChatFolderName);
+    setFolderDialog({
+      folder,
+      mode: "rename",
+    });
+    setFolderContextMenu(null);
+  }
+
+  function submitFolderDialog() {
+    const nextFolderName = folderNameDraft.trim().slice(0, 28);
 
     if (!nextFolderName) {
+      return;
+    }
+
+    if (folderDialog?.mode === "rename") {
+      if (!folderDialog.folder) {
+        saveAllChatFolderName(nextFolderName);
+      } else {
+        saveChatFolders(
+          chatFolders.map((folder) =>
+            folder.id === folderDialog.folder?.id ? { ...folder, name: nextFolderName } : folder,
+          ),
+        );
+      }
+
+      setFolderDialog(null);
+      setErrorMessage(translations[interfaceLanguage].folderSaved);
+      return;
+    }
+
+    if (!folderDialog?.profileUserId) {
+      setFolderDialog(null);
       return;
     }
 
@@ -2350,16 +2426,17 @@ export default function Home() {
         createdAt: new Date().toISOString(),
         id: `folder-${Date.now()}-${Math.random().toString(16).slice(2)}`,
         name: nextFolderName.slice(0, 28),
+        color: "#f4f4f5",
       };
     const nextFolders = existingFolder ? chatFolders : [...chatFolders, folder];
 
     saveChatFolders(nextFolders);
     saveChatFolderAssignments({
       ...chatFolderAssignments,
-      [profile.user_id]: folder.id,
+      [folderDialog.profileUserId]: folder.id,
     });
     setSelectedChatFolderId(folder.id);
-    setChatContextMenu(null);
+    setFolderDialog(null);
     setErrorMessage(`Чат добавлен в папку «${folder.name}».`);
   }
 
@@ -2367,7 +2444,7 @@ export default function Home() {
     const folder = chatFolders.find((currentFolder) => currentFolder.id === folderId);
 
     if (!folder) {
-      setErrorMessage("Папка не найдена.");
+      setErrorMessage(translations[interfaceLanguage].folderNotFound);
       setChatContextMenu(null);
       return;
     }
@@ -2379,6 +2456,28 @@ export default function Home() {
     setSelectedChatFolderId(folder.id);
     setChatContextMenu(null);
     setErrorMessage(`Чат добавлен в папку «${folder.name}».`);
+  }
+
+  function updateChatFolderColor(folderId: string, color: string) {
+    saveChatFolders(
+      chatFolders.map((folder) => (folder.id === folderId ? { ...folder, color } : folder)),
+    );
+    setFolderContextMenu(null);
+  }
+
+  function deleteChatFolder(folderId: string) {
+    saveChatFolders(chatFolders.filter((folder) => folder.id !== folderId));
+    saveChatFolderAssignments(
+      Object.fromEntries(
+        Object.entries(chatFolderAssignments).filter(([, currentFolderId]) => currentFolderId !== folderId),
+      ),
+    );
+
+    if (selectedChatFolderId === folderId) {
+      setSelectedChatFolderId(null);
+    }
+
+    setFolderContextMenu(null);
   }
 
   async function copyMessageText(message: MessageRow) {
@@ -4000,9 +4099,11 @@ export default function Home() {
         />
       ) : selectedChatUserId === null ? (
         <ChatListView
+          allFolderName={allChatFolderName || translations[interfaceLanguage].allChats}
           chatFolders={chatFolders}
           chatProfiles={visibleChatProfiles}
           latestVisibleMessageByProfileId={latestVisibleMessageByProfileId}
+          openFolderContextMenu={openFolderContextMenu}
           openChatContextMenu={openChatContextMenu}
           selectedChatFolderId={selectedChatFolderId}
           setSelectedChatFolderId={setSelectedChatFolderId}
@@ -4115,7 +4216,7 @@ export default function Home() {
         blockedByMeProfileIds={blockedByMeProfileIds}
         chatFolders={chatFolders}
         contextMenu={chatContextMenu}
-        createChatFolderFromMenu={createChatFolderFromMenu}
+        openCreateChatFolderDialog={openCreateChatFolderDialog}
         addChatToFolderFromMenu={addChatToFolderFromMenu}
         muteProfileNotifications={muteProfileNotifications}
         mutedProfiles={mutedProfiles}
@@ -4124,6 +4225,20 @@ export default function Home() {
         runChatMenuStub={runChatMenuStub}
         setChatContextMenu={setChatContextMenu}
         unmuteProfileNotifications={unmuteProfileNotifications}
+      />
+      <FolderContextMenu
+        contextMenu={folderContextMenu}
+        deleteFolder={deleteChatFolder}
+        openRenameDialog={openRenameFolderDialog}
+        setContextMenu={setFolderContextMenu}
+        updateFolderColor={updateChatFolderColor}
+      />
+      <FolderDialog
+        dialog={folderDialog}
+        folderName={folderNameDraft}
+        onClose={() => setFolderDialog(null)}
+        onSubmit={submitFolderDialog}
+        setFolderName={setFolderNameDraft}
       />
       <MessageContextMenu
         activePinnedMessageIdSet={activePinnedMessageIdSet}

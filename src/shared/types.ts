@@ -86,6 +86,7 @@ export type AccessProfileRow = {
 };
 
 export type ChatFolder = {
+  color?: string;
   id: string;
   name: string;
   createdAt: string;

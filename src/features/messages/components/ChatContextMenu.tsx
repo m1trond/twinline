@@ -13,7 +13,7 @@ type ChatContextMenuProps = {
   blockedByMeProfileIds: string[];
   chatFolders: ChatFolder[];
   contextMenu: ChatContextMenuState | null;
-  createChatFolderFromMenu: (profile: ProfileRow) => void;
+  openCreateChatFolderDialog: (profile: ProfileRow) => void;
   addChatToFolderFromMenu: (profile: ProfileRow, folderId: string) => void;
   muteProfileNotifications: (profileUserId: string, durationMs: number | null) => void;
   mutedProfiles: MutedProfileUntil;
@@ -35,7 +35,7 @@ export function ChatContextMenu({
   blockedByMeProfileIds,
   chatFolders,
   contextMenu,
-  createChatFolderFromMenu,
+  openCreateChatFolderDialog,
   addChatToFolderFromMenu,
   muteProfileNotifications,
   mutedProfiles,
@@ -88,7 +88,7 @@ export function ChatContextMenu({
             <ChevronIcon />
           </button>
           <div className="hush-context-menu invisible absolute left-full top-0 z-[91] w-[220px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
-            <SubMenuButton onClick={() => createChatFolderFromMenu(profile)}>
+            <SubMenuButton onClick={() => openCreateChatFolderDialog(profile)}>
               <span className="grid h-5 w-5 place-items-center">+</span>
               {t("newFolder")}
             </SubMenuButton>

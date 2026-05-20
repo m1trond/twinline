@@ -6,9 +6,14 @@ import { getChatPreviewText } from "@/shared/utils/messages";
 import { isProfileOnline } from "@/shared/utils/profile";
 
 type ChatListViewProps = {
+  allFolderName: string;
   chatFolders: ChatFolder[];
   chatProfiles: ProfileRow[];
   latestVisibleMessageByProfileId: Map<string, MessageRow>;
+  openFolderContextMenu: (
+    event: MouseEvent<HTMLElement>,
+    folder: ChatFolder | null,
+  ) => void;
   openChatContextMenu: (event: MouseEvent<HTMLElement>, profile: ProfileRow) => void;
   selectedChatFolderId: string | null;
   setSelectedChatFolderId: (folderId: string | null) => void;
@@ -18,9 +23,11 @@ type ChatListViewProps = {
 };
 
 export function ChatListView({
+  allFolderName,
   chatFolders,
   chatProfiles,
   latestVisibleMessageByProfileId,
+  openFolderContextMenu,
   openChatContextMenu,
   selectedChatFolderId,
   setSelectedChatFolderId,
@@ -37,25 +44,26 @@ export function ChatListView({
       </div>
 
       <div className="scrollbar-hidden grid min-h-0 flex-1 content-start gap-2 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4">
-        {chatFolders.length > 0 ? (
-          <div className="scrollbar-hidden mb-1 flex gap-1.5 overflow-x-auto pb-1">
+        <div className="scrollbar-hidden mb-1 flex gap-1.5 overflow-x-auto pb-1">
+          <FolderFilterButton
+            isActive={selectedChatFolderId === null}
+            onClick={() => setSelectedChatFolderId(null)}
+            onContextMenu={(event) => openFolderContextMenu(event, null)}
+          >
+            {allFolderName}
+          </FolderFilterButton>
+          {chatFolders.map((folder) => (
             <FolderFilterButton
-              isActive={selectedChatFolderId === null}
-              onClick={() => setSelectedChatFolderId(null)}
+              color={folder.color}
+              isActive={selectedChatFolderId === folder.id}
+              key={folder.id}
+              onClick={() => setSelectedChatFolderId(folder.id)}
+              onContextMenu={(event) => openFolderContextMenu(event, folder)}
             >
-              {t("allChats")}
+              {folder.name}
             </FolderFilterButton>
-            {chatFolders.map((folder) => (
-              <FolderFilterButton
-                isActive={selectedChatFolderId === folder.id}
-                key={folder.id}
-                onClick={() => setSelectedChatFolderId(folder.id)}
-              >
-                {folder.name}
-              </FolderFilterButton>
-            ))}
-          </div>
-        ) : null}
+          ))}
+        </div>
         <div className="hush-panel-transition grid content-start gap-2" key={selectedChatFolderId ?? "all"}>
           {chatProfiles.length === 0 ? (
             <article className="rounded-xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-4 text-center sm:rounded-2xl sm:p-6">
@@ -142,23 +150,34 @@ export function ChatListView({
 
 function FolderFilterButton({
   children,
+  color,
   isActive,
   onClick,
+  onContextMenu,
 }: {
   children: string;
+  color?: string;
   isActive: boolean;
   onClick: () => void;
+  onContextMenu: (event: MouseEvent<HTMLButtonElement>) => void;
 }) {
   return (
     <button
-      className={`min-h-8 shrink-0 rounded-lg border px-3 text-xs font-medium transition ${
+      className={`inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition ${
         isActive
           ? "border-[#f4f4f5]/60 bg-[#f4f4f5] text-[#050505]"
           : "border-[#3f3f46]/35 bg-[#f4f4f5]/10 text-[#f4f4f5] hover:bg-[#f4f4f5]/18"
       }`}
       onClick={onClick}
+      onContextMenu={onContextMenu}
       type="button"
     >
+      {color ? (
+        <span
+          className="h-2 w-2 shrink-0 rounded-full"
+          style={{ backgroundColor: color }}
+        />
+      ) : null}
       {children}
     </button>
   );
