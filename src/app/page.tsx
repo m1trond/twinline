@@ -325,7 +325,7 @@ export default function Home() {
     setErrorMessage,
   } = useFloatingUiState();
   const [chatFolders, setChatFolders] = useState<ChatFolder[]>([]);
-  const [chatFolderAssignments, setChatFolderAssignments] = useState<Record<string, string>>({});
+  const [chatFolderAssignments, setChatFolderAssignments] = useState<Record<string, string[]>>({});
   const [allChatFolderName, setAllChatFolderName] = useState("");
   const [folderContextMenu, setFolderContextMenu] = useState<FolderContextMenuState | null>(null);
   const [folderDialog, setFolderDialog] = useState<FolderDialogState | null>(null);
@@ -468,9 +468,15 @@ export default function Home() {
             !Array.isArray(parsedAssignments)
             ? Object.fromEntries(
                 Object.entries(parsedAssignments).filter(
-                  (entry): entry is [string, string] =>
-                    typeof entry[0] === "string" && typeof entry[1] === "string",
-                ),
+                  (entry): entry is [string, string | string[]] =>
+                    typeof entry[0] === "string" &&
+                    (typeof entry[1] === "string" ||
+                      (Array.isArray(entry[1]) &&
+                        entry[1].every((folderId) => typeof folderId === "string"))),
+                ).map(([profileUserId, folderIds]) => [
+                  profileUserId,
+                  Array.isArray(folderIds) ? Array.from(new Set(folderIds)) : [folderIds],
+                ]),
               )
             : {},
         );
@@ -878,8 +884,8 @@ export default function Home() {
       return chatProfiles;
     }
 
-    return chatProfiles.filter(
-      (profile) => chatFolderAssignments[profile.user_id] === selectedChatFolderId,
+    return chatProfiles.filter((profile) =>
+      (chatFolderAssignments[profile.user_id] ?? []).includes(selectedChatFolderId),
     );
   }, [chatFolderAssignments, chatProfiles, selectedChatFolderId]);
   const searchableProfiles = useMemo(() => {
@@ -2344,7 +2350,7 @@ export default function Home() {
     );
   }
 
-  function saveChatFolderAssignments(nextAssignments: Record<string, string>) {
+  function saveChatFolderAssignments(nextAssignments: Record<string, string[]>) {
     if (!user) {
       return;
     }
@@ -2441,9 +2447,10 @@ export default function Home() {
 
     saveChatFolders(nextFolders);
     if (folderDialog?.profileUserId) {
+      const currentFolderIds = chatFolderAssignments[folderDialog.profileUserId] ?? [];
       saveChatFolderAssignments({
         ...chatFolderAssignments,
-        [folderDialog.profileUserId]: folder.id,
+        [folderDialog.profileUserId]: Array.from(new Set([...currentFolderIds, folder.id])),
       });
     }
     const wasAssignedToProfile = Boolean(folderDialog?.profileUserId);
@@ -2468,7 +2475,9 @@ export default function Home() {
 
     saveChatFolderAssignments({
       ...chatFolderAssignments,
-      [profile.user_id]: folder.id,
+      [profile.user_id]: Array.from(
+        new Set([...(chatFolderAssignments[profile.user_id] ?? []), folder.id]),
+      ),
     });
     setSelectedChatFolderId(folder.id);
     setChatContextMenu(null);
@@ -2505,7 +2514,12 @@ export default function Home() {
     saveChatFolders(chatFolders.filter((folder) => folder.id !== folderId));
     saveChatFolderAssignments(
       Object.fromEntries(
-        Object.entries(chatFolderAssignments).filter(([, currentFolderId]) => currentFolderId !== folderId),
+        Object.entries(chatFolderAssignments)
+          .map(([profileUserId, folderIds]) => [
+            profileUserId,
+            folderIds.filter((currentFolderId) => currentFolderId !== folderId),
+          ] as const)
+          .filter(([, folderIds]) => folderIds.length > 0),
       ),
     );
 
