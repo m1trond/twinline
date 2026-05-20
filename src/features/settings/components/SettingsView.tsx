@@ -381,7 +381,7 @@ function LanguageRow({
           <svg
             aria-hidden="true"
             className={`h-3.5 w-3.5 shrink-0 text-[#a1a1aa] transition-transform duration-200 ${
-              isOpen ? "rotate-180" : ""
+              isOpen ? "" : "rotate-180"
             }`}
             fill="none"
             viewBox="0 0 24 24"
