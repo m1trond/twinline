@@ -18,7 +18,6 @@ export const usernameProfileColumns = "user_id, display_name, username, avatar_u
 export const legacyProfileColumns = "user_id, display_name, avatar_url, name_changed_at, updated_at";
 export const messageColumns = "id, author, text, created_at, user_id, recipient_id";
 export const usernamePattern = /^[a-z0-9_]{3,24}$/;
-export const accessOwnerUsername = "kermetrate";
 export const activeViews: ActiveView[] = ["profile", "messages", "favorites", "music", "access", "settings"];
 
 export const navItems: Array<{ label: string; view: ActiveView }> = [
