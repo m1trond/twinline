@@ -18,6 +18,7 @@ import {
   defaultInterfaceLanguage,
   interfaceLanguageStorageKey,
   isInterfaceLanguage,
+  translations,
 } from "@/shared/i18n";
 import type { InterfaceLanguage } from "@/shared/i18n";
 import { BlockConfirmationDialog } from "@/components/feedback/BlockConfirmationDialog";
@@ -1042,26 +1043,27 @@ export default function Home() {
   const incomingCallerProfile = incomingCall
     ? profilesByUserId.get(incomingCall.sender_id)
     : null;
+  const tr = translations[interfaceLanguage];
   const callStatusText =
     callStatus === "calling"
-      ? "Звоню..."
+      ? tr.calling
       : callStatus === "incoming"
-        ? `Звонит ${incomingCallerProfile?.display_name ?? "Друг"}`
+        ? `${tr.incomingCallFrom} ${incomingCallerProfile?.display_name ?? tr.user}`
         : callStatus === "connecting"
-          ? "Соединение..."
+          ? tr.connecting
           : callStatus === "connected"
-            ? "Звонок идет"
+            ? tr.callActive
             : "";
   const callPanelProfile =
     callPanelProfileSnapshot ??
     (callStatus === "incoming"
       ? {
           avatarUrl: incomingCallerProfile?.avatar_url ?? null,
-          name: incomingCallerProfile?.display_name ?? "Друг",
+          name: incomingCallerProfile?.display_name ?? tr.user,
         }
       : {
           avatarUrl: friendProfile?.avatarUrl ?? null,
-          name: friendProfile?.name ?? "Друг",
+          name: friendProfile?.name ?? tr.user,
         });
 
   useMessageViewportEffects({
@@ -3832,7 +3834,11 @@ export default function Home() {
   }
 
   if (isAuthLoading) {
-    return <LoadingScreen />;
+    return (
+      <I18nProvider language={interfaceLanguage} setLanguage={setInterfaceLanguage}>
+        <LoadingScreen />
+      </I18nProvider>
+    );
   }
 
   if (!user) {

@@ -26,12 +26,12 @@ type ViewedProfileModalProps = {
 };
 
 const muteOptions = [
-  { durationMs: 30 * 60 * 1000, label: "Выключить на 30 минут" },
-  { durationMs: 60 * 60 * 1000, label: "Выключить на 1 час" },
-  { durationMs: 2 * 60 * 60 * 1000, label: "Выключить на 2 часа" },
-  { durationMs: 8 * 60 * 60 * 1000, label: "Выключить на 8 часов" },
-  { durationMs: null, label: "Отключить уведомления" },
-];
+  { durationMs: 30 * 60 * 1000, labelKey: "muteFor30Minutes" },
+  { durationMs: 60 * 60 * 1000, labelKey: "muteFor1Hour" },
+  { durationMs: 2 * 60 * 60 * 1000, labelKey: "muteFor2Hours" },
+  { durationMs: 8 * 60 * 60 * 1000, labelKey: "muteFor8Hours" },
+  { durationMs: null, labelKey: "muteForever" },
+] as const;
 
 export function ViewedProfileModal({
   blockedByMeProfileIds,
@@ -129,7 +129,7 @@ export function ViewedProfileModal({
               </p>
               <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-100">
                 <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_16px_rgba(110,231,183,0.8)]" />
-                {formatLastSeen(viewedProfile.updatedAt)}
+                {formatLastSeen(viewedProfile.updatedAt, language)}
               </div>
             </div>
           </div>
@@ -260,7 +260,7 @@ export function ViewedProfileModal({
                     muteOptions.map((option) => (
                       <button
                         className="min-h-10 w-full whitespace-nowrap rounded-xl px-3 text-left text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
-                        key={option.label}
+                        key={option.labelKey}
                         onClick={() =>
                           viewedProfile.userId
                             ? muteProfileNotifications(viewedProfile.userId, option.durationMs)
@@ -268,7 +268,7 @@ export function ViewedProfileModal({
                         }
                         type="button"
                       >
-                        {option.label}
+                        {t(option.labelKey)}
                       </button>
                     ))
                   )}

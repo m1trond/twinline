@@ -25,16 +25,16 @@ export function getUsernameError(username: string) {
   return "";
 }
 
-export function formatLastSeen(updatedAt: string | null) {
+export function formatLastSeen(updatedAt: string | null, language: "en" | "ru" = "ru") {
   if (!updatedAt) {
-    return "был недавно";
+    return language === "en" ? "seen recently" : "был недавно";
   }
 
   const updatedDate = new Date(updatedAt);
   const updatedTime = updatedDate.getTime();
 
   if (!Number.isFinite(updatedTime)) {
-    return "был недавно";
+    return language === "en" ? "seen recently" : "был недавно";
   }
 
   const now = Date.now();
@@ -42,17 +42,19 @@ export function formatLastSeen(updatedAt: string | null) {
   const diffMinutes = Math.floor(diffSeconds / 60);
 
   if (diffSeconds < 90) {
-    return "в сети";
+    return language === "en" ? "online" : "в сети";
   }
 
   if (diffMinutes < 60) {
-    return `был ${Math.max(1, diffMinutes)} мин. назад`;
+    return language === "en"
+      ? `seen ${Math.max(1, diffMinutes)} min. ago`
+      : `был ${Math.max(1, diffMinutes)} мин. назад`;
   }
 
   const diffHours = Math.floor(diffMinutes / 60);
 
   if (diffHours < 24) {
-    return `был ${diffHours} ч. назад`;
+    return language === "en" ? `seen ${diffHours} h ago` : `был ${diffHours} ч. назад`;
   }
 
   const today = new Date(now);
@@ -65,24 +67,30 @@ export function formatLastSeen(updatedAt: string | null) {
     firstDate.getMonth() === secondDate.getMonth() &&
     firstDate.getDate() === secondDate.getDate();
 
-  const formattedTime = new Intl.DateTimeFormat("ru-RU", {
+  const formattedTime = new Intl.DateTimeFormat(language === "en" ? "en-US" : "ru-RU", {
     hour: "2-digit",
     minute: "2-digit",
   }).format(updatedDate);
 
   if (isSameDate(updatedDate, today)) {
-    return `был сегодня в ${formattedTime}`;
+    return language === "en" ? `seen today at ${formattedTime}` : `был сегодня в ${formattedTime}`;
   }
 
   if (isSameDate(updatedDate, yesterday)) {
-    return `был вчера в ${formattedTime}`;
+    return language === "en"
+      ? `seen yesterday at ${formattedTime}`
+      : `был вчера в ${formattedTime}`;
   }
 
-  return `был ${new Intl.DateTimeFormat("ru-RU", {
+  const formattedDate = new Intl.DateTimeFormat(language === "en" ? "en-US" : "ru-RU", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-  }).format(updatedDate)} в ${formattedTime}`;
+  }).format(updatedDate);
+
+  return language === "en"
+    ? `seen ${formattedDate} at ${formattedTime}`
+    : `был ${formattedDate} в ${formattedTime}`;
 }
 
 export function isProfileOnline(updatedAt: string | null) {

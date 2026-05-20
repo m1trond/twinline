@@ -1,4 +1,5 @@
 import type { Dispatch, PointerEvent, SetStateAction } from "react";
+import { useI18n } from "@/shared/i18n-context";
 import type { CallStatus } from "@/shared/types";
 import { formatCallDuration } from "@/shared/utils/format";
 
@@ -40,6 +41,8 @@ export function CallPanel({
   stopCallPanelDrag,
   toggleCallMicrophone,
 }: CallPanelProps) {
+  const { t } = useI18n();
+
   if (callStatus === "idle") {
     return null;
   }
@@ -65,7 +68,7 @@ export function CallPanel({
       }}
     >
       <button
-        aria-label={isCallPanelCollapsed ? "Развернуть звонок" : "Свернуть звонок"}
+        aria-label={isCallPanelCollapsed ? t("openCall") : t("cancel")}
         className={`absolute grid cursor-pointer place-items-center rounded-full text-[#f4f4f5] transition ${
           isCallPanelCollapsed
             ? "right-12 top-1/2 h-9 w-9 -translate-y-1/2 bg-white/[0.06] text-[#a1a1aa] hover:bg-white/12 hover:text-[#f4f4f5]"
@@ -122,7 +125,7 @@ export function CallPanel({
             {callPanelProfile.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                alt="Аватар звонка"
+                alt={t("avatarAlt")}
                 className="h-full w-full object-cover"
                 draggable={false}
                 src={callPanelProfile.avatarUrl}
@@ -141,7 +144,7 @@ export function CallPanel({
             </p>
           </div>
           <button
-            aria-label="Завершить звонок"
+            aria-label={t("endCall")}
             className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 cursor-pointer place-items-center rounded-full bg-red-500 text-white shadow-[0_10px_24px_rgba(239,68,68,0.32)] transition hover:bg-red-400"
             onClick={() => closeCall(true)}
             onPointerDown={(event) => event.stopPropagation()}
@@ -156,7 +159,7 @@ export function CallPanel({
             {callPanelProfile.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                alt="Аватар звонка"
+                alt={t("avatarAlt")}
                 className="h-full w-full object-cover"
                 draggable={false}
                 src={callPanelProfile.avatarUrl}
@@ -182,7 +185,7 @@ export function CallPanel({
                   onPointerDown={(event) => event.stopPropagation()}
                   type="button"
                 >
-                  Принять
+                  {t("yes")}
                 </button>
                 <button
                   className="min-h-11 rounded-xl border border-red-400/50 bg-red-500/15 px-5 text-sm font-medium text-red-100 transition hover:bg-red-500/25"
@@ -190,13 +193,13 @@ export function CallPanel({
                   onPointerDown={(event) => event.stopPropagation()}
                   type="button"
                 >
-                  Сбросить
+                  {t("decline")}
                 </button>
               </>
             ) : (
               <>
                 <button
-                  aria-label={isCallMicMuted ? "Включить микрофон" : "Выключить микрофон"}
+                  aria-label={isCallMicMuted ? t("microphoneOn") : t("microphoneOff")}
                   className={`grid h-12 w-12 place-items-center rounded-full border transition ${
                     isCallMicMuted
                       ? "border-red-400/55 bg-red-500/20 text-red-100"
@@ -214,7 +217,7 @@ export function CallPanel({
                   onPointerDown={(event) => event.stopPropagation()}
                   type="button"
                 >
-                  Завершить
+                  {t("endCall")}
                 </button>
               </>
             )}
@@ -222,7 +225,7 @@ export function CallPanel({
 
           {callStatus !== "incoming" ? (
             <p className="mt-4 text-sm font-medium text-[#a1a1aa]">
-              {isCallMicMuted ? "Микрофон выключен" : "Микрофон включен"}
+              {isCallMicMuted ? t("microphoneOff") : t("microphoneOn")}
             </p>
           ) : null}
         </>

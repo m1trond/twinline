@@ -1,5 +1,6 @@
 import type { ChatFolder, MutedProfileUntil, ProfileRow } from "@/shared/types";
 import type { ReactNode } from "react";
+import { useI18n } from "@/shared/i18n-context";
 import { isProfileMuted } from "@/shared/utils/storage";
 
 type ChatContextMenuState = {
@@ -24,11 +25,11 @@ type ChatContextMenuProps = {
 };
 
 const muteOptions = [
-  { durationMs: 30 * 60 * 1000, label: "Выключить на 30 минут" },
-  { durationMs: 60 * 60 * 1000, label: "Выключить на 1 час" },
-  { durationMs: 2 * 60 * 60 * 1000, label: "Выключить на 2 часа" },
-  { durationMs: 8 * 60 * 60 * 1000, label: "Выключить на 8 часов" },
-];
+  { durationMs: 30 * 60 * 1000, labelKey: "muteFor30Minutes" },
+  { durationMs: 60 * 60 * 1000, labelKey: "muteFor1Hour" },
+  { durationMs: 2 * 60 * 60 * 1000, labelKey: "muteFor2Hours" },
+  { durationMs: 8 * 60 * 60 * 1000, labelKey: "muteFor8Hours" },
+] as const;
 
 export function ChatContextMenu({
   blockedByMeProfileIds,
@@ -44,6 +45,8 @@ export function ChatContextMenu({
   setChatContextMenu,
   unmuteProfileNotifications,
 }: ChatContextMenuProps) {
+  const { t } = useI18n();
+
   if (!contextMenu) {
     return null;
   }
@@ -54,7 +57,7 @@ export function ChatContextMenu({
   return (
     <>
       <button
-        aria-label="Закрыть меню чата"
+        aria-label={t("cancel")}
         className="fixed inset-0 z-[80] cursor-default bg-transparent"
         onClick={() => setChatContextMenu(null)}
         onContextMenu={(event) => {
@@ -70,10 +73,10 @@ export function ChatContextMenu({
         style={{ left: contextMenu.left, top: contextMenu.top }}
       >
         <p className="truncate px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-[#a1a1aa]">
-          Чат с {profile.display_name}
+          {t("chatWith")} {profile.display_name}
         </p>
-        <MenuButton icon={<ArchiveIcon />} onClick={() => runChatMenuStub("Архив скоро подключим.")}>
-          В архив
+        <MenuButton icon={<ArchiveIcon />} onClick={() => runChatMenuStub(t("archiveSoon"))}>
+          {t("archive")}
         </MenuButton>
         <div className="group relative">
           <button
@@ -81,13 +84,13 @@ export function ChatContextMenu({
             type="button"
           >
             <FolderIcon />
-            <span className="min-w-0 flex-1">Добавить в папку</span>
+            <span className="min-w-0 flex-1">{t("addToFolder")}</span>
             <ChevronIcon />
           </button>
           <div className="hush-context-menu invisible absolute left-full top-0 z-[91] w-[220px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
             <SubMenuButton onClick={() => createChatFolderFromMenu(profile)}>
               <span className="grid h-5 w-5 place-items-center">+</span>
-              Новая папка
+              {t("newFolder")}
             </SubMenuButton>
             {chatFolders.length > 0 ? (
               chatFolders.map((folder) => (
@@ -101,7 +104,7 @@ export function ChatContextMenu({
               ))
             ) : (
               <p className="px-4 py-2 text-xs font-medium text-[#a1a1aa]">
-                Папок пока нет
+                {t("foldersEmpty")}
               </p>
             )}
           </div>
@@ -116,7 +119,7 @@ export function ChatContextMenu({
             setChatContextMenu(null);
           }}
         >
-          {blockedByMeProfileIds.includes(profile.user_id) ? "Разблокировать" : "Заблокировать"}
+          {blockedByMeProfileIds.includes(profile.user_id) ? t("unblockUser") : t("blockUser")}
         </MenuButton>
         <div className="group relative">
           {isMuted ? (
@@ -127,7 +130,7 @@ export function ChatContextMenu({
                 setChatContextMenu(null);
               }}
             >
-              Включить уведомления
+              {t("enableNotifications")}
             </MenuButton>
           ) : (
             <>
@@ -136,19 +139,19 @@ export function ChatContextMenu({
                 type="button"
               >
                 <BellIcon />
-                <span className="min-w-0 flex-1">Выключить уведомления</span>
+                <span className="min-w-0 flex-1">{t("hideNotifications")}</span>
                 <ChevronIcon />
               </button>
               <div className="hush-context-menu invisible absolute left-full top-0 z-[91] w-[260px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
                 {muteOptions.map((option) => (
                   <SubMenuButton
-                    key={option.label}
+                    key={option.labelKey}
                     onClick={() => {
                       muteProfileNotifications(profile.user_id, option.durationMs);
                       setChatContextMenu(null);
                     }}
                   >
-                    {option.label}
+                    {t(option.labelKey)}
                   </SubMenuButton>
                 ))}
                 <SubMenuButton
@@ -158,14 +161,14 @@ export function ChatContextMenu({
                     setChatContextMenu(null);
                   }}
                 >
-                  Отключить уведомления
+                  {t("muteForever")}
                 </SubMenuButton>
               </div>
             </>
           )}
         </div>
         <MenuButton danger icon={<TrashIcon />} onClick={() => requestChatDeleteFromMenu(profile)}>
-          Удалить чат
+          {t("deleteChat")}
         </MenuButton>
       </div>
     </>

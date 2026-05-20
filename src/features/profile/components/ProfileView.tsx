@@ -88,7 +88,7 @@ export function ProfileView({
             {currentProfile?.avatar_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                alt="Твоя аватарка"
+                alt={t("avatarAlt")}
                 className="h-full w-full object-cover"
                 src={currentProfile.avatar_url}
               />
@@ -114,7 +114,7 @@ export function ProfileView({
               onClick={() => avatarInputRef.current?.click()}
               type="button"
             >
-              {isUploadingAvatar ? "Загружаю..." : "Изменить аватарку"}
+              {isUploadingAvatar ? t("uploading") : t("changeAvatar")}
             </button>
           </div>
         </div>

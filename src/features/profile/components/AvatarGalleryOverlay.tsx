@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
+import { useI18n } from "@/shared/i18n-context";
 
 type AvatarGalleryOverlayProps = {
   avatarGalleryIndex: number | null;
@@ -19,6 +20,8 @@ export function AvatarGalleryOverlay({
   setAvatarGalleryIndex,
   setIsAvatarDeleteDialogOpen,
 }: AvatarGalleryOverlayProps) {
+  const { t } = useI18n();
+
   if (!avatarGalleryUrl) {
     return null;
   }
@@ -34,7 +37,7 @@ export function AvatarGalleryOverlay({
       >
         <div className="min-w-0">
           <p className="text-sm font-medium uppercase tracking-[0.16em] text-[#a1a1aa]">
-            Аватарки
+            {t("avatars")}
           </p>
           <p className="mt-0.5 text-xs text-[#a1a1aa]">
             {(avatarGalleryIndex ?? 0) + 1} / {avatarGalleryItems.length}
@@ -47,7 +50,7 @@ export function AvatarGalleryOverlay({
               onClick={() => setIsAvatarDeleteDialogOpen(true)}
               type="button"
             >
-              Удалить
+              {t("delete")}
             </button>
           ) : null}
           <button
@@ -55,7 +58,7 @@ export function AvatarGalleryOverlay({
             onClick={onClose}
             type="button"
           >
-            Закрыть
+            {t("close")}
           </button>
         </div>
       </div>

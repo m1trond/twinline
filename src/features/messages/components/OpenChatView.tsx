@@ -14,6 +14,7 @@ import type { MessageRow, ProfileRow, ReplyMessagePayload } from "@/shared/types
 import { FileAttachment } from "@/features/messages/components/FileAttachment";
 import { MessageReceiptIcon } from "@/features/messages/components/MessageReceiptIcon";
 import { VoiceMessage } from "@/features/messages/components/VoiceMessage";
+import { useI18n } from "@/shared/i18n-context";
 import { formatAudioTime, formatCallDuration, formatMessageTime } from "@/shared/utils/format";
 import { formatLastSeen, isProfileOnline } from "@/shared/utils/profile";
 import {
@@ -153,6 +154,7 @@ export function OpenChatView({
   voiceInputLevel,
   voiceRecordingDuration,
 }: OpenChatViewProps) {
+  const { language, t } = useI18n();
   const [isDraggingAttachment, setIsDraggingAttachment] = useState(false);
   const isAttachmentDropDisabled = isUploadingAttachment || isRecordingVoice || isSelectedChatBlocked;
 
@@ -220,10 +222,12 @@ export function OpenChatView({
                   <div className="pointer-events-none absolute inset-0 z-30 grid place-items-center rounded-xl border border-[#f4f4f5]/25 bg-black/70 p-4 backdrop-blur-sm sm:rounded-2xl">
                     <div className="grid max-w-sm place-items-center rounded-2xl border border-dashed border-[#f4f4f5]/35 bg-[#111111]/88 px-6 py-5 text-center shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
                       <p className="text-base font-medium text-[#f4f4f5]">
-                        Перенесите файл сюда
+                        {t("moveFileHere")}
                       </p>
                       <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
-                        Фото, видео и документы отправятся в этот чат.
+                        {language === "en"
+                          ? "Photos, videos, and documents will be sent to this chat."
+                          : "Фото, видео и документы отправятся в этот чат."}
                       </p>
                     </div>
                   </div>
@@ -231,7 +235,7 @@ export function OpenChatView({
                 <div className="mb-2 flex h-[50px] min-h-[50px] items-center justify-between gap-2 overflow-hidden rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
                   <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
                     <button
-                      aria-label="Назад к чатам"
+                      aria-label={t("messages")}
                       className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 text-[#f4f4f5] transition hover:bg-white/10 sm:rounded-xl"
                       onClick={() => setSelectedChatUserId(null)}
                       type="button"
@@ -258,7 +262,7 @@ export function OpenChatView({
                           friendProfile ?? {
                             avatarUrl: null,
                             bio: null,
-                            name: "Друг",
+                            name: t("user"),
                             username: null,
                             updatedAt: null,
                             userId: null,
@@ -271,12 +275,12 @@ export function OpenChatView({
                         {friendProfile?.avatarUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            alt="Аватар собеседника"
+                            alt={t("avatarAlt")}
                             className="h-full w-full object-cover"
                             src={friendProfile.avatarUrl}
                           />
                         ) : (
-                          (friendProfile?.name ?? "Друг")[0]?.toUpperCase()
+                          (friendProfile?.name ?? t("user"))[0]?.toUpperCase()
                         )}
                       </span>
                       {isProfileOnline(friendProfile?.updatedAt ?? null) ? (
@@ -285,16 +289,18 @@ export function OpenChatView({
                     </button>
                     <div className="min-w-0">
                       <h2 className="truncate text-sm font-medium sm:text-base">
-                        {friendProfile?.name ?? "Друг"}
+                        {friendProfile?.name ?? t("user")}
                       </h2>
                       <p className="truncate text-xs text-[#a1a1aa] sm:text-sm">
-                        {isFriendTyping ? "\u043f\u0435\u0447\u0430\u0442\u0430\u0435\u0442..." : formatLastSeen(friendProfile?.updatedAt ?? null)}
+                        {isFriendTyping
+                          ? language === "en" ? "typing..." : "печатает..."
+                          : formatLastSeen(friendProfile?.updatedAt ?? null, language)}
                       </p>
                     </div>
                   </div>
                   <div className="flex shrink-0 items-center justify-end gap-2">
                     <button
-                      aria-label="Удалить переписку"
+                      aria-label={t("deleteChat")}
                       className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 text-[#f4f4f5] transition hover:border-red-400/45 hover:bg-red-500/12 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-55 sm:rounded-xl"
                       disabled={isDeletingChat}
                       onClick={() => {
@@ -323,7 +329,7 @@ export function OpenChatView({
                       )}
                     </button>
                     <button
-                      aria-label={callStatus === "idle" ? "Позвонить" : callStatusText}
+                      aria-label={callStatus === "idle" ? t("call") : callStatusText}
                       className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:border-[#3f3f46]/25 disabled:text-[#71717a] sm:rounded-xl"
                       disabled={!friendProfile?.userId || callStatus !== "idle"}
                       onClick={() => startCall()}
@@ -353,7 +359,7 @@ export function OpenChatView({
                         {selectedDialogMessages.length}
                       </span>
                       <span className="truncate">
-                        Выделено сообщений
+                        {t("selectedMessages")}
                       </span>
                     </div>
                     <div className="flex flex-1 justify-end gap-2 sm:flex-none">
@@ -366,7 +372,7 @@ export function OpenChatView({
                           <path d="m15 14 5-5-5-5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                           <path d="M4 20v-7a4 4 0 0 1 4-4h12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                         </svg>
-                        Переслать
+                        {t("forward")}
                       </button>
                       <button
                         className="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-red-400/45 bg-red-500/16 px-3 text-sm font-medium text-red-100 transition hover:bg-red-500/25 sm:flex-none"
@@ -376,7 +382,7 @@ export function OpenChatView({
                         <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
                           <path d="M10 11v6M14 11v6M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                         </svg>
-                        Удалить
+                        {t("delete")}
                       </button>
                     </div>
                   </div>
@@ -389,7 +395,7 @@ export function OpenChatView({
                       type="button"
                     >
                       <span className="shrink-0 font-medium text-[#f4f4f5]">
-                        Закрепы: {activePinnedMessages.length}
+                        {t("pinned")}: {activePinnedMessages.length}
                       </span>
                       <span className="min-w-0 truncate text-[#a1a1aa]">
                         {getReadableMessageText(activePinnedMessages.at(-1)?.text ?? "")}
@@ -424,8 +430,8 @@ export function OpenChatView({
                   {!isLoadingMessages && visibleDialogMessagesCount === 0 ? (
                     <p className="text-sm text-[#a1a1aa]">
                       {isPinnedMessagesViewOpen
-                        ? "Закрепов пока нет."
-                        : "Сообщений пока нет. Напиши первое."}
+                        ? language === "en" ? "No pinned messages yet." : "Закрепов пока нет."
+                        : language === "en" ? "No messages yet. Write the first one." : "Сообщений пока нет. Напиши первое."}
                     </p>
                   ) : null}
 
@@ -649,10 +655,10 @@ export function OpenChatView({
                               </div>
                               <div>
                                 <p className="text-sm font-medium opacity-75">
-                                  Звонок
+                                  {t("call")}
                                 </p>
                                 <p className="text-xs font-medium opacity-60">
-                                  Разговор {formatCallDuration(callDurationSeconds)}
+                                  {t("callConversation")} {formatCallDuration(callDurationSeconds)}
                                 </p>
                               </div>
                             </div>
@@ -784,7 +790,7 @@ export function OpenChatView({
                     type="file"
                   />
                   <button
-                    aria-label="Прикрепить файл"
+                    aria-label={t("attachFile")}
                     className="grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 text-[#f4f4f5] transition hover:bg-[#f4f4f5]/18 disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={isUploadingAttachment || isRecordingVoice || isSelectedChatBlocked}
                     onClick={() => imageInputRef.current?.click()}
@@ -822,7 +828,7 @@ export function OpenChatView({
                         onClick={cancelVoiceRecording}
                         type="button"
                       >
-                        Отмена
+                        {t("cancel")}
                       </button>
                     </div>
                   ) : (
@@ -834,21 +840,21 @@ export function OpenChatView({
                         onChange={handleMessageTextChange}
                         placeholder={
                           isSelectedChatBlockedByMe
-                            ? "Пользователь заблокирован"
+                            ? t("userBlocked")
                             : isSelectedChatBlockingMe
-                              ? "Вы были заблокированы"
+                              ? t("youWereBlocked")
                             : editingMessage
-                            ? "Измени сообщение..."
+                            ? `${t("edit")}...`
                             : replyTarget
-                              ? "Ответь на сообщение..."
-                              : "Напиши сообщение..."
+                              ? t("typeReply")
+                              : t("startMessage")
                         }
                         ref={messageInputRef}
                         type="text"
                         value={messageText}
                       />
                       <button
-                        aria-label="Стикеры"
+                        aria-label="Stickers"
                         className="grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 text-[#f4f4f5] transition hover:bg-[#f4f4f5]/18 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={isUploadingAttachment || isSelectedChatBlocked}
                         onClick={toggleStickerPicker}
@@ -958,7 +964,7 @@ export function OpenChatView({
                     onClick={() => setIsUnpinAllDialogOpen(true)}
                     type="button"
                   >
-                    Открепить {activePinnedMessages.length} сообщений
+                    {t("unpin")} {activePinnedMessages.length}
                   </button>
                 ) : null}
 
@@ -966,7 +972,7 @@ export function OpenChatView({
                   <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-2.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
                     <div className="min-w-0">
                       <p className="text-xs font-medium uppercase tracking-[0.14em] text-[#e5e5e5]">
-                        {editingMessage ? "Редактирование" : "Ответ"}
+                        {editingMessage ? t("editing") : t("reply")}
                       </p>
                       <p className="mt-1 truncate font-medium text-[#f4f4f5]">
                         {getReadableMessageText((editingMessage ?? replyTarget)?.text ?? "")}
@@ -981,7 +987,7 @@ export function OpenChatView({
                       }}
                       type="button"
                     >
-                      Отмена
+                      {t("cancel")}
                     </button>
                   </div>
                 ) : null}

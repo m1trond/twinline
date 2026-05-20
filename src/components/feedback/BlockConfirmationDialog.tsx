@@ -1,3 +1,5 @@
+import { useI18n } from "@/shared/i18n-context";
+
 export type BlockConfirmationState = {
   action: "block" | "unblock";
   targetLabel: string;
@@ -15,6 +17,8 @@ export function BlockConfirmationDialog({
   onCancel,
   onConfirm,
 }: BlockConfirmationDialogProps) {
+  const { t } = useI18n();
+
   if (!confirmation) {
     return null;
   }
@@ -24,7 +28,7 @@ export function BlockConfirmationDialog({
   return (
     <>
       <button
-        aria-label="Закрыть подтверждение блокировки"
+        aria-label={t("cancel")}
         className="fixed inset-0 z-[115] bg-black/62 backdrop-blur-md"
         onClick={onCancel}
         type="button"
@@ -52,8 +56,8 @@ export function BlockConfirmationDialog({
           <div className="min-w-0">
             <h2 className="text-base font-medium leading-tight text-[#f4f4f5]">
               {isBlockAction
-                ? `Заблокировать пользователя ${confirmation.targetLabel}?`
-                : `Разблокировать пользователя ${confirmation.targetLabel}?`}
+                ? `${t("blockUser")} ${confirmation.targetLabel}?`
+                : `${t("unblockUser")} ${confirmation.targetLabel}?`}
             </h2>
           </div>
         </div>
@@ -67,14 +71,14 @@ export function BlockConfirmationDialog({
             onClick={onConfirm}
             type="button"
           >
-            Да
+            {t("yes")}
           </button>
           <button
             className="min-h-12 rounded-2xl border border-[#3f3f46]/45 bg-white/[0.03] px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
             onClick={onCancel}
             type="button"
           >
-            Нет
+            {t("no")}
           </button>
         </div>
       </section>

@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
+import { useI18n } from "@/shared/i18n-context";
 import type { MessageRow } from "@/shared/types";
 
 type ChatDeleteTargetProfile = {
@@ -73,6 +74,8 @@ export function MessagePinDialog({
   setShouldPinForBoth,
   shouldPinForBoth,
 }: MessagePinDialogProps) {
+  const { language, t } = useI18n();
+
   if (!messagePinTarget) {
     return null;
   }
@@ -82,7 +85,7 @@ export function MessagePinDialog({
   return (
     <>
       <button
-        aria-label="Закрыть окно закрепления сообщения"
+        aria-label={t("cancel")}
         className="fixed inset-0 z-[95] bg-black/58 backdrop-blur-sm"
         onClick={() => setMessagePinTarget(null)}
         type="button"
@@ -109,12 +112,14 @@ export function MessagePinDialog({
           </span>
           <div className="min-w-0">
             <h2 className="text-base font-medium text-[#f4f4f5]">
-              {isPinned ? "Открепить сообщение?" : "Закрепить сообщение?"}
+              {isPinned
+                ? language === "en" ? "Unpin message?" : "Открепить сообщение?"
+                : language === "en" ? "Pin message?" : "Закрепить сообщение?"}
             </h2>
             <p className="mt-1 text-sm leading-6 text-[#a1a1aa]">
               {isPinned
-                ? "Сообщение исчезнет из закрепа в этом чате."
-                : "Сообщение будет видно сверху переписки."}
+                ? language === "en" ? "The message will disappear from the pinned area in this chat." : "Сообщение исчезнет из закрепа в этом чате."
+                : language === "en" ? "The message will be visible at the top of the chat." : "Сообщение будет видно сверху переписки."}
             </p>
           </div>
         </div>
@@ -134,7 +139,7 @@ export function MessagePinDialog({
                 onChange={(event) => setShouldPinForBoth(event.target.checked)}
                 type="checkbox"
               />
-              <span>Закрепить для двоих</span>
+              <span>{language === "en" ? "Pin for both" : "Закрепить для двоих"}</span>
             </label>
           </>
         ) : null}
@@ -145,14 +150,14 @@ export function MessagePinDialog({
             onClick={isPinned ? confirmUnpinPinnedMessage : confirmPinnedMessage}
             type="button"
           >
-            {isPinned ? "Да" : "Закрепить"}
+            {isPinned ? t("yes") : t("pin")}
           </button>
           <button
             className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
             onClick={() => setMessagePinTarget(null)}
             type="button"
           >
-            {isPinned ? "Нет" : "Отмена"}
+            {isPinned ? t("no") : t("cancel")}
           </button>
         </div>
       </section>
@@ -167,6 +172,8 @@ export function MessageDeleteDialog({
   messageDeleteTarget,
   setMessageDeleteTarget,
 }: MessageDeleteDialogProps) {
+  const { language, t } = useI18n();
+
   if (!messageDeleteTarget) {
     return null;
   }
@@ -174,7 +181,7 @@ export function MessageDeleteDialog({
   return (
     <>
       <button
-        aria-label="Закрыть окно удаления сообщения"
+        aria-label={t("cancel")}
         className="fixed inset-0 z-[95] bg-black/58 backdrop-blur-sm"
         onClick={() => setMessageDeleteTarget(null)}
         type="button"
@@ -186,10 +193,12 @@ export function MessageDeleteDialog({
           </span>
           <div className="min-w-0">
             <h2 className="text-base font-medium text-[#f4f4f5]">
-              Удаление сообщения
+              {language === "en" ? "Delete message" : "Удаление сообщения"}
             </h2>
             <p className="mt-1 text-sm leading-6 text-[#a1a1aa]">
-              Выберите, удалить сообщение только у себя или у обоих участников переписки.
+              {language === "en"
+                ? "Choose whether to delete the message only for you or for both chat participants."
+                : "Выберите, удалить сообщение только у себя или у обоих участников переписки."}
             </p>
           </div>
         </div>
@@ -206,14 +215,14 @@ export function MessageDeleteDialog({
             onClick={() => hideMessageForMe(messageDeleteTarget)}
             type="button"
           >
-            Только у себя
+            {language === "en" ? "Only for me" : "Только у себя"}
           </button>
           <button
             className="min-h-12 rounded-xl bg-red-500 px-4 text-sm font-medium text-white transition hover:bg-red-400"
             onClick={() => deleteMessage(messageDeleteTarget)}
             type="button"
           >
-            У обоих
+            {language === "en" ? "For both" : "У обоих"}
           </button>
         </div>
 
@@ -222,7 +231,7 @@ export function MessageDeleteDialog({
           onClick={() => setMessageDeleteTarget(null)}
           type="button"
         >
-          Отмена
+          {t("cancel")}
         </button>
       </section>
     </>
@@ -237,6 +246,8 @@ export function SelectedMessagesDeleteDialog({
   selectedDialogMessages,
   setIsSelectedDeleteDialogOpen,
 }: SelectedMessagesDeleteDialogProps) {
+  const { language, t } = useI18n();
+
   if (!isOpen || selectedDialogMessages.length === 0) {
     return null;
   }
@@ -244,7 +255,7 @@ export function SelectedMessagesDeleteDialog({
   return (
     <>
       <button
-        aria-label="Закрыть окно удаления выбранных сообщений"
+        aria-label={t("cancel")}
         className="fixed inset-0 z-[95] bg-black/58 backdrop-blur-sm"
         onClick={() => setIsSelectedDeleteDialogOpen(false)}
         type="button"
@@ -256,17 +267,19 @@ export function SelectedMessagesDeleteDialog({
           </span>
           <div className="min-w-0">
             <h2 className="text-base font-medium text-[#f4f4f5]">
-              Удаление сообщений
+              {language === "en" ? "Delete messages" : "Удаление сообщений"}
             </h2>
             <p className="mt-1 text-sm leading-6 text-[#a1a1aa]">
-              Выбери, удалить выделенные только у себя или у обоих участников переписки.
+              {language === "en"
+                ? "Choose whether to delete selected messages only for you or for both chat participants."
+                : "Выбери, удалить выделенные только у себя или у обоих участников переписки."}
             </p>
           </div>
         </div>
 
         <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 p-3">
           <p className="text-sm font-medium text-[#f4f4f5]">
-            {selectedDialogMessages.length} сообщ.
+            {selectedDialogMessages.length} {language === "en" ? "messages" : "сообщ."}
           </p>
           <p className="mt-1 line-clamp-2 text-xs text-[#a1a1aa]">
             {getReadableMessageText(selectedDialogMessages.at(-1)?.text ?? "")}
@@ -279,14 +292,14 @@ export function SelectedMessagesDeleteDialog({
             onClick={hideSelectedMessagesForMe}
             type="button"
           >
-            Только у себя
+            {language === "en" ? "Only for me" : "Только у себя"}
           </button>
           <button
             className="min-h-12 rounded-xl bg-red-500 px-4 text-sm font-medium text-white transition hover:bg-red-400"
             onClick={deleteSelectedMessagesForBoth}
             type="button"
           >
-            У обоих
+            {language === "en" ? "For both" : "У обоих"}
           </button>
         </div>
 
@@ -295,7 +308,7 @@ export function SelectedMessagesDeleteDialog({
           onClick={() => setIsSelectedDeleteDialogOpen(false)}
           type="button"
         >
-          Отмена
+          {t("cancel")}
         </button>
       </section>
     </>
@@ -309,6 +322,8 @@ export function ChatDeleteDialog({
   isOpen,
   onClose,
 }: ChatDeleteDialogProps) {
+  const { language, t } = useI18n();
+
   if (!isOpen) {
     return null;
   }
@@ -316,7 +331,7 @@ export function ChatDeleteDialog({
   return (
     <>
       <button
-        aria-label="Закрыть окно удаления переписки"
+        aria-label={t("cancel")}
         className="fixed inset-0 z-[95] bg-black/62 backdrop-blur-sm"
         onClick={onClose}
         type="button"
@@ -333,10 +348,12 @@ export function ChatDeleteDialog({
             </span>
             <div className="min-w-0">
               <h2 className="text-base font-medium text-[#f4f4f5]">
-                Удалить чат у двоих?
+                {language === "en" ? "Delete chat for both?" : "Удалить чат у двоих?"}
               </h2>
               <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
-                Сообщения этой переписки исчезнут у тебя и собеседника. Отменить действие не получится.
+                {language === "en"
+                  ? "Messages in this chat will disappear for you and the other person. This cannot be undone."
+                  : "Сообщения этой переписки исчезнут у тебя и собеседника. Отменить действие не получится."}
               </p>
             </div>
           </div>
@@ -344,8 +361,8 @@ export function ChatDeleteDialog({
           <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/24 p-3">
             <p className="text-sm font-medium text-[#f4f4f5]">
               {chatDeleteTargetProfile?.name
-                ? `Чат с ${chatDeleteTargetProfile.name}`
-                : "Текущий чат"}
+                ? `${t("chatWith")} ${chatDeleteTargetProfile.name}`
+                : language === "en" ? "Current chat" : "Текущий чат"}
             </p>
           </div>
 
@@ -355,7 +372,7 @@ export function ChatDeleteDialog({
               onClick={onClose}
               type="button"
             >
-              Оставить
+              {language === "en" ? "Keep" : "Оставить"}
             </button>
             <button
               className="min-h-12 rounded-xl bg-red-500 px-4 text-sm font-medium text-white shadow-[0_14px_34px_rgba(239,68,68,0.22)] transition hover:bg-red-400 disabled:cursor-not-allowed disabled:opacity-60"
@@ -363,7 +380,9 @@ export function ChatDeleteDialog({
               onClick={confirmDeleteChat}
               type="button"
             >
-              {isDeletingChat ? "Удаляю..." : "Удалить у двоих"}
+              {isDeletingChat
+                ? language === "en" ? "Deleting..." : "Удаляю..."
+                : language === "en" ? "Delete for both" : "Удалить у двоих"}
             </button>
           </div>
         </div>
@@ -378,6 +397,8 @@ export function UnpinAllDialog({
   onCancel,
   onConfirm,
 }: UnpinAllDialogProps) {
+  const { language, t } = useI18n();
+
   if (!isOpen) {
     return null;
   }
@@ -385,7 +406,7 @@ export function UnpinAllDialog({
   return (
     <>
       <button
-        aria-label="Закрыть окно открепления"
+        aria-label={t("cancel")}
         className="fixed inset-0 z-[95] bg-black/58 backdrop-blur-sm"
         onClick={onCancel}
         type="button"
@@ -414,17 +435,19 @@ export function UnpinAllDialog({
             </span>
             <div className="min-w-0">
               <h2 className="text-base font-medium text-[#f4f4f5]">
-                Открепить все закрепы?
+                {language === "en" ? "Unpin all pinned messages?" : "Открепить все закрепы?"}
               </h2>
               <p className="mt-1 text-sm leading-6 text-[#a1a1aa]">
-                Закрепы исчезнут из списка этого чата. Общие закрепы открепятся для обоих.
+                {language === "en"
+                  ? "Pinned messages will disappear from this chat list. Shared pins will be unpinned for both."
+                  : "Закрепы исчезнут из списка этого чата. Общие закрепы открепятся для обоих."}
               </p>
             </div>
           </div>
 
           <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/22 px-3 py-2.5">
             <p className="text-sm font-medium text-[#f4f4f5]">
-              {messageCount} сообщ.
+              {messageCount} {language === "en" ? "messages" : "сообщ."}
             </p>
           </div>
 
@@ -434,14 +457,14 @@ export function UnpinAllDialog({
               onClick={onCancel}
               type="button"
             >
-              Оставить
+              {language === "en" ? "Keep" : "Оставить"}
             </button>
             <button
               className="min-h-12 rounded-xl bg-red-500 px-4 text-sm font-medium text-white transition hover:bg-red-400"
               onClick={onConfirm}
               type="button"
             >
-              Открепить
+              {t("unpin")}
             </button>
           </div>
         </div>

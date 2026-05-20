@@ -1,3 +1,5 @@
+import { useI18n } from "@/shared/i18n-context";
+
 type StickerPickerPosition = {
   left: number;
   top: number;
@@ -18,6 +20,8 @@ export function StickerPicker({
   position,
   stickers,
 }: StickerPickerProps) {
+  const { t } = useI18n();
+
   if (!isOpen) {
     return null;
   }
@@ -25,7 +29,7 @@ export function StickerPicker({
   return (
     <>
       <button
-        aria-label="Закрыть стикеры"
+        aria-label={t("close")}
         className="fixed inset-0 z-[70] cursor-default bg-transparent"
         onClick={onClose}
         type="button"
@@ -41,14 +45,14 @@ export function StickerPicker({
       >
         <div className="flex items-center justify-between gap-3 px-1">
           <p className="text-sm font-medium uppercase tracking-[0.16em] text-[#e5e5e5]">
-            Стикеры
+            {t("stickers")}
           </p>
           <button
             className="rounded-full px-2 py-1 text-xs font-medium text-[#a1a1aa] transition hover:bg-white/10 hover:text-[#f4f4f5]"
             onClick={onClose}
             type="button"
           >
-            Закрыть
+            {t("close")}
           </button>
         </div>
         <div className="mt-3 grid grid-cols-4 gap-2">

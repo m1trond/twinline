@@ -4,6 +4,7 @@ import type { ViewedProfileState } from "@/features/navigation/useNavigationStat
 import type { FavoriteItem, MessageRow } from "@/shared/types";
 import { FileAttachment } from "@/features/messages/components/FileAttachment";
 import { VoiceMessage } from "@/features/messages/components/VoiceMessage";
+import { useI18n } from "@/shared/i18n-context";
 import { formatAudioTime, formatCallDuration, formatMessageTime } from "@/shared/utils/format";
 import {
   getMessageAudioUrl,
@@ -86,6 +87,7 @@ export function FavoritesView({
   voiceInputLevel,
   voiceRecordingDuration,
 }: FavoritesViewProps) {
+  const { t } = useI18n();
   const [isDraggingAttachment, setIsDraggingAttachment] = useState(false);
   const isAttachmentDropDisabled = isUploadingAttachment || isRecordingVoice || isSelectedChatBlocked;
 
@@ -152,17 +154,17 @@ export function FavoritesView({
                   <div className="pointer-events-none absolute inset-0 z-30 grid place-items-center rounded-xl border border-[#f4f4f5]/25 bg-black/70 p-4 backdrop-blur-sm sm:rounded-2xl">
                     <div className="grid max-w-sm place-items-center rounded-2xl border border-dashed border-[#f4f4f5]/35 bg-[#111111]/88 px-6 py-5 text-center shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
                       <p className="text-base font-medium text-[#f4f4f5]">
-                        Перенесите файл сюда
+                        {t("moveFileHere")}
                       </p>
                       <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
-                        Фото, видео и документы сохранятся в избранном.
+                        {t("moveFileHereDescription")}
                       </p>
                     </div>
                   </div>
                 ) : null}
                 <div className="mb-2 flex h-[50px] min-h-[50px] items-center rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
                   <h2 className="text-base font-medium sm:text-base">
-                    Избранное
+                    {t("favorites")}
                   </h2>
                 </div>
 
@@ -193,7 +195,7 @@ export function FavoritesView({
                     </div>
                     <div className="min-w-0 flex-1">
                       <span className="block text-xs font-medium uppercase tracking-[0.16em] text-[#e5e5e5]">
-                        Закреплено
+                        {t("pinned")}
                       </span>
                       <span className="mt-0.5 block truncate text-sm font-medium text-[#f4f4f5]">
                         {getReadableMessageText(pinnedFavoriteItem.text)}
@@ -204,7 +206,7 @@ export function FavoritesView({
                       onClick={() => setPinnedFavoriteItem(null)}
                       type="button"
                     >
-                      Открепить
+                      {t("unpin")}
                     </button>
                   </article>
                 ) : null}
@@ -214,10 +216,10 @@ export function FavoritesView({
                     <div className="grid flex-1 place-items-center text-center">
                       <div className="max-w-sm rounded-2xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-5">
                         <p className="text-sm font-medium">
-                          Избранное пока пустое
+                          {t("favoritesEmptyTitle")}
                         </p>
                         <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
-                          Напиши сюда первую заметку или прикрепи файл.
+                          {t("favoritesEmptyText")}
                         </p>
                       </div>
                     </div>
@@ -285,7 +287,7 @@ export function FavoritesView({
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
-                                alt="Избранное изображение"
+                                alt={t("favoriteImage")}
                                 className="max-h-[58dvh] w-full object-cover sm:max-h-[420px]"
                                 src={imageUrl}
                               />
@@ -309,10 +311,10 @@ export function FavoritesView({
                           ) : callDurationSeconds !== null ? (
                             <div className="min-w-[min(230px,70vw)] rounded-xl bg-[#262626] px-3 py-2 text-[#f4f4f5] sm:min-w-[min(260px,70vw)] sm:rounded-2xl">
                               <p className="text-sm font-medium opacity-75">
-                                Звонок
+                                {t("call")}
                               </p>
                               <p className="text-xs font-medium opacity-60">
-                                Разговор {formatCallDuration(callDurationSeconds)}
+                                {t("callConversation")} {formatCallDuration(callDurationSeconds)}
                               </p>
                             </div>
                           ) : sticker ? (
@@ -363,11 +365,11 @@ export function FavoritesView({
                         }}
                         type="button"
                       >
-                        Разблокировать
+                        {t("unblockUser")}
                       </button>
                     ) : (
                       <div className="flex min-h-11 items-center justify-center rounded-lg bg-[#f4f4f5]/12 px-4 text-sm font-medium text-[#a1a1aa] sm:rounded-xl">
-                        Вы были заблокированы
+                        {t("youWereBlocked")}
                       </div>
                     )}
                   </div>
@@ -384,7 +386,7 @@ export function FavoritesView({
                     type="file"
                   />
                   <button
-                    aria-label="Прикрепить файл"
+                    aria-label={t("attachFile")}
                     className="grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 text-[#f4f4f5] transition hover:bg-[#f4f4f5]/18 disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={isUploadingAttachment || isRecordingVoice}
                     onClick={() => imageInputRef.current?.click()}
@@ -423,7 +425,7 @@ export function FavoritesView({
                         onClick={cancelVoiceRecording}
                         type="button"
                       >
-                        Отмена
+                        {t("cancel")}
                       </button>
                     </div>
                   ) : (
@@ -434,17 +436,17 @@ export function FavoritesView({
                         onChange={handleMessageTextChange}
                         placeholder={
                           editingMessage
-                            ? "Измени сообщение..."
+                            ? `${t("edit")}...`
                             : replyTarget
-                              ? "Ответь на сообщение..."
-                              : "Напиши в избранное..."
+                              ? t("typeReply")
+                              : t("typeFavorite")
                         }
                         ref={messageInputRef}
                         type="text"
                         value={messageText}
                       />
                       <button
-                        aria-label="Стикеры"
+                        aria-label="Stickers"
                         className="grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 text-[#f4f4f5] transition hover:bg-[#f4f4f5]/18 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={isUploadingAttachment}
                         onClick={toggleStickerPicker}
@@ -477,7 +479,7 @@ export function FavoritesView({
                   )}
 
                   <button
-                    aria-label={isRecordingVoice ? "Отправить голосовое" : "Записать голосовое"}
+                    aria-label={isRecordingVoice ? "Send voice" : "Record voice"}
                     className={`relative grid min-h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg border text-[#f4f4f5] transition disabled:cursor-not-allowed disabled:opacity-50 ${
                       isRecordingVoice
                         ? "border-red-400/60 bg-red-500/85 text-white hover:bg-red-400"
@@ -535,7 +537,7 @@ export function FavoritesView({
                   <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-2.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
                     <div className="min-w-0">
                       <p className="text-xs font-medium uppercase tracking-[0.14em] text-[#e5e5e5]">
-                        {editingMessage ? "Редактирование" : "Ответ"}
+                        {editingMessage ? t("editing") : t("reply")}
                       </p>
                       <p className="mt-1 truncate font-medium text-[#f4f4f5]">
                         {getReadableMessageText((editingMessage ?? replyTarget)?.text ?? "")}
@@ -550,7 +552,7 @@ export function FavoritesView({
                       }}
                       type="button"
                     >
-                      Отмена
+                      {t("cancel")}
                     </button>
                   </div>
                 ) : null}

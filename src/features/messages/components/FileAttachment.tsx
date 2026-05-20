@@ -1,6 +1,7 @@
 import type { MouseEvent } from "react";
 import { MessageReceiptIcon } from "@/features/messages/components/MessageReceiptIcon";
 import type { MessageReceiptStatus } from "@/features/messages/components/MessageReceiptIcon";
+import { useI18n } from "@/shared/i18n-context";
 import type { FileMessagePayload } from "@/shared/types";
 import { formatFileSize, formatMessageTime } from "@/shared/utils/format";
 
@@ -15,6 +16,8 @@ export function FileAttachment({
   receiptStatus?: MessageReceiptStatus | null;
   sentAt?: string | null;
 }) {
+  const { t } = useI18n();
+
   async function downloadFile(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
     event.stopPropagation();
@@ -79,10 +82,10 @@ export function FileAttachment({
         </span>
       </span>
       <button
-        aria-label={`Скачать ${file.name}`}
+        aria-label={`${t("download")} ${file.name}`}
         className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.06] text-[#f4f4f5] transition hover:scale-105 hover:bg-white/12"
         onClick={downloadFile}
-        title="Скачать"
+        title={t("download")}
         type="button"
       >
         <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">

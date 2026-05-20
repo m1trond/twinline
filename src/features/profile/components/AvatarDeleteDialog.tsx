@@ -1,3 +1,5 @@
+import { useI18n } from "@/shared/i18n-context";
+
 type AvatarDeleteDialogProps = {
   isOpen: boolean;
   onCancel: () => void;
@@ -9,6 +11,8 @@ export function AvatarDeleteDialog({
   onCancel,
   onConfirm,
 }: AvatarDeleteDialogProps) {
+  const { t } = useI18n();
+
   if (!isOpen) {
     return null;
   }
@@ -30,10 +34,10 @@ export function AvatarDeleteDialog({
           </span>
           <div className="min-w-0">
             <h2 className="text-base font-medium leading-tight text-[#f4f4f5]">
-              Удалить аватарку?
+              {t("deleteAvatarTitle")}
             </h2>
             <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
-              Аватарка исчезнет из этой галереи. Если это текущая аватарка, Hush поставит следующую или очистит ее.
+              {t("deleteAvatarDescription")}
             </p>
           </div>
         </div>
@@ -43,14 +47,14 @@ export function AvatarDeleteDialog({
             onClick={onConfirm}
             type="button"
           >
-            Удалить
+            {t("delete")}
           </button>
           <button
             className="min-h-12 rounded-2xl border border-[#3f3f46]/45 bg-white/[0.03] px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
             onClick={onCancel}
             type="button"
           >
-            Отмена
+            {t("cancel")}
           </button>
         </div>
       </section>

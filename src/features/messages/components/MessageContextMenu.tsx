@@ -1,5 +1,6 @@
 import type { FavoriteItem, MessageRow } from "@/shared/types";
 import type { ReactNode } from "react";
+import { useI18n } from "@/shared/i18n-context";
 
 type MessageContextMenuState = {
   left: number;
@@ -55,6 +56,8 @@ export function MessageContextMenu({
   startEditingMessage,
   toggleSelectedMessage,
 }: MessageContextMenuProps) {
+  const { t } = useI18n();
+
   if (!contextMenu) {
     return null;
   }
@@ -66,7 +69,7 @@ export function MessageContextMenu({
   return (
     <>
       <MenuBackdrop
-        ariaLabel="Закрыть меню сообщения"
+        ariaLabel={t("cancel")}
         onClose={() => setMessageContextMenu(null)}
       />
       <div
@@ -76,14 +79,14 @@ export function MessageContextMenu({
         style={{ left: contextMenu.left, top: contextMenu.top }}
       >
         <MenuButton icon={<ReplyIcon />} onClick={() => replyToMessage(contextMenu.message)}>
-          Ответить
+          {t("reply")}
         </MenuButton>
         {isMine ? (
           <MenuButton
             icon={<EditIcon />}
             onClick={() => startEditingMessage(contextMenu.message)}
           >
-            Изменить
+            {t("edit")}
           </MenuButton>
         ) : null}
         <MenuButton
@@ -94,10 +97,10 @@ export function MessageContextMenu({
               : requestPinnedMessage(contextMenu.message)
           }
         >
-          {isPinned ? "Открепить" : "Закрепить"}
+          {isPinned ? t("unpin") : t("pin")}
         </MenuButton>
         <MenuButton icon={<CopyIcon />} onClick={() => copyMessageText(contextMenu.message)}>
-          Копировать текст
+          {t("copyText")}
         </MenuButton>
         {isMine ? (
           <MenuButton
@@ -105,14 +108,14 @@ export function MessageContextMenu({
             icon={<TrashIcon />}
             onClick={() => requestMessageDelete(contextMenu.message)}
           >
-            Удалить
+            {t("delete")}
           </MenuButton>
         ) : null}
         <MenuButton
           icon={<SelectIcon />}
           onClick={() => toggleSelectedMessage(contextMenu.message)}
         >
-          {isSelected ? "Снять выделение" : "Выделить"}
+          {isSelected ? t("removeSelection") : t("select")}
         </MenuButton>
       </div>
     </>
@@ -131,6 +134,8 @@ export function FavoriteContextMenu({
   togglePinnedFavoriteItem,
   toggleSelectedFavoriteItem,
 }: FavoriteContextMenuProps) {
+  const { t } = useI18n();
+
   if (!contextMenu) {
     return null;
   }
@@ -141,7 +146,7 @@ export function FavoriteContextMenu({
   return (
     <>
       <MenuBackdrop
-        ariaLabel="Закрыть меню избранного"
+        ariaLabel={t("cancel")}
         onClose={() => setFavoriteContextMenu(null)}
       />
       <div
@@ -151,22 +156,22 @@ export function FavoriteContextMenu({
         style={{ left: contextMenu.left, top: contextMenu.top }}
       >
         <MenuButton icon={<ReplyIcon />} onClick={() => replyToFavoriteItem(contextMenu.item)}>
-          Ответить
+          {t("reply")}
         </MenuButton>
         <MenuButton icon={<EditIcon />} onClick={() => startEditingFavoriteItem(contextMenu.item)}>
-          Изменить
+          {t("edit")}
         </MenuButton>
         <MenuButton icon={<PinIcon />} onClick={() => togglePinnedFavoriteItem(contextMenu.item)}>
-          {isPinned ? "Открепить" : "Закрепить"}
+          {isPinned ? t("unpin") : t("pin")}
         </MenuButton>
         <MenuButton icon={<CopyIcon />} onClick={() => copyFavoriteText(contextMenu.item)}>
-          Копировать текст
+          {t("copyText")}
         </MenuButton>
         <MenuButton danger icon={<TrashIcon />} onClick={() => removeFavoriteItem(contextMenu.item.id)}>
-          Удалить
+          {t("delete")}
         </MenuButton>
         <MenuButton icon={<SelectIcon />} onClick={() => toggleSelectedFavoriteItem(contextMenu.item)}>
-          {isSelected ? "Снять выделение" : "Выделить"}
+          {isSelected ? t("removeSelection") : t("select")}
         </MenuButton>
       </div>
     </>
