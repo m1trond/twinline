@@ -14,28 +14,93 @@
 import type {
   BlockMessagePayload,
   FileMessagePayload,
+  MediaMessagePayload,
   MessageRow,
   PinMessagePayload,
   ReceiptMessagePayload,
   ReplyMessagePayload,
   TypingMessagePayload,
 } from "../types";
+
+function createMediaMessageText(prefix: string, payload: MediaMessagePayload) {
+  const normalizedCaption = payload.caption?.trim();
+
+  if (!normalizedCaption) {
+    return `${prefix}${payload.url}`;
+  }
+
+  return `${prefix}${encodeURIComponent(
+    JSON.stringify({
+      caption: normalizedCaption,
+      url: payload.url,
+    } satisfies MediaMessagePayload),
+  )}`;
+}
+
+function getMediaMessagePayload(text: string, prefix: string): MediaMessagePayload | null {
+  if (!text.startsWith(prefix)) {
+    return null;
+  }
+
+  const rawPayload = text.slice(prefix.length);
+
+  if (!rawPayload) {
+    return null;
+  }
+
+  try {
+    const parsedPayload = JSON.parse(decodeURIComponent(rawPayload));
+
+    if (parsedPayload && typeof parsedPayload.url === "string") {
+      return {
+        caption:
+          typeof parsedPayload.caption === "string"
+            ? parsedPayload.caption
+            : undefined,
+        url: parsedPayload.url,
+      };
+    }
+  } catch {
+    return { url: rawPayload };
+  }
+
+  return { url: rawPayload };
+}
+
+export function createImageMessageText(payload: MediaMessagePayload) {
+  return createMediaMessageText(imageMessagePrefix, payload);
+}
+
+export function createVideoMessageText(payload: MediaMessagePayload) {
+  return createMediaMessageText(videoMessagePrefix, payload);
+}
+
+export function createAudioMessageText(payload: MediaMessagePayload) {
+  return createMediaMessageText(audioMessagePrefix, payload);
+}
+
+export function getMessageImagePayload(text: string) {
+  return getMediaMessagePayload(text, imageMessagePrefix);
+}
+
+export function getMessageVideoPayload(text: string) {
+  return getMediaMessagePayload(text, videoMessagePrefix);
+}
+
+export function getMessageAudioPayload(text: string) {
+  return getMediaMessagePayload(text, audioMessagePrefix);
+}
+
 export function getMessageImageUrl(text: string) {
-  return text.startsWith(imageMessagePrefix)
-    ? text.slice(imageMessagePrefix.length)
-    : null;
+  return getMessageImagePayload(text)?.url ?? null;
 }
 
 export function getMessageVideoUrl(text: string) {
-  return text.startsWith(videoMessagePrefix)
-    ? text.slice(videoMessagePrefix.length)
-    : null;
+  return getMessageVideoPayload(text)?.url ?? null;
 }
 
 export function getMessageAudioUrl(text: string) {
-  return text.startsWith(audioMessagePrefix)
-    ? text.slice(audioMessagePrefix.length)
-    : null;
+  return getMessageAudioPayload(text)?.url ?? null;
 }
 
 export function createFileMessageText(payload: FileMessagePayload) {
@@ -71,6 +136,25 @@ export function getMessageFilePayload(text: string): FileMessagePayload | null {
   }
 
   return null;
+}
+
+export function getMessageAttachmentCaption(text: string) {
+  return (
+    getMessageFilePayload(text)?.caption ??
+    getMessageImagePayload(text)?.caption ??
+    getMessageVideoPayload(text)?.caption ??
+    getMessageAudioPayload(text)?.caption ??
+    null
+  );
+}
+
+export function isCaptionEditableMessage(text: string) {
+  return Boolean(
+    getMessageFilePayload(text) ||
+      getMessageImagePayload(text) ||
+      getMessageVideoPayload(text) ||
+      getMessageAudioPayload(text),
+  );
 }
 
 export function getMessageCallDuration(text: string) {
@@ -241,15 +325,15 @@ export function getReadableMessageText(text: string) {
   }
 
   if (text.startsWith(imageMessagePrefix)) {
-    return "Изображение";
+    return getMessageImagePayload(text)?.caption || "Изображение";
   }
 
   if (text.startsWith(videoMessagePrefix)) {
-    return "Видео";
+    return getMessageVideoPayload(text)?.caption || "Видео";
   }
 
   if (text.startsWith(audioMessagePrefix)) {
-    return "Голосовое сообщение";
+    return getMessageAudioPayload(text)?.caption || "Голосовое сообщение";
   }
 
   if (text.startsWith(fileMessagePrefix)) {
@@ -277,15 +361,21 @@ export function getNotificationMessageText(text: string) {
   }
 
   if (text.startsWith(imageMessagePrefix)) {
-    return "Отправлено изображение";
+    const caption = getMessageImagePayload(text)?.caption;
+
+    return caption ? `Изображение: ${caption}` : "Отправлено изображение";
   }
 
   if (text.startsWith(videoMessagePrefix)) {
-    return "Отправлено видео";
+    const caption = getMessageVideoPayload(text)?.caption;
+
+    return caption ? `Видео: ${caption}` : "Отправлено видео";
   }
 
   if (text.startsWith(audioMessagePrefix)) {
-    return "Голосовое сообщение";
+    const caption = getMessageAudioPayload(text)?.caption;
+
+    return caption ? `Голосовое сообщение: ${caption}` : "Голосовое сообщение";
   }
 
   if (text.startsWith(fileMessagePrefix)) {
@@ -312,15 +402,21 @@ export function getChatPreviewText(text: string) {
   const previewText = reply?.body ?? text;
 
   if (previewText.startsWith(imageMessagePrefix)) {
-    return "Фото";
+    const caption = getMessageImagePayload(previewText)?.caption;
+
+    return caption ? `Фото: ${caption}` : "Фото";
   }
 
   if (previewText.startsWith(videoMessagePrefix)) {
-    return "Видео";
+    const caption = getMessageVideoPayload(previewText)?.caption;
+
+    return caption ? `Видео: ${caption}` : "Видео";
   }
 
   if (previewText.startsWith(audioMessagePrefix)) {
-    return "Голосовое сообщение";
+    const caption = getMessageAudioPayload(previewText)?.caption;
+
+    return caption ? `Голосовое сообщение: ${caption}` : "Голосовое сообщение";
   }
 
   if (previewText.startsWith(fileMessagePrefix)) {
@@ -367,12 +463,40 @@ export function updateReplyMessageBody(text: string, body: string) {
 }
 
 export function updateEditableMessageText(text: string, body: string) {
+  const caption = body.trim() || undefined;
   const filePayload = getMessageFilePayload(text);
 
   if (filePayload) {
     return createFileMessageText({
       ...filePayload,
-      caption: body || undefined,
+      caption,
+    });
+  }
+
+  const imagePayload = getMessageImagePayload(text);
+
+  if (imagePayload) {
+    return createImageMessageText({
+      ...imagePayload,
+      caption,
+    });
+  }
+
+  const videoPayload = getMessageVideoPayload(text);
+
+  if (videoPayload) {
+    return createVideoMessageText({
+      ...videoPayload,
+      caption,
+    });
+  }
+
+  const audioPayload = getMessageAudioPayload(text);
+
+  if (audioPayload) {
+    return createAudioMessageText({
+      ...audioPayload,
+      caption,
     });
   }
 

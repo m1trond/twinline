@@ -8,6 +8,7 @@ import { useI18n } from "@/shared/i18n-context";
 import { formatAudioTime, formatCallDuration, formatMessageTime } from "@/shared/utils/format";
 import {
   getMessageAudioUrl,
+  getMessageAttachmentCaption,
   getMessageCallDuration,
   getMessageFilePayload,
   getMessageImageUrl,
@@ -237,8 +238,10 @@ export function FavoritesView({
                     const videoUrl = getMessageVideoUrl(displayText);
                     const audioUrl = getMessageAudioUrl(displayText);
                     const filePayload = getMessageFilePayload(displayText);
+                    const attachmentCaption = getMessageAttachmentCaption(displayText);
                     const callDurationSeconds = getMessageCallDuration(displayText);
                     const sticker = getMessageSticker(displayText);
+                    const hasCaptionableAttachment = Boolean(imageUrl || videoUrl || audioUrl);
                     const hasFramedMedia = Boolean(imageUrl || videoUrl || filePayload);
                     const hasAttachment = Boolean(
                       imageUrl || videoUrl || audioUrl || filePayload || callDurationSeconds !== null || sticker,
@@ -333,6 +336,12 @@ export function FavoritesView({
                               </span>
                             </p>
                           )}
+
+                          {hasCaptionableAttachment && attachmentCaption ? (
+                            <p className="mt-2 max-w-[min(320px,70vw)] whitespace-pre-wrap break-words px-1 text-sm leading-6 text-[#f4f4f5]">
+                              {attachmentCaption}
+                            </p>
+                          ) : null}
 
                           {!hasStandaloneBubble && hasAttachment ? (
                             <div className="mt-2 flex items-center justify-end gap-3 px-1">

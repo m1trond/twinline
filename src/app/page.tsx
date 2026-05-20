@@ -129,11 +129,12 @@ import {
   createReplyMessageText,
   createTypingMessageText,
   getBlockMessagePayload,
-  getMessageFilePayload,
+  getMessageAttachmentCaption,
   getPinMessagePayload,
   getReadableMessageText,
   getReceiptMessagePayload,
   getTypingMessagePayload,
+  isCaptionEditableMessage,
   isDirectMessageForUser,
   isMessageBetweenUsers,
   isServiceMessage,
@@ -2720,11 +2721,15 @@ export default function Home() {
       return;
     }
 
-    const filePayload = getMessageFilePayload(message.text);
+    const isCaptionEdit = isCaptionEditableMessage(message.text);
 
     setEditingMessage(message);
     setReplyTarget(null);
-    setMessageText(filePayload ? filePayload.caption ?? "" : getReadableMessageText(message.text));
+    setMessageText(
+      isCaptionEdit
+        ? getMessageAttachmentCaption(message.text) ?? ""
+        : getReadableMessageText(message.text),
+    );
     setMessageContextMenu(null);
     setErrorMessage("");
   }
@@ -3380,9 +3385,11 @@ export default function Home() {
 
     const trimmedText = messageText.trim();
 
-    const isEditingFileMessage = Boolean(editingMessage && getMessageFilePayload(editingMessage.text));
+    const isEditingCaptionMessage = Boolean(
+      editingMessage && isCaptionEditableMessage(editingMessage.text),
+    );
 
-    if (!trimmedText && !isEditingFileMessage) {
+    if (!trimmedText && !isEditingCaptionMessage) {
       return;
     }
 

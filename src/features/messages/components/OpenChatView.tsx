@@ -19,6 +19,7 @@ import { formatAudioTime, formatCallDuration, formatMessageTime } from "@/shared
 import { formatLastSeen, isProfileOnline } from "@/shared/utils/profile";
 import {
   getMessageAudioUrl,
+  getMessageAttachmentCaption,
   getMessageCallDuration,
   getMessageFilePayload,
   getMessageImageUrl,
@@ -462,8 +463,10 @@ export function OpenChatView({
                     const videoUrl = getMessageVideoUrl(displayText);
                     const audioUrl = getMessageAudioUrl(displayText);
                     const filePayload = getMessageFilePayload(displayText);
+                    const attachmentCaption = getMessageAttachmentCaption(displayText);
                     const callDurationSeconds = getMessageCallDuration(displayText);
                     const sticker = getMessageSticker(displayText);
+                    const hasCaptionableAttachment = Boolean(imageUrl || videoUrl || audioUrl);
                     const hasFramedMedia = Boolean(imageUrl || videoUrl || filePayload);
                     const hasAttachment = Boolean(
                       imageUrl || videoUrl || audioUrl || filePayload || callDurationSeconds !== null || sticker,
@@ -705,6 +708,11 @@ export function OpenChatView({
                               </span>
                             </p>
                           )}
+                          {hasCaptionableAttachment && attachmentCaption ? (
+                            <p className="mt-2 max-w-[min(320px,70vw)] whitespace-pre-wrap break-words px-1 text-sm leading-6 text-[#f4f4f5]">
+                              {attachmentCaption}
+                            </p>
+                          ) : null}
                           {!hasStandaloneBubble && hasAttachment ? (
                           <div className={`${hasAttachment ? "mt-2 px-1" : "mt-1"} flex items-center justify-end gap-3`}>
                             <p

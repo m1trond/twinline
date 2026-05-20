@@ -48,6 +48,11 @@ export type FileMessagePayload = {
   url: string;
 };
 
+export type MediaMessagePayload = {
+  caption?: string;
+  url: string;
+};
+
 export type PinMessagePayload = {
   action: "pin" | "unpin";
   messageId: number;
