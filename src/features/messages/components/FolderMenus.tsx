@@ -15,7 +15,7 @@ export type FolderDialogState = {
 };
 
 const folderColors = [
-  "#f4f4f5",
+  "#71717a",
   "#60a5fa",
   "#34d399",
   "#f59e0b",
