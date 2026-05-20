@@ -158,55 +158,6 @@ export function SettingsView({
               ))}
             </SettingsCard>
 
-            <SettingsCard
-              description={t("blackListDescription")}
-              icon={<BlockIcon />}
-              title={t("blackList")}
-              tone="danger"
-            >
-              {blockedByMeProfiles.length === 0 ? (
-                <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2 text-xs text-[#a1a1aa]">
-                  {t("blackListEmpty")}
-                </div>
-              ) : null}
-
-              {blockedByMeProfiles.map((profile) => (
-                <div
-                  className="flex items-center justify-between gap-2 rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2"
-                  key={profile.userId}
-                >
-                  <div className="flex min-w-0 items-center gap-2">
-                    <div className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505]">
-                      {profile.avatarUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          alt={`${t("avatarAlt")} ${profile.name}`}
-                          className="h-full w-full object-cover"
-                          src={profile.avatarUrl}
-                        />
-                      ) : (
-                        profile.name[0]?.toUpperCase()
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-[#f4f4f5]">
-                        {profile.name}
-                      </p>
-                      <p className="truncate text-xs text-[#a1a1aa]">
-                        {profile.username ? `@${profile.username}` : t("nicknameNotSet")}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    className="shrink-0 rounded-lg border border-[#3f3f46]/40 px-2.5 py-1.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
-                    onClick={() => requestBlockChange(profile.userId, profile.name)}
-                    type="button"
-                  >
-                    {t("unblockUser")}
-                  </button>
-                </div>
-              ))}
-            </SettingsCard>
           </div>
 
           <div className="grid auto-rows-min gap-2.5">
@@ -245,6 +196,58 @@ export function SettingsView({
               </button>
             </SettingsCard>
           </div>
+        </div>
+
+        <div className="mt-2.5 grid auto-rows-min gap-2.5 lg:grid-cols-2">
+          <SettingsCard
+            description={t("blackListDescription")}
+            icon={<BlockIcon />}
+            title={t("blackList")}
+            tone="danger"
+          >
+            {blockedByMeProfiles.length === 0 ? (
+              <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2 text-xs text-[#a1a1aa]">
+                {t("blackListEmpty")}
+              </div>
+            ) : null}
+
+            {blockedByMeProfiles.map((profile) => (
+              <div
+                className="flex items-center justify-between gap-2 rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2"
+                key={profile.userId}
+              >
+                <div className="flex min-w-0 items-center gap-2">
+                  <div className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505]">
+                    {profile.avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        alt={`${t("avatarAlt")} ${profile.name}`}
+                        className="h-full w-full object-cover"
+                        src={profile.avatarUrl}
+                      />
+                    ) : (
+                      profile.name[0]?.toUpperCase()
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-[#f4f4f5]">
+                      {profile.name}
+                    </p>
+                    <p className="truncate text-xs text-[#a1a1aa]">
+                      {profile.username ? `@${profile.username}` : t("nicknameNotSet")}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  className="shrink-0 rounded-lg border border-[#3f3f46]/40 px-2.5 py-1.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
+                  onClick={() => requestBlockChange(profile.userId, profile.name)}
+                  type="button"
+                >
+                  {t("unblockUser")}
+                </button>
+              </div>
+            ))}
+          </SettingsCard>
         </div>
       </div>
     </div>
