@@ -212,9 +212,9 @@ function FolderFilterButton({
 }) {
   const coloredStyle = color
     ? {
-        backgroundColor: isActive ? color : `${color}d9`,
+        backgroundColor: isActive ? color : "transparent",
         borderColor: color,
-        color: "#050505",
+        color: isActive ? "#050505" : "#f4f4f5",
       }
     : undefined;
 
@@ -222,7 +222,7 @@ function FolderFilterButton({
     <button
       className={`inline-flex min-h-8 shrink-0 items-center rounded-lg border px-3 text-xs font-medium transition ${
         color
-          ? "hover:brightness-110"
+          ? "hover:bg-[#f4f4f5]/8"
           : isActive
             ? "border-[#f4f4f5]/60 bg-[#f4f4f5] text-[#050505]"
             : "border-[#3f3f46]/35 bg-[#f4f4f5]/10 text-[#f4f4f5] hover:bg-[#f4f4f5]/18"
