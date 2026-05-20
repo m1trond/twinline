@@ -41,6 +41,7 @@ export type ReplyMessagePayload = {
 };
 
 export type FileMessagePayload = {
+  caption?: string;
   name: string;
   size: number;
   type: string;

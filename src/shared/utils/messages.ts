@@ -59,6 +59,7 @@ export function getMessageFilePayload(text: string): FileMessagePayload | null {
       typeof parsedPayload.size === "number"
     ) {
       return {
+        caption: typeof parsedPayload.caption === "string" ? parsedPayload.caption : undefined,
         name: parsedPayload.name,
         size: parsedPayload.size,
         type: typeof parsedPayload.type === "string" ? parsedPayload.type : "",
@@ -252,7 +253,9 @@ export function getReadableMessageText(text: string) {
   }
 
   if (text.startsWith(fileMessagePrefix)) {
-    return getMessageFilePayload(text)?.name ?? "Файл";
+    const filePayload = getMessageFilePayload(text);
+
+    return filePayload?.caption || filePayload?.name || "Файл";
   }
 
   if (text.startsWith(callMessagePrefix)) {
@@ -288,7 +291,9 @@ export function getNotificationMessageText(text: string) {
   if (text.startsWith(fileMessagePrefix)) {
     const filePayload = getMessageFilePayload(text);
 
-    return filePayload ? `Файл: ${filePayload.name}` : "Отправлен файл";
+    return filePayload
+      ? `Файл: ${filePayload.caption || filePayload.name}`
+      : "Отправлен файл";
   }
 
   if (text.startsWith(callMessagePrefix)) {
@@ -321,7 +326,7 @@ export function getChatPreviewText(text: string) {
   if (previewText.startsWith(fileMessagePrefix)) {
     const filePayload = getMessageFilePayload(previewText);
 
-    return filePayload ? `Файл: ${filePayload.name}` : "Файл";
+    return filePayload ? `Файл: ${filePayload.caption || filePayload.name}` : "Файл";
   }
 
   if (previewText.startsWith(callMessagePrefix)) {
@@ -367,7 +372,7 @@ export function updateEditableMessageText(text: string, body: string) {
   if (filePayload) {
     return createFileMessageText({
       ...filePayload,
-      name: body,
+      caption: body || undefined,
     });
   }
 

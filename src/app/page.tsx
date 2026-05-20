@@ -129,6 +129,7 @@ import {
   createReplyMessageText,
   createTypingMessageText,
   getBlockMessagePayload,
+  getMessageFilePayload,
   getPinMessagePayload,
   getReadableMessageText,
   getReceiptMessagePayload,
@@ -2691,9 +2692,11 @@ export default function Home() {
       return;
     }
 
+    const filePayload = getMessageFilePayload(message.text);
+
     setEditingMessage(message);
     setReplyTarget(null);
-    setMessageText(getReadableMessageText(message.text));
+    setMessageText(filePayload ? filePayload.caption ?? "" : getReadableMessageText(message.text));
     setMessageContextMenu(null);
     setErrorMessage("");
   }
@@ -3349,7 +3352,9 @@ export default function Home() {
 
     const trimmedText = messageText.trim();
 
-    if (!trimmedText) {
+    const isEditingFileMessage = Boolean(editingMessage && getMessageFilePayload(editingMessage.text));
+
+    if (!trimmedText && !isEditingFileMessage) {
       return;
     }
 
