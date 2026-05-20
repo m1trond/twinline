@@ -75,13 +75,6 @@ export function SettingsView({
       setter: setIsOnlineStatusVisible,
     },
     {
-      description: t("showPhoneDescription"),
-      enabled: isPhoneVisible,
-      key: "hush-settings-phone-visible",
-      label: t("showPhone"),
-      setter: setIsPhoneVisible,
-    },
-    {
       description: t("profileSearchDescription"),
       enabled: isProfileSearchable,
       key: "hush-settings-profile-searchable",
@@ -126,19 +119,18 @@ export function SettingsView({
             label={t("browserNotifications")}
             onToggle={() => void toggleNotifications()}
           />
-          <div className="rounded-xl border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2.5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium">{t("blockedChats")}</p>
-                <p className="mt-0.5 text-xs leading-5 text-[#a1a1aa]">
-                  {t("blockedChatsDescription")}
-                </p>
-              </div>
-              <span className="rounded-full bg-[#f4f4f5]/10 px-2.5 py-1 text-xs font-medium text-[#e5e5e5]">
-                {Object.keys(pruneMutedProfiles(mutedProfiles)).length}
-              </span>
-            </div>
-          </div>
+          <SettingRow
+            description={t("showPhoneDescription")}
+            enabled={isPhoneVisible}
+            label={t("showPhone")}
+            onToggle={() =>
+              toggleStoredBooleanSetting(
+                "hush-settings-phone-visible",
+                setIsPhoneVisible,
+                isPhoneVisible,
+              )
+            }
+          />
         </SettingsCard>
 
         <SettingsCard
@@ -157,6 +149,7 @@ export function SettingsView({
               }
             />
           ))}
+          <MutedChatsRow count={Object.keys(pruneMutedProfiles(mutedProfiles)).length} />
         </SettingsCard>
 
         <SettingsCard
@@ -215,9 +208,11 @@ export function SettingsView({
           title={t("account")}
         >
           <InfoBlock label={t("email")} value={userEmail ?? t("notSpecified")} />
-          <InfoBlock
-            label={t("profile")}
-            value={`${activeUserName}${currentProfile?.username ? ` · @${currentProfile.username}` : ""}`}
+          <LanguageRow
+            currentLanguage={language}
+            description={t("chooseLanguage")}
+            label={t("interfaceLanguage")}
+            onChange={setLanguage}
           />
           <button
             className="mt-0.5 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-red-400/40 bg-red-500/15 px-3 text-xs font-medium text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60"
@@ -235,11 +230,9 @@ export function SettingsView({
           icon={<PaletteIcon />}
           title={t("appearance")}
         >
-          <LanguageRow
-            currentLanguage={language}
-            description={t("chooseLanguage")}
-            label={t("interfaceLanguage")}
-            onChange={setLanguage}
+          <InfoBlock
+            label={t("profile")}
+            value={`${activeUserName}${currentProfile?.username ? ` · @${currentProfile.username}` : ""}`}
           />
           {appearanceSettings.map((setting) => (
             <SettingRow
@@ -325,6 +318,26 @@ function SettingRow({
           }`}
         />
       </button>
+    </div>
+  );
+}
+
+function MutedChatsRow({ count }: { count: number }) {
+  const { t } = useI18n();
+
+  return (
+    <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium leading-5">{t("blockedChats")}</p>
+          <p className="text-xs leading-4 text-[#a1a1aa]">
+            {t("blockedChatsDescription")}
+          </p>
+        </div>
+        <span className="shrink-0 rounded-full bg-[#f4f4f5]/10 px-2.5 py-1 text-xs font-medium text-[#e5e5e5]">
+          {count}
+        </span>
+      </div>
     </div>
   );
 }
