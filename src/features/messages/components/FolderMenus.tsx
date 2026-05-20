@@ -58,7 +58,7 @@ export function FolderContextMenu({
         type="button"
       />
       <div
-        className="hush-context-menu fixed z-[90] w-[min(236px,calc(100vw-24px))] overflow-hidden rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 text-[#f4f4f5] shadow-[0_22px_70px_rgba(0,0,0,0.58)] backdrop-blur-xl"
+        className="hush-context-menu fixed z-[90] w-[min(236px,calc(100vw-24px))] overflow-hidden rounded-xl border border-white/10 bg-[#18181b]/98 py-1 text-[#f4f4f5] shadow-[0_22px_70px_rgba(0,0,0,0.58)] backdrop-blur-xl"
         onClick={(event) => event.stopPropagation()}
         onContextMenu={(event) => event.preventDefault()}
         style={{ left: contextMenu.left, top: contextMenu.top }}
@@ -122,11 +122,10 @@ export function FolderDeleteDialog({
         onClick={onCancel}
         type="button"
       />
-      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[116] w-[min(430px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[24px] border border-red-400/25 bg-[#101010]/98 p-4 text-left shadow-[0_28px_90px_rgba(0,0,0,0.68)] backdrop-blur-xl">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(239,68,68,0.16),transparent_36%),linear-gradient(145deg,rgba(255,255,255,0.05),transparent_48%)]" />
+      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[116] w-[min(430px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[24px] border border-[#3f3f46]/45 bg-[#101010]/98 p-4 text-left shadow-[0_28px_90px_rgba(0,0,0,0.68)] backdrop-blur-xl">
         <div className="relative">
           <div className="flex items-start gap-3">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-red-300/25 bg-red-500/14 text-red-100">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#3f3f46]/45 bg-[#f4f4f5]/10 text-[#f4f4f5]">
               <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
                 <path
                   d="M10 11v6M14 11v6M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
@@ -160,7 +159,7 @@ export function FolderDeleteDialog({
               {t("cancel")}
             </button>
             <button
-              className="min-h-11 rounded-xl bg-red-500 px-4 text-sm font-medium text-white transition hover:bg-red-400"
+              className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
               onClick={onConfirm}
               type="button"
             >
@@ -253,8 +252,8 @@ function MenuButton({
 }) {
   return (
     <button
-      className={`flex min-h-10 w-full items-center px-4 text-left text-sm font-medium transition ${
-        danger ? "text-red-100 hover:bg-red-500/18" : "hover:bg-white/10"
+      className={`flex min-h-8 w-full items-center px-3.5 text-left text-sm font-medium transition ${
+        danger ? "text-[#f4f4f5] hover:bg-white/10" : "hover:bg-white/10"
       }`}
       onClick={onClick}
       type="button"

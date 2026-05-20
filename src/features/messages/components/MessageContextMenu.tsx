@@ -73,7 +73,7 @@ export function MessageContextMenu({
         onClose={() => setMessageContextMenu(null)}
       />
       <div
-        className="hush-context-menu fixed z-[90] w-[min(220px,calc(100vw-24px))] overflow-hidden rounded-lg border border-white/10 bg-[#18181b] py-1.5 text-[#f4f4f5] shadow-[0_18px_60px_rgba(0,0,0,0.55)]"
+        className="hush-context-menu fixed z-[90] w-[min(220px,calc(100vw-24px))] overflow-hidden rounded-lg border border-white/10 bg-[#18181b] py-1 text-[#f4f4f5] shadow-[0_18px_60px_rgba(0,0,0,0.55)]"
         onClick={(event) => event.stopPropagation()}
         onContextMenu={(event) => event.preventDefault()}
         style={{ left: contextMenu.left, top: contextMenu.top }}
@@ -150,7 +150,7 @@ export function FavoriteContextMenu({
         onClose={() => setFavoriteContextMenu(null)}
       />
       <div
-        className="hush-context-menu fixed z-[90] w-[min(220px,calc(100vw-24px))] overflow-hidden rounded-lg border border-white/10 bg-[#18181b] py-1.5 text-[#f4f4f5] shadow-[0_18px_60px_rgba(0,0,0,0.55)]"
+        className="hush-context-menu fixed z-[90] w-[min(220px,calc(100vw-24px))] overflow-hidden rounded-lg border border-white/10 bg-[#18181b] py-1 text-[#f4f4f5] shadow-[0_18px_60px_rgba(0,0,0,0.55)]"
         onClick={(event) => event.stopPropagation()}
         onContextMenu={(event) => event.preventDefault()}
         style={{ left: contextMenu.left, top: contextMenu.top }}
@@ -212,8 +212,8 @@ function MenuButton({
 }) {
   return (
     <button
-      className={`flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition ${
-        danger ? "text-red-100 hover:bg-red-500/18" : "hover:bg-white/10"
+      className={`flex min-h-8 w-full items-center gap-2.5 px-3.5 text-left text-sm font-medium transition ${
+        danger ? "text-[#f4f4f5] hover:bg-white/10" : "hover:bg-white/10"
       }`}
       onClick={onClick}
       type="button"

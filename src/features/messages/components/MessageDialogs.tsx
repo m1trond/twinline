@@ -4,6 +4,7 @@ import type { MessageRow } from "@/shared/types";
 
 type ChatDeleteTargetProfile = {
   name: string;
+  username: string | null;
   userId: string;
 };
 
@@ -146,14 +147,14 @@ export function MessagePinDialog({
 
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
           <button
-            className="min-h-12 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
+            className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
             onClick={isPinned ? confirmUnpinPinnedMessage : confirmPinnedMessage}
             type="button"
           >
             {isPinned ? t("yes") : t("pin")}
           </button>
           <button
-            className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
+            className="min-h-11 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
             onClick={() => setMessagePinTarget(null)}
             type="button"
           >
@@ -188,7 +189,7 @@ export function MessageDeleteDialog({
       />
       <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] max-h-[calc(100dvh-24px)] w-[min(448px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:w-[min(448px,calc(100vw-32px))] sm:rounded-3xl sm:p-5">
         <div className="mb-4 flex items-start gap-3">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-red-500/14 text-red-100">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#3f3f46]/45 bg-[#f4f4f5]/10 text-[#f4f4f5]">
             <DeleteIcon />
           </span>
           <div className="min-w-0">
@@ -211,14 +212,14 @@ export function MessageDeleteDialog({
 
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
           <button
-            className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
+            className="min-h-11 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
             onClick={() => hideMessageForMe(messageDeleteTarget)}
             type="button"
           >
             {language === "en" ? "Only for me" : "Только у себя"}
           </button>
           <button
-            className="min-h-12 rounded-xl bg-red-500 px-4 text-sm font-medium text-white transition hover:bg-red-400"
+            className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
             onClick={() => deleteMessage(messageDeleteTarget)}
             type="button"
           >
@@ -262,7 +263,7 @@ export function SelectedMessagesDeleteDialog({
       />
       <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] max-h-[calc(100dvh-24px)] w-[min(448px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:w-[min(448px,calc(100vw-32px))] sm:rounded-3xl sm:p-5">
         <div className="mb-4 flex items-start gap-3">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-red-500/14 text-red-100">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#3f3f46]/45 bg-[#f4f4f5]/10 text-[#f4f4f5]">
             <DeleteIcon />
           </span>
           <div className="min-w-0">
@@ -288,14 +289,14 @@ export function SelectedMessagesDeleteDialog({
 
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
           <button
-            className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
+            className="min-h-11 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
             onClick={hideSelectedMessagesForMe}
             type="button"
           >
             {language === "en" ? "Only for me" : "Только у себя"}
           </button>
           <button
-            className="min-h-12 rounded-xl bg-red-500 px-4 text-sm font-medium text-white transition hover:bg-red-400"
+            className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
             onClick={deleteSelectedMessagesForBoth}
             type="button"
           >
@@ -328,6 +329,10 @@ export function ChatDeleteDialog({
     return null;
   }
 
+  const chatDeleteTargetLabel = chatDeleteTargetProfile?.username
+    ? `@${chatDeleteTargetProfile.username}`
+    : chatDeleteTargetProfile?.name ?? (language === "en" ? "this chat" : "этим пользователем");
+
   return (
     <>
       <button
@@ -336,14 +341,10 @@ export function ChatDeleteDialog({
         onClick={onClose}
         type="button"
       />
-      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] w-[min(460px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-red-400/25 bg-[#111111]/96 p-4 text-left shadow-[0_24px_90px_rgba(0,0,0,0.65)] sm:rounded-3xl sm:p-5">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(248,113,113,0.18),transparent_34%),linear-gradient(135deg,rgba(244,244,245,0.04),transparent_54%)]"
-        />
+      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] w-[min(460px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 text-left shadow-[0_24px_90px_rgba(0,0,0,0.65)] sm:rounded-3xl sm:p-5">
         <div className="relative">
           <div className="mb-4 flex items-start gap-3">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-red-300/25 bg-red-500/16 text-red-100 shadow-[0_10px_30px_rgba(239,68,68,0.18)]">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#3f3f46]/45 bg-[#f4f4f5]/10 text-[#f4f4f5]">
               <DeleteIcon />
             </span>
             <div className="min-w-0">
@@ -352,8 +353,8 @@ export function ChatDeleteDialog({
               </h2>
               <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
                 {language === "en"
-                  ? "Messages in this chat will disappear for you and the other person. This cannot be undone."
-                  : "Сообщения этой переписки исчезнут у тебя и собеседника. Отменить действие не получится."}
+                  ? `Are you sure you want to delete the conversation with ${chatDeleteTargetLabel}?`
+                  : `Вы уверены что хотите удалить переписку с ${chatDeleteTargetLabel}?`}
               </p>
             </div>
           </div>
@@ -368,14 +369,14 @@ export function ChatDeleteDialog({
 
           <div className="mt-5 grid gap-2 sm:grid-cols-2">
             <button
-              className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
+              className="min-h-11 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
               onClick={onClose}
               type="button"
             >
               {language === "en" ? "Keep" : "Оставить"}
             </button>
             <button
-              className="min-h-12 rounded-xl bg-red-500 px-4 text-sm font-medium text-white shadow-[0_14px_34px_rgba(239,68,68,0.22)] transition hover:bg-red-400 disabled:cursor-not-allowed disabled:opacity-60"
+              className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isDeletingChat}
               onClick={confirmDeleteChat}
               type="button"
@@ -411,11 +412,10 @@ export function UnpinAllDialog({
         onClick={onCancel}
         type="button"
       />
-      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] w-[min(440px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-red-400/25 bg-[#111111]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:rounded-3xl sm:p-5">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(239,68,68,0.18),transparent_36%),linear-gradient(145deg,rgba(255,255,255,0.05),transparent_48%)]" />
+      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] w-[min(440px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:rounded-3xl sm:p-5">
         <div className="relative">
           <div className="mb-4 flex items-start gap-3">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-red-300/25 bg-red-500/14 text-red-100">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#3f3f46]/45 bg-[#f4f4f5]/10 text-[#f4f4f5]">
               <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
                 <path
                   d="M12 17v5"
@@ -453,14 +453,14 @@ export function UnpinAllDialog({
 
           <div className="mt-5 grid gap-2 sm:grid-cols-2">
             <button
-              className="min-h-12 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
+              className="min-h-11 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
               onClick={onCancel}
               type="button"
             >
               {language === "en" ? "Keep" : "Оставить"}
             </button>
             <button
-              className="min-h-12 rounded-xl bg-red-500 px-4 text-sm font-medium text-white transition hover:bg-red-400"
+              className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
               onClick={onConfirm}
               type="button"
             >

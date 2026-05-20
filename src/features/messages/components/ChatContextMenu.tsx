@@ -67,12 +67,12 @@ export function ChatContextMenu({
         type="button"
       />
       <div
-        className="hush-context-menu fixed z-[90] w-[min(286px,calc(100vw-24px))] overflow-visible rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 text-[#f4f4f5] shadow-[0_22px_70px_rgba(0,0,0,0.58)] backdrop-blur-xl"
+        className="hush-context-menu fixed z-[90] w-[min(286px,calc(100vw-24px))] overflow-visible rounded-xl border border-white/10 bg-[#18181b]/98 py-1 text-[#f4f4f5] shadow-[0_22px_70px_rgba(0,0,0,0.58)] backdrop-blur-xl"
         onClick={(event) => event.stopPropagation()}
         onContextMenu={(event) => event.preventDefault()}
         style={{ left: contextMenu.left, top: contextMenu.top }}
       >
-        <p className="truncate px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-[#a1a1aa]">
+        <p className="truncate px-3.5 py-1.5 text-xs font-medium uppercase tracking-[0.14em] text-[#a1a1aa]">
           {t("chatWith")} {profile.display_name}
         </p>
         <MenuButton icon={<ArchiveIcon />} onClick={() => runChatMenuStub(t("archiveSoon"))}>
@@ -80,14 +80,14 @@ export function ChatContextMenu({
         </MenuButton>
         <div className="group relative">
           <button
-            className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+            className="flex min-h-8 w-full items-center gap-2.5 px-3.5 text-left text-sm font-medium transition hover:bg-white/10"
             type="button"
           >
             <FolderIcon />
             <span className="min-w-0 flex-1">{t("addToFolder")}</span>
             <ChevronIcon />
           </button>
-          <div className="hush-context-menu invisible absolute left-full top-0 z-[91] w-[220px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
+          <div className="hush-context-menu invisible absolute left-full top-0 z-[91] w-[220px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
             <SubMenuButton onClick={() => openCreateChatFolderDialog(profile)}>
               <span className="grid h-5 w-5 place-items-center">+</span>
               {t("newFolder")}
@@ -103,7 +103,7 @@ export function ChatContextMenu({
                 </SubMenuButton>
               ))
             ) : (
-              <p className="px-4 py-2 text-xs font-medium text-[#a1a1aa]">
+              <p className="px-3.5 py-1.5 text-xs font-medium text-[#a1a1aa]">
                 {t("foldersEmpty")}
               </p>
             )}
@@ -135,14 +135,14 @@ export function ChatContextMenu({
           ) : (
             <>
               <button
-                className="flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition hover:bg-white/10"
+                className="flex min-h-8 w-full items-center gap-2.5 px-3.5 text-left text-sm font-medium transition hover:bg-white/10"
                 type="button"
               >
                 <BellIcon />
                 <span className="min-w-0 flex-1">{t("hideNotifications")}</span>
                 <ChevronIcon />
               </button>
-              <div className="hush-context-menu invisible absolute left-full top-0 z-[91] w-[260px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1.5 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
+              <div className="hush-context-menu invisible absolute left-full top-0 z-[91] w-[260px] rounded-xl border border-white/10 bg-[#18181b]/98 py-1 opacity-0 shadow-[0_22px_70px_rgba(0,0,0,0.58)] transition group-hover:visible group-hover:opacity-100">
                 {muteOptions.map((option) => (
                   <SubMenuButton
                     key={option.labelKey}
@@ -188,8 +188,8 @@ function MenuButton({
 }) {
   return (
     <button
-      className={`flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition ${
-        danger ? "text-red-100 hover:bg-red-500/18" : "hover:bg-white/10"
+      className={`flex min-h-8 w-full items-center gap-2.5 px-3.5 text-left text-sm font-medium transition ${
+        danger ? "text-[#f4f4f5] hover:bg-white/10" : "hover:bg-white/10"
       }`}
       onClick={onClick}
       type="button"
@@ -211,8 +211,8 @@ function SubMenuButton({
 }) {
   return (
     <button
-      className={`flex min-h-10 w-full items-center gap-3 px-4 text-left text-sm font-medium transition ${
-        danger ? "text-red-100 hover:bg-red-500/18" : "hover:bg-white/10"
+      className={`flex min-h-8 w-full items-center gap-2.5 px-3.5 text-left text-sm font-medium transition ${
+        danger ? "text-[#f4f4f5] hover:bg-white/10" : "hover:bg-white/10"
       }`}
       onClick={onClick}
       type="button"

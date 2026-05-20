@@ -1007,6 +1007,7 @@ export default function Home() {
 
     return {
       name: profile?.display_name ?? friendProfile?.name ?? "Текущий чат",
+      username: profile?.username ?? null,
       userId: targetUserId,
     };
   }, [chatDeleteTargetUserId, friendProfile?.name, profilesByUserId, selectedChatUserId]);
