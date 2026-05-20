@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { FormEvent } from "react";
+import { useI18n } from "@/shared/i18n-context";
 import type { AuthContactMethod, AuthMode } from "@/shared/types";
 import { formatUsernameInput } from "@/shared/utils/profile";
 
@@ -44,6 +45,8 @@ export function AuthScreen({
   setAuthUsernameError,
   setErrorMessage,
 }: AuthScreenProps) {
+  const { t } = useI18n();
+
   return (
     <main className={`hush-shell ${isLightThemeEnabled ? "hush-light" : ""} relative grid h-dvh place-items-center overflow-hidden bg-[#050505] px-4 text-[#f4f4f5]`}>
       <div
@@ -63,7 +66,7 @@ export function AuthScreen({
           </div>
           <div>
             <h1 className="text-base font-medium sm:text-base">Hush</h1>
-            <p className="text-sm text-[#a1a1aa]">Вход в приватное пространство</p>
+            <p className="text-sm text-[#a1a1aa]">{t("signInPrivateSpace")}</p>
           </div>
         </div>
 
@@ -81,7 +84,7 @@ export function AuthScreen({
             }}
             type="button"
           >
-            Вход
+            {t("signIn")}
           </button>
           <button
             className={`rounded-lg px-4 py-2 text-sm font-medium ${
@@ -96,14 +99,14 @@ export function AuthScreen({
             }}
             type="button"
           >
-            Регистрация
+            {t("signUp")}
           </button>
         </div>
 
         <div className="mb-4 grid grid-cols-2 rounded-xl border border-[#3f3f46]/35 bg-black/20 p-1">
           {[
-            { label: "Почта", method: "email" as const },
-            { label: "Телефон", method: "phone" as const },
+            { label: t("email"), method: "email" as const },
+            { label: t("phone"), method: "phone" as const },
           ].map((item) => (
             <button
               className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
@@ -130,7 +133,7 @@ export function AuthScreen({
               <div className="flex min-h-11 items-center rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm focus-within:border-[#f4f4f5] sm:min-h-12">
                 <span className="shrink-0 font-medium text-[#a1a1aa]">@</span>
                 <input
-                  aria-label="Никнейм в Hush"
+                  aria-label={t("username")}
                   className="min-w-0 flex-1 bg-transparent pl-1 outline-none placeholder:text-[#a1a1aa]/70"
                   maxLength={24}
                   minLength={3}
@@ -138,7 +141,7 @@ export function AuthScreen({
                     setAuthUsername(formatUsernameInput(event.target.value));
                     setAuthUsernameError("");
                   }}
-                  placeholder="Никнейм в Hush"
+                  placeholder={t("username")}
                   type="text"
                   value={authUsername}
                 />
@@ -149,7 +152,7 @@ export function AuthScreen({
                 </span>
               ) : (
                 <span className="text-xs font-medium text-[#a1a1aa]">
-                  По этому нику тебя смогут найти другие пользователи.
+                  {t("usernameHelp")}
                 </span>
               )}
             </label>
@@ -166,7 +169,7 @@ export function AuthScreen({
               <input
                 className="min-h-11 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:min-h-12"
                 onChange={(event) => setAuthPassword(event.target.value)}
-                placeholder="Пароль"
+                placeholder={t("password")}
                 type="password"
                 value={authPassword}
               />
@@ -175,7 +178,7 @@ export function AuthScreen({
             <div className="rounded-2xl border border-[#3f3f46]/40 bg-black/22 p-3">
               <div className="flex min-h-11 overflow-hidden rounded-xl border border-[#3f3f46]/35 bg-[#f4f4f5]/12 focus-within:border-[#f4f4f5] sm:min-h-12">
                 <select
-                  aria-label="Страна"
+                  aria-label={t("country")}
                   className="w-24 border-r border-[#3f3f46]/35 bg-transparent px-3 text-sm text-[#f4f4f5] outline-none"
                   defaultValue="+7"
                 >
@@ -188,7 +191,7 @@ export function AuthScreen({
                   className="min-w-0 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-[#a1a1aa]/70"
                   inputMode="tel"
                   onChange={(event) => setAuthPhone(event.target.value)}
-                  placeholder="Номер телефона"
+                  placeholder={t("phoneNumber")}
                   type="tel"
                   value={authPhone}
                 />
@@ -209,7 +212,7 @@ export function AuthScreen({
                   />
                 </svg>
                 <p>
-                  Вход по телефону почти готов по интерфейсу. SMS-коды, выбор страны и подтверждение подключим следующим шагом.
+                  {t("phoneLoginNotice")}
                 </p>
               </div>
             </div>
@@ -220,10 +223,10 @@ export function AuthScreen({
             type="submit"
           >
             {authContactMethod === "phone"
-              ? "Скоро будет доступно"
+              ? t("soonAvailable")
               : authMode === "sign-in"
-                ? "Войти"
-                : "Создать аккаунт"}
+                ? t("signIn")
+                : t("createAccount")}
           </button>
         </form>
 

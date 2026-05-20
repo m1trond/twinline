@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { deleteAccessProfile, fetchAccessProfiles } from "@/features/access/queries";
+import { useI18n } from "@/shared/i18n-context";
 import type { AccessProfileRow } from "@/shared/types";
 
 type AccessViewProps = {
@@ -7,43 +8,50 @@ type AccessViewProps = {
   currentUserId: string;
 };
 
-function formatAccessDate(value: string | null) {
+function formatAccessDate(value: string | null, language: "en" | "ru") {
   if (!value) {
     return "-";
   }
 
-  return new Intl.DateTimeFormat("ru", {
+  return new Intl.DateTimeFormat(language === "en" ? "en-US" : "ru", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   }).format(new Date(value));
 }
 
-function getProfileLabel(profile: AccessProfileRow) {
-  return profile.display_name?.trim() || profile.email || profile.phone || "Пользователь";
+function getProfileLabel(profile: AccessProfileRow, fallback: string) {
+  return profile.display_name?.trim() || profile.email || profile.phone || fallback;
 }
 
 const accessGridClass =
   "sm:grid-cols-[minmax(180px,1fr)_minmax(260px,1fr)_minmax(150px,0.7fr)_minmax(120px,0.7fr)_40px]";
 
 export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
+  const { language, t } = useI18n();
   const [profiles, setProfiles] = useState<AccessProfileRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const deleteAccountErrorText = t("deleteAccountError");
+  const loadUsersErrorText = t("loadUsersError");
   const userCountText = useMemo(() => {
     const count = profiles.filter((profile) => profile.user_id !== currentUserId).length;
 
+    if (language === "en") {
+      return `${count} ${count === 1 ? t("usersCountOne") : t("usersCountMany")}`;
+    }
+
     if (count % 10 === 1 && count % 100 !== 11) {
-      return `${count} пользователь`;
+      return `${count} ${t("usersCountOne")}`;
     }
 
     if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) {
-      return `${count} пользователя`;
+      return `${count} ${t("usersCountFew")}`;
     }
 
-    return `${count} пользователей`;
-  }, [currentUserId, profiles]);
+    return `${count} ${t("usersCountMany")}`;
+  }, [currentUserId, language, profiles, t]);
   const visibleProfiles = useMemo(
     () => profiles.filter((profile) => profile.user_id !== currentUserId),
     [currentUserId, profiles],
@@ -54,7 +62,7 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
     const { data, error } = await fetchAccessProfiles();
 
     if (error) {
-      setErrorMessage("Не получилось загрузить пользователей. Проверь SQL-функцию get_access_profiles.");
+      setErrorMessage(loadUsersErrorText);
       setProfiles([]);
     } else {
       setErrorMessage("");
@@ -80,7 +88,7 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
       }
 
       if (error) {
-        setErrorMessage("Не получилось загрузить пользователей. Проверь SQL-функцию get_access_profiles.");
+        setErrorMessage(loadUsersErrorText);
         setProfiles([]);
       } else {
         setErrorMessage("");
@@ -98,12 +106,12 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
       isMounted = false;
       window.clearInterval(intervalId);
     };
-  }, [canViewAccess]);
+  }, [canViewAccess, loadUsersErrorText]);
 
   async function removeProfile(profile: AccessProfileRow) {
     const label = profile.email || profile.username || profile.display_name || profile.user_id;
     const shouldDelete = window.confirm(
-      `Удалить аккаунт ${label}? Он сможет зарегистрироваться снова.`,
+      `${t("deleteAccountConfirm")} ${label}? ${t("deleteAccountConfirmSuffix")}`,
     );
 
     if (!shouldDelete) {
@@ -116,7 +124,7 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
     const { data, error } = await deleteAccessProfile(profile.user_id);
 
     if (error || data !== true) {
-      setErrorMessage("Не получилось удалить аккаунт. Проверь SQL-функцию delete_access_profile.");
+      setErrorMessage(deleteAccountErrorText);
     } else {
       setProfiles((currentProfiles) =>
         currentProfiles.filter((currentProfile) => currentProfile.user_id !== profile.user_id),
@@ -131,7 +139,7 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
     return (
       <div className="hush-panel-transition grid min-h-0 place-items-center rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-5 text-center shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl">
         <p className="text-sm font-medium text-[#f4f4f5]">
-          Недостаточно прав для просмотра доступа.
+          {t("insufficientAccess")}
         </p>
       </div>
     );
@@ -141,9 +149,9 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
     <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
       <div className="mb-2 flex h-[50px] min-h-[50px] items-center justify-between gap-3 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
         <div className="min-w-0">
-          <h2 className="text-base font-medium text-[#f4f4f5]">Доступ</h2>
+          <h2 className="text-base font-medium text-[#f4f4f5]">{t("access")}</h2>
           <p className="text-xs font-medium leading-4 text-[#a1a1aa]">
-            {isLoading ? "Загружаю пользователей..." : userCountText}
+            {isLoading ? t("loadingUsers") : userCountText}
           </p>
         </div>
       </div>
@@ -157,18 +165,18 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
 
         {!errorMessage && visibleProfiles.length === 0 && !isLoading ? (
           <div className="rounded-xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-5 text-center sm:rounded-2xl">
-            <p className="text-sm font-medium text-[#f4f4f5]">Пользователей пока нет</p>
+            <p className="text-sm font-medium text-[#f4f4f5]">{t("noUsers")}</p>
           </div>
         ) : null}
 
         {visibleProfiles.length > 0 ? (
           <div className="grid gap-1.5">
             <div className={`hidden px-3 text-[10px] font-medium uppercase leading-4 tracking-[0.16em] text-[#a1a1aa] sm:grid ${accessGridClass} sm:items-center sm:gap-3`}>
-              <span className="text-left">Имя + ник</span>
-              <span className="text-left">Почта</span>
-              <span className="text-left">Телефон</span>
-              <span className="text-left">Регистрация</span>
-              <span className="sr-only">Действия</span>
+              <span className="text-left">{t("nameAndUsername")}</span>
+              <span className="text-left">{t("email")}</span>
+              <span className="text-left">{t("phone")}</span>
+              <span className="text-left">{language === "en" ? "Registration" : "Регистрация"}</span>
+              <span className="sr-only">{t("actions")}</span>
             </div>
             {visibleProfiles.map((profile) => {
               const isDeleting = deletingUserId === profile.user_id;
@@ -180,34 +188,34 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium leading-5 text-[#f4f4f5]">
-                      {getProfileLabel(profile)}
+                      {getProfileLabel(profile, t("user"))}
                     </p>
                     <p className="truncate text-xs font-medium leading-4 text-[#a1a1aa]">
-                      {profile.username ? `@${profile.username}` : "@ник не задан"}
+                      {profile.username ? `@${profile.username}` : t("nicknameNotSet")}
                     </p>
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium leading-5 text-[#f4f4f5]">
-                      {profile.email || "Не указан"}
+                      {profile.email || t("notSpecified")}
                     </p>
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium leading-5 text-[#f4f4f5]">
-                      {profile.phone || "Не указан"}
+                      {profile.phone || t("notSpecified")}
                     </p>
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium leading-5 text-[#f4f4f5]">
-                      {formatAccessDate(profile.created_at)}
+                      {formatAccessDate(profile.created_at, language)}
                     </p>
                   </div>
                   <div className="flex items-center justify-self-start sm:justify-self-end">
                     <button
-                      aria-label={`Удалить аккаунт ${profile.email || profile.username || profile.display_name || profile.user_id}`}
+                      aria-label={`${t("deleteAccountConfirm")} ${profile.email || profile.username || profile.display_name || profile.user_id}`}
                       className="grid h-8 w-8 place-items-center rounded-xl border border-red-400/30 bg-red-500/10 text-red-100 transition hover:bg-red-500/18 disabled:cursor-not-allowed disabled:opacity-45"
                       disabled={isDeleting}
                       onClick={() => removeProfile(profile)}
-                      title="Удалить"
+                      title={t("delete")}
                       type="button"
                     >
                       {isDeleting ? (

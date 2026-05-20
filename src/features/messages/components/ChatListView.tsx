@@ -1,16 +1,9 @@
 import type { MouseEvent } from "react";
+import { useI18n } from "@/shared/i18n-context";
 import type { ChatFolder, MessageRow, ProfileRow } from "@/shared/types";
 import { formatMessageTime } from "@/shared/utils/format";
 import { getChatPreviewText } from "@/shared/utils/messages";
 import { isProfileOnline } from "@/shared/utils/profile";
-
-const messagesTitle = "\u0421\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u044f";
-const emptyChatsTitle = "\u0414\u0438\u0430\u043b\u043e\u0433\u043e\u0432 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442";
-const emptyChatsText =
-  "\u041d\u0430\u0439\u0434\u0438 \u0447\u0435\u043b\u043e\u0432\u0435\u043a\u0430 \u043f\u043e @\u043d\u0438\u043a\u0443 \u0438 \u043d\u0430\u0447\u043d\u0438 \u043f\u0435\u0440\u0435\u043f\u0438\u0441\u043a\u0443";
-const openChatText = "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u0435\u0440\u0435\u043f\u0438\u0441\u043a\u0443";
-const avatarAltPrefix = "\u0410\u0432\u0430\u0442\u0430\u0440";
-const unreadPrefix = "\u041d\u0435\u043f\u0440\u043e\u0447\u0438\u0442\u0430\u043d\u043d\u043e\u0435 \u043e\u0442";
 
 type ChatListViewProps = {
   chatFolders: ChatFolder[];
@@ -35,10 +28,12 @@ export function ChatListView({
   setUnreadMessageCount,
   unreadMessagesByUserId,
 }: ChatListViewProps) {
+  const { t } = useI18n();
+
   return (
     <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
       <div className="mb-2 flex h-[50px] min-h-[50px] items-center rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
-        <h2 className="text-base font-medium sm:text-base">{messagesTitle}</h2>
+        <h2 className="text-base font-medium sm:text-base">{t("messages")}</h2>
       </div>
 
       <div className="scrollbar-hidden grid min-h-0 flex-1 content-start gap-2 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4">
@@ -48,7 +43,7 @@ export function ChatListView({
               isActive={selectedChatFolderId === null}
               onClick={() => setSelectedChatFolderId(null)}
             >
-              Все
+              {t("allChats")}
             </FolderFilterButton>
             {chatFolders.map((folder) => (
               <FolderFilterButton
@@ -64,8 +59,8 @@ export function ChatListView({
         <div className="hush-panel-transition grid content-start gap-2" key={selectedChatFolderId ?? "all"}>
           {chatProfiles.length === 0 ? (
             <article className="rounded-xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-4 text-center sm:rounded-2xl sm:p-6">
-              <p className="text-sm font-medium">{emptyChatsTitle}</p>
-              <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">{emptyChatsText}</p>
+              <p className="text-sm font-medium">{t("emptyChatsTitle")}</p>
+              <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">{t("emptyChatsText")}</p>
             </article>
           ) : null}
 
@@ -74,7 +69,7 @@ export function ChatListView({
             const profileUnreadCount = unreadMessagesByUserId.get(profile.user_id) ?? 0;
             const previewText = latestProfileMessage
               ? getChatPreviewText(latestProfileMessage.text)
-              : openChatText;
+              : t("openChat");
 
             return (
               <button
@@ -96,7 +91,7 @@ export function ChatListView({
                     {profile.avatar_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        alt={`${avatarAltPrefix} ${profile.display_name}`}
+                        alt={`${t("avatarAlt")} ${profile.display_name}`}
                         className="h-full w-full object-cover"
                         src={profile.avatar_url}
                       />
@@ -125,8 +120,8 @@ export function ChatListView({
                         profileUnreadCount > 0 ? "font-medium text-[#f4f4f5]" : "text-[#a1a1aa]"
                       }`}
                     >
-                      {profileUnreadCount > 0
-                        ? `${unreadPrefix} ${profile.display_name}: ${previewText}`
+                    {profileUnreadCount > 0
+                        ? `${t("unreadFrom")} ${profile.display_name}: ${previewText}`
                         : previewText}
                     </p>
                     {profileUnreadCount > 0 ? (

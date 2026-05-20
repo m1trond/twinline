@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, Dispatch, PointerEvent, ReactNode, SetStateAction } from "react";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { NavButton, NavIcon } from "@/components/navigation/NavButton";
+import { useI18n } from "@/shared/i18n-context";
 import { accessNavItem, navItems, settingsNavItem } from "@/shared/constants";
 import type { ActiveView, ProfileRow } from "@/shared/types";
 import type { ViewedProfileState } from "@/features/navigation/useNavigationState";
@@ -68,6 +69,7 @@ export function AppShell({
   setViewedProfile,
   totalUnreadMessageCount,
 }: AppShellProps) {
+  const { t } = useI18n();
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     if (typeof window === "undefined") {
       return defaultSidebarWidth;
@@ -94,6 +96,27 @@ export function AppShell({
   const sidebarGridStyle = {
     "--sidebar-width": `${sidebarWidth}px`,
   } as CSSProperties;
+  const translatedNavItems = navItems.map((item) => ({
+    ...item,
+    label:
+      item.view === "profile"
+        ? t("profile")
+        : item.view === "messages"
+          ? t("messages")
+          : item.view === "favorites"
+            ? t("favorites")
+            : item.view === "music"
+              ? t("music")
+              : item.label,
+  }));
+  const translatedAccessNavItem = {
+    ...accessNavItem,
+    label: t("access"),
+  };
+  const translatedSettingsNavItem = {
+    ...settingsNavItem,
+    label: t("settings"),
+  };
 
   useEffect(() => {
     function handleWindowResize() {
@@ -201,7 +224,7 @@ export function AppShell({
           </header>
 
           <nav className="scrollbar-hidden mb-2 flex shrink-0 gap-1.5 overflow-x-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.24)] backdrop-blur-md sm:mb-3 sm:gap-2 sm:rounded-2xl sm:p-2 lg:hidden">
-            {[...navItems, ...(canViewAccess ? [accessNavItem] : []), settingsNavItem].map((item) => (
+            {[...translatedNavItems, ...(canViewAccess ? [translatedAccessNavItem] : []), translatedSettingsNavItem].map((item) => (
               <NavButton
                 activeView={activeView}
                 item={item}
@@ -268,7 +291,7 @@ export function AppShell({
                             autoFocus
                             className="h-5 min-w-0 flex-1 bg-transparent text-sm leading-5 text-[#f4f4f5] outline-none placeholder:text-[#a1a1aa]/75"
                             onChange={(event) => setChatSearchQuery(event.target.value)}
-                            placeholder="Найти..."
+                            placeholder={t("searchPlaceholder")}
                             type="text"
                             value={chatSearchQuery}
                           />
@@ -277,11 +300,11 @@ export function AppShell({
                           <div className="mt-2 grid max-h-72 gap-1.5 overflow-y-auto pr-1">
                             {chatSearchQuery.trim().replace(/^@+/, "").length < 2 ? (
                               <p className="px-2 py-1 text-xs text-[#a1a1aa]">
-                                Введи минимум 2 символа после @.
+                                {t("searchMinUsername")}
                               </p>
                             ) : searchableProfiles.length === 0 ? (
                               <p className="px-2 py-1 text-xs text-[#a1a1aa]">
-                                Пользователь не найден.
+                                {t("searchUserNotFound")}
                               </p>
                             ) : (
                               searchableProfiles.map((profile) => (
@@ -320,7 +343,7 @@ export function AppShell({
                                       {profile.display_name}
                                     </span>
                                     <span className="block truncate text-xs text-[#a1a1aa]">
-                                      {profile.username ? "@" + profile.username : "@ник пока не выбран"}
+                                      {profile.username ? "@" + profile.username : t("nicknameNotSet")}
                                     </span>
                                   </span>
                                 </button>
@@ -329,7 +352,7 @@ export function AppShell({
                           </div>
                         ) : (
                           <p className="px-2 py-2 text-xs leading-5 text-[#a1a1aa]">
-                            Найди пользователя по нику.
+                            {t("searchUserByUsername")}
                           </p>
                         )}
                     </div>
@@ -364,7 +387,7 @@ export function AppShell({
                     aria-label="User search by username"
                     className="h-5 min-w-0 flex-1 bg-transparent text-sm leading-5 text-[#f4f4f5] outline-none placeholder:text-[#a1a1aa]/75"
                     onChange={(event) => setChatSearchQuery(event.target.value)}
-                    placeholder="Найти..."
+                    placeholder={t("searchPlaceholder")}
                     type="text"
                     value={chatSearchQuery}
                   />
@@ -373,11 +396,11 @@ export function AppShell({
                   <div className="mt-2 grid max-h-64 gap-1.5 overflow-y-auto pr-1">
                     {chatSearchQuery.trim().replace(/^@+/, "").length < 2 ? (
                       <p className="px-2 py-1 text-xs text-[#a1a1aa]">
-                        Введи минимум 2 символа после @.
+                        {t("searchMinUsername")}
                       </p>
                     ) : searchableProfiles.length === 0 ? (
                       <p className="px-2 py-1 text-xs text-[#a1a1aa]">
-                        Пользователь не найден.
+                        {t("searchUserNotFound")}
                       </p>
                     ) : (
                       searchableProfiles.map((profile) => (
@@ -415,7 +438,7 @@ export function AppShell({
                               {profile.display_name}
                             </span>
                             <span className="block truncate text-xs text-[#a1a1aa]">
-                              {profile.username ? "@" + profile.username : "@ник пока не выбран"}
+                              {profile.username ? "@" + profile.username : t("nicknameNotSet")}
                             </span>
                           </span>
                         </button>
@@ -432,7 +455,7 @@ export function AppShell({
               </div>
 
               <nav className={`grid w-full gap-2 ${isSidebarIconMode ? "justify-items-center" : ""}`}>
-                {navItems.map((item) => (
+                {translatedNavItems.map((item) => (
                   <NavButton
                     activeView={activeView}
                     iconOnly={isSidebarIconMode}
@@ -448,24 +471,24 @@ export function AppShell({
                   <NavButton
                     activeView={activeView}
                     iconOnly={isSidebarIconMode}
-                    item={accessNavItem}
+                    item={translatedAccessNavItem}
                     onSelect={selectView}
                   />
                 ) : null}
                 <button
-                  aria-label={isSidebarIconMode ? settingsNavItem.label : undefined}
-                  title={isSidebarIconMode ? settingsNavItem.label : undefined}
+                  aria-label={isSidebarIconMode ? translatedSettingsNavItem.label : undefined}
+                  title={isSidebarIconMode ? translatedSettingsNavItem.label : undefined}
                   className={`${isSidebarIconMode ? "mx-auto grid h-10 min-h-10 w-10 place-items-center px-0 py-0" : "flex min-h-10 items-center px-4 py-2.5 text-left"} rounded-xl text-sm font-medium leading-none transition ${
-                    activeView === settingsNavItem.view
+                    activeView === translatedSettingsNavItem.view
                       ? "bg-[#f4f4f5] text-[#050505]"
                       : "border border-[#3f3f46]/25 text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
                   }`}
-                  onClick={() => setActiveView(settingsNavItem.view)}
+                  onClick={() => setActiveView(translatedSettingsNavItem.view)}
                   type="button"
                 >
                   <span className="inline-flex min-w-0 items-center gap-2.5">
-                    <NavIcon view={settingsNavItem.view} />
-                    {isSidebarIconMode ? null : <span className="truncate">{settingsNavItem.label}</span>}
+                    <NavIcon view={translatedSettingsNavItem.view} />
+                    {isSidebarIconMode ? null : <span className="truncate">{translatedSettingsNavItem.label}</span>}
                   </span>
                 </button>
               </div>

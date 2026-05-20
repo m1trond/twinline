@@ -13,6 +13,13 @@ import {
 } from "react";
 import { flushSync } from "react-dom";
 import { supabase } from "@/lib/supabase";
+import { I18nProvider } from "@/shared/i18n-context";
+import {
+  defaultInterfaceLanguage,
+  interfaceLanguageStorageKey,
+  isInterfaceLanguage,
+} from "@/shared/i18n";
+import type { InterfaceLanguage } from "@/shared/i18n";
 import { BlockConfirmationDialog } from "@/components/feedback/BlockConfirmationDialog";
 import { LoadingScreen } from "@/components/feedback/LoadingScreen";
 import { AppShell } from "@/components/layout/AppShell";
@@ -129,6 +136,15 @@ import {
 } from "@/shared/utils/viewport";
 
 export default function Home() {
+  const [interfaceLanguage, setInterfaceLanguage] = useState<InterfaceLanguage>(() => {
+    if (typeof window === "undefined") {
+      return defaultInterfaceLanguage;
+    }
+
+    const storedLanguage = window.localStorage.getItem(interfaceLanguageStorageKey);
+
+    return isInterfaceLanguage(storedLanguage) ? storedLanguage : defaultInterfaceLanguage;
+  });
   const {
     authMode,
     setAuthMode,
@@ -173,6 +189,12 @@ export default function Home() {
     bio: string;
     userId: string;
   } | null>(null);
+
+  useEffect(() => {
+    window.localStorage.setItem(interfaceLanguageStorageKey, interfaceLanguage);
+    document.documentElement.lang = interfaceLanguage;
+  }, [interfaceLanguage]);
+
   const {
     activeView,
     setActiveView,
@@ -3815,31 +3837,33 @@ export default function Home() {
 
   if (!user) {
     return (
-      <AuthScreen
-        authContactMethod={authContactMethod}
-        authEmail={authEmail}
-        authMode={authMode}
-        authPassword={authPassword}
-        authPhone={authPhone}
-        authUsername={authUsername}
-        authUsernameError={authUsernameError}
-        errorMessage={errorMessage}
-        isLightThemeEnabled={isLightThemeEnabled}
-        onSubmit={handleAuth}
-        setAuthContactMethod={setAuthContactMethod}
-        setAuthEmail={setAuthEmail}
-        setAuthMode={setAuthMode}
-        setAuthPassword={setAuthPassword}
-        setAuthPhone={setAuthPhone}
-        setAuthUsername={setAuthUsername}
-        setAuthUsernameError={setAuthUsernameError}
-        setErrorMessage={setErrorMessage}
-      />
+      <I18nProvider language={interfaceLanguage} setLanguage={setInterfaceLanguage}>
+        <AuthScreen
+          authContactMethod={authContactMethod}
+          authEmail={authEmail}
+          authMode={authMode}
+          authPassword={authPassword}
+          authPhone={authPhone}
+          authUsername={authUsername}
+          authUsernameError={authUsernameError}
+          errorMessage={errorMessage}
+          isLightThemeEnabled={isLightThemeEnabled}
+          onSubmit={handleAuth}
+          setAuthContactMethod={setAuthContactMethod}
+          setAuthEmail={setAuthEmail}
+          setAuthMode={setAuthMode}
+          setAuthPassword={setAuthPassword}
+          setAuthPhone={setAuthPhone}
+          setAuthUsername={setAuthUsername}
+          setAuthUsernameError={setAuthUsernameError}
+          setErrorMessage={setErrorMessage}
+        />
+      </I18nProvider>
     );
   }
 
   return (
-    <>
+    <I18nProvider language={interfaceLanguage} setLanguage={setInterfaceLanguage}>
     <AppShell
       activeView={activeView}
       canViewAccess={canViewAccess}
@@ -4168,7 +4192,7 @@ export default function Home() {
         user={user}
         viewedProfile={viewedProfile}
       />
-    </>
+    </I18nProvider>
   );
 }
 

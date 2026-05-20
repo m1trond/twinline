@@ -1,5 +1,6 @@
 import type { ChangeEvent, FormEvent, RefObject } from "react";
 import type { User } from "@supabase/supabase-js";
+import { useI18n } from "@/shared/i18n-context";
 import type { ProfileRow } from "@/shared/types";
 import {
   formatUsernameInput,
@@ -68,10 +69,12 @@ export function ProfileView({
   updateProfileUsername,
   user,
 }: ProfileViewProps) {
+  const { t } = useI18n();
+
   return (
     <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
       <div className="mb-2 flex h-[50px] min-h-[50px] items-center rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
-        <h2 className="text-base font-medium text-[#f4f4f5]">Профиль</h2>
+        <h2 className="text-base font-medium text-[#f4f4f5]">{t("profile")}</h2>
       </div>
 
       <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4">
@@ -96,7 +99,7 @@ export function ProfileView({
           <div className="min-w-0">
             <h2 className="truncate text-base font-medium">{activeUserName}</h2>
             <p className="mt-0.5 truncate text-sm font-medium text-[#a1a1aa]">
-              {currentProfile?.username ? `@${currentProfile.username}` : "@ник не задан"}
+              {currentProfile?.username ? `@${currentProfile.username}` : t("nicknameNotSet")}
             </p>
             <input
               accept="image/*"
@@ -118,14 +121,14 @@ export function ProfileView({
 
         <div className="grid gap-2.5 sm:grid-cols-2">
           <section className={cardClass}>
-            <p className={labelClass}>Имя профиля</p>
+            <p className={labelClass}>{t("profileName")}</p>
             <form className="mt-2 grid gap-2" onSubmit={updateProfileName}>
               <input
                 className={inputClass}
                 maxLength={24}
                 minLength={2}
                 onChange={(event) => setProfileName(event.target.value)}
-                placeholder="Новое имя"
+                placeholder={t("profileName")}
                 type="text"
                 value={profileNameInputValue}
               />
@@ -134,13 +137,13 @@ export function ProfileView({
                 disabled={!profileName.trim() || profileName.trim() === activeUserName}
                 type="submit"
               >
-                Сохранить имя
+                {t("saveName")}
               </button>
             </form>
           </section>
 
           <section className={cardClass}>
-            <p className={labelClass}>Ник Hush</p>
+            <p className={labelClass}>{t("username")}</p>
             <form className="mt-2 grid gap-2" onSubmit={updateProfileUsername}>
               <label className="flex min-h-8 items-center rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm focus-within:border-[#f4f4f5]">
                 <span className="font-medium text-[#a1a1aa]">@</span>
@@ -166,25 +169,25 @@ export function ProfileView({
                 }
                 type="submit"
               >
-                Сохранить ник
+                {t("saveNick")}
               </button>
             </form>
             <p className={`mt-1.5 text-xs leading-5 ${profileUsernameError ? "font-medium text-red-300" : "text-[#a1a1aa]"}`}>
               {profileUsernameError ||
                 (isUsernameChangeAllowed
-                  ? "Ник можно менять один раз в месяц."
+                  ? t("usernameCanChangeMonthly")
                   : `Ник снова можно будет изменить ${nextUsernameChangeDate ?? "позже"}.`)}
             </p>
           </section>
 
           <section className={`${cardClass} sm:col-span-2`}>
-            <p className={labelClass}>О себе</p>
+            <p className={labelClass}>{t("bio")}</p>
             <form className="mt-2 grid gap-2" onSubmit={updateProfileBio}>
               <textarea
                 className="min-h-14 resize-none rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 py-2 text-sm leading-5 outline-none placeholder:text-[#a1a1aa]/65 focus:border-[#f4f4f5]"
                 maxLength={100}
                 onChange={(event) => setProfileBio(event.target.value.slice(0, 100))}
-                placeholder="Расскажи пару слов о себе"
+                placeholder={t("bioPlaceholder")}
                 value={profileBioInputValue}
               />
               <button
@@ -199,7 +202,7 @@ export function ProfileView({
                 }
                 type="submit"
               >
-                {isSavingProfileBio ? "Сохраняю..." : "Сохранить"}
+                {isSavingProfileBio ? t("saving") : t("save")}
               </button>
               {profileBioSaveError ? (
                 <p className="text-xs font-medium leading-5 text-red-300">
@@ -218,7 +221,7 @@ export function ProfileView({
           </section>
 
           <section className={cardClass}>
-            <p className={labelClass}>Телефон</p>
+            <p className={labelClass}>{t("phone")}</p>
             <div className="mt-2 grid gap-2 sm:grid-cols-[84px_1fr_auto]">
               <select
                 aria-label="Страна"
@@ -243,11 +246,11 @@ export function ProfileView({
                 disabled
                 type="button"
               >
-                Скоро
+                {t("phoneSoon")}
               </button>
             </div>
             <p className="mt-1.5 text-xs leading-5 text-[#a1a1aa]">
-              Позже подключим вход по SMS.
+              {t("phoneSoonDescription")}
             </p>
           </section>
         </div>

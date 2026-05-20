@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 import type { User } from "@supabase/supabase-js";
 import type { CallStatus, MutedProfileUntil } from "@/shared/types";
 import type { ViewedProfileState } from "@/features/navigation/useNavigationState";
+import { useI18n } from "@/shared/i18n-context";
 import { formatLastSeen } from "@/shared/utils/profile";
 import { isProfileMuted } from "@/shared/utils/storage";
 
@@ -50,6 +51,8 @@ export function ViewedProfileModal({
   muteProfileNotifications,
   unmuteProfileNotifications,
 }: ViewedProfileModalProps) {
+  const { language, t } = useI18n();
+
   if (!viewedProfile) {
     return null;
   }
@@ -65,7 +68,11 @@ export function ViewedProfileModal({
   const canUseProfileActions = Boolean(viewedProfile.userId && !isSelf);
   const canOpenChat = canUseProfileActions && !isBlocked;
   const canCall = canOpenChat && callStatus === "idle";
-  const profileBio = viewedProfile.bio?.trim() || "Пользователь ничего о себе не указывал";
+  const profileBio =
+    viewedProfile.bio?.trim() ||
+    (language === "en"
+      ? "The user has not added anything about themselves."
+      : "Пользователь ничего о себе не указывал");
 
   const openChat = () => {
     if (!viewedProfile.userId || isSelf) {
@@ -80,7 +87,7 @@ export function ViewedProfileModal({
   return (
     <>
       <button
-        aria-label="Закрыть профиль"
+        aria-label={language === "en" ? "Close profile" : "Закрыть профиль"}
         className="fixed inset-0 z-[95] bg-black/62 backdrop-blur-md"
         onClick={onClose}
         type="button"
@@ -89,7 +96,7 @@ export function ViewedProfileModal({
         <div className="flex items-start justify-between gap-4">
           <div className="flex min-w-0 items-center gap-4">
             <button
-              aria-label="Открыть аватар"
+              aria-label={language === "en" ? "Open avatar" : "Открыть аватар"}
               className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-[24px] bg-[#f4f4f5] text-base font-medium text-[#050505] shadow-[0_18px_45px_rgba(0,0,0,0.35)] transition hover:scale-[1.03] disabled:cursor-default disabled:hover:scale-100 sm:h-24 sm:w-24"
               disabled={!viewedProfile.avatarUrl}
               onClick={() => {
@@ -102,7 +109,7 @@ export function ViewedProfileModal({
               {viewedProfile.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  alt="Аватар профиля"
+                  alt={t("avatarAlt")}
                   className="h-full w-full object-cover"
                   src={viewedProfile.avatarUrl}
                 />
@@ -112,13 +119,13 @@ export function ViewedProfileModal({
             </button>
             <div className="min-w-0">
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#a1a1aa]">
-                Профиль
+                {t("profile")}
               </p>
               <h2 className="mt-1 truncate text-base font-medium leading-none text-[#f4f4f5] sm:text-base">
                 {viewedProfile.name}
               </h2>
               <p className="mt-2 truncate text-sm font-medium text-[#a1a1aa]">
-                {viewedProfile.username ? `@${viewedProfile.username}` : "@ник пока не выбран"}
+                {viewedProfile.username ? `@${viewedProfile.username}` : t("nicknameNotSet")}
               </p>
               <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-100">
                 <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_16px_rgba(110,231,183,0.8)]" />
@@ -127,7 +134,7 @@ export function ViewedProfileModal({
             </div>
           </div>
           <button
-            aria-label="Закрыть профиль"
+            aria-label={language === "en" ? "Close profile" : "Закрыть профиль"}
             className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-[#3f3f46]/45 bg-white/[0.03] text-[#d4d4d8] transition hover:bg-white/10"
             onClick={onClose}
             type="button"
@@ -146,7 +153,7 @@ export function ViewedProfileModal({
 
         <div className="mt-5 grid grid-cols-4 gap-2">
           <button
-            aria-label="Открыть чат"
+            aria-label={language === "en" ? "Open chat" : "Открыть чат"}
             className="flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5] transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
             disabled={!canOpenChat}
             onClick={openChat}
@@ -161,10 +168,12 @@ export function ViewedProfileModal({
                 strokeWidth="2"
               />
             </svg>
-            <span className="text-xs font-medium leading-none text-[#d4d4d8]">Чат</span>
+            <span className="text-xs font-medium leading-none text-[#d4d4d8]">
+              {language === "en" ? "Chat" : "Чат"}
+            </span>
           </button>
           <button
-            aria-label="Позвонить"
+            aria-label={language === "en" ? "Call" : "Позвонить"}
             className="flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5] transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
             disabled={!canCall}
             onClick={() => {
@@ -185,12 +194,12 @@ export function ViewedProfileModal({
                 strokeWidth="2"
               />
             </svg>
-            <span className="text-xs font-medium leading-none text-[#d4d4d8]">Телефон</span>
+            <span className="text-xs font-medium leading-none text-[#d4d4d8]">{t("phone")}</span>
           </button>
           <div className="relative">
             <button
               aria-expanded={profileNotificationMenuUserId === viewedProfile.userId}
-              aria-label="Уведомления"
+              aria-label={t("notifications")}
               className={`flex min-h-[74px] w-full flex-col items-center justify-center gap-1.5 rounded-2xl border text-center transition disabled:cursor-not-allowed disabled:opacity-45 ${
                 isMuted
                   ? "border-amber-300/35 bg-amber-400/10 text-amber-100 hover:bg-amber-400/15"
@@ -225,13 +234,15 @@ export function ViewedProfileModal({
                 />
               </svg>
               <span className="text-xs font-medium leading-none text-[#d4d4d8]">
-                {isMuted ? "Без звука" : "Уведомл."}
+                {isMuted
+                  ? language === "en" ? "Muted" : "Без звука"
+                  : language === "en" ? "Notify" : "Уведомл."}
               </span>
             </button>
             {profileNotificationMenuUserId === viewedProfile.userId && viewedProfile.userId ? (
               <>
                 <button
-                  aria-label="Закрыть меню уведомлений"
+                  aria-label={language === "en" ? "Close notifications menu" : "Закрыть меню уведомлений"}
                   className="fixed inset-0 z-[105] cursor-default bg-transparent"
                   onClick={() => setProfileNotificationMenuUserId(null)}
                   type="button"
@@ -243,7 +254,7 @@ export function ViewedProfileModal({
                       onClick={() => unmuteProfileNotifications(viewedProfile.userId!)}
                       type="button"
                     >
-                      Включить уведомления
+                      {language === "en" ? "Enable notifications" : "Включить уведомления"}
                     </button>
                   ) : (
                     muteOptions.map((option) => (
@@ -266,7 +277,7 @@ export function ViewedProfileModal({
             ) : null}
           </div>
           <button
-            aria-label="Заблокировать"
+            aria-label={language === "en" ? "Block" : "Заблокировать"}
             className={`flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border text-center transition disabled:cursor-not-allowed disabled:opacity-45 ${
               isBlockedByMe
                 ? "border-red-300/45 bg-red-500/12 text-red-100 hover:bg-red-500/18"
@@ -296,7 +307,9 @@ export function ViewedProfileModal({
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
             </svg>
             <span className="text-xs font-medium leading-none text-[#d4d4d8]">
-              {isBlockedByMe ? "Разблок" : "Блок"}
+              {isBlockedByMe
+                ? language === "en" ? "Unblock" : "Разблок"
+                : language === "en" ? "Block" : "Блок"}
             </span>
           </button>
         </div>
@@ -304,7 +317,7 @@ export function ViewedProfileModal({
         <div className="mt-5 grid gap-3">
           <article className="rounded-3xl border border-[#3f3f46]/40 bg-black/22 p-4">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#e5e5e5]">
-              О себе
+              {t("bio")}
             </p>
             <p className="mt-2 whitespace-pre-line text-sm leading-6 text-[#a1a1aa]">
               {profileBio}
@@ -313,19 +326,23 @@ export function ViewedProfileModal({
 
           <article className="rounded-3xl border border-[#3f3f46]/40 bg-black/22 p-4">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#e5e5e5]">
-              Телефон
+              {t("phone")}
             </p>
             <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
-              Скрыт настройками приватности. Позже добавим показ только с разрешения пользователя.
+              {language === "en"
+                ? "Hidden by privacy settings. Later we will add showing it only with the user's permission."
+                : "Скрыт настройками приватности. Позже добавим показ только с разрешения пользователя."}
             </p>
           </article>
 
           <article className="rounded-3xl border border-[#3f3f46]/40 bg-black/22 p-4">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#e5e5e5]">
-              Общие данные
+              {language === "en" ? "Shared data" : "Общие данные"}
             </p>
             <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
-              Общие чаты и группы появятся здесь позже.
+              {language === "en"
+                ? "Shared chats and groups will appear here later."
+                : "Общие чаты и группы появятся здесь позже."}
             </p>
           </article>
         </div>
