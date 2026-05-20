@@ -67,13 +67,19 @@ export function ChatListView({
       <div className="scrollbar-hidden grid min-h-0 flex-1 content-start gap-2 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4">
         <div className="scrollbar-hidden mb-1 flex gap-1.5 overflow-x-auto pb-1">
           {archivedChatCount > 0 ? (
-            <FolderFilterButton
-              isActive={selectedChatFolderId === archivedChatFolderId}
-              onClick={() => setSelectedChatFolderId(archivedChatFolderId)}
-              onContextMenu={(event) => event.preventDefault()}
-            >
-              {t("archive")}
-            </FolderFilterButton>
+            <>
+              <FolderFilterButton
+                isActive={selectedChatFolderId === archivedChatFolderId}
+                onClick={() => setSelectedChatFolderId(archivedChatFolderId)}
+                onContextMenu={(event) => event.preventDefault()}
+              >
+                {t("archive")}
+              </FolderFilterButton>
+              <span
+                aria-hidden="true"
+                className="mx-2 h-7 w-px shrink-0 self-center rounded-full bg-[#f4f4f5]/45"
+              />
+            </>
           ) : null}
           <FolderFilterButton
             isActive={selectedChatFolderId === null}
