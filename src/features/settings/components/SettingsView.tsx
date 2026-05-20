@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { useI18n } from "@/shared/i18n-context";
 import { interfaceLanguageLabels } from "@/shared/i18n";
@@ -355,27 +356,68 @@ function LanguageRow({
   label: string;
   onChange: Dispatch<SetStateAction<InterfaceLanguage>>;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const languageOptions: InterfaceLanguage[] = ["ru", "en"];
+
+  function selectLanguage(nextLanguage: InterfaceLanguage) {
+    onChange(nextLanguage);
+    setIsOpen(false);
+  }
+
   return (
     <div className="flex items-center justify-between gap-3 rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
       <div className="min-w-0">
         <p className="text-sm font-medium leading-5">{label}</p>
         <p className="text-xs leading-4 text-[#a1a1aa]">{description}</p>
       </div>
-      <div className="grid shrink-0 grid-cols-2 overflow-hidden rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/10 p-0.5">
-        {(["ru", "en"] as const).map((language) => (
-          <button
-            className={`min-h-7 rounded-md px-2.5 text-xs font-medium transition ${
-              currentLanguage === language
-                ? "bg-[#f4f4f5] text-[#050505]"
-                : "text-[#d4d4d8] hover:bg-white/10"
+      <div className="relative shrink-0">
+        <button
+          aria-expanded={isOpen}
+          className="flex min-h-8 min-w-[132px] items-center justify-between gap-3 rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/10 px-3 text-left text-xs font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/14"
+          onClick={() => setIsOpen((currentValue) => !currentValue)}
+          type="button"
+        >
+          <span>{interfaceLanguageLabels[currentLanguage]}</span>
+          <svg
+            aria-hidden="true"
+            className={`h-3.5 w-3.5 shrink-0 text-[#a1a1aa] transition-transform duration-200 ${
+              isOpen ? "rotate-180" : ""
             }`}
-            key={language}
-            onClick={() => onChange(language)}
-            type="button"
+            fill="none"
+            viewBox="0 0 24 24"
           >
-            {interfaceLanguageLabels[language]}
-          </button>
-        ))}
+            <path d="M12 5v14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+            <path d="m19 12-7 7-7-7" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+          </svg>
+        </button>
+
+        {isOpen ? (
+          <>
+            <button
+              aria-label="Закрыть выбор языка"
+              className="fixed inset-0 z-[70] cursor-default bg-transparent"
+              onClick={() => setIsOpen(false)}
+              type="button"
+            />
+            <div className="hush-context-menu absolute right-0 top-[calc(100%+6px)] z-[80] w-[156px] overflow-hidden rounded-lg border border-white/10 bg-[#18181b]/98 py-1 text-[#f4f4f5] shadow-[0_18px_55px_rgba(0,0,0,0.48)] backdrop-blur-xl">
+              {languageOptions.map((language) => (
+                <button
+                  className={`flex min-h-8 w-full items-center justify-between gap-2 px-3 text-left text-xs font-medium transition hover:bg-white/10 ${
+                    currentLanguage === language ? "text-[#f4f4f5]" : "text-[#a1a1aa]"
+                  }`}
+                  key={language}
+                  onClick={() => selectLanguage(language)}
+                  type="button"
+                >
+                  <span>{interfaceLanguageLabels[language]}</span>
+                  {currentLanguage === language ? (
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#f4f4f5]" />
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </>
+        ) : null}
       </div>
     </div>
   );
