@@ -361,6 +361,19 @@ export function updateReplyMessageBody(text: string, body: string) {
   )}`;
 }
 
+export function updateEditableMessageText(text: string, body: string) {
+  const filePayload = getMessageFilePayload(text);
+
+  if (filePayload) {
+    return createFileMessageText({
+      ...filePayload,
+      name: body,
+    });
+  }
+
+  return updateReplyMessageBody(text, body);
+}
+
 export function mergeMessages(currentMessages: MessageRow[], nextMessages: MessageRow[]) {
   const messagesById = new Map<number, MessageRow>();
 

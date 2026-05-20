@@ -137,7 +137,7 @@ import {
   isMessageBetweenUsers,
   isServiceMessage,
   mergeMessages,
-  updateReplyMessageBody,
+  updateEditableMessageText,
 } from "@/shared/utils/messages";
 import { useFloatingUiState } from "@/shared/hooks/useFloatingUiState";
 import {
@@ -3355,7 +3355,7 @@ export default function Home() {
 
     if (activeView === "favorites") {
       if (editingMessage) {
-        const editedText = updateReplyMessageBody(editingMessage.text, trimmedText);
+        const editedText = updateEditableMessageText(editingMessage.text, trimmedText);
         const updatedFavoriteItem: FavoriteItem = {
           ...(editingMessage as FavoriteItem),
           text: editedText,
@@ -3403,7 +3403,7 @@ export default function Home() {
 
     if (editingMessage) {
       const previousMessages = messages;
-      const editedText = updateReplyMessageBody(editingMessage.text, trimmedText);
+      const editedText = updateEditableMessageText(editingMessage.text, trimmedText);
       const updatedMessage: MessageRow = {
         ...editingMessage,
         text: editedText,
