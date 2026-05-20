@@ -77,7 +77,7 @@ export function ChatListView({
               </FolderFilterButton>
               <span
                 aria-hidden="true"
-                className="mx-2 h-7 w-px shrink-0 self-center rounded-full bg-[#f4f4f5]/45"
+                className="mx-1.5 h-5 w-px shrink-0 self-center rounded-full bg-[#f4f4f5]/35"
               />
             </>
           ) : null}
