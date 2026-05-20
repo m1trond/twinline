@@ -2383,6 +2383,16 @@ export default function Home() {
     setChatContextMenu(null);
   }
 
+  function openCreateEmptyChatFolderDialog() {
+    setFolderNameDraft("");
+    setFolderDialog({
+      folder: null,
+      mode: "create",
+    });
+    setFolderContextMenu(null);
+    setChatContextMenu(null);
+  }
+
   function openRenameFolderDialog(folder: ChatFolder | null) {
     setFolderNameDraft(folder?.name ?? allChatFolderName);
     setFolderDialog({
@@ -2415,11 +2425,6 @@ export default function Home() {
       return;
     }
 
-    if (!folderDialog?.profileUserId) {
-      setFolderDialog(null);
-      return;
-    }
-
     const existingFolder = chatFolders.find(
       (folder) => folder.name.toLowerCase() === nextFolderName.toLowerCase(),
     );
@@ -2434,13 +2439,21 @@ export default function Home() {
     const nextFolders = existingFolder ? chatFolders : [...chatFolders, folder];
 
     saveChatFolders(nextFolders);
-    saveChatFolderAssignments({
-      ...chatFolderAssignments,
-      [folderDialog.profileUserId]: folder.id,
-    });
+    if (folderDialog?.profileUserId) {
+      saveChatFolderAssignments({
+        ...chatFolderAssignments,
+        [folderDialog.profileUserId]: folder.id,
+      });
+    }
+    const wasAssignedToProfile = Boolean(folderDialog?.profileUserId);
+
     setSelectedChatFolderId(folder.id);
     setFolderDialog(null);
-    setErrorMessage(`Чат добавлен в папку «${folder.name}».`);
+    setErrorMessage(
+      wasAssignedToProfile
+        ? `Чат добавлен в папку «${folder.name}».`
+        : `Папка «${folder.name}» создана.`,
+    );
   }
 
   function addChatToFolderFromMenu(profile: ProfileRow, folderId: string) {
@@ -4132,6 +4145,7 @@ export default function Home() {
           latestVisibleMessageByProfileId={latestVisibleMessageByProfileId}
           openFolderContextMenu={openFolderContextMenu}
           openChatContextMenu={openChatContextMenu}
+          openCreateChatFolderDialog={openCreateEmptyChatFolderDialog}
           reorderChatFolders={reorderChatFolders}
           selectedChatFolderId={selectedChatFolderId}
           setSelectedChatFolderId={setSelectedChatFolderId}

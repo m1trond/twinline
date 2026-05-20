@@ -16,6 +16,7 @@ type ChatListViewProps = {
     folder: ChatFolder | null,
   ) => void;
   openChatContextMenu: (event: MouseEvent<HTMLElement>, profile: ProfileRow) => void;
+  openCreateChatFolderDialog: () => void;
   reorderChatFolders: (draggedFolderId: string, targetFolderId: string) => void;
   selectedChatFolderId: string | null;
   setSelectedChatFolderId: (folderId: string | null) => void;
@@ -31,6 +32,7 @@ export function ChatListView({
   latestVisibleMessageByProfileId,
   openFolderContextMenu,
   openChatContextMenu,
+  openCreateChatFolderDialog,
   reorderChatFolders,
   selectedChatFolderId,
   setSelectedChatFolderId,
@@ -88,6 +90,18 @@ export function ChatListView({
               {folder.name}
             </FolderFilterButton>
           ))}
+          <button
+            aria-label={t("newFolder")}
+            className="grid h-8 min-h-8 w-8 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/10 text-[#f4f4f5] transition hover:bg-[#f4f4f5]/18"
+            onClick={openCreateChatFolderDialog}
+            title={t("newFolder")}
+            type="button"
+          >
+            <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+              <path d="M5 12h14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+              <path d="M12 5v14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+            </svg>
+          </button>
         </div>
         <div className="hush-panel-transition grid content-start gap-2" key={selectedChatFolderId ?? "all"}>
           {chatProfiles.length === 0 ? (
