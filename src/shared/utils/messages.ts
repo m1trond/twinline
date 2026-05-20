@@ -3,6 +3,7 @@
   blockMessagePrefix,
   callMessagePrefix,
   fileMessagePrefix,
+  forwardMessagePrefix,
   imageMessagePrefix,
   pinMessagePrefix,
   receiptMessagePrefix,
@@ -14,6 +15,7 @@
 import type {
   BlockMessagePayload,
   FileMessagePayload,
+  ForwardMessagePayload,
   MediaMessagePayload,
   MessageRow,
   PinMessagePayload,
@@ -187,6 +189,49 @@ export function getMessageReply(text: string): ReplyMessagePayload | null {
   }
 }
 
+export function createForwardMessageText(message: MessageRow, authorName: string) {
+  const reply = getMessageReply(message.text);
+
+  return `${forwardMessagePrefix}${encodeURIComponent(
+    JSON.stringify({
+      authorName,
+      authorUserId: message.user_id,
+      text: reply?.body ?? message.text,
+    } satisfies ForwardMessagePayload),
+  )}`;
+}
+
+export function getMessageForward(text: string): ForwardMessagePayload | null {
+  if (!text.startsWith(forwardMessagePrefix)) {
+    return null;
+  }
+
+  try {
+    const parsedPayload = JSON.parse(
+      decodeURIComponent(text.slice(forwardMessagePrefix.length)),
+    );
+
+    if (
+      parsedPayload &&
+      typeof parsedPayload.authorName === "string" &&
+      typeof parsedPayload.text === "string"
+    ) {
+      return {
+        authorName: parsedPayload.authorName,
+        authorUserId:
+          typeof parsedPayload.authorUserId === "string"
+            ? parsedPayload.authorUserId
+            : null,
+        text: parsedPayload.text,
+      };
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 export function createPinMessageText(messageId: number, action: PinMessagePayload["action"]) {
   return `${pinMessagePrefix}${JSON.stringify({ action, messageId })}`;
 }
@@ -313,11 +358,17 @@ export function isServiceMessage(text: string) {
   );
 }
 
-export function getReadableMessageText(text: string) {
+export function getReadableMessageText(text: string): string {
   const reply = getMessageReply(text);
 
   if (reply) {
     return reply.body;
+  }
+
+  const forward = getMessageForward(text);
+
+  if (forward) {
+    return `Переслано: ${getReadableMessageText(forward.text)}`;
   }
 
   if (isServiceMessage(text)) {
@@ -353,11 +404,17 @@ export function getReadableMessageText(text: string) {
   return text;
 }
 
-export function getNotificationMessageText(text: string) {
+export function getNotificationMessageText(text: string): string {
   const reply = getMessageReply(text);
 
   if (reply) {
     return `Ответ: ${reply.body}`;
+  }
+
+  const forward = getMessageForward(text);
+
+  if (forward) {
+    return `Переслано: ${getNotificationMessageText(forward.text)}`;
   }
 
   if (text.startsWith(imageMessagePrefix)) {
@@ -397,9 +454,10 @@ export function getNotificationMessageText(text: string) {
   return text.length > 120 ? `${text.slice(0, 120)}...` : text;
 }
 
-export function getChatPreviewText(text: string) {
+export function getChatPreviewText(text: string): string {
   const reply = getMessageReply(text);
-  const previewText = reply?.body ?? text;
+  const forward = getMessageForward(reply?.body ?? text);
+  const previewText = forward?.text ?? reply?.body ?? text;
 
   if (previewText.startsWith(imageMessagePrefix)) {
     const caption = getMessageImagePayload(previewText)?.caption;
@@ -433,7 +491,9 @@ export function getChatPreviewText(text: string) {
     return `Стикер ${getMessageSticker(previewText) ?? ""}`.trim();
   }
 
-  return getReadableMessageText(text);
+  return forward
+    ? `Переслано: ${getReadableMessageText(previewText)}`
+    : getReadableMessageText(text);
 }
 
 export function createReplyMessageText(replyTarget: MessageRow, body: string) {

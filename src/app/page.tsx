@@ -52,6 +52,7 @@ import {
 } from "@/features/messages/components/MessageContextMenu";
 import {
   ChatDeleteDialog,
+  ForwardMessagesDialog,
   MessageDeleteDialog,
   MessagePinDialog,
   SelectedMessagesDeleteDialog,
@@ -125,6 +126,7 @@ import {
 import {
   createBlockMessageText,
   createFileMessageText,
+  createForwardMessageText,
   createPinMessageText,
   createReplyMessageText,
   createTypingMessageText,
@@ -202,6 +204,8 @@ export default function Home() {
     userId: string;
   } | null>(null);
   const [accessAdminUserId, setAccessAdminUserId] = useState<string | null>(null);
+  const [isForwardDialogOpen, setIsForwardDialogOpen] = useState(false);
+  const [isForwardingMessages, setIsForwardingMessages] = useState(false);
 
   useEffect(() => {
     window.localStorage.setItem(interfaceLanguageStorageKey, interfaceLanguage);
@@ -2983,7 +2987,87 @@ export default function Home() {
       return;
     }
 
-    setErrorMessage("Пересылку сообщений подключим следующим шагом.");
+    setIsForwardDialogOpen(true);
+    setMessageContextMenu(null);
+    setErrorMessage("");
+  }
+
+  async function forwardMessagesToProfile(profile: ProfileRow) {
+    if (!user || selectedDialogMessages.length === 0 || isForwardingMessages) {
+      return;
+    }
+
+    if (blockedByMeProfileIds.includes(profile.user_id)) {
+      setErrorMessage("Сначала разблокируй пользователя, чтобы переслать ему сообщение.");
+      return;
+    }
+
+    const forwardedTexts = selectedDialogMessages.map((message) => {
+      const sourceProfile = message.user_id === user.id
+        ? currentProfile
+        : message.user_id
+          ? profilesByUserId.get(message.user_id)
+          : null;
+      const sourceName = sourceProfile?.display_name ?? message.author;
+
+      return createForwardMessageText(message, sourceName);
+    });
+    const optimisticMessages: MessageRow[] = forwardedTexts.map((text, index) => ({
+      author: activeUserName,
+      created_at: new Date(Date.now() + index).toISOString(),
+      id: -(Date.now() + index + 1),
+      recipient_id: profile.user_id,
+      text,
+      user_id: user.id,
+    }));
+
+    setIsForwardingMessages(true);
+    setIsForwardDialogOpen(false);
+    setSelectedMessageIds([]);
+    setSelectedChatUserId(profile.user_id);
+    setMessages((currentMessages) =>
+      mergeMessages(currentMessages, optimisticMessages),
+    );
+
+    const { data, error } = await supabase
+      .from("messages")
+      .insert(
+        forwardedTexts.map((text) => ({
+          author: activeUserName,
+          recipient_id: profile.user_id,
+          text,
+          user_id: user.id,
+        })),
+      )
+      .select(messageColumns);
+
+    setIsForwardingMessages(false);
+
+    if (error) {
+      setMessages((currentMessages) =>
+        currentMessages.filter(
+          (message) =>
+            !optimisticMessages.some(
+              (optimisticMessage) => optimisticMessage.id === message.id,
+            ),
+        ),
+      );
+      setSelectedMessageIds(selectedDialogMessages.map((message) => message.id));
+      setErrorMessage("Не получилось переслать сообщения.");
+      return;
+    }
+
+    setMessages((currentMessages) => {
+      const withoutOptimisticMessages = currentMessages.filter(
+        (message) =>
+          !optimisticMessages.some(
+            (optimisticMessage) => optimisticMessage.id === message.id,
+          ),
+      );
+
+      return mergeMessages(withoutOptimisticMessages, data ?? []);
+    });
+    setErrorMessage("Сообщения пересланы.");
   }
 
   function hideSelectedMessagesForMe() {
@@ -4369,6 +4453,16 @@ export default function Home() {
         isOpen={isSelectedDeleteDialogOpen}
         selectedDialogMessages={selectedDialogMessages}
         setIsSelectedDeleteDialogOpen={setIsSelectedDeleteDialogOpen}
+      />
+      <ForwardMessagesDialog
+        chatProfiles={chatProfiles}
+        isForwarding={isForwardingMessages}
+        isOpen={isForwardDialogOpen}
+        onClose={() => setIsForwardDialogOpen(false)}
+        onForward={(profile) => void forwardMessagesToProfile(profile)}
+        profiles={profiles}
+        selectedMessages={selectedDialogMessages}
+        userId={user?.id}
       />
       <ChatDeleteDialog
         chatDeleteTargetProfile={chatDeleteTargetProfile}

@@ -40,6 +40,12 @@ export type ReplyMessagePayload = {
   text: string;
 };
 
+export type ForwardMessagePayload = {
+  authorName: string;
+  authorUserId: string | null;
+  text: string;
+};
+
 export type FileMessagePayload = {
   caption?: string;
   name: string;

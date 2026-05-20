@@ -1,6 +1,7 @@
+import { useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useI18n } from "@/shared/i18n-context";
-import type { MessageRow } from "@/shared/types";
+import type { MessageRow, ProfileRow } from "@/shared/types";
 
 type ChatDeleteTargetProfile = {
   name: string;
@@ -51,6 +52,17 @@ type UnpinAllDialogProps = {
   onConfirm: () => void;
 };
 
+type ForwardMessagesDialogProps = {
+  chatProfiles: ProfileRow[];
+  isForwarding: boolean;
+  isOpen: boolean;
+  onClose: () => void;
+  onForward: (profile: ProfileRow) => void;
+  profiles: ProfileRow[];
+  selectedMessages: MessageRow[];
+  userId: string | undefined;
+};
+
 function DeleteIcon() {
   return (
     <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -62,6 +74,139 @@ function DeleteIcon() {
         strokeWidth="2"
       />
     </svg>
+  );
+}
+
+export function ForwardMessagesDialog({
+  chatProfiles,
+  isForwarding,
+  isOpen,
+  onClose,
+  onForward,
+  profiles,
+  selectedMessages,
+  userId,
+}: ForwardMessagesDialogProps) {
+  const { language, t } = useI18n();
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().replace(/^@+/, "").toLowerCase();
+
+  const dialogProfileIds = useMemo(
+    () => new Set(chatProfiles.map((profile) => profile.user_id)),
+    [chatProfiles],
+  );
+  const searchProfiles = useMemo(() => {
+    if (normalizedQuery.length < 2) {
+      return [];
+    }
+
+    return profiles
+      .filter((profile) => {
+        if (profile.user_id === userId || dialogProfileIds.has(profile.user_id)) {
+          return false;
+        }
+
+        const username = profile.username?.toLowerCase() ?? "";
+        const displayName = profile.display_name.toLowerCase();
+
+        return username.includes(normalizedQuery) || displayName.includes(normalizedQuery);
+      })
+      .slice(0, 8);
+  }, [dialogProfileIds, normalizedQuery, profiles, userId]);
+  const visibleProfiles = normalizedQuery.length >= 2
+    ? [...chatProfiles, ...searchProfiles]
+    : chatProfiles;
+
+  if (!isOpen || selectedMessages.length === 0) {
+    return null;
+  }
+
+  function closeDialog() {
+    setQuery("");
+    onClose();
+  }
+
+  return (
+    <>
+      <button
+        aria-label={t("cancel")}
+        className="fixed inset-0 z-[95] bg-black/58 backdrop-blur-sm"
+        onClick={closeDialog}
+        type="button"
+      />
+      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] flex max-h-[min(620px,calc(100dvh-24px))] w-[min(440px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 text-left shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:rounded-3xl sm:p-5">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-base font-medium text-[#f4f4f5]">
+              {language === "en" ? "Forward messages" : "Переслать сообщения"}
+            </h2>
+            <p className="mt-1 text-sm text-[#a1a1aa]">
+              {selectedMessages.length} {language === "en" ? "selected" : "выбрано"}
+            </p>
+          </div>
+          <button
+            className="shrink-0 rounded-xl border border-[#3f3f46]/35 px-3 py-2 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
+            onClick={closeDialog}
+            type="button"
+          >
+            {t("cancel")}
+          </button>
+        </div>
+        <input
+          autoFocus
+          className="mb-3 min-h-10 rounded-xl border border-[#3f3f46]/35 bg-[#f4f4f5]/10 px-3 text-sm text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5]/70 focus:bg-[#f4f4f5]/14"
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={language === "en" ? "Find by @username" : "Найди человека по @нику"}
+          type="text"
+          value={query}
+        />
+        <div className="min-h-0 overflow-y-auto pr-1">
+          {visibleProfiles.length > 0 ? (
+            <div className="grid gap-1.5">
+              {visibleProfiles.map((profile) => (
+                <button
+                  className="flex min-h-12 items-center gap-3 rounded-xl border border-transparent px-2.5 text-left transition hover:border-[#3f3f46]/45 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-55"
+                  disabled={isForwarding}
+                  key={profile.user_id}
+                  onClick={() => {
+                    setQuery("");
+                    onForward(profile);
+                  }}
+                  type="button"
+                >
+                  <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-sm font-medium text-[#050505]">
+                    {profile.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        alt={language === "en" ? "Avatar" : "Аватар"}
+                        className="h-full w-full object-cover"
+                        src={profile.avatar_url}
+                      />
+                    ) : (
+                      profile.display_name[0]?.toUpperCase()
+                    )}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-[#f4f4f5]">
+                      {profile.display_name}
+                    </span>
+                    <span className="block truncate text-xs text-[#a1a1aa]">
+                      {profile.username ? `@${profile.username}` : "@ник не задан"}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-xl border border-dashed border-[#3f3f46]/45 px-3 py-5 text-center text-sm text-[#a1a1aa]">
+              {normalizedQuery.length >= 2
+                ? language === "en" ? "No users found." : "Пользователь не найден."
+                : language === "en" ? "No dialogs yet." : "Диалогов пока нет."}
+            </p>
+          )}
+        </div>
+      </section>
+    </>
   );
 }
 

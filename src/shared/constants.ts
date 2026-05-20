@@ -7,6 +7,7 @@ export const fileMessagePrefix = "file::";
 export const callMessagePrefix = "call::";
 export const stickerMessagePrefix = "sticker::";
 export const replyMessagePrefix = "reply::";
+export const forwardMessagePrefix = "forward::";
 export const pinMessagePrefix = "pin::";
 export const receiptMessagePrefix = "receipt::";
 export const typingMessagePrefix = "typing::";

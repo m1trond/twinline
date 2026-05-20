@@ -22,6 +22,7 @@ import {
   getMessageAttachmentCaption,
   getMessageCallDuration,
   getMessageFilePayload,
+  getMessageForward,
   getMessageImageUrl,
   getMessageReply,
   getMessageSticker,
@@ -458,7 +459,16 @@ export function OpenChatView({
                     const shouldShowFriendAvatar = !isMine && !isNextSameAuthor;
                     const shouldShowOwnAvatar = isMine && !isNextSameAuthor;
                     const reply = getMessageReply(message.text);
-                    const displayText = reply?.body ?? message.text;
+                    const rawDisplayText = reply?.body ?? message.text;
+                    const forwarded = getMessageForward(rawDisplayText);
+                    const forwardedProfile = forwarded?.authorUserId
+                      ? forwarded.authorUserId === user.id
+                        ? currentProfile
+                        : profilesByUserId.get(forwarded.authorUserId)
+                      : null;
+                    const forwardedName =
+                      forwardedProfile?.display_name ?? forwarded?.authorName ?? "";
+                    const displayText = forwarded?.text ?? rawDisplayText;
                     const imageUrl = getMessageImageUrl(displayText);
                     const videoUrl = getMessageVideoUrl(displayText);
                     const audioUrl = getMessageAudioUrl(displayText);
@@ -595,6 +605,48 @@ export function OpenChatView({
                                 {reply.text}
                               </p>
                             </button>
+                          ) : null}
+                          {forwarded ? (
+                            <div className="mb-2 flex items-center gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-2.5 py-2 text-left">
+                              <button
+                                className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505] transition hover:scale-105 disabled:hover:scale-100"
+                                disabled={!forwarded.authorUserId}
+                                onClick={() => {
+                                  if (!forwarded.authorUserId) {
+                                    return;
+                                  }
+
+                                  setViewedProfile({
+                                    avatarUrl: forwardedProfile?.avatar_url ?? null,
+                                    bio: forwardedProfile?.bio ?? null,
+                                    name: forwardedProfile?.display_name ?? forwardedName,
+                                    username: forwardedProfile?.username ?? null,
+                                    updatedAt: forwardedProfile?.updated_at ?? null,
+                                    userId: forwarded.authorUserId,
+                                  });
+                                }}
+                                type="button"
+                              >
+                                {forwardedProfile?.avatar_url ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    alt={t("avatarAlt")}
+                                    className="h-full w-full object-cover"
+                                    src={forwardedProfile.avatar_url}
+                                  />
+                                ) : (
+                                  forwardedName[0]?.toUpperCase()
+                                )}
+                              </button>
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#a1a1aa]">
+                                  {language === "en" ? "Forwarded from" : "Переслано от"}
+                                </p>
+                                <p className="truncate text-sm font-medium text-[#f4f4f5]">
+                                  {forwardedName}
+                                </p>
+                              </div>
+                            </div>
                           ) : null}
                           {imageUrl ? (
                             <button
