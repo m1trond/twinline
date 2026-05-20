@@ -39,6 +39,7 @@ import { ChatListView } from "@/features/messages/components/ChatListView";
 import { FavoritesView } from "@/features/messages/components/FavoritesView";
 import {
   FolderContextMenu,
+  FolderDeleteDialog,
   FolderDialog,
 } from "@/features/messages/components/FolderMenus";
 import type {
@@ -327,6 +328,7 @@ export default function Home() {
   const [allChatFolderName, setAllChatFolderName] = useState("");
   const [folderContextMenu, setFolderContextMenu] = useState<FolderContextMenuState | null>(null);
   const [folderDialog, setFolderDialog] = useState<FolderDialogState | null>(null);
+  const [folderDeleteTarget, setFolderDeleteTarget] = useState<ChatFolder | null>(null);
   const [folderNameDraft, setFolderNameDraft] = useState("");
   const [selectedChatFolderId, setSelectedChatFolderId] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
@@ -2465,6 +2467,25 @@ export default function Home() {
     setFolderContextMenu(null);
   }
 
+  function reorderChatFolders(draggedFolderId: string, targetFolderId: string) {
+    const draggedIndex = chatFolders.findIndex((folder) => folder.id === draggedFolderId);
+    const targetIndex = chatFolders.findIndex((folder) => folder.id === targetFolderId);
+
+    if (draggedIndex === -1 || targetIndex === -1 || draggedIndex === targetIndex) {
+      return;
+    }
+
+    const nextFolders = [...chatFolders];
+    const [draggedFolder] = nextFolders.splice(draggedIndex, 1);
+    nextFolders.splice(targetIndex, 0, draggedFolder);
+    saveChatFolders(nextFolders);
+  }
+
+  function requestDeleteChatFolder(folder: ChatFolder) {
+    setFolderDeleteTarget(folder);
+    setFolderContextMenu(null);
+  }
+
   function deleteChatFolder(folderId: string) {
     saveChatFolders(chatFolders.filter((folder) => folder.id !== folderId));
     saveChatFolderAssignments(
@@ -2478,6 +2499,7 @@ export default function Home() {
     }
 
     setFolderContextMenu(null);
+    setFolderDeleteTarget(null);
   }
 
   async function copyMessageText(message: MessageRow) {
@@ -4105,6 +4127,7 @@ export default function Home() {
           latestVisibleMessageByProfileId={latestVisibleMessageByProfileId}
           openFolderContextMenu={openFolderContextMenu}
           openChatContextMenu={openChatContextMenu}
+          reorderChatFolders={reorderChatFolders}
           selectedChatFolderId={selectedChatFolderId}
           setSelectedChatFolderId={setSelectedChatFolderId}
           setSelectedChatUserId={setSelectedChatUserId}
@@ -4228,10 +4251,19 @@ export default function Home() {
       />
       <FolderContextMenu
         contextMenu={folderContextMenu}
-        deleteFolder={deleteChatFolder}
         openRenameDialog={openRenameFolderDialog}
+        requestDeleteFolder={requestDeleteChatFolder}
         setContextMenu={setFolderContextMenu}
         updateFolderColor={updateChatFolderColor}
+      />
+      <FolderDeleteDialog
+        folder={folderDeleteTarget}
+        onCancel={() => setFolderDeleteTarget(null)}
+        onConfirm={() => {
+          if (folderDeleteTarget) {
+            deleteChatFolder(folderDeleteTarget.id);
+          }
+        }}
       />
       <FolderDialog
         dialog={folderDialog}

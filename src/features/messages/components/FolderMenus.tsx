@@ -26,14 +26,14 @@ const folderColors = [
 
 export function FolderContextMenu({
   contextMenu,
-  deleteFolder,
   openRenameDialog,
+  requestDeleteFolder,
   setContextMenu,
   updateFolderColor,
 }: {
   contextMenu: FolderContextMenuState | null;
-  deleteFolder: (folderId: string) => void;
   openRenameDialog: (folder: ChatFolder | null) => void;
+  requestDeleteFolder: (folder: ChatFolder) => void;
   setContextMenu: (menu: FolderContextMenuState | null) => void;
   updateFolderColor: (folderId: string, color: string) => void;
 }) {
@@ -89,12 +89,86 @@ export function FolderContextMenu({
                 ))}
               </div>
             </div>
-            <MenuButton danger onClick={() => deleteFolder(contextMenu.folder!.id)}>
+            <MenuButton danger onClick={() => requestDeleteFolder(contextMenu.folder!)}>
               {t("delete")}
             </MenuButton>
           </>
         ) : null}
       </div>
+    </>
+  );
+}
+
+export function FolderDeleteDialog({
+  folder,
+  onCancel,
+  onConfirm,
+}: {
+  folder: ChatFolder | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const { t } = useI18n();
+
+  if (!folder) {
+    return null;
+  }
+
+  return (
+    <>
+      <button
+        aria-label={t("cancel")}
+        className="fixed inset-0 z-[115] bg-black/62 backdrop-blur-md"
+        onClick={onCancel}
+        type="button"
+      />
+      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[116] w-[min(430px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[24px] border border-red-400/25 bg-[#101010]/98 p-4 text-left shadow-[0_28px_90px_rgba(0,0,0,0.68)] backdrop-blur-xl">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(239,68,68,0.16),transparent_36%),linear-gradient(145deg,rgba(255,255,255,0.05),transparent_48%)]" />
+        <div className="relative">
+          <div className="flex items-start gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-red-300/25 bg-red-500/14 text-red-100">
+              <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                <path
+                  d="M10 11v6M14 11v6M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                />
+              </svg>
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-base font-medium text-[#f4f4f5]">
+                {t("deleteFolderTitle")}
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-[#a1a1aa]">
+                {t("deleteFolderDescription")}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-[#3f3f46]/35 bg-black/22 px-3 py-2.5">
+            <p className="truncate text-sm font-medium text-[#f4f4f5]">{folder.name}</p>
+          </div>
+
+          <div className="mt-5 grid gap-2 sm:grid-cols-2">
+            <button
+              className="min-h-11 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
+              onClick={onCancel}
+              type="button"
+            >
+              {t("cancel")}
+            </button>
+            <button
+              className="min-h-11 rounded-xl bg-red-500 px-4 text-sm font-medium text-white transition hover:bg-red-400"
+              onClick={onConfirm}
+              type="button"
+            >
+              {t("delete")}
+            </button>
+          </div>
+        </div>
+      </section>
     </>
   );
 }

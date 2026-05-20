@@ -1,4 +1,5 @@
-import type { MouseEvent } from "react";
+import type { DragEvent, MouseEvent } from "react";
+import { useState } from "react";
 import { useI18n } from "@/shared/i18n-context";
 import type { ChatFolder, MessageRow, ProfileRow } from "@/shared/types";
 import { formatMessageTime } from "@/shared/utils/format";
@@ -15,6 +16,7 @@ type ChatListViewProps = {
     folder: ChatFolder | null,
   ) => void;
   openChatContextMenu: (event: MouseEvent<HTMLElement>, profile: ProfileRow) => void;
+  reorderChatFolders: (draggedFolderId: string, targetFolderId: string) => void;
   selectedChatFolderId: string | null;
   setSelectedChatFolderId: (folderId: string | null) => void;
   setSelectedChatUserId: (userId: string) => void;
@@ -29,6 +31,7 @@ export function ChatListView({
   latestVisibleMessageByProfileId,
   openFolderContextMenu,
   openChatContextMenu,
+  reorderChatFolders,
   selectedChatFolderId,
   setSelectedChatFolderId,
   setSelectedChatUserId,
@@ -36,6 +39,19 @@ export function ChatListView({
   unreadMessagesByUserId,
 }: ChatListViewProps) {
   const { t } = useI18n();
+  const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
+
+  function dropFolder(event: DragEvent<HTMLButtonElement>, targetFolderId: string) {
+    event.preventDefault();
+
+    if (!draggedFolderId || draggedFolderId === targetFolderId) {
+      setDraggedFolderId(null);
+      return;
+    }
+
+    reorderChatFolders(draggedFolderId, targetFolderId);
+    setDraggedFolderId(null);
+  }
 
   return (
     <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
@@ -55,10 +71,19 @@ export function ChatListView({
           {chatFolders.map((folder) => (
             <FolderFilterButton
               color={folder.color}
+              draggable
               isActive={selectedChatFolderId === folder.id}
               key={folder.id}
               onClick={() => setSelectedChatFolderId(folder.id)}
               onContextMenu={(event) => openFolderContextMenu(event, folder)}
+              onDragEnd={() => setDraggedFolderId(null)}
+              onDragOver={(event) => event.preventDefault()}
+              onDragStart={(event) => {
+                event.dataTransfer.effectAllowed = "move";
+                event.dataTransfer.setData("text/plain", folder.id);
+                setDraggedFolderId(folder.id);
+              }}
+              onDrop={(event) => dropFolder(event, folder.id)}
             >
               {folder.name}
             </FolderFilterButton>
@@ -151,33 +176,53 @@ export function ChatListView({
 function FolderFilterButton({
   children,
   color,
+  draggable = false,
   isActive,
   onClick,
   onContextMenu,
+  onDragEnd,
+  onDragOver,
+  onDragStart,
+  onDrop,
 }: {
   children: string;
   color?: string;
+  draggable?: boolean;
   isActive: boolean;
   onClick: () => void;
   onContextMenu: (event: MouseEvent<HTMLButtonElement>) => void;
+  onDragEnd?: () => void;
+  onDragOver?: (event: DragEvent<HTMLButtonElement>) => void;
+  onDragStart?: (event: DragEvent<HTMLButtonElement>) => void;
+  onDrop?: (event: DragEvent<HTMLButtonElement>) => void;
 }) {
+  const coloredStyle = color
+    ? {
+        backgroundColor: isActive ? color : `${color}d9`,
+        borderColor: color,
+        color: "#050505",
+      }
+    : undefined;
+
   return (
     <button
-      className={`inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition ${
-        isActive
-          ? "border-[#f4f4f5]/60 bg-[#f4f4f5] text-[#050505]"
-          : "border-[#3f3f46]/35 bg-[#f4f4f5]/10 text-[#f4f4f5] hover:bg-[#f4f4f5]/18"
-      }`}
+      className={`inline-flex min-h-8 shrink-0 items-center rounded-lg border px-3 text-xs font-medium transition ${
+        color
+          ? "hover:brightness-110"
+          : isActive
+            ? "border-[#f4f4f5]/60 bg-[#f4f4f5] text-[#050505]"
+            : "border-[#3f3f46]/35 bg-[#f4f4f5]/10 text-[#f4f4f5] hover:bg-[#f4f4f5]/18"
+      } ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`}
+      draggable={draggable}
       onClick={onClick}
       onContextMenu={onContextMenu}
+      onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
+      onDragStart={onDragStart}
+      onDrop={onDrop}
+      style={coloredStyle}
       type="button"
     >
-      {color ? (
-        <span
-          className="h-2 w-2 shrink-0 rounded-full"
-          style={{ backgroundColor: color }}
-        />
-      ) : null}
       {children}
     </button>
   );
