@@ -1,5 +1,6 @@
 import type { ChangeEvent, FormEvent, RefObject } from "react";
 import type { User } from "@supabase/supabase-js";
+import { createPortal } from "react-dom";
 import { useI18n } from "@/shared/i18n-context";
 import type { ProfileRow } from "@/shared/types";
 import {
@@ -285,43 +286,46 @@ export function ProfileView({
         </div>
         </div>
       </div>
-      {isEmailVerificationModalOpen ? (
-        <>
-          <button
-            aria-label={t("cancel")}
-            className="fixed inset-0 z-[115] bg-black/62 backdrop-blur-md"
-            onClick={() => setIsEmailVerificationModalOpen(false)}
-            type="button"
-          />
-          <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[116] max-h-[calc(100dvh-24px)] w-[min(430px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 text-left shadow-[0_24px_80px_rgba(0,0,0,0.58)] backdrop-blur-xl sm:rounded-3xl sm:p-5">
-            <div className="mb-5 flex items-center gap-3">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#3f3f46]/45 bg-[#f4f4f5]/10 text-[#f4f4f5]">
-                <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                  <path d="M4 4h16v16H4z" stroke="currentColor" strokeLinejoin="round" strokeWidth="2" />
-                  <path d="m4 7 8 6 8-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                </svg>
-              </span>
-              <div className="min-w-0">
-                <h2 className="text-base font-medium leading-tight text-[#f4f4f5]">
-                  {language === "en" ? "Check your email" : "Зайди в свою почту"}
-                </h2>
-              </div>
-            </div>
-            <p className="mb-5 text-sm leading-6 text-[#a1a1aa]">
-              {language === "en"
-                ? "We sent a confirmation email. Open it and click the confirmation button, then return to Hush."
-                : "Мы отправили письмо подтверждения. Открой его, нажми кнопку подтверждения и вернись в Hush."}
-            </p>
-            <button
-              className="min-h-11 w-full rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
-              onClick={() => setIsEmailVerificationModalOpen(false)}
-              type="button"
-            >
-              {language === "en" ? "Got it" : "Понял"}
-            </button>
-          </section>
-        </>
-      ) : null}
+      {isEmailVerificationModalOpen && typeof document !== "undefined"
+        ? createPortal(
+            <>
+              <button
+                aria-label={t("cancel")}
+                className="fixed inset-0 z-[115] bg-black/62 backdrop-blur-md"
+                onClick={() => setIsEmailVerificationModalOpen(false)}
+                type="button"
+              />
+              <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[116] max-h-[calc(100dvh-24px)] w-[min(430px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 text-left shadow-[0_24px_80px_rgba(0,0,0,0.58)] backdrop-blur-xl sm:rounded-3xl sm:p-5">
+                <div className="mb-5 flex items-center gap-3">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#3f3f46]/45 bg-[#f4f4f5]/10 text-[#f4f4f5]">
+                    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                      <path d="M4 4h16v16H4z" stroke="currentColor" strokeLinejoin="round" strokeWidth="2" />
+                      <path d="m4 7 8 6 8-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                    </svg>
+                  </span>
+                  <div className="min-w-0">
+                    <h2 className="text-base font-medium leading-tight text-[#f4f4f5]">
+                      {language === "en" ? "Check your email" : "Зайди в свою почту"}
+                    </h2>
+                  </div>
+                </div>
+                <p className="mb-5 text-sm leading-6 text-[#a1a1aa]">
+                  {language === "en"
+                    ? "We sent a confirmation email. Open it and click the confirmation button, then return to Hush."
+                    : "Мы отправили письмо подтверждения. Открой его, нажми кнопку подтверждения и вернись в Hush."}
+                </p>
+                <button
+                  className="min-h-11 w-full rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
+                  onClick={() => setIsEmailVerificationModalOpen(false)}
+                  type="button"
+                >
+                  {language === "en" ? "Got it" : "Понял"}
+                </button>
+              </section>
+            </>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
