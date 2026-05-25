@@ -7,10 +7,10 @@ export function BrandMark({
 }) {
   return (
     <div className={`flex min-w-0 items-center ${iconOnly ? "justify-center" : "gap-3"}`}>
-      <div className={`grid shrink-0 place-items-center rounded-xl bg-[#f4f4f5] text-[#050505] shadow-[0_8px_24px_rgba(244,244,245,0.14)] ${
-        compact ? "h-9 w-9 sm:h-10 sm:w-10" : "h-10 w-10"
+      <div className={`grid shrink-0 place-items-center rounded-[14px] border border-[#f4f4f5]/12 bg-[#f4f4f5] text-[#050505] shadow-[0_10px_28px_rgba(244,244,245,0.16)] ${
+        compact ? "h-10 w-10 sm:h-11 sm:w-11" : "h-11 w-11"
       }`}>
-        <HushGlyph className={compact ? "h-6 w-6 sm:h-7 sm:w-7" : "h-7 w-7"} />
+        <HushGlyph className={compact ? "h-8 w-8 sm:h-9 sm:w-9" : "h-9 w-9"} />
       </div>
       {iconOnly ? null : (
         <h1 className={`${compact ? "text-base sm:text-base" : "text-base"} min-w-0 font-medium tracking-normal`}>
@@ -30,12 +30,22 @@ function HushGlyph({ className }: { className: string }) {
       viewBox="0 0 64 64"
     >
       <path
-        d="M17 15.5C17 13.57 18.57 12 20.5 12H27C28.93 12 30.5 13.57 30.5 15.5V24.5C30.5 26.01 29.92 27.46 28.88 28.56L25.62 32L28.88 35.44C29.92 36.54 30.5 37.99 30.5 39.5V48.5C30.5 50.43 28.93 52 27 52H20.5C18.57 52 17 50.43 17 48.5V15.5Z"
+        d="M14 17.5C14 14.46 16.46 12 19.5 12H24.4C27.1 12 29.42 13.95 29.88 16.61L31.45 25.68C31.64 26.79 32.36 26.79 32.55 25.68L34.12 16.61C34.58 13.95 36.9 12 39.6 12H44.5C47.54 12 50 14.46 50 17.5V46.5C50 49.54 47.54 52 44.5 52H39.6C36.9 52 34.58 50.05 34.12 47.39L32.55 38.32C32.36 37.21 31.64 37.21 31.45 38.32L29.88 47.39C29.42 50.05 27.1 52 24.4 52H19.5C16.46 52 14 49.54 14 46.5V17.5Z"
         fill="currentColor"
       />
       <path
-        d="M47 15.5C47 13.57 45.43 12 43.5 12H37C35.07 12 33.5 13.57 33.5 15.5V24.5C33.5 26.01 34.08 27.46 35.12 28.56L38.38 32L35.12 35.44C34.08 36.54 33.5 37.99 33.5 39.5V48.5C33.5 50.43 35.07 52 37 52H43.5C45.43 52 47 50.43 47 48.5V15.5Z"
-        fill="currentColor"
+        d="M23.5 19.5C23.5 18.67 24.17 18 25 18C25.83 18 26.5 18.67 26.5 19.5V44.5C26.5 45.33 25.83 46 25 46C24.17 46 23.5 45.33 23.5 44.5V19.5Z"
+        fill="#F4F4F5"
+      />
+      <path
+        d="M37.5 19.5C37.5 18.67 38.17 18 39 18C39.83 18 40.5 18.67 40.5 19.5V44.5C40.5 45.33 39.83 46 39 46C38.17 46 37.5 45.33 37.5 44.5V19.5Z"
+        fill="#F4F4F5"
+      />
+      <path
+        d="M26.5 32H37.5"
+        stroke="#F4F4F5"
+        strokeLinecap="round"
+        strokeWidth="5"
       />
     </svg>
   );
