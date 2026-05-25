@@ -80,6 +80,11 @@ import { useProfilesState } from "@/features/profile/useProfilesState";
 import { SettingsView } from "@/features/settings/components/SettingsView";
 import { usePrivacySettingsState } from "@/features/settings/usePrivacySettingsState";
 import {
+  fetchUserSyncState,
+  upsertUserSyncState,
+  type UserSyncPayload,
+} from "@/features/sync/queries";
+import {
   audioMessagePrefix,
   archivedChatFolderId,
   callMessagePrefix,
@@ -149,6 +154,97 @@ import {
   clampPanelPosition,
   getCenteredCallPanelPosition,
 } from "@/shared/utils/viewport";
+
+type SyncedSettings = {
+  areSoftEffectsEnabled?: boolean;
+  isLightThemeEnabled?: boolean;
+  isOnlineStatusVisible?: boolean;
+  isPhoneVisible?: boolean;
+  isProfileSearchable?: boolean;
+};
+
+function parseChatFolders(value: unknown): ChatFolder[] {
+  return Array.isArray(value)
+    ? value
+        .filter((folder): folder is ChatFolder => {
+          return (
+            folder !== null &&
+            typeof folder === "object" &&
+            typeof (folder as ChatFolder).id === "string" &&
+            typeof (folder as ChatFolder).name === "string" &&
+            typeof (folder as ChatFolder).createdAt === "string"
+          );
+        })
+        .map((folder) => ({
+          ...folder,
+          color: typeof folder.color === "string" ? folder.color : undefined,
+        }))
+    : [];
+}
+
+function parseStringArray(value: unknown) {
+  return Array.isArray(value)
+    ? Array.from(new Set(value.filter((item): item is string => typeof item === "string")))
+    : [];
+}
+
+function parseFolderAssignments(value: unknown): Record<string, string[]> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter((entry): entry is [string, string | string[]] => {
+        return (
+          typeof entry[0] === "string" &&
+          (typeof entry[1] === "string" ||
+            (Array.isArray(entry[1]) && entry[1].every((folderId) => typeof folderId === "string")))
+        );
+      })
+      .map(([profileUserId, folderIds]) => [
+        profileUserId,
+        Array.isArray(folderIds) ? Array.from(new Set(folderIds)) : [folderIds],
+      ]),
+  );
+}
+
+function parseMutedProfiles(value: unknown): MutedProfileUntil {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return pruneMutedProfiles(
+    Object.fromEntries(
+      Object.entries(value).filter((entry): entry is [string, number | null] => {
+        const [profileId, muteUntil] = entry;
+
+        return typeof profileId === "string" && (muteUntil === null || typeof muteUntil === "number");
+      }),
+    ),
+  );
+}
+
+function parseSyncedSettings(value: unknown): SyncedSettings {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  const settings = value as SyncedSettings;
+
+  return {
+    areSoftEffectsEnabled:
+      typeof settings.areSoftEffectsEnabled === "boolean" ? settings.areSoftEffectsEnabled : undefined,
+    isLightThemeEnabled:
+      typeof settings.isLightThemeEnabled === "boolean" ? settings.isLightThemeEnabled : undefined,
+    isOnlineStatusVisible:
+      typeof settings.isOnlineStatusVisible === "boolean" ? settings.isOnlineStatusVisible : undefined,
+    isPhoneVisible:
+      typeof settings.isPhoneVisible === "boolean" ? settings.isPhoneVisible : undefined,
+    isProfileSearchable:
+      typeof settings.isProfileSearchable === "boolean" ? settings.isProfileSearchable : undefined,
+  };
+}
 
 export default function Home() {
   const [interfaceLanguage, setInterfaceLanguage] = useState<InterfaceLanguage>(() => {
@@ -354,6 +450,8 @@ export default function Home() {
   const callStatusRef = useRef<CallStatus>("idle");
   const callPartnerIdRef = useRef<string | null>(null);
   const localCallStreamRef = useRef<MediaStream | null>(null);
+  const userSyncPayloadRef = useRef<UserSyncPayload>({});
+  const isApplyingRemoteSyncRef = useRef(false);
   const callStartedAtRef = useRef<number | null>(null);
   const hasSavedCallSummaryRef = useRef(false);
   const isSavingProfileBioRef = useRef(false);
@@ -470,72 +568,170 @@ export default function Home() {
       return () => window.cancelAnimationFrame(frameId);
     }
 
-    const frameId = window.requestAnimationFrame(() => {
+    let isMounted = true;
+    const syncUserId = user.id;
+
+    function applySyncPayload(payload: UserSyncPayload) {
+      const syncedSettings = parseSyncedSettings(payload.settings);
+      const nextAllChatFolderName =
+        typeof payload.allChatFolderName === "string" && payload.allChatFolderName.trim()
+          ? payload.allChatFolderName
+          : translations[interfaceLanguage].allChats;
+      const nextArchivedChatProfileIds = parseStringArray(payload.archivedChatProfileIds);
+      const nextChatFolderAssignments = parseFolderAssignments(payload.chatFolderAssignments);
+      const nextChatFolders = parseChatFolders(payload.chatFolders);
+      const nextMutedProfiles = parseMutedProfiles(payload.mutedProfiles);
+      const nextBlockedProfileIds = parseStringArray(payload.blockedProfileIds);
+
+      isApplyingRemoteSyncRef.current = true;
+      userSyncPayloadRef.current = payload;
+
+      setAllChatFolderName(nextAllChatFolderName);
+      setChatFolders(nextChatFolders);
+      setChatFolderAssignments(nextChatFolderAssignments);
+      setArchivedChatProfileIds(nextArchivedChatProfileIds);
+      setMutedProfiles(nextMutedProfiles);
+      setLocalBlockedProfileIds(nextBlockedProfileIds);
+      window.localStorage.setItem(`hush-chat-all-folder-name-${syncUserId}`, nextAllChatFolderName);
+      window.localStorage.setItem(`hush-chat-folders-${syncUserId}`, JSON.stringify(nextChatFolders));
+      window.localStorage.setItem(
+        `hush-chat-folder-assignments-${syncUserId}`,
+        JSON.stringify(nextChatFolderAssignments),
+      );
+      window.localStorage.setItem(
+        `hush-chat-archived-profiles-${syncUserId}`,
+        JSON.stringify(nextArchivedChatProfileIds),
+      );
+      writeStoredMutedProfiles(nextMutedProfiles);
+      writeStoredStringList("hush-blocked-profiles", nextBlockedProfileIds);
+
+      if (typeof syncedSettings.isOnlineStatusVisible === "boolean") {
+        setIsOnlineStatusVisible(syncedSettings.isOnlineStatusVisible);
+        writeStoredBoolean("hush-settings-online-status-visible", syncedSettings.isOnlineStatusVisible);
+      }
+
+      if (typeof syncedSettings.isPhoneVisible === "boolean") {
+        setIsPhoneVisible(syncedSettings.isPhoneVisible);
+        writeStoredBoolean("hush-settings-phone-visible", syncedSettings.isPhoneVisible);
+      }
+
+      if (typeof syncedSettings.isProfileSearchable === "boolean") {
+        setIsProfileSearchable(syncedSettings.isProfileSearchable);
+        writeStoredBoolean("hush-settings-profile-searchable", syncedSettings.isProfileSearchable);
+      }
+
+      if (typeof syncedSettings.areSoftEffectsEnabled === "boolean") {
+        setAreSoftEffectsEnabled(syncedSettings.areSoftEffectsEnabled);
+        writeStoredBoolean("hush-settings-soft-effects", syncedSettings.areSoftEffectsEnabled);
+      }
+
+      if (typeof syncedSettings.isLightThemeEnabled === "boolean") {
+        setIsLightThemeEnabled(syncedSettings.isLightThemeEnabled);
+        writeStoredBoolean("hush-settings-light-theme", syncedSettings.isLightThemeEnabled);
+      }
+
+      window.requestAnimationFrame(() => {
+        isApplyingRemoteSyncRef.current = false;
+      });
+    }
+
+    function readLocalSyncPayload(): UserSyncPayload {
       try {
-        const storedFolders = window.localStorage.getItem(`hush-chat-folders-${user.id}`);
-        const storedAssignments = window.localStorage.getItem(`hush-chat-folder-assignments-${user.id}`);
-        const storedAllFolderName = window.localStorage.getItem(`hush-chat-all-folder-name-${user.id}`);
-        const storedArchivedChatProfileIds = window.localStorage.getItem(`hush-chat-archived-profiles-${user.id}`);
+        const storedFolders = window.localStorage.getItem(`hush-chat-folders-${syncUserId}`);
+        const storedAssignments = window.localStorage.getItem(`hush-chat-folder-assignments-${syncUserId}`);
+        const storedAllFolderName = window.localStorage.getItem(`hush-chat-all-folder-name-${syncUserId}`);
+        const storedArchivedChatProfileIds = window.localStorage.getItem(`hush-chat-archived-profiles-${syncUserId}`);
         const parsedFolders = storedFolders ? JSON.parse(storedFolders) : [];
         const parsedAssignments = storedAssignments ? JSON.parse(storedAssignments) : {};
         const parsedArchivedChatProfileIds = storedArchivedChatProfileIds
           ? JSON.parse(storedArchivedChatProfileIds)
           : [];
 
-        setAllChatFolderName(storedAllFolderName?.trim() || translations[interfaceLanguage].allChats);
-        setChatFolders(
-          Array.isArray(parsedFolders)
-            ? parsedFolders.filter((folder): folder is ChatFolder => {
-                return (
-                  folder &&
-                  typeof folder.id === "string" &&
-                  typeof folder.name === "string" &&
-                  typeof folder.createdAt === "string"
-                );
-              }).map((folder) => ({
-                ...folder,
-                color: typeof folder.color === "string" ? folder.color : undefined,
-              }))
-            : [],
-        );
-        setChatFolderAssignments(
-          parsedAssignments &&
-            typeof parsedAssignments === "object" &&
-            !Array.isArray(parsedAssignments)
-            ? Object.fromEntries(
-                Object.entries(parsedAssignments).filter(
-                  (entry): entry is [string, string | string[]] =>
-                    typeof entry[0] === "string" &&
-                    (typeof entry[1] === "string" ||
-                      (Array.isArray(entry[1]) &&
-                        entry[1].every((folderId) => typeof folderId === "string"))),
-                ).map(([profileUserId, folderIds]) => [
-                  profileUserId,
-                  Array.isArray(folderIds) ? Array.from(new Set(folderIds)) : [folderIds],
-                ]),
-              )
-            : {},
-        );
-        setArchivedChatProfileIds(
-          Array.isArray(parsedArchivedChatProfileIds)
-            ? Array.from(
-                new Set(
-                  parsedArchivedChatProfileIds.filter(
-                    (profileId) => typeof profileId === "string",
-                  ),
-                ),
-              )
-            : [],
-        );
+        return {
+          allChatFolderName: storedAllFolderName?.trim() || translations[interfaceLanguage].allChats,
+          archivedChatProfileIds: parseStringArray(parsedArchivedChatProfileIds),
+          blockedProfileIds: localBlockedProfileIds,
+          chatFolderAssignments: parseFolderAssignments(parsedAssignments),
+          chatFolders: parseChatFolders(parsedFolders),
+          mutedProfiles,
+          settings: {
+            areSoftEffectsEnabled,
+            isLightThemeEnabled,
+            isOnlineStatusVisible,
+            isPhoneVisible,
+            isProfileSearchable,
+          },
+        };
       } catch {
-        setChatFolders([]);
-        setChatFolderAssignments({});
-        setAllChatFolderName("");
-        setArchivedChatProfileIds([]);
+        return {
+          allChatFolderName: translations[interfaceLanguage].allChats,
+          archivedChatProfileIds: [],
+          blockedProfileIds: localBlockedProfileIds,
+          chatFolderAssignments: {},
+          chatFolders: [],
+          mutedProfiles,
+          settings: {
+            areSoftEffectsEnabled,
+            isLightThemeEnabled,
+            isOnlineStatusVisible,
+            isPhoneVisible,
+            isProfileSearchable,
+          },
+        };
       }
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      const localPayload = readLocalSyncPayload();
+
+      applySyncPayload(localPayload);
+
+      void fetchUserSyncState().then(({ data, error }) => {
+        if (!isMounted) {
+          return;
+        }
+
+        if (!error && data?.payload && typeof data.payload === "object") {
+          applySyncPayload(data.payload as UserSyncPayload);
+          return;
+        }
+
+        userSyncPayloadRef.current = localPayload;
+        void upsertUserSyncState(syncUserId, localPayload);
+      });
     });
 
-    return () => window.cancelAnimationFrame(frameId);
+    const syncChannel = supabase
+      .channel(`user-sync-state-${syncUserId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_sync_states",
+          filter: `user_id=eq.${syncUserId}`,
+        },
+        (payload) => {
+          if (!isMounted || !payload.new || !("payload" in payload.new)) {
+            return;
+          }
+
+          const nextPayload = payload.new.payload;
+
+          if (nextPayload && typeof nextPayload === "object") {
+            applySyncPayload(nextPayload as UserSyncPayload);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      window.cancelAnimationFrame(frameId);
+      void supabase.removeChannel(syncChannel);
+    };
+    // Remote sync is loaded only when the account changes. Setting/folder writes go through saveUserSyncPatch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [interfaceLanguage, user]);
 
   useEffect(() => {
@@ -2162,6 +2358,33 @@ export default function Home() {
     setIsEmailVerificationModalOpen(true);
   }
 
+  function saveUserSyncPatch(patch: UserSyncPayload) {
+    if (!user || isApplyingRemoteSyncRef.current) {
+      return;
+    }
+
+    const nextPayload: UserSyncPayload = {
+      ...userSyncPayloadRef.current,
+      allChatFolderName,
+      archivedChatProfileIds,
+      blockedProfileIds: localBlockedProfileIds,
+      chatFolderAssignments,
+      chatFolders,
+      mutedProfiles,
+      settings: {
+        areSoftEffectsEnabled,
+        isLightThemeEnabled,
+        isOnlineStatusVisible,
+        isPhoneVisible,
+        isProfileSearchable,
+      },
+      ...patch,
+    };
+
+    userSyncPayloadRef.current = nextPayload;
+    void upsertUserSyncState(user.id, nextPayload);
+  }
+
   async function toggleNotifications() {
     const nextValue = !areNotificationsEnabled;
 
@@ -2191,6 +2414,17 @@ export default function Home() {
 
     setter(nextValue);
     writeStoredBoolean(key, nextValue);
+    saveUserSyncPatch({
+      settings: {
+        areSoftEffectsEnabled: key === "hush-settings-soft-effects" ? nextValue : areSoftEffectsEnabled,
+        isLightThemeEnabled: key === "hush-settings-light-theme" ? nextValue : isLightThemeEnabled,
+        isOnlineStatusVisible:
+          key === "hush-settings-online-status-visible" ? nextValue : isOnlineStatusVisible,
+        isPhoneVisible: key === "hush-settings-phone-visible" ? nextValue : isPhoneVisible,
+        isProfileSearchable:
+          key === "hush-settings-profile-searchable" ? nextValue : isProfileSearchable,
+      },
+    });
     setErrorMessage("");
   }
 
@@ -2206,6 +2440,7 @@ export default function Home() {
 
     setMutedProfiles(nextMutedProfiles);
     writeStoredMutedProfiles(nextMutedProfiles);
+    saveUserSyncPatch({ mutedProfiles: nextMutedProfiles });
     setProfileNotificationMenuUserId(null);
     setErrorMessage("");
   }
@@ -2217,6 +2452,7 @@ export default function Home() {
 
     setMutedProfiles(nextMutedProfiles);
     writeStoredMutedProfiles(nextMutedProfiles);
+    saveUserSyncPatch({ mutedProfiles: nextMutedProfiles });
     setProfileNotificationMenuUserId(null);
     setErrorMessage("");
   }
@@ -2256,6 +2492,7 @@ export default function Home() {
 
     setLocalBlockedProfileIds(nextLocalBlockedProfileIds);
     writeStoredStringList("hush-blocked-profiles", nextLocalBlockedProfileIds);
+    saveUserSyncPatch({ blockedProfileIds: nextLocalBlockedProfileIds });
 
     const optimisticMessage: MessageRow = {
       author: activeUserName,
@@ -2510,6 +2747,7 @@ export default function Home() {
       `hush-chat-folders-${user.id}`,
       JSON.stringify(nextFolders),
     );
+    saveUserSyncPatch({ chatFolders: nextFolders });
   }
 
   function saveChatFolderAssignments(nextAssignments: Record<string, string[]>) {
@@ -2522,6 +2760,7 @@ export default function Home() {
       `hush-chat-folder-assignments-${user.id}`,
       JSON.stringify(nextAssignments),
     );
+    saveUserSyncPatch({ chatFolderAssignments: nextAssignments });
   }
 
   function saveArchivedChatProfileIds(nextProfileIds: string[]) {
@@ -2536,6 +2775,7 @@ export default function Home() {
       `hush-chat-archived-profiles-${user.id}`,
       JSON.stringify(normalizedProfileIds),
     );
+    saveUserSyncPatch({ archivedChatProfileIds: normalizedProfileIds });
   }
 
   function saveAllChatFolderName(nextName: string) {
@@ -2545,6 +2785,7 @@ export default function Home() {
 
     setAllChatFolderName(nextName);
     window.localStorage.setItem(`hush-chat-all-folder-name-${user.id}`, nextName);
+    saveUserSyncPatch({ allChatFolderName: nextName });
   }
 
   function openFolderContextMenu(event: MouseEvent<HTMLElement>, folder: ChatFolder | null) {
