@@ -69,7 +69,8 @@ export function ProfileView({
   updateProfileUsername,
   user,
 }: ProfileViewProps) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
+  const isEmailConfirmed = Boolean(user.email_confirmed_at);
 
   return (
     <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
@@ -214,7 +215,18 @@ export function ProfileView({
 
           <section className={cardClass}>
             <p className={labelClass}>Email</p>
-            <p className="mt-1.5 break-words text-sm font-medium">{user.email}</p>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <p className="min-w-0 flex-1 break-words text-sm font-medium">{user.email}</p>
+              <button
+                className="min-h-8 shrink-0 rounded-lg bg-[#52525b] px-3 text-xs font-medium text-[#050505] opacity-70"
+                disabled
+                type="button"
+              >
+                {isEmailConfirmed
+                  ? language === "en" ? "Confirmed" : "Подтверждена"
+                  : language === "en" ? "Confirm" : "Подтвердить"}
+              </button>
+            </div>
             <p className="mt-1 text-xs leading-5 text-[#a1a1aa]">
               Его видишь только ты в своем аккаунте.
             </p>

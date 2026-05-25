@@ -1617,38 +1617,81 @@ export default function Home() {
         return;
       }
 
-      const fallbackDisplayName = authEmail.trim().split("@")[0] || nextUsername;
+      const profileDisplayName = nextUsername;
+      const emailRedirectTo =
+        typeof window === "undefined" ? undefined : `${window.location.origin}/`;
       const { data, error } = await supabase.auth.signUp({
         email: authEmail.trim(),
         password: authPassword,
         options: {
           data: {
-            display_name: fallbackDisplayName,
+            display_name: profileDisplayName,
             username: nextUsername,
           },
+          emailRedirectTo,
         },
       });
 
       if (error) {
         setErrorMessage("Не получилось зарегистрироваться.");
       } else {
-        if (data.user) {
+        let signedUpUser = data.user;
+
+        if (!data.session) {
+          const signInResponse = await supabase.auth.signInWithPassword({
+            email: authEmail.trim(),
+            password: authPassword,
+          });
+
+          if (signInResponse.error || !signInResponse.data.user) {
+            setErrorMessage("Аккаунт создан, но Supabase требует подтверждение email. Отключи Confirm email в Supabase Auth, чтобы вход был сразу после регистрации.");
+            return;
+          }
+
+          signedUpUser = signInResponse.data.user;
+        }
+
+        if (signedUpUser) {
           const { error: profileError } = await supabase.from("profiles").upsert({
-            display_name: fallbackDisplayName,
+            display_name: profileDisplayName,
             username: nextUsername,
             username_changed_at: null,
-            user_id: data.user.id,
+            user_id: signedUpUser.id,
           });
 
           if (profileError) {
-            setAuthUsernameError("Аккаунт создан, но ник не сохранился. Попробуй войти и сохранить ник в профиле.");
+            setErrorMessage("Аккаунт создан, но профиль не сохранился. Проверь права INSERT/UPDATE для profiles в Supabase.");
             return;
           }
+
+          const nextProfile: ProfileRow = {
+            avatar_url: null,
+            bio: null,
+            display_name: profileDisplayName,
+            name_changed_at: null,
+            updated_at: new Date().toISOString(),
+            user_id: signedUpUser.id,
+            username: nextUsername,
+            username_changed_at: null,
+          };
+
+          setProfiles((currentProfiles) =>
+            currentProfiles.some((profile) => profile.user_id === nextProfile.user_id)
+              ? currentProfiles.map((profile) =>
+                  profile.user_id === nextProfile.user_id ? nextProfile : profile,
+                )
+              : [...currentProfiles, nextProfile],
+          );
+          setProfileName(profileDisplayName);
+          setProfileUsername(nextUsername);
         }
 
-        setErrorMessage("Аккаунт создан. Если Supabase попросит, подтверди email.");
+        setErrorMessage("");
         setAuthUsername("");
-        setAuthMode("sign-in");
+        setAuthEmail("");
+        setAuthPassword("");
+        setActiveView("profile");
+        setSelectedChatUserId(null);
       }
 
       return;
