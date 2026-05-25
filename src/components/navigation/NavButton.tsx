@@ -154,7 +154,7 @@ export function NavButton({
     <button
       aria-label={iconOnly ? item.label : undefined}
       title={iconOnly ? item.label : undefined}
-      className={`${iconOnly ? "relative grid h-10 min-h-10 w-10 place-items-center rounded-xl px-0 py-0" : isMobile ? "shrink-0 rounded-lg px-3 py-2 sm:rounded-xl sm:px-4 sm:py-2.5" : "rounded-xl px-4 py-2.5 text-left"} text-sm font-medium transition ${
+      className={`${iconOnly ? "relative grid h-9 min-h-9 w-9 place-items-center rounded-xl px-0 py-0" : isMobile ? "shrink-0 rounded-lg px-3 py-2 sm:rounded-xl sm:px-4 sm:py-2.5" : "min-h-9 rounded-xl px-3.5 py-2 text-left"} text-sm font-medium transition ${
         isActive
           ? "bg-[#f4f4f5] text-[#050505]"
           : `${isMobile || iconOnly ? "" : "border border-transparent"} text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100`
@@ -162,7 +162,7 @@ export function NavButton({
       onClick={() => onSelect(item.view)}
       type="button"
     >
-      <span className={`${iconOnly ? "grid place-items-center" : isMobile ? "inline-flex" : "flex"} items-center justify-between gap-3`}>
+      <span className={`${iconOnly ? "grid place-items-center" : isMobile ? "inline-flex" : "flex"} items-center justify-between gap-2.5`}>
         <span className="inline-flex min-w-0 items-center gap-2.5">
           <NavIcon view={item.view} />
           {iconOnly ? null : <span className="truncate">{item.label}</span>}

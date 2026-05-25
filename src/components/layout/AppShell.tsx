@@ -360,8 +360,8 @@ export function AppShell({
                 </div>
               ) : null}
 
-              <div className={`mb-4 w-full ${isSidebarIconMode ? "hidden" : ""}`}>
-                <label className="flex h-10 min-h-10 items-center gap-2 rounded-lg bg-[#f4f4f5]/10 px-3 text-[#a1a1aa] transition focus-within:bg-[#f4f4f5]/14 focus-within:text-[#f4f4f5]">
+              <div className={`mb-3 w-full ${isSidebarIconMode ? "hidden" : ""}`}>
+                <label className="flex h-9 min-h-9 items-center gap-2 rounded-lg bg-[#f4f4f5]/10 px-3 text-[#a1a1aa] transition focus-within:bg-[#f4f4f5]/14 focus-within:text-[#f4f4f5]">
                   <svg
                     aria-hidden="true"
                     className="h-5 w-5 shrink-0 self-center"
@@ -448,13 +448,13 @@ export function AppShell({
                 ) : null}
               </div>
 
-              <div className={`w-full ${isSidebarIconMode ? "h-0 overflow-hidden" : "mb-4 h-5"}`}>
+              <div className={`w-full ${isSidebarIconMode ? "h-0 overflow-hidden" : "mb-3 h-5"}`}>
                 <p className="text-sm font-medium uppercase tracking-[0.18em] text-[#e5e5e5]">
                   Меню
                 </p>
               </div>
 
-              <nav className={`grid w-full gap-2 ${isSidebarIconMode ? "justify-items-center" : ""}`}>
+              <nav className={`grid w-full gap-1.5 ${isSidebarIconMode ? "justify-items-center" : ""}`}>
                 {translatedNavItems.map((item) => (
                   <NavButton
                     activeView={activeView}
@@ -466,7 +466,7 @@ export function AppShell({
                   />
                 ))}
               </nav>
-              <div className={`mt-auto grid w-full gap-2 ${isSidebarIconMode ? "justify-items-center" : ""}`}>
+              <div className={`mt-auto grid w-full gap-1.5 ${isSidebarIconMode ? "justify-items-center" : ""}`}>
                 {canViewAccess ? (
                   <NavButton
                     activeView={activeView}
@@ -478,7 +478,7 @@ export function AppShell({
                 <button
                   aria-label={isSidebarIconMode ? translatedSettingsNavItem.label : undefined}
                   title={isSidebarIconMode ? translatedSettingsNavItem.label : undefined}
-                  className={`${isSidebarIconMode ? "mx-auto grid h-10 min-h-10 w-10 place-items-center px-0 py-0" : "flex min-h-10 items-center px-4 py-2.5 text-left"} rounded-xl text-sm font-medium leading-none transition ${
+                  className={`${isSidebarIconMode ? "mx-auto grid h-9 min-h-9 w-9 place-items-center px-0 py-0" : "flex min-h-9 items-center px-3.5 py-2 text-left"} rounded-xl text-sm font-medium leading-none transition ${
                     activeView === translatedSettingsNavItem.view
                       ? "bg-[#f4f4f5] text-[#050505]"
                       : "border border-[#3f3f46]/25 text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
