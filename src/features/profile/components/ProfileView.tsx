@@ -289,11 +289,11 @@ export function ProfileView({
         <>
           <button
             aria-label={t("cancel")}
-            className="fixed inset-0 z-[95] bg-black/58 backdrop-blur-sm"
+            className="fixed inset-0 z-[115] bg-black/62 backdrop-blur-md"
             onClick={() => setIsEmailVerificationModalOpen(false)}
             type="button"
           />
-          <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] max-h-[calc(100dvh-24px)] w-[min(540px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-5 text-left shadow-[0_24px_80px_rgba(0,0,0,0.58)] backdrop-blur-xl sm:rounded-3xl sm:p-6">
+          <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[116] max-h-[calc(100dvh-24px)] w-[min(430px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 text-left shadow-[0_24px_80px_rgba(0,0,0,0.58)] backdrop-blur-xl sm:rounded-3xl sm:p-5">
             <div className="mb-5 flex items-center gap-3">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#3f3f46]/45 bg-[#f4f4f5]/10 text-[#f4f4f5]">
                 <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -307,7 +307,7 @@ export function ProfileView({
                 </h2>
               </div>
             </div>
-            <p className="mb-5 text-sm leading-6 text-[#a1a1aa] sm:pl-14">
+            <p className="mb-5 text-sm leading-6 text-[#a1a1aa]">
               {language === "en"
                 ? "We sent a confirmation email. Open it and click the confirmation button, then return to Hush."
                 : "Мы отправили письмо подтверждения. Открой его, нажми кнопку подтверждения и вернись в Hush."}
