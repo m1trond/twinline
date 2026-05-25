@@ -17,12 +17,60 @@ export default function AuthConfirmPage() {
   const [statusText, setStatusText] = useState("Подтверждаем почту...");
 
   useEffect(() => {
+    async function markEmailVerified() {
+      const { data: userData } = await supabase.auth.getUser();
+
+      if (userData.user) {
+        window.localStorage.setItem(`hush-email-verified-${userData.user.id}`, "true");
+      }
+    }
+
+    function finishConfirmation(nextPath: string) {
+      setStatusText("Почта подтверждена. Открываем Hush...");
+      window.setTimeout(() => {
+        window.location.replace(nextPath.startsWith("/") ? nextPath : "/");
+      }, 450);
+    }
+
     async function confirmEmail() {
       const searchParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
       const tokenHash = searchParams.get("token_hash");
+      const code = searchParams.get("code");
+      const accessToken = hashParams.get("access_token");
+      const refreshToken = hashParams.get("refresh_token");
       const typeParam = searchParams.get("type") ?? "email";
       const nextPath = searchParams.get("next") || "/";
       const type = allowedOtpTypes.has(typeParam) ? typeParam : "email";
+
+      if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+
+        if (error) {
+          setStatusText("Не получилось подтвердить почту. Попробуй запросить письмо ещё раз.");
+          return;
+        }
+
+        await markEmailVerified();
+        finishConfirmation(nextPath);
+        return;
+      }
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+        if (error) {
+          setStatusText("Не получилось подтвердить почту. Попробуй запросить письмо ещё раз.");
+          return;
+        }
+
+        await markEmailVerified();
+        finishConfirmation(nextPath);
+        return;
+      }
 
       if (!tokenHash) {
         setStatusText("Ссылка подтверждения повреждена. Попробуй запросить письмо ещё раз.");
@@ -39,16 +87,8 @@ export default function AuthConfirmPage() {
         return;
       }
 
-      const { data: userData } = await supabase.auth.getUser();
-
-      if (userData.user) {
-        window.localStorage.setItem(`hush-email-verified-${userData.user.id}`, "true");
-      }
-
-      setStatusText("Почта подтверждена. Открываем Hush...");
-      window.setTimeout(() => {
-        window.location.replace(nextPath.startsWith("/") ? nextPath : "/");
-      }, 450);
+      await markEmailVerified();
+      finishConfirmation(nextPath);
     }
 
     void confirmEmail();
