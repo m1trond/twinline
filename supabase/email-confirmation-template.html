@@ -34,7 +34,7 @@
             <tr>
               <td style="padding:24px 28px 8px;">
                 <a
-                  href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=magiclink&next=/"
+                  href="{{ .ConfirmationURL }}"
                   style="display:block;border-radius:16px;background:#f4f4f5;color:#050505;text-align:center;text-decoration:none;font-size:15px;font-weight:700;padding:15px 18px;"
                 >
                   Подтвердить почту
@@ -45,7 +45,7 @@
               <td style="padding:12px 28px 26px;">
                 <p style="margin:0;color:#71717a;font-size:12px;line-height:1.7;">
                   Если кнопка не открывается, скопируй ссылку в браузер:<br />
-                  <span style="color:#a1a1aa;word-break:break-all;">{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=magiclink&next=/</span>
+                  <span style="color:#a1a1aa;word-break:break-all;">{{ .ConfirmationURL }}</span>
                 </p>
               </td>
             </tr>
