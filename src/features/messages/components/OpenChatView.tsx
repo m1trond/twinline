@@ -259,7 +259,7 @@ export function OpenChatView({
                     </button>
                     <div className="min-w-0">
                       <button
-                        className="block max-w-full truncate text-left text-sm font-medium text-[#f4f4f5] transition hover:text-white sm:text-base"
+                        className="block max-w-full cursor-pointer truncate text-left text-sm font-medium text-[#f4f4f5] transition hover:text-white sm:text-base"
                         onClick={() => {
                           setViewedProfile(
                             friendProfile ?? {
