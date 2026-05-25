@@ -16,7 +16,7 @@ import { MessageReceiptIcon } from "@/features/messages/components/MessageReceip
 import { VoiceMessage } from "@/features/messages/components/VoiceMessage";
 import { useI18n } from "@/shared/i18n-context";
 import { formatAudioTime, formatCallDuration, formatMessageTime } from "@/shared/utils/format";
-import { formatLastSeen, isProfileOnline } from "@/shared/utils/profile";
+import { formatLastSeen } from "@/shared/utils/profile";
 import {
   getMessageAudioUrl,
   getMessageAttachmentCaption,
@@ -257,42 +257,25 @@ export function OpenChatView({
                         />
                       </svg>
                     </button>
-                    <button
-                      className="relative h-9 w-9 shrink-0 rounded-full transition hover:scale-105 sm:h-10 sm:w-10"
-                      onClick={() => {
-                        setViewedProfile(
-                          friendProfile ?? {
-                            avatarUrl: null,
-                            bio: null,
-                            name: t("user"),
-                            username: null,
-                            updatedAt: null,
-                            userId: null,
-                          },
-                        );
-                      }}
-                      type="button"
-                    >
-                      <span className="grid h-full w-full place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-sm font-medium text-[#050505] sm:text-sm">
-                        {friendProfile?.avatarUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            alt={t("avatarAlt")}
-                            className="h-full w-full object-cover"
-                            src={friendProfile.avatarUrl}
-                          />
-                        ) : (
-                          (friendProfile?.name ?? t("user"))[0]?.toUpperCase()
-                        )}
-                      </span>
-                      {isProfileOnline(friendProfile?.updatedAt ?? null) ? (
-                        <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#111111] bg-emerald-300 shadow-[0_0_14px_rgba(110,231,183,0.8)] sm:h-3.5 sm:w-3.5" />
-                      ) : null}
-                    </button>
                     <div className="min-w-0">
-                      <h2 className="truncate text-sm font-medium sm:text-base">
+                      <button
+                        className="block max-w-full truncate text-left text-sm font-medium text-[#f4f4f5] transition hover:text-white sm:text-base"
+                        onClick={() => {
+                          setViewedProfile(
+                            friendProfile ?? {
+                              avatarUrl: null,
+                              bio: null,
+                              name: t("user"),
+                              username: null,
+                              updatedAt: null,
+                              userId: null,
+                            },
+                          );
+                        }}
+                        type="button"
+                      >
                         {friendProfile?.name ?? t("user")}
-                      </h2>
+                      </button>
                       <p className="truncate text-xs text-[#a1a1aa] sm:text-sm">
                         {isFriendTyping
                           ? language === "en" ? "typing..." : "печатает..."
