@@ -127,8 +127,8 @@ export function ViewedProfileModal({
               <p className="mt-2 truncate text-sm font-medium text-[#a1a1aa]">
                 {viewedProfile.username ? `@${viewedProfile.username}` : t("nicknameNotSet")}
               </p>
-              <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-100">
-                <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_16px_rgba(110,231,183,0.8)]" />
+              <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#3f3f46]/45 bg-[#f4f4f5]/8 px-3 py-1 text-xs font-medium text-[#e5e5e5]">
+                <span className="h-2 w-2 rounded-full bg-[#f4f4f5]" />
                 {formatLastSeen(viewedProfile.updatedAt, language)}
               </div>
             </div>
@@ -202,7 +202,7 @@ export function ViewedProfileModal({
               aria-label={t("notifications")}
               className={`flex min-h-[74px] w-full flex-col items-center justify-center gap-1.5 rounded-2xl border text-center transition disabled:cursor-not-allowed disabled:opacity-45 ${
                 isMuted
-                  ? "border-amber-300/35 bg-amber-400/10 text-amber-100 hover:bg-amber-400/15"
+                  ? "border-[#f4f4f5]/45 bg-[#f4f4f5]/10 text-[#f4f4f5] hover:bg-white/[0.12]"
                   : "border-[#3f3f46]/40 bg-black/24 text-[#f4f4f5] hover:bg-white/[0.08]"
               }`}
               disabled={!canUseProfileActions}
@@ -250,7 +250,7 @@ export function ViewedProfileModal({
                 <div className="absolute left-1/2 top-[calc(100%+8px)] z-[110] w-64 -translate-x-1/2 rounded-2xl border border-[#3f3f46]/55 bg-[#171717]/98 p-1.5 text-left shadow-[0_18px_55px_rgba(0,0,0,0.55)] backdrop-blur-xl">
                   {isMuted ? (
                     <button
-                      className="min-h-10 w-full rounded-xl px-3 text-left text-sm font-medium text-emerald-100 transition hover:bg-emerald-400/10"
+                      className="min-h-10 w-full rounded-xl px-3 text-left text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
                       onClick={() => unmuteProfileNotifications(viewedProfile.userId!)}
                       type="button"
                     >
@@ -280,7 +280,7 @@ export function ViewedProfileModal({
             aria-label={language === "en" ? "Block" : "Заблокировать"}
             className={`flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border text-center transition disabled:cursor-not-allowed disabled:opacity-45 ${
               isBlockedByMe
-                ? "border-red-300/45 bg-red-500/12 text-red-100 hover:bg-red-500/18"
+                ? "border-[#f4f4f5]/45 bg-[#f4f4f5]/10 text-[#f4f4f5] hover:bg-white/[0.12]"
                 : "border-[#3f3f46]/40 bg-black/24 text-[#f4f4f5] hover:bg-white/[0.08]"
             }`}
             disabled={!canUseProfileActions}

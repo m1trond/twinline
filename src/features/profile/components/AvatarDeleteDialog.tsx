@@ -25,9 +25,9 @@ export function AvatarDeleteDialog({
         onClick={onCancel}
         type="button"
       />
-      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[131] w-[min(430px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 rounded-[28px] border border-red-400/25 bg-[#101010]/98 p-5 text-left shadow-[0_28px_90px_rgba(0,0,0,0.68)] backdrop-blur-xl">
-        <div className="flex items-start gap-4">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-red-300/35 bg-red-500/14 text-red-100">
+      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[131] max-h-[calc(100dvh-24px)] w-[min(430px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 text-left shadow-[0_24px_80px_rgba(0,0,0,0.58)] backdrop-blur-xl sm:rounded-3xl sm:p-5">
+        <div className="flex items-start gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#3f3f46]/45 bg-[#f4f4f5]/10 text-[#f4f4f5]">
             <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
               <path d="M10 11v6M14 11v6M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
             </svg>
@@ -43,14 +43,14 @@ export function AvatarDeleteDialog({
         </div>
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
           <button
-            className="min-h-12 rounded-2xl bg-red-500 px-4 text-sm font-medium text-white transition hover:bg-red-400"
+            className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
             onClick={onConfirm}
             type="button"
           >
             {t("delete")}
           </button>
           <button
-            className="min-h-12 rounded-2xl border border-[#3f3f46]/45 bg-white/[0.03] px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
+            className="min-h-11 rounded-xl border border-[#3f3f46]/35 bg-white/[0.03] px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
             onClick={onCancel}
             type="button"
           >

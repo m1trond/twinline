@@ -32,6 +32,7 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
   const [profiles, setProfiles] = useState<AccessProfileRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [deleteTargetProfile, setDeleteTargetProfile] = useState<AccessProfileRow | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const deleteAccountErrorText = t("deleteAccountError");
   const loadUsersErrorText = t("loadUsersError");
@@ -109,15 +110,6 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
   }, [canViewAccess, loadUsersErrorText]);
 
   async function removeProfile(profile: AccessProfileRow) {
-    const label = profile.email || profile.username || profile.display_name || profile.user_id;
-    const shouldDelete = window.confirm(
-      `${t("deleteAccountConfirm")} ${label}? ${t("deleteAccountConfirmSuffix")}`,
-    );
-
-    if (!shouldDelete) {
-      return;
-    }
-
     setDeletingUserId(profile.user_id);
     setErrorMessage("");
 
@@ -126,6 +118,7 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
     if (error || data !== true) {
       setErrorMessage(deleteAccountErrorText);
     } else {
+      setDeleteTargetProfile(null);
       setProfiles((currentProfiles) =>
         currentProfiles.filter((currentProfile) => currentProfile.user_id !== profile.user_id),
       );
@@ -212,9 +205,9 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
                   <div className="flex items-center justify-self-start sm:justify-self-end">
                     <button
                       aria-label={`${t("deleteAccountConfirm")} ${profile.email || profile.username || profile.display_name || profile.user_id}`}
-                      className="grid h-8 w-8 place-items-center rounded-xl border border-red-400/30 bg-red-500/10 text-red-100 transition hover:bg-red-500/18 disabled:cursor-not-allowed disabled:opacity-45"
+                      className="grid h-8 w-8 place-items-center rounded-xl border border-[#3f3f46]/45 bg-[#f4f4f5]/8 text-[#f4f4f5] transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-45"
                       disabled={isDeleting}
-                      onClick={() => removeProfile(profile)}
+                      onClick={() => setDeleteTargetProfile(profile)}
                       title={t("delete")}
                       type="button"
                     >
@@ -231,7 +224,75 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
           </div>
         ) : null}
       </div>
+      {deleteTargetProfile ? (
+        <AccessDeleteDialog
+          isDeleting={deletingUserId === deleteTargetProfile.user_id}
+          label={deleteTargetProfile.email || deleteTargetProfile.username || deleteTargetProfile.display_name || deleteTargetProfile.user_id}
+          onCancel={() => setDeleteTargetProfile(null)}
+          onConfirm={() => void removeProfile(deleteTargetProfile)}
+        />
+      ) : null}
     </div>
+  );
+}
+
+function AccessDeleteDialog({
+  isDeleting,
+  label,
+  onCancel,
+  onConfirm,
+}: {
+  isDeleting: boolean;
+  label: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const { language, t } = useI18n();
+
+  return (
+    <>
+      <button
+        aria-label={t("cancel")}
+        className="fixed inset-0 z-[115] bg-black/62 backdrop-blur-md"
+        onClick={onCancel}
+        type="button"
+      />
+      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[116] max-h-[calc(100dvh-24px)] w-[min(430px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 text-left shadow-[0_24px_80px_rgba(0,0,0,0.58)] backdrop-blur-xl sm:rounded-3xl sm:p-5">
+        <div className="flex items-start gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#3f3f46]/45 bg-[#f4f4f5]/10 text-[#f4f4f5]">
+            <TrashIcon />
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-base font-medium leading-tight text-[#f4f4f5]">
+              {t("deleteAccountConfirm")}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
+              {language === "en"
+                ? `Delete account ${label}? They will be able to sign up again.`
+                : `Удалить аккаунт ${label}? Он сможет зарегистрироваться снова.`}
+            </p>
+          </div>
+        </div>
+        <div className="mt-5 grid gap-2 sm:grid-cols-2">
+          <button
+            className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isDeleting}
+            onClick={onConfirm}
+            type="button"
+          >
+            {isDeleting ? t("loadingUsers") : t("yes")}
+          </button>
+          <button
+            className="min-h-11 rounded-xl border border-[#3f3f46]/35 bg-white/[0.03] px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
+            disabled={isDeleting}
+            onClick={onCancel}
+            type="button"
+          >
+            {t("no")}
+          </button>
+        </div>
+      </section>
+    </>
   );
 }
 

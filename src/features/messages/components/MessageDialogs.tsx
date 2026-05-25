@@ -145,7 +145,7 @@ export function ForwardMessagesDialog({
             </p>
           </div>
           <button
-            className="shrink-0 rounded-xl border border-[#3f3f46]/35 px-3 py-2 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
+            className="min-h-11 shrink-0 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
             onClick={closeDialog}
             type="button"
           >
