@@ -1619,7 +1619,7 @@ export default function Home() {
 
       const profileDisplayName = nextUsername;
       const emailRedirectTo =
-        typeof window === "undefined" ? undefined : `${window.location.origin}/`;
+        typeof window === "undefined" ? undefined : `${window.location.origin}/auth/confirm`;
       const { data, error } = await supabase.auth.signUp({
         email: authEmail.trim(),
         password: authPassword,
@@ -1635,20 +1635,12 @@ export default function Home() {
       if (error) {
         setErrorMessage("Не получилось зарегистрироваться.");
       } else {
-        let signedUpUser = data.user;
+        const signedUpUser = data.user;
 
         if (!data.session) {
-          const signInResponse = await supabase.auth.signInWithPassword({
-            email: authEmail.trim(),
-            password: authPassword,
-          });
-
-          if (signInResponse.error || !signInResponse.data.user) {
-            setErrorMessage("Аккаунт создан, но Supabase требует подтверждение email. Отключи Confirm email в Supabase Auth, чтобы вход был сразу после регистрации.");
-            return;
-          }
-
-          signedUpUser = signInResponse.data.user;
+          setErrorMessage("Письмо подтверждения отправлено. Открой почту и подтверди аккаунт.");
+          setAuthPassword("");
+          return;
         }
 
         if (signedUpUser) {
