@@ -12,8 +12,11 @@ type ProfileViewProps = {
   avatarInputRef: RefObject<HTMLInputElement | null>;
   currentProfile: ProfileRow | null | undefined;
   handleAvatarChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  isEmailVerificationModalOpen: boolean;
+  isEmailVerifiedInHush: boolean;
   isProfileBioChanged: boolean;
   isSavingProfileBio: boolean;
+  isSendingEmailVerification: boolean;
   isUploadingAvatar: boolean;
   isUsernameChangeAllowed: boolean;
   nextUsernameChangeDate: string | null;
@@ -25,6 +28,8 @@ type ProfileViewProps = {
   profileUsernameError: string;
   profileUsernameInputValue: string;
   setProfileBio: (bio: string) => void;
+  sendEmailVerificationLetter: () => void | Promise<void>;
+  setIsEmailVerificationModalOpen: (isOpen: boolean) => void;
   setProfileName: (name: string) => void;
   setProfileUsername: (username: string) => void;
   setProfileUsernameError: (error: string) => void;
@@ -48,8 +53,11 @@ export function ProfileView({
   avatarInputRef,
   currentProfile,
   handleAvatarChange,
+  isEmailVerificationModalOpen,
+  isEmailVerifiedInHush,
   isProfileBioChanged,
   isSavingProfileBio,
+  isSendingEmailVerification,
   isUploadingAvatar,
   isUsernameChangeAllowed,
   nextUsernameChangeDate,
@@ -61,6 +69,8 @@ export function ProfileView({
   profileUsernameError,
   profileUsernameInputValue,
   setProfileBio,
+  sendEmailVerificationLetter,
+  setIsEmailVerificationModalOpen,
   setProfileName,
   setProfileUsername,
   setProfileUsernameError,
@@ -70,7 +80,7 @@ export function ProfileView({
   user,
 }: ProfileViewProps) {
   const { language, t } = useI18n();
-  const isEmailConfirmed = Boolean(user.email_confirmed_at);
+  const isEmailConfirmed = isEmailVerifiedInHush;
 
   return (
     <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
@@ -218,13 +228,20 @@ export function ProfileView({
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               <p className="min-w-0 flex-1 break-words text-sm font-medium">{user.email}</p>
               <button
-                className="min-h-8 shrink-0 rounded-lg bg-[#52525b] px-3 text-xs font-medium text-[#050505] opacity-70"
-                disabled
+                className={`min-h-8 shrink-0 rounded-lg px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-70 ${
+                  isEmailConfirmed
+                    ? "bg-[#52525b] text-[#050505]"
+                    : "border border-red-400/45 bg-red-500/18 text-red-100 hover:bg-red-500/26"
+                }`}
+                disabled={isEmailConfirmed || isSendingEmailVerification}
+                onClick={() => void sendEmailVerificationLetter()}
                 type="button"
               >
                 {isEmailConfirmed
                   ? language === "en" ? "Confirmed" : "Подтверждена"
-                  : language === "en" ? "Confirm" : "Подтвердить"}
+                  : isSendingEmailVerification
+                    ? language === "en" ? "Sending..." : "Отправляю..."
+                    : language === "en" ? "Confirm" : "Подтвердить"}
               </button>
             </div>
             <p className="mt-1 text-xs leading-5 text-[#a1a1aa]">
@@ -268,6 +285,43 @@ export function ProfileView({
         </div>
         </div>
       </div>
+      {isEmailVerificationModalOpen ? (
+        <>
+          <button
+            aria-label={t("cancel")}
+            className="fixed inset-0 z-[95] bg-black/58 backdrop-blur-sm"
+            onClick={() => setIsEmailVerificationModalOpen(false)}
+            type="button"
+          />
+          <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] w-[min(400px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 text-left shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:rounded-3xl sm:p-5">
+            <div className="mb-4 flex items-start gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-red-400/35 bg-red-500/14 text-red-100">
+                <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <path d="M4 4h16v16H4z" stroke="currentColor" strokeLinejoin="round" strokeWidth="2" />
+                  <path d="m4 7 8 6 8-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                </svg>
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-base font-medium text-[#f4f4f5]">
+                  {language === "en" ? "Check your email" : "Зайди в свою почту"}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
+                  {language === "en"
+                    ? "We sent a confirmation email. Open it and click the confirmation button, then return to Hush."
+                    : "Мы отправили письмо подтверждения. Открой его, нажми кнопку подтверждения и вернись в Hush."}
+                </p>
+              </div>
+            </div>
+            <button
+              className="min-h-10 w-full rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
+              onClick={() => setIsEmailVerificationModalOpen(false)}
+              type="button"
+            >
+              {language === "en" ? "Got it" : "Понял"}
+            </button>
+          </section>
+        </>
+      ) : null}
     </div>
   );
 }

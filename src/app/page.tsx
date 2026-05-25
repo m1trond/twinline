@@ -205,6 +205,9 @@ export default function Home() {
     userId: string;
   } | null>(null);
   const [accessAdminUserId, setAccessAdminUserId] = useState<string | null>(null);
+  const [isEmailVerificationModalOpen, setIsEmailVerificationModalOpen] = useState(false);
+  const [isSendingEmailVerification, setIsSendingEmailVerification] = useState(false);
+  const [isEmailVerifiedInHush, setIsEmailVerifiedInHush] = useState(false);
   const [isForwardDialogOpen, setIsForwardDialogOpen] = useState(false);
   const [isForwardingMessages, setIsForwardingMessages] = useState(false);
 
@@ -432,6 +435,27 @@ export default function Home() {
     setErrorMessage,
     user,
   });
+
+  useEffect(() => {
+    let frameId = 0;
+
+    if (!user) {
+      frameId = window.requestAnimationFrame(() => {
+        setIsEmailVerifiedInHush(false);
+        setIsEmailVerificationModalOpen(false);
+      });
+
+      return () => window.cancelAnimationFrame(frameId);
+    }
+
+    frameId = window.requestAnimationFrame(() => {
+      const storedValue = window.localStorage.getItem(`hush-email-verified-${user.id}`);
+
+      setIsEmailVerifiedInHush(storedValue === "true");
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -1638,7 +1662,7 @@ export default function Home() {
         const signedUpUser = data.user;
 
         if (!data.session) {
-          setErrorMessage("Письмо подтверждения отправлено. Открой почту и подтверди аккаунт.");
+          setErrorMessage("Supabase сейчас блокирует вход до подтверждения. Для сценария с красной кнопкой в профиле выключи Confirm sign up и используй подтверждение из профиля.");
           setAuthPassword("");
           return;
         }
@@ -1676,6 +1700,9 @@ export default function Home() {
           );
           setProfileName(profileDisplayName);
           setProfileUsername(nextUsername);
+
+          window.localStorage.setItem(`hush-email-verified-${signedUpUser.id}`, "false");
+          setIsEmailVerifiedInHush(false);
         }
 
         setErrorMessage("");
@@ -2105,6 +2132,34 @@ export default function Home() {
     callStatusRef.current = "idle";
     setCallStatus("idle");
     setCallPanelProfileSnapshot(null);
+  }
+
+  async function sendEmailVerificationLetter() {
+    if (!user?.email || isSendingEmailVerification) {
+      return;
+    }
+
+    setIsSendingEmailVerification(true);
+    setErrorMessage("");
+
+    const emailRedirectTo =
+      typeof window === "undefined" ? undefined : `${window.location.origin}/auth/confirm`;
+    const { error } = await supabase.auth.signInWithOtp({
+      email: user.email,
+      options: {
+        emailRedirectTo,
+        shouldCreateUser: false,
+      },
+    });
+
+    setIsSendingEmailVerification(false);
+
+    if (error) {
+      setErrorMessage("Не получилось отправить письмо подтверждения.");
+      return;
+    }
+
+    setIsEmailVerificationModalOpen(true);
   }
 
   async function toggleNotifications() {
@@ -4274,12 +4329,17 @@ export default function Home() {
           avatarInputRef={avatarInputRef}
           currentProfile={currentProfile}
           handleAvatarChange={handleAvatarChange}
+          isEmailVerificationModalOpen={isEmailVerificationModalOpen}
+          isEmailVerifiedInHush={isEmailVerifiedInHush}
           isProfileBioChanged={isProfileBioChanged}
           isSavingProfileBio={isSavingProfileBio}
+          isSendingEmailVerification={isSendingEmailVerification}
           isUploadingAvatar={isUploadingAvatar}
           isUsernameChangeAllowed={isUsernameChangeAllowed}
           nextUsernameChangeDate={nextUsernameChangeDate}
           openAvatarGallery={openAvatarGallery}
+          sendEmailVerificationLetter={sendEmailVerificationLetter}
+          setIsEmailVerificationModalOpen={setIsEmailVerificationModalOpen}
           profileBioInputValue={profileBioInputValue}
           profileBioSaveError={profileBioSaveError}
           profileName={profileName}

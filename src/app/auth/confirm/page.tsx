@@ -39,6 +39,12 @@ export default function AuthConfirmPage() {
         return;
       }
 
+      const { data: userData } = await supabase.auth.getUser();
+
+      if (userData.user) {
+        window.localStorage.setItem(`hush-email-verified-${userData.user.id}`, "true");
+      }
+
       setStatusText("Почта подтверждена. Открываем Hush...");
       window.setTimeout(() => {
         window.location.replace(nextPath.startsWith("/") ? nextPath : "/");
