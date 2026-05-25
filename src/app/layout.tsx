@@ -24,11 +24,11 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "/hush-favicon.svg?v=4",
+        url: "/hush-favicon.svg?v=5",
         type: "image/svg+xml",
       },
     ],
-    shortcut: "/hush-favicon.svg?v=4",
+    shortcut: "/hush-favicon.svg?v=5",
   },
   openGraph: {
     title: "Hush",
