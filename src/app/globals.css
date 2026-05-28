@@ -3,6 +3,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --hush-radius: 12px;
 }
 
 @theme inline {
@@ -71,9 +72,31 @@ a,
   outline-offset: 2px;
 }
 
-.hush-shell button:not([class*="rounded-full"]):not(.hush-color-swatch),
-.hush-shell [role="button"]:not([class*="rounded-full"]):not(.hush-color-swatch) {
-  border-radius: 12px;
+.hush-shell :where(button, input, select, textarea, [role="button"]):not([class*="rounded-full"]):not(.hush-color-swatch),
+.hush-shell :where(
+  [class*="rounded-lg"],
+  [class*="rounded-xl"],
+  [class*="rounded-2xl"],
+  [class*="rounded-3xl"],
+  [class*="rounded-[14px]"],
+  [class*="rounded-[18px]"],
+  [class*="rounded-[20px]"],
+  [class*="rounded-[22px]"],
+  [class*="rounded-[24px]"]
+):not([class*="rounded-full"]):not(.hush-color-swatch),
+:where(.hush-view-transition, .hush-panel-transition, .hush-modal-transition, .hush-context-menu, .hush-call-panel, .hush-sticker-picker):not([class*="rounded-full"]),
+:where(.hush-view-transition, .hush-panel-transition, .hush-modal-transition, .hush-context-menu, .hush-call-panel, .hush-sticker-picker) :where(
+  [class*="rounded-lg"],
+  [class*="rounded-xl"],
+  [class*="rounded-2xl"],
+  [class*="rounded-3xl"],
+  [class*="rounded-[14px]"],
+  [class*="rounded-[18px]"],
+  [class*="rounded-[20px]"],
+  [class*="rounded-[22px]"],
+  [class*="rounded-[24px]"]
+):not([class*="rounded-full"]):not(.hush-color-swatch) {
+  border-radius: var(--hush-radius) !important;
 }
 
 .hush-context-menu button:not(:disabled):active {

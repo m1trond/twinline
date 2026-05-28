@@ -95,7 +95,7 @@ export default function AuthConfirmPage() {
   }, []);
 
   return (
-    <main className="grid min-h-dvh place-items-center bg-[#050505] px-4 text-[#f4f4f5]">
+    <main className="hush-shell grid min-h-dvh place-items-center bg-[#050505] px-4 text-[#f4f4f5]">
       <section className="w-full max-w-sm rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/90 p-5 text-center shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
         <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-[#f4f4f5] text-[#050505]">
           <svg aria-hidden="true" className="h-6 w-6" fill="none" viewBox="0 0 24 24">
