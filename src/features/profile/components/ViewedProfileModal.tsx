@@ -131,11 +131,11 @@ export function ViewedProfileModal({
           </div>
           <button
             aria-label={language === "en" ? "Close profile" : "Закрыть профиль"}
-            className="absolute right-0 top-0 grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/45 bg-white/[0.03] text-[#d4d4d8] transition hover:bg-white/10"
+            className="absolute right-0 top-0 grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/45 bg-white/[0.03] text-[#d4d4d8] transition hover:bg-white/10 hover:text-[#f4f4f5]"
             onClick={onClose}
             type="button"
           >
-            <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
               <path
                 d="m6 6 12 12M18 6 6 18"
                 stroke="currentColor"
