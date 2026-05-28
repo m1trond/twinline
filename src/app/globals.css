@@ -81,6 +81,17 @@ a,
   transform-origin: top left;
 }
 
+.hush-context-menu button {
+  min-height: 28px !important;
+  padding-bottom: 4px !important;
+  padding-top: 4px !important;
+}
+
+.hush-modal-transition button {
+  min-height: 36px !important;
+  border-radius: 10px !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hush-shell *,
   .hush-shell *::before,
