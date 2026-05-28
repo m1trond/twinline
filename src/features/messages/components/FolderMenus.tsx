@@ -215,7 +215,7 @@ export function FolderDialog({
           <span className="text-sm font-medium text-[#d4d4d8]">{t("folderName")}</span>
           <input
             autoFocus
-            className="min-h-11 rounded-xl border border-[#3f3f46]/40 bg-[#f4f4f5]/12 px-3 text-sm text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/65 focus:border-[#f4f4f5]"
+            className="min-h-9 rounded-lg border border-[#3f3f46]/40 bg-[#f4f4f5]/12 px-3 text-sm text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/65 focus:border-[#f4f4f5]"
             maxLength={28}
             onChange={(event) => setFolderName(event.target.value)}
             value={folderName}
