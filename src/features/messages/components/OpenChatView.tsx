@@ -834,7 +834,7 @@ export function OpenChatView({
                   />
                   <button
                     aria-label={t("attachFile")}
-                    className="grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 text-[#f4f4f5] transition hover:bg-[#f4f4f5]/18 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="grid min-h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 text-[#f4f4f5] transition hover:bg-[#f4f4f5]/18 disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={isUploadingAttachment || isRecordingVoice || isSelectedChatBlocked}
                     onClick={() => imageInputRef.current?.click()}
                     type="button"
@@ -859,7 +859,7 @@ export function OpenChatView({
                     )}
                   </button>
                   {isRecordingVoice ? (
-                    <div className="relative col-span-3 flex min-h-10 min-w-0 flex-1 items-center rounded-lg border border-red-400/35 bg-red-500/10 px-3 text-sm text-[#f4f4f5] sm:col-span-1">
+                    <div className="relative col-span-3 flex min-h-9 min-w-0 flex-1 items-center rounded-lg border border-red-400/35 bg-red-500/10 px-3 text-sm text-[#f4f4f5] sm:col-span-1">
                       <div className="flex min-w-[86px] items-center gap-2">
                         <span className="h-2.5 w-2.5 rounded-full bg-red-300 shadow-[0_0_14px_rgba(252,165,165,0.65)]" />
                         <span className="font-medium tabular-nums text-red-100">
@@ -878,7 +878,7 @@ export function OpenChatView({
                     <>
                       <input
                         aria-label="Текст сообщения"
-                        className="min-h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] focus:bg-[#f4f4f5]/18 sm:px-4 sm:text-sm"
+                        className="min-h-9 min-w-0 flex-1 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] focus:bg-[#f4f4f5]/18 sm:px-3 sm:text-sm"
                         disabled={isSelectedChatBlocked}
                         onChange={handleMessageTextChange}
                         placeholder={
@@ -898,7 +898,7 @@ export function OpenChatView({
                       />
                       <button
                         aria-label="Stickers"
-                        className="grid min-h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 text-[#f4f4f5] transition hover:bg-[#f4f4f5]/18 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="grid min-h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 text-[#f4f4f5] transition hover:bg-[#f4f4f5]/18 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={isUploadingAttachment || isSelectedChatBlocked}
                         onClick={toggleStickerPicker}
                         ref={stickerButtonRef}
@@ -930,7 +930,7 @@ export function OpenChatView({
                   )}
                   <button
                     aria-label={isRecordingVoice ? "Отправить голосовое" : "Записать голосовое"}
-                    className={`relative grid min-h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg border text-[#f4f4f5] transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                    className={`relative grid min-h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg border text-[#f4f4f5] transition disabled:cursor-not-allowed disabled:opacity-50 ${
                       isRecordingVoice
                         ? "border-red-400/60 bg-red-500/85 text-white hover:bg-red-400"
                         : "border-[#3f3f46]/35 bg-[#f4f4f5]/12 hover:bg-[#f4f4f5]/18"

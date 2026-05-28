@@ -130,7 +130,7 @@ export function AuthScreen({
         <form className="grid gap-3" onSubmit={onSubmit}>
           {authMode === "sign-up" ? (
             <label className="grid gap-1.5">
-              <div className="flex min-h-11 items-center rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm focus-within:border-[#f4f4f5] sm:min-h-12">
+              <div className="flex min-h-9 items-center rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm focus-within:border-[#f4f4f5]">
                 <span className="shrink-0 font-medium text-[#a1a1aa]">@</span>
                 <input
                   aria-label={t("username")}
@@ -160,14 +160,14 @@ export function AuthScreen({
           {authContactMethod === "email" ? (
             <>
               <input
-                className="min-h-11 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:min-h-12"
+                className="min-h-9 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5]"
                 onChange={(event) => setAuthEmail(event.target.value)}
                 placeholder="Email"
                 type="email"
                 value={authEmail}
               />
               <input
-                className="min-h-11 rounded-xl border border-transparent bg-[#f4f4f5]/12 px-4 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] sm:min-h-12"
+                className="min-h-9 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5]"
                 onChange={(event) => setAuthPassword(event.target.value)}
                 placeholder={t("password")}
                 type="password"
@@ -176,7 +176,7 @@ export function AuthScreen({
             </>
           ) : (
             <div className="rounded-2xl border border-[#3f3f46]/40 bg-black/22 p-3">
-              <div className="flex min-h-11 overflow-hidden rounded-xl border border-[#3f3f46]/35 bg-[#f4f4f5]/12 focus-within:border-[#f4f4f5] sm:min-h-12">
+              <div className="flex min-h-9 overflow-hidden rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 focus-within:border-[#f4f4f5]">
                 <select
                   aria-label={t("country")}
                   className="w-24 border-r border-[#3f3f46]/35 bg-transparent px-3 text-sm text-[#f4f4f5] outline-none"
@@ -218,7 +218,7 @@ export function AuthScreen({
             </div>
           )}
           <button
-            className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b] disabled:text-[#a1a1aa] sm:min-h-12"
+            className="min-h-9 rounded-lg bg-[#f4f4f5] px-3 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b] disabled:text-[#a1a1aa]"
             disabled={authContactMethod === "phone"}
             type="submit"
           >

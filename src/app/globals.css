@@ -87,6 +87,17 @@ a,
   padding-top: 4px !important;
 }
 
+.hush-shell button:not([aria-label]) {
+  border-radius: 10px;
+  min-height: 36px;
+}
+
+.hush-shell input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.hush-shell select {
+  border-radius: 10px;
+  min-height: 36px;
+}
+
 .hush-modal-transition button:not([aria-label]) {
   min-height: 36px !important;
   border-radius: 10px !important;
