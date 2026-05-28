@@ -6,11 +6,13 @@ import type { FileMessagePayload } from "@/shared/types";
 import { formatFileSize, formatMessageTime } from "@/shared/utils/format";
 
 export function FileAttachment({
+  editedAt = null,
   file,
   isMine,
   receiptStatus = null,
   sentAt = null,
 }: {
+  editedAt?: string | null;
   file: FileMessagePayload;
   isMine: boolean;
   receiptStatus?: MessageReceiptStatus | null;
@@ -74,6 +76,7 @@ export function FileAttachment({
             </span>
             {sentAt ? (
               <span className="inline-flex shrink-0 items-center gap-1">
+                {editedAt ? <span>{t("edited")}</span> : null}
                 {formatMessageTime(sentAt)}
                 {receiptStatus ? (
                   <MessageReceiptIcon className="h-4 w-4" status={receiptStatus} />

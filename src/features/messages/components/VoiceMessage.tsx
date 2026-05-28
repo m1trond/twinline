@@ -1,19 +1,23 @@
 import { ChangeEvent, useRef, useState } from "react";
 import { MessageReceiptIcon } from "@/features/messages/components/MessageReceiptIcon";
 import type { MessageReceiptStatus } from "@/features/messages/components/MessageReceiptIcon";
+import { useI18n } from "@/shared/i18n-context";
 import { formatAudioTime, formatMessageTime } from "@/shared/utils/format";
 
 export function VoiceMessage({
+  editedAt = null,
   isMine,
   receiptStatus = null,
   sentAt,
   src,
 }: {
+  editedAt?: string | null;
   isMine: boolean;
   receiptStatus?: MessageReceiptStatus | null;
   sentAt: string;
   src: string;
 }) {
+  const { t } = useI18n();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -113,6 +117,7 @@ export function VoiceMessage({
           <p className="mt-0 flex items-center justify-between gap-3 text-xs font-medium leading-4 tabular-nums opacity-65">
             <span>{formatAudioTime(currentTime || duration)}</span>
             <span className="inline-flex items-center gap-1">
+              {editedAt ? <span>{t("edited")}</span> : null}
               {formatMessageTime(sentAt)}
               {receiptStatus ? (
                 <MessageReceiptIcon className="h-4 w-4" status={receiptStatus} />

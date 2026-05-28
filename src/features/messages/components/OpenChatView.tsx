@@ -656,6 +656,7 @@ export function OpenChatView({
                           />
                         ) : audioUrl ? (
                           <VoiceMessage
+                            editedAt={message.edited_at ?? null}
                             isMine={isMine}
                             receiptStatus={receiptStatus}
                             sentAt={message.created_at}
@@ -663,6 +664,7 @@ export function OpenChatView({
                           />
                         ) : filePayload ? (
                           <FileAttachment
+                            editedAt={message.edited_at ?? null}
                             file={filePayload}
                             isMine={isMine}
                             receiptStatus={receiptStatus}
@@ -709,6 +711,9 @@ export function OpenChatView({
                               {sticker}
                             </span>
                             <span className="mt-1 flex items-center justify-end gap-1 text-xs font-medium text-[#a1a1aa]">
+                              {message.edited_at ? (
+                                <span>{t("edited")}</span>
+                              ) : null}
                               {formatMessageTime(message.created_at)}
                               {receiptStatus ? (
                                 <MessageReceiptIcon className="h-4 w-4" status={receiptStatus} />
@@ -726,6 +731,7 @@ export function OpenChatView({
                                     isMine ? "text-[#404040]" : "text-[#71717a]"
                                   }`}
                                 >
+                                  {message.edited_at ? `${t("edited")} ` : ""}
                                   {formatMessageTime(message.created_at)}
                                 </span>
                                 {receiptStatus ? (
@@ -759,6 +765,9 @@ export function OpenChatView({
                                   : isMine ? "text-[#404040]" : "text-[#71717a]"
                               }`}
                             >
+                              {message.edited_at ? (
+                                <span>{t("edited")} </span>
+                              ) : null}
                               {formatMessageTime(message.created_at)}
                             </p>
                             {receiptStatus ? (

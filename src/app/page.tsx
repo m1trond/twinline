@@ -3929,8 +3929,10 @@ export default function Home() {
     if (activeView === "favorites") {
       if (editingMessage) {
         const editedText = updateEditableMessageText(editingMessage.text, trimmedText);
+        const editedAt = new Date().toISOString();
         const updatedFavoriteItem: FavoriteItem = {
           ...(editingMessage as FavoriteItem),
+          edited_at: editedAt,
           text: editedText,
         };
 
@@ -3977,8 +3979,10 @@ export default function Home() {
     if (editingMessage) {
       const previousMessages = messages;
       const editedText = updateEditableMessageText(editingMessage.text, trimmedText);
+      const editedAt = new Date().toISOString();
       const updatedMessage: MessageRow = {
         ...editingMessage,
+        edited_at: editedAt,
         text: editedText,
       };
 
@@ -3992,7 +3996,7 @@ export default function Home() {
 
       const { data, error } = await supabase
         .from("messages")
-        .update({ text: editedText })
+        .update({ edited_at: editedAt, text: editedText })
         .eq("id", editingMessage.id)
         .eq("user_id", user.id)
         .select(messageColumns)

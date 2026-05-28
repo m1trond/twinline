@@ -422,12 +422,17 @@ export function FavoritesView({
                             />
                           ) : audioUrl ? (
                             <VoiceMessage
+                              editedAt={favoriteItem.edited_at ?? null}
                               isMine
                               sentAt={favoriteItem.created_at}
                               src={audioUrl}
                             />
                           ) : filePayload ? (
-                            <FileAttachment file={filePayload} isMine />
+                            <FileAttachment
+                              editedAt={favoriteItem.edited_at ?? null}
+                              file={filePayload}
+                              isMine
+                            />
                           ) : callDurationSeconds !== null ? (
                             <div className="min-w-[min(230px,70vw)] rounded-xl bg-[#262626] px-3 py-2 text-[#f4f4f5] sm:min-w-[min(260px,70vw)] sm:rounded-xl">
                               <p className="text-sm font-medium opacity-75">
@@ -448,6 +453,7 @@ export function FavoritesView({
                               {displayText}
                               <span className="ml-2 inline-flex translate-y-[1px] items-center gap-1 align-baseline">
                                 <span className="text-xs font-medium leading-none text-[#404040]">
+                                  {favoriteItem.edited_at ? `${t("edited")} ` : ""}
                                   {formatMessageTime(favoriteItem.created_at)}
                                 </span>
                               </span>
@@ -463,6 +469,9 @@ export function FavoritesView({
                           {!hasStandaloneBubble && hasAttachment ? (
                             <div className="mt-2 flex items-center justify-end gap-3 px-1">
                               <p className={`text-right text-xs font-medium ${hasFramedMedia ? "text-[#a1a1aa]" : "text-[#404040]"}`}>
+                                {favoriteItem.edited_at ? (
+                                  <span>{t("edited")} </span>
+                                ) : null}
                                 {formatMessageTime(favoriteItem.created_at)}
                               </p>
                             </div>

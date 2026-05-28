@@ -49,6 +49,7 @@ function areMessagesEqual(firstMessages: MessageRow[], secondMessages: MessageRo
       firstMessage.author === secondMessage.author &&
       firstMessage.text === secondMessage.text &&
       firstMessage.created_at === secondMessage.created_at &&
+      firstMessage.edited_at === secondMessage.edited_at &&
       firstMessage.user_id === secondMessage.user_id &&
       firstMessage.recipient_id === secondMessage.recipient_id
     );
@@ -87,6 +88,9 @@ function isStoredMessageRow(item: unknown): item is MessageRow {
     typeof message.author === "string" &&
     typeof message.text === "string" &&
     typeof message.created_at === "string" &&
+    (typeof message.edited_at === "string" ||
+      message.edited_at === null ||
+      typeof message.edited_at === "undefined") &&
     (typeof message.user_id === "string" || message.user_id === null) &&
     (typeof message.recipient_id === "string" || message.recipient_id === null)
   );
