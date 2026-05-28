@@ -356,9 +356,9 @@ export function FavoritesView({
                           ) : null}
 
                           {forwarded ? (
-                            <div className="mb-2 flex items-center gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-2.5 py-2 text-left text-[#f4f4f5]">
+                            <div className={`mb-1.5 flex items-center gap-2 px-0.5 text-left ${!hasStandaloneBubble && !hasFramedMedia ? "text-[#050505]" : "text-[#f4f4f5]"}`}>
                               <button
-                                className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505] transition hover:scale-105 disabled:hover:scale-100"
+                                className={`grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full text-xs font-medium transition hover:scale-105 disabled:hover:scale-100 ${!hasStandaloneBubble && !hasFramedMedia ? "bg-[#050505] text-[#f4f4f5]" : "bg-[#f4f4f5] text-[#050505]"}`}
                                 disabled={!forwarded.authorUserId}
                                 onClick={() => {
                                   if (!forwarded.authorUserId) {
@@ -387,11 +387,11 @@ export function FavoritesView({
                                   forwardedName[0]?.toUpperCase()
                                 )}
                               </button>
-                              <div className="min-w-0">
-                                <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#a1a1aa]">
+                              <div className="flex min-w-0 flex-col-reverse">
+                                <p className={`truncate text-xs font-medium leading-4 ${!hasStandaloneBubble && !hasFramedMedia ? "text-[#52525b]" : "text-[#a1a1aa]"}`}>
                                   {language === "en" ? "Forwarded from" : "Переслано от"}
                                 </p>
-                                <p className="truncate text-sm font-medium text-[#f4f4f5]">
+                                <p className="truncate text-sm font-medium leading-4">
                                   {forwardedName}
                                 </p>
                               </div>
