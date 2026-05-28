@@ -71,6 +71,11 @@ a,
   outline-offset: 2px;
 }
 
+.hush-shell button:not([class*="rounded-full"]):not(.hush-color-swatch),
+.hush-shell [role="button"]:not([class*="rounded-full"]):not(.hush-color-swatch) {
+  border-radius: 12px;
+}
+
 .hush-context-menu button:not(:disabled):active {
   scale: 0.99;
   translate: 0;

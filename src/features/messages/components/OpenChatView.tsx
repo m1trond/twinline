@@ -546,7 +546,7 @@ export function OpenChatView({
                           </span>
                         ) : null}
                         <div
-                          className={`max-w-[min(84vw,92%)] rounded-[18px] sm:max-w-[72%] sm:rounded-[20px] ${
+                          className={`max-w-[min(84vw,92%)] rounded-xl sm:max-w-[72%] sm:rounded-xl ${
                             hasStandaloneBubble
                               ? "bg-transparent p-0 shadow-none"
                               : hasFramedMedia
@@ -670,7 +670,7 @@ export function OpenChatView({
                           />
                         ) : callDurationSeconds !== null ? (
                           <div
-                            className={`min-w-[min(230px,70vw)] rounded-xl px-3 py-2 sm:min-w-[min(260px,70vw)] sm:rounded-2xl ${
+                            className={`min-w-[min(230px,70vw)] rounded-xl px-3 py-2 sm:min-w-[min(260px,70vw)] sm:rounded-xl ${
                               isMine ? "bg-[#2f2f2f]" : "bg-[#262626]"
                             }`}
                         >

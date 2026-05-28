@@ -47,7 +47,7 @@ export function FileAttachment({
 
   return (
     <div
-      className={`w-[min(360px,78vw)] rounded-[18px] border px-3 py-2.5 text-left shadow-[0_10px_30px_rgba(0,0,0,0.18)] transition hover:scale-[1.01] sm:rounded-[20px] ${
+      className={`w-[min(360px,78vw)] rounded-xl border px-3 py-2.5 text-left shadow-[0_10px_30px_rgba(0,0,0,0.18)] transition hover:scale-[1.01] sm:rounded-xl ${
         isMine
           ? "border-[#3f3f46]/45 bg-[#1f1f1f] text-[#f4f4f5] hover:bg-[#262626]"
           : "border-white/10 bg-white/[0.06] text-[#f4f4f5] hover:bg-white/10"

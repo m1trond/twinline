@@ -332,7 +332,7 @@ export function FavoritesView({
                           </span>
                         ) : null}
                         <div
-                          className={`relative max-w-[min(84vw,92%)] rounded-[18px] sm:max-w-[72%] sm:rounded-[20px] ${
+                          className={`relative max-w-[min(84vw,92%)] rounded-xl sm:max-w-[72%] sm:rounded-xl ${
                             hasStandaloneBubble
                               ? "bg-transparent p-0 text-[#f4f4f5] shadow-none"
                               : hasFramedMedia
@@ -429,7 +429,7 @@ export function FavoritesView({
                           ) : filePayload ? (
                             <FileAttachment file={filePayload} isMine />
                           ) : callDurationSeconds !== null ? (
-                            <div className="min-w-[min(230px,70vw)] rounded-xl bg-[#262626] px-3 py-2 text-[#f4f4f5] sm:min-w-[min(260px,70vw)] sm:rounded-2xl">
+                            <div className="min-w-[min(230px,70vw)] rounded-xl bg-[#262626] px-3 py-2 text-[#f4f4f5] sm:min-w-[min(260px,70vw)] sm:rounded-xl">
                               <p className="text-sm font-medium opacity-75">
                                 {t("call")}
                               </p>
