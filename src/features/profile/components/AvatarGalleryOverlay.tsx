@@ -46,7 +46,7 @@ export function AvatarGalleryOverlay({
         <div className="flex shrink-0 items-center gap-2.5">
           {canDeleteAvatarFromGallery ? (
             <button
-              className="min-h-9 rounded-lg border border-[#3f3f46]/45 bg-[#f4f4f5]/8 px-[18px] text-sm font-medium text-[#f4f4f5] transition hover:-translate-y-0.5 hover:bg-[#f4f4f5] hover:text-[#050505] active:translate-y-0 active:scale-[0.98]"
+              className="min-h-9 rounded-lg border border-[#3f3f46]/45 bg-[#f4f4f5]/8 px-[18px] text-sm font-medium text-[#f4f4f5] transition hover:bg-white/12"
               onClick={() => setIsAvatarDeleteDialogOpen(true)}
               type="button"
             >
@@ -54,7 +54,7 @@ export function AvatarGalleryOverlay({
             </button>
           ) : null}
           <button
-            className="min-h-9 rounded-lg border border-[#3f3f46]/45 px-[18px] text-sm font-medium text-[#f4f4f5] transition hover:-translate-y-0.5 hover:bg-[#f4f4f5] hover:text-[#050505] active:translate-y-0 active:scale-[0.98]"
+            className="min-h-9 rounded-lg border border-[#3f3f46]/45 px-[18px] text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
             onClick={onClose}
             type="button"
           >
