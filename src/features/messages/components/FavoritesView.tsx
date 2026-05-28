@@ -24,6 +24,7 @@ type FavoritesViewProps = {
   favoriteItems: FavoriteItem[];
   friendProfile: ViewedProfileState | null;
   currentProfile: ProfileRow | null;
+  currentUserId: string | null;
   profilesByUserId: Map<string, ProfileRow>;
   forwardSelectedMessages: () => void;
   getReadableMessageText: (text: string) => string;
@@ -68,6 +69,7 @@ export function FavoritesView({
   favoriteItems,
   friendProfile,
   currentProfile,
+  currentUserId,
   profilesByUserId,
   forwardSelectedMessages,
   getReadableMessageText,
@@ -311,6 +313,7 @@ export function FavoritesView({
                     const hasStandaloneBubble = Boolean(
                       audioUrl || filePayload || callDurationSeconds !== null || sticker,
                     );
+                    const shouldShowOwnAvatar = !isNextSameAuthor;
 
                     return (
                       <article
@@ -477,6 +480,35 @@ export function FavoritesView({
                             </div>
                           ) : null}
                         </div>
+                        {shouldShowOwnAvatar ? (
+                          <button
+                            className="hush-avatar grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505] transition hover:scale-105 sm:h-8 sm:w-8 sm:text-xs"
+                            onClick={() =>
+                              setViewedProfile({
+                                avatarUrl: currentProfile?.avatar_url ?? null,
+                                bio: currentProfile?.bio ?? null,
+                                name: currentProfile?.display_name ?? favoriteItem.author,
+                                username: currentProfile?.username ?? null,
+                                updatedAt: currentProfile?.updated_at ?? null,
+                                userId: currentUserId,
+                              })
+                            }
+                            type="button"
+                          >
+                            {currentProfile?.avatar_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                alt={t("avatarAlt")}
+                                className="h-full w-full object-cover"
+                                src={currentProfile.avatar_url}
+                              />
+                            ) : (
+                              (currentProfile?.display_name ?? favoriteItem.author)[0]?.toUpperCase()
+                            )}
+                          </button>
+                        ) : (
+                          <span className="h-7 w-7 shrink-0 sm:h-8 sm:w-8" />
+                        )}
 
                       </article>
                     );

@@ -4663,6 +4663,7 @@ export default function Home() {
         <FavoritesView
           cancelVoiceRecording={cancelVoiceRecording}
           currentProfile={currentProfile}
+          currentUserId={user?.id ?? null}
           editingMessage={editingMessage}
           favoriteItems={favoriteItems}
           forwardSelectedMessages={forwardSelectedMessages}
