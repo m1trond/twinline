@@ -234,7 +234,7 @@ export function OpenChatView({
                     </div>
                   </div>
                 ) : null}
-                <div className="mb-2 flex h-[50px] min-h-[50px] items-center justify-between gap-2 overflow-hidden rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
+                <div className="mb-2 flex h-11 min-h-11 items-center justify-between gap-2 overflow-hidden rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-1 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-3">
                   <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
                     <button
                       aria-label={t("messages")}
@@ -259,7 +259,8 @@ export function OpenChatView({
                     </button>
                     <div className="min-w-0">
                       <button
-                        className="block max-w-full cursor-pointer truncate text-left text-sm font-medium text-[#f4f4f5] transition hover:text-white sm:text-base"
+                        aria-label={language === "en" ? "Open profile" : "Открыть профиль"}
+                        className="block max-w-full cursor-pointer truncate text-left text-sm font-medium leading-tight text-[#f4f4f5] transition hover:text-white"
                         onClick={() => {
                           setViewedProfile(
                             friendProfile ?? {
@@ -276,7 +277,7 @@ export function OpenChatView({
                       >
                         {friendProfile?.name ?? t("user")}
                       </button>
-                      <p className="truncate text-xs text-[#a1a1aa] sm:text-sm">
+                      <p className="truncate text-xs leading-tight text-[#a1a1aa]">
                         {isFriendTyping
                           ? language === "en" ? "typing..." : "печатает..."
                           : formatLastSeen(friendProfile?.updatedAt ?? null, language)}
@@ -1012,7 +1013,7 @@ export function OpenChatView({
                 ) : null}
 
                 {!isPinnedMessagesViewOpen && (replyTarget || editingMessage) ? (
-                  <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-2.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
+                  <div className="mt-2 flex min-h-9 items-center justify-between gap-2 rounded-lg border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-1.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3">
                     <div className="min-w-0">
                       <p className="text-xs font-medium uppercase tracking-[0.14em] text-[#e5e5e5]">
                         {editingMessage ? t("editing") : t("reply")}
@@ -1022,7 +1023,7 @@ export function OpenChatView({
                       </p>
                     </div>
                     <button
-                      className="shrink-0 rounded-xl border border-[#3f3f46]/35 px-3 py-2 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
+                      className="min-h-8 shrink-0 rounded-lg border border-[#3f3f46]/35 px-3 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
                       onClick={() => {
                         setReplyTarget(null);
                         setEditingMessage(null);

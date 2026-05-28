@@ -236,9 +236,9 @@ export function MessagePinDialog({
         onClick={() => setMessagePinTarget(null)}
         type="button"
       />
-      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] max-h-[calc(100dvh-24px)] w-[min(448px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:w-[min(448px,calc(100vw-32px))] sm:rounded-3xl sm:p-5">
-        <div className="mb-4 flex items-start gap-3">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#f4f4f5]/14 text-[#f4f4f5]">
+      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] max-h-[calc(100dvh-24px)] w-[min(420px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.58)] sm:p-4">
+        <div className="mb-3 flex items-start gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#f4f4f5]/14 text-[#f4f4f5]">
             <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
               <path
                 d="M12 17v5"
@@ -262,7 +262,7 @@ export function MessagePinDialog({
                 ? language === "en" ? "Unpin message?" : "Открепить сообщение?"
                 : language === "en" ? "Pin message?" : "Закрепить сообщение?"}
             </h2>
-            <p className="mt-1 text-sm leading-6 text-[#a1a1aa]">
+            <p className="mt-1 text-sm leading-5 text-[#a1a1aa]">
               {isPinned
                 ? language === "en" ? "The message will disappear from the pinned area in this chat." : "Сообщение исчезнет из закрепа в этом чате."
                 : language === "en" ? "The message will be visible at the top of the chat." : "Сообщение будет видно сверху переписки."}
@@ -272,16 +272,16 @@ export function MessagePinDialog({
 
         {!isPinned ? (
           <>
-            <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/20 p-3">
+            <div className="rounded-lg border border-[#3f3f46]/35 bg-black/20 p-2.5">
               <p className="line-clamp-3 text-sm font-medium text-[#f4f4f5]">
                 {getReadableMessageText(messagePinTarget.text)}
               </p>
             </div>
 
-            <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-2xl border border-[#3f3f46]/35 bg-[#f4f4f5]/8 p-3 text-sm font-medium text-[#f4f4f5]">
+            <label className="mt-3 flex min-h-9 cursor-pointer items-center gap-2.5 rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/8 px-2.5 text-sm font-medium text-[#f4f4f5]">
               <input
                 checked={shouldPinForBoth}
-                className="h-5 w-5 accent-[#f4f4f5]"
+                className="h-4 w-4 accent-[#f4f4f5]"
                 onChange={(event) => setShouldPinForBoth(event.target.checked)}
                 type="checkbox"
               />
@@ -290,16 +290,16 @@ export function MessagePinDialog({
           </>
         ) : null}
 
-        <div className="mt-5 grid gap-2 sm:grid-cols-2">
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <button
-            className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
+            className="min-h-9 rounded-lg bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
             onClick={isPinned ? confirmUnpinPinnedMessage : confirmPinnedMessage}
             type="button"
           >
             {isPinned ? t("yes") : t("pin")}
           </button>
           <button
-            className="min-h-11 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
+            className="min-h-9 rounded-lg border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
             onClick={() => setMessagePinTarget(null)}
             type="button"
           >

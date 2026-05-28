@@ -76,7 +76,7 @@ export function FolderContextMenu({
                 {folderColors.map((color) => (
                   <button
                     aria-label={color}
-                    className="h-6 w-6 rounded-full border border-white/15 transition hover:scale-110"
+                    className="hush-color-swatch h-6 w-6 rounded-full border border-white/15 transition hover:scale-110"
                     key={color}
                     onClick={() => {
                       if (contextMenu.folder) {
@@ -150,16 +150,16 @@ export function FolderDeleteDialog({
             <p className="truncate text-sm font-medium text-[#f4f4f5]">{folder.name}</p>
           </div>
 
-          <div className="mt-5 grid gap-2 sm:grid-cols-2">
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
             <button
-              className="min-h-11 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
+              className="min-h-9 rounded-lg border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
               onClick={onCancel}
               type="button"
             >
               {t("cancel")}
             </button>
             <button
-              className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
+              className="min-h-9 rounded-lg bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
               onClick={onConfirm}
               type="button"
             >
@@ -221,15 +221,15 @@ export function FolderDialog({
             value={folderName}
           />
         </label>
-        <div className="mt-5 grid gap-2 sm:grid-cols-2">
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <button
-            className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
+            className="min-h-9 rounded-lg bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5]"
             type="submit"
           >
             {t("save")}
           </button>
           <button
-            className="min-h-11 rounded-xl border border-[#3f3f46]/45 bg-white/[0.03] px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
+            className="min-h-9 rounded-lg border border-[#3f3f46]/45 bg-white/[0.03] px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
             onClick={onClose}
             type="button"
           >

@@ -87,6 +87,11 @@ a,
   padding-top: 4px !important;
 }
 
+.hush-context-menu .hush-color-swatch {
+  min-height: 24px !important;
+  padding: 0 !important;
+}
+
 .hush-shell button:not([aria-label]) {
   border-radius: 10px;
   min-height: 36px;

@@ -41,7 +41,7 @@ type ProfileViewProps = {
 };
 
 const cardClass =
-  "rounded-xl border border-[#3f3f46]/35 bg-black/18 px-3 py-2.5";
+  "rounded-lg border border-[#3f3f46]/35 bg-black/18 px-3 py-2";
 const labelClass =
   "text-[11px] font-medium uppercase tracking-[0.18em] text-[#d4d4d8]";
 const inputClass =
@@ -85,15 +85,15 @@ export function ProfileView({
 
   return (
     <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
-      <div className="mb-2 flex h-[50px] min-h-[50px] items-center rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4">
+      <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-1 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-4">
         <h2 className="text-base font-medium text-[#f4f4f5]">{t("profile")}</h2>
       </div>
 
-      <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4">
+      <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-3">
         <div className="w-full max-w-[760px]">
-        <div className="mb-3 flex items-center gap-3 border-b border-[#3f3f46]/35 pb-3">
+        <div className="mb-2.5 flex items-center gap-2.5 border-b border-[#3f3f46]/35 pb-2.5">
           <button
-            className="grid h-[74px] w-[74px] shrink-0 place-items-center overflow-hidden rounded-[22px] bg-[#18181b] text-base font-medium text-[#f4f4f5] transition hover:scale-[1.03] focus:outline-none sm:h-[86px] sm:w-[86px] sm:rounded-[24px]"
+            className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-[18px] bg-[#18181b] text-base font-medium text-[#f4f4f5] transition hover:scale-[1.03] focus:outline-none sm:h-[72px] sm:w-[72px] sm:rounded-[20px]"
             onClick={() => openAvatarGallery(currentProfile?.avatar_url)}
             type="button"
           >
@@ -121,7 +121,7 @@ export function ProfileView({
               type="file"
             />
             <button
-              className="mt-2 rounded-lg border border-[#3f3f46]/35 px-3 py-1.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-2 min-h-8 rounded-lg border border-[#3f3f46]/35 px-3 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isUploadingAvatar}
               onClick={() => avatarInputRef.current?.click()}
               type="button"
@@ -131,7 +131,7 @@ export function ProfileView({
           </div>
         </div>
 
-        <div className="grid gap-2.5 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-2">
           <section className={cardClass}>
             <p className={labelClass}>{t("profileName")}</p>
             <form className="mt-2 grid gap-2" onSubmit={updateProfileName}>
@@ -196,7 +196,7 @@ export function ProfileView({
             <p className={labelClass}>{t("bio")}</p>
             <form className="mt-2 grid gap-2" onSubmit={updateProfileBio}>
               <textarea
-                className="min-h-14 resize-none rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 py-2 text-sm leading-5 outline-none placeholder:text-[#a1a1aa]/65 focus:border-[#f4f4f5]"
+                className="min-h-12 resize-none rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 py-2 text-sm leading-5 outline-none placeholder:text-[#a1a1aa]/65 focus:border-[#f4f4f5]"
                 maxLength={100}
                 onChange={(event) => setProfileBio(event.target.value.slice(0, 100))}
                 placeholder={t("bioPlaceholder")}
