@@ -2862,7 +2862,7 @@ export default function Home() {
     );
   }
 
-  function addChatToFolderFromMenu(profile: ProfileRow, folderId: string) {
+  function toggleChatFolderFromMenu(profile: ProfileRow, folderId: string) {
     const folder = chatFolders.find((currentFolder) => currentFolder.id === folderId);
 
     if (!folder) {
@@ -2871,14 +2871,26 @@ export default function Home() {
       return;
     }
 
-    saveChatFolderAssignments({
-      ...chatFolderAssignments,
-      [profile.user_id]: Array.from(
-        new Set([...(chatFolderAssignments[profile.user_id] ?? []), folder.id]),
-      ),
-    });
+    const currentFolderIds = chatFolderAssignments[profile.user_id] ?? [];
+    const isAlreadyAssigned = currentFolderIds.includes(folder.id);
+    const nextFolderIds = isAlreadyAssigned
+      ? currentFolderIds.filter((currentFolderId) => currentFolderId !== folder.id)
+      : Array.from(new Set([...currentFolderIds, folder.id]));
+    const nextAssignments = { ...chatFolderAssignments };
+
+    if (nextFolderIds.length > 0) {
+      nextAssignments[profile.user_id] = nextFolderIds;
+    } else {
+      delete nextAssignments[profile.user_id];
+    }
+
+    saveChatFolderAssignments(nextAssignments);
     setChatContextMenu(null);
-    setErrorMessage(`Чат добавлен в папку «${folder.name}».`);
+    setErrorMessage(
+      isAlreadyAssigned
+        ? `Чат убран из папки «${folder.name}».`
+        : `Чат добавлен в папку «${folder.name}».`,
+    );
   }
 
   function updateChatFolderColor(folderId: string, color: string) {
@@ -4838,15 +4850,16 @@ export default function Home() {
         archiveChatProfile={archiveChatProfile}
         archivedProfileIds={archivedChatProfileIds}
         blockedByMeProfileIds={blockedByMeProfileIds}
+        chatFolderAssignments={chatFolderAssignments}
         chatFolders={chatFolders}
         contextMenu={chatContextMenu}
         openCreateChatFolderDialog={openCreateChatFolderDialog}
-        addChatToFolderFromMenu={addChatToFolderFromMenu}
         muteProfileNotifications={muteProfileNotifications}
         mutedProfiles={mutedProfiles}
         requestBlockChange={requestBlockChange}
         requestChatDeleteFromMenu={requestChatDeleteFromMenu}
         setChatContextMenu={setChatContextMenu}
+        toggleChatFolderFromMenu={toggleChatFolderFromMenu}
         unarchiveChatProfile={unarchiveChatProfile}
         unmuteProfileNotifications={unmuteProfileNotifications}
       />

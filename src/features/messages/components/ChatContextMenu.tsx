@@ -11,10 +11,11 @@ type ChatContextMenuState = {
 
 type ChatContextMenuProps = {
   blockedByMeProfileIds: string[];
+  chatFolderAssignments: Record<string, string[]>;
   chatFolders: ChatFolder[];
   contextMenu: ChatContextMenuState | null;
   openCreateChatFolderDialog: (profile: ProfileRow) => void;
-  addChatToFolderFromMenu: (profile: ProfileRow, folderId: string) => void;
+  toggleChatFolderFromMenu: (profile: ProfileRow, folderId: string) => void;
   archiveChatProfile: (profile: ProfileRow) => void;
   archivedProfileIds: string[];
   muteProfileNotifications: (profileUserId: string, durationMs: number | null) => void;
@@ -35,10 +36,11 @@ const muteOptions = [
 
 export function ChatContextMenu({
   blockedByMeProfileIds,
+  chatFolderAssignments,
   chatFolders,
   contextMenu,
   openCreateChatFolderDialog,
-  addChatToFolderFromMenu,
+  toggleChatFolderFromMenu,
   archiveChatProfile,
   archivedProfileIds,
   muteProfileNotifications,
@@ -58,6 +60,7 @@ export function ChatContextMenu({
   const { profile } = contextMenu;
   const isMuted = isProfileMuted(mutedProfiles, profile.user_id);
   const isArchived = archivedProfileIds.includes(profile.user_id);
+  const assignedFolderIds = new Set(chatFolderAssignments[profile.user_id] ?? []);
 
   return (
     <>
@@ -109,15 +112,20 @@ export function ChatContextMenu({
               {t("newFolder")}
             </SubMenuButton>
             {chatFolders.length > 0 ? (
-              chatFolders.map((folder) => (
-                <SubMenuButton
-                  key={folder.id}
-                  onClick={() => addChatToFolderFromMenu(profile, folder.id)}
-                >
-                  <span className="grid h-5 w-5 place-items-center">#</span>
-                  <span className="min-w-0 truncate">{folder.name}</span>
-                </SubMenuButton>
-              ))
+              chatFolders.map((folder) => {
+                const isAssigned = assignedFolderIds.has(folder.id);
+
+                return (
+                  <SubMenuButton
+                    ariaPressed={isAssigned}
+                    key={folder.id}
+                    onClick={() => toggleChatFolderFromMenu(profile, folder.id)}
+                  >
+                    {isAssigned ? <CheckIcon /> : <FolderIcon />}
+                    <span className="min-w-0 truncate">{folder.name}</span>
+                  </SubMenuButton>
+                );
+              })
             ) : (
               <p className="px-3.5 py-1.5 text-xs font-medium text-[#a1a1aa]">
                 {t("foldersEmpty")}
@@ -217,16 +225,19 @@ function MenuButton({
 }
 
 function SubMenuButton({
+  ariaPressed,
   children,
   danger = false,
   onClick,
 }: {
+  ariaPressed?: boolean;
   children: ReactNode;
   danger?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
+      aria-pressed={ariaPressed}
       className={`flex min-h-8 w-full items-center gap-2.5 px-3.5 text-left text-sm font-medium transition ${
         danger ? "text-[#f4f4f5] hover:bg-white/10" : "hover:bg-white/10"
       }`}
@@ -236,6 +247,10 @@ function SubMenuButton({
       {children}
     </button>
   );
+}
+
+function CheckIcon() {
+  return <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>;
 }
 
 function ArchiveIcon() {
