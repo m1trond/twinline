@@ -110,6 +110,11 @@ import type {
 } from "@/shared/types";
 import { isSessionDescriptionPayload } from "@/shared/utils/callSignals";
 import {
+  applyCallAudioQuality,
+  getVoiceRecorderOptions,
+  speechAudioConstraints,
+} from "@/shared/utils/audio";
+import {
   getAttachmentFolder,
   getSafeFileExtension,
 } from "@/shared/utils/files";
@@ -2005,10 +2010,7 @@ export default function Home() {
     }
 
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-      },
+      audio: speechAudioConstraints,
       video: false,
     });
 
@@ -2059,7 +2061,9 @@ export default function Home() {
       const peerConnection = createPeerConnection(targetUserId);
 
       stream.getTracks().forEach((track) => {
-        peerConnection.addTrack(track, stream);
+        const sender = peerConnection.addTrack(track, stream);
+
+        void applyCallAudioQuality(sender);
       });
 
       const offer = await peerConnection.createOffer();
@@ -2098,7 +2102,9 @@ export default function Home() {
       const peerConnection = createPeerConnection(incomingCall.sender_id);
 
       stream.getTracks().forEach((track) => {
-        peerConnection.addTrack(track, stream);
+        const sender = peerConnection.addTrack(track, stream);
+
+        void applyCallAudioQuality(sender);
       });
 
       await peerConnection.setRemoteDescription(incomingCall.payload);
@@ -3941,8 +3947,10 @@ export default function Home() {
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: speechAudioConstraints,
+      });
+      const mediaRecorder = new MediaRecorder(stream, getVoiceRecorderOptions());
 
       recordingChunksRef.current = [];
       recordingStreamRef.current = stream;
