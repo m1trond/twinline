@@ -163,8 +163,8 @@ export function FavoritesView({
                     </div>
                   </div>
                 ) : null}
-                <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-1 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-4">
-                  <h2 className="text-base font-medium sm:text-base">
+                <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-4">
+                  <h2 className="text-base font-medium leading-none sm:text-base">
                     {t("favorites")}
                   </h2>
                 </div>

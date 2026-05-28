@@ -118,16 +118,13 @@ export function ViewedProfileModal({
               )}
             </button>
             <div className="mt-3 min-w-0">
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#a1a1aa]">
-                {t("profile")}
-              </p>
-              <h2 className="mt-1 truncate text-base font-medium leading-tight text-[#f4f4f5]">
+              <h2 className="truncate text-base font-medium leading-tight text-[#f4f4f5]">
                 {viewedProfile.name}
               </h2>
               <p className="mt-1 truncate text-sm font-medium text-[#a1a1aa]">
                 {viewedProfile.username ? `@${viewedProfile.username}` : t("nicknameNotSet")}
               </p>
-              <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-[#3f3f46]/45 bg-[#f4f4f5]/8 px-3 py-1 text-xs font-medium text-[#e5e5e5]">
+              <div className="mt-1.5 inline-flex items-center gap-2 text-xs font-medium leading-none text-[#a1a1aa]">
                 <span className="h-2 w-2 rounded-full bg-[#f4f4f5]" />
                 {formatLastSeen(viewedProfile.updatedAt, language)}
               </div>
