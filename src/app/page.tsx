@@ -3022,9 +3022,15 @@ export default function Home() {
       return;
     }
 
+    const isCaptionEdit = isCaptionEditableMessage(item.text);
+
     setEditingMessage(item);
     setReplyTarget(null);
-    setMessageText(getReadableMessageText(item.text));
+    setMessageText(
+      isCaptionEdit
+        ? getMessageAttachmentCaption(item.text) ?? ""
+        : getReadableMessageText(item.text),
+    );
     setFavoriteContextMenu(null);
     setErrorMessage("");
 
