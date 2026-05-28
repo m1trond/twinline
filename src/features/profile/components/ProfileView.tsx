@@ -93,7 +93,7 @@ export function ProfileView({
         <div className="w-full max-w-[760px]">
         <div className="mb-2.5 flex items-center gap-2.5 border-b border-[#3f3f46]/35 pb-2.5">
           <button
-            className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-[18px] bg-[#18181b] text-base font-medium text-[#f4f4f5] transition hover:scale-[1.03] focus:outline-none sm:h-[72px] sm:w-[72px] sm:rounded-[20px]"
+            className="hush-avatar grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-full bg-[#18181b] text-base font-medium text-[#f4f4f5] transition hover:scale-[1.03] focus:outline-none sm:h-[72px] sm:w-[72px]"
             onClick={() => openAvatarGallery(currentProfile?.avatar_url)}
             type="button"
           >

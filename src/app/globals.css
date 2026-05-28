@@ -136,6 +136,14 @@ a,
   border-radius: 10px !important;
 }
 
+.hush-shell :where([class*="rounded-full"], .hush-avatar) {
+  border-radius: 9999px !important;
+}
+
+.hush-shell button:where([class*="rounded-full"], .hush-avatar) {
+  min-height: auto !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hush-shell *,
   .hush-shell *::before,
