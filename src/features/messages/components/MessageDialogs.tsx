@@ -58,6 +58,7 @@ type ForwardMessagesDialogProps = {
   isOpen: boolean;
   onClose: () => void;
   onForward: (profile: ProfileRow) => void;
+  onForwardToFavorites: () => void;
   profiles: ProfileRow[];
   selectedMessages: MessageRow[];
   userId: string | undefined;
@@ -83,6 +84,7 @@ export function ForwardMessagesDialog({
   isOpen,
   onClose,
   onForward,
+  onForwardToFavorites,
   profiles,
   selectedMessages,
   userId,
@@ -161,6 +163,29 @@ export function ForwardMessagesDialog({
           value={query}
         />
         <div className="min-h-0 overflow-y-auto pr-1">
+          <button
+            className="mb-1.5 flex min-h-12 w-full items-center gap-3 rounded-xl border border-[#3f3f46]/35 px-2.5 text-left transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-55"
+            disabled={isForwarding}
+            onClick={() => {
+              setQuery("");
+              onForwardToFavorites();
+            }}
+            type="button"
+          >
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#f4f4f5] text-[#050505]">
+              <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                <path d="M19 21 12 17 5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+              </svg>
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-medium text-[#f4f4f5]">
+                {t("favorites")}
+              </span>
+              <span className="block truncate text-xs text-[#a1a1aa]">
+                {language === "en" ? "Saved messages" : "Сохраненные сообщения"}
+              </span>
+            </span>
+          </button>
           {visibleProfiles.length > 0 ? (
             <div className="grid gap-1.5">
               {visibleProfiles.map((profile) => (

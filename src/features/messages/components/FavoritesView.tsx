@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { ChangeEvent, Dispatch, DragEvent, FormEvent, MouseEvent, RefObject, SetStateAction } from "react";
 import type { ViewedProfileState } from "@/features/navigation/useNavigationState";
-import type { FavoriteItem, MessageRow } from "@/shared/types";
+import type { FavoriteItem, MessageRow, ProfileRow } from "@/shared/types";
 import { FileAttachment } from "@/features/messages/components/FileAttachment";
 import { VoiceMessage } from "@/features/messages/components/VoiceMessage";
 import { useI18n } from "@/shared/i18n-context";
@@ -11,6 +11,7 @@ import {
   getMessageAttachmentCaption,
   getMessageCallDuration,
   getMessageFilePayload,
+  getMessageForward,
   getMessageImageUrl,
   getMessageReply,
   getMessageSticker,
@@ -22,6 +23,9 @@ type FavoritesViewProps = {
   editingMessage: MessageRow | null;
   favoriteItems: FavoriteItem[];
   friendProfile: ViewedProfileState | null;
+  currentProfile: ProfileRow | null;
+  profilesByUserId: Map<string, ProfileRow>;
+  forwardSelectedMessages: () => void;
   getReadableMessageText: (text: string) => string;
   handleAttachmentChange: (event: ChangeEvent<HTMLInputElement>) => void | Promise<void>;
   handleAttachmentDrop: (files: FileList | File[]) => void | Promise<void>;
@@ -35,10 +39,13 @@ type FavoritesViewProps = {
   messageInputRef: RefObject<HTMLInputElement | null>;
   messageText: string;
   openFavoriteContextMenu: (event: MouseEvent<HTMLElement>, favoriteItem: FavoriteItem) => void;
+  handleFavoriteSelectionClick: (event: MouseEvent<HTMLElement>, favoriteItem: FavoriteItem) => void;
+  isFavoriteSelectionMode: boolean;
   pinnedFavoriteItem: FavoriteItem | null;
   replyTarget: MessageRow | null;
   requestBlockChange: (profileUserId: string, targetLabel: string) => void;
   selectedChatUserId: string | null;
+  selectedFavoriteItems: FavoriteItem[];
   selectedMessageIdSet: Set<number>;
   sendMessage: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
   setEditingMessage: (message: MessageRow | null) => void;
@@ -46,6 +53,8 @@ type FavoritesViewProps = {
   setPinnedFavoriteItem: (item: FavoriteItem | null) => void;
   setReplyTarget: (message: MessageRow | null) => void;
   setSelectedImageUrl: (url: string | null) => void;
+  removeSelectedFavoriteItems: () => void;
+  setViewedProfile: (profile: ViewedProfileState | null) => void;
   stickerButtonRef: RefObject<HTMLButtonElement | null>;
   toggleStickerPicker: () => void;
   toggleVoiceRecording: () => void;
@@ -58,6 +67,9 @@ export function FavoritesView({
   editingMessage,
   favoriteItems,
   friendProfile,
+  currentProfile,
+  profilesByUserId,
+  forwardSelectedMessages,
   getReadableMessageText,
   handleAttachmentChange,
   handleAttachmentDrop,
@@ -71,10 +83,13 @@ export function FavoritesView({
   messageInputRef,
   messageText,
   openFavoriteContextMenu,
+  handleFavoriteSelectionClick,
+  isFavoriteSelectionMode,
   pinnedFavoriteItem,
   replyTarget,
   requestBlockChange,
   selectedChatUserId,
+  selectedFavoriteItems,
   selectedMessageIdSet,
   sendMessage,
   setEditingMessage,
@@ -82,13 +97,15 @@ export function FavoritesView({
   setPinnedFavoriteItem,
   setReplyTarget,
   setSelectedImageUrl,
+  removeSelectedFavoriteItems,
+  setViewedProfile,
   stickerButtonRef,
   toggleStickerPicker,
   toggleVoiceRecording,
   voiceInputLevel,
   voiceRecordingDuration,
 }: FavoritesViewProps) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const [isDraggingAttachment, setIsDraggingAttachment] = useState(false);
   const isAttachmentDropDisabled = isUploadingAttachment || isRecordingVoice || isSelectedChatBlocked;
 
@@ -169,6 +186,42 @@ export function FavoritesView({
                   </h2>
                 </div>
 
+                {isFavoriteSelectionMode ? (
+                  <div className="mb-2 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/88 px-3 py-2 text-[#f4f4f5] shadow-[0_12px_35px_rgba(0,0,0,0.25)] backdrop-blur-md sm:mb-3">
+                    <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-[#d4d4d8]">
+                      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#f4f4f5] text-[#050505]">
+                        {selectedFavoriteItems.length}
+                      </span>
+                      <span className="truncate">
+                        {t("selectedMessages")}
+                      </span>
+                    </div>
+                    <div className="flex flex-1 justify-end gap-2 sm:flex-none">
+                      <button
+                        className="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-[#3f3f46]/55 bg-[#f4f4f5]/10 px-3 text-sm font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/16 sm:flex-none"
+                        onClick={forwardSelectedMessages}
+                        type="button"
+                      >
+                        <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                          <path d="m15 14 5-5-5-5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                          <path d="M4 20v-7a4 4 0 0 1 4-4h12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                        </svg>
+                        {t("forward")}
+                      </button>
+                      <button
+                        className="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-[#3f3f46]/55 bg-[#f4f4f5]/10 px-3 text-sm font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/16 sm:flex-none"
+                        onClick={removeSelectedFavoriteItems}
+                        type="button"
+                      >
+                        <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                          <path d="M10 11v6M14 11v6M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                        </svg>
+                        {t("delete")}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+
                 {pinnedFavoriteItem ? (
                   <article className="mb-2 flex shrink-0 items-center gap-2.5 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 px-3 py-2.5 text-left shadow-[0_14px_45px_rgba(0,0,0,0.22)] backdrop-blur-md sm:mb-3 sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
                     <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#f4f4f5]/18 text-[#e5e5e5] sm:h-9 sm:w-9 sm:rounded-xl">
@@ -233,7 +286,16 @@ export function FavoritesView({
                     const isNextSameAuthor = nextFavoriteItem?.user_id === favoriteItem.user_id;
                     const isSelected = selectedMessageIdSet.has(favoriteItem.id);
                     const reply = getMessageReply(favoriteItem.text);
-                    const displayText = reply?.body ?? favoriteItem.text;
+                    const rawDisplayText = reply?.body ?? favoriteItem.text;
+                    const forwarded = getMessageForward(rawDisplayText);
+                    const forwardedProfile = forwarded?.authorUserId
+                      ? forwarded.authorUserId === currentProfile?.user_id
+                        ? currentProfile
+                        : profilesByUserId.get(forwarded.authorUserId)
+                      : null;
+                    const forwardedName =
+                      forwardedProfile?.display_name ?? forwarded?.authorName ?? "";
+                    const displayText = forwarded?.text ?? rawDisplayText;
                     const imageUrl = getMessageImageUrl(displayText);
                     const videoUrl = getMessageVideoUrl(displayText);
                     const audioUrl = getMessageAudioUrl(displayText);
@@ -254,10 +316,21 @@ export function FavoritesView({
                       <article
                         className={`-mx-1 flex items-end justify-end gap-1.5 rounded-xl px-1 py-1 transition sm:gap-2 sm:rounded-2xl ${
                           isPreviousSameAuthor ? "mt-1" : "mt-3"
-                        }`}
+                        } ${isSelected ? "bg-[#f4f4f5]/8 shadow-[0_0_0_1px_rgba(244,244,245,0.12)]" : ""}`}
+                        data-message-id={favoriteItem.id}
                         key={favoriteItem.id}
+                        onClickCapture={(event) => handleFavoriteSelectionClick(event, favoriteItem)}
                         onContextMenu={(event) => openFavoriteContextMenu(event, favoriteItem)}
                       >
+                        {isFavoriteSelectionMode ? (
+                          <span
+                            className={`mb-1 grid h-6 w-6 shrink-0 place-items-center transition ${
+                              isSelected ? "text-[#f4f4f5]" : "text-transparent"
+                            }`}
+                          >
+                            <MessageCircleCheckIcon />
+                          </span>
+                        ) : null}
                         <div
                           className={`relative max-w-[min(84vw,92%)] rounded-[18px] sm:max-w-[72%] sm:rounded-[20px] ${
                             hasStandaloneBubble
@@ -279,6 +352,49 @@ export function FavoritesView({
                               <p className="mt-0.5 line-clamp-2 text-xs font-medium opacity-70">
                                 {reply.text}
                               </p>
+                            </div>
+                          ) : null}
+
+                          {forwarded ? (
+                            <div className="mb-2 flex items-center gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-2.5 py-2 text-left text-[#f4f4f5]">
+                              <button
+                                className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505] transition hover:scale-105 disabled:hover:scale-100"
+                                disabled={!forwarded.authorUserId}
+                                onClick={() => {
+                                  if (!forwarded.authorUserId) {
+                                    return;
+                                  }
+
+                                  setViewedProfile({
+                                    avatarUrl: forwardedProfile?.avatar_url ?? null,
+                                    bio: forwardedProfile?.bio ?? null,
+                                    name: forwardedProfile?.display_name ?? forwardedName,
+                                    username: forwardedProfile?.username ?? null,
+                                    updatedAt: forwardedProfile?.updated_at ?? null,
+                                    userId: forwarded.authorUserId,
+                                  });
+                                }}
+                                type="button"
+                              >
+                                {forwardedProfile?.avatar_url ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    alt={t("avatarAlt")}
+                                    className="h-full w-full object-cover"
+                                    src={forwardedProfile.avatar_url}
+                                  />
+                                ) : (
+                                  forwardedName[0]?.toUpperCase()
+                                )}
+                              </button>
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#a1a1aa]">
+                                  {language === "en" ? "Forwarded from" : "Переслано от"}
+                                </p>
+                                <p className="truncate text-sm font-medium text-[#f4f4f5]">
+                                  {forwardedName}
+                                </p>
+                              </div>
                             </div>
                           ) : null}
 
@@ -566,5 +682,26 @@ export function FavoritesView({
                   </div>
                 ) : null}
               </div>
+  );
+}
+
+function MessageCircleCheckIcon() {
+  return (
+    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+      <path
+        d="m9 12 2 2 4-4"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
   );
 }

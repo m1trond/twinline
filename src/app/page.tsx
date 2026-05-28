@@ -1047,7 +1047,14 @@ export default function Home() {
 
     return activeDialogMessages.filter((message) => selectedMessageIdSet.has(message.id));
   }, [activeDialogMessages, selectedChatUserId, selectedMessageIdSet]);
+  const selectedFavoriteItems = useMemo(() => {
+    return favoriteItems.filter((favoriteItem) => selectedMessageIdSet.has(favoriteItem.id));
+  }, [favoriteItems, selectedMessageIdSet]);
+  const selectedForwardMessages = activeView === "favorites"
+    ? selectedFavoriteItems
+    : selectedDialogMessages;
   const isMessageSelectionMode = selectedDialogMessages.length > 0;
+  const isFavoriteSelectionMode = activeView === "favorites" && selectedFavoriteItems.length > 0;
   const activePinnedMessageIdSet = useMemo(() => {
     const activeLocalPinnedMessageIds = selectedChatUserId
       ? pinnedMessageIdsByChat[selectedChatUserId] ?? []
@@ -2979,6 +2986,26 @@ export default function Home() {
     setErrorMessage("");
   }
 
+  function removeSelectedFavoriteItems() {
+    if (selectedFavoriteItems.length === 0) {
+      return;
+    }
+
+    const selectedFavoriteIdSet = new Set(selectedFavoriteItems.map((item) => item.id));
+
+    saveFavoriteItems(
+      favoriteItems.filter((favoriteItem) => !selectedFavoriteIdSet.has(favoriteItem.id)),
+    );
+    setPinnedFavoriteItem((currentPinnedItem) =>
+      currentPinnedItem && selectedFavoriteIdSet.has(currentPinnedItem.id)
+        ? null
+        : currentPinnedItem,
+    );
+    setSelectedMessageIds([]);
+    setFavoriteContextMenu(null);
+    setErrorMessage("");
+  }
+
   function replyToFavoriteItem(item: FavoriteItem) {
     setReplyTarget(item);
     setEditingMessage(null);
@@ -3019,6 +3046,19 @@ export default function Home() {
     );
     setFavoriteContextMenu(null);
     setErrorMessage("");
+  }
+
+  function handleFavoriteSelectionClick(
+    event: MouseEvent<HTMLElement>,
+    item: FavoriteItem,
+  ) {
+    if (!isFavoriteSelectionMode) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    toggleSelectedFavoriteItem(item);
   }
 
   function replyToMessage(message: MessageRow) {
@@ -3368,17 +3408,18 @@ export default function Home() {
   }
 
   function forwardSelectedMessages() {
-    if (selectedDialogMessages.length === 0) {
+    if (selectedForwardMessages.length === 0) {
       return;
     }
 
     setIsForwardDialogOpen(true);
     setMessageContextMenu(null);
+    setFavoriteContextMenu(null);
     setErrorMessage("");
   }
 
   async function forwardMessagesToProfile(profile: ProfileRow) {
-    if (!user || selectedDialogMessages.length === 0 || isForwardingMessages) {
+    if (!user || selectedForwardMessages.length === 0 || isForwardingMessages) {
       return;
     }
 
@@ -3387,7 +3428,7 @@ export default function Home() {
       return;
     }
 
-    const forwardedTexts = selectedDialogMessages.map((message) => {
+    const forwardedTexts = selectedForwardMessages.map((message) => {
       const sourceProfile = message.user_id === user.id
         ? currentProfile
         : message.user_id
@@ -3437,7 +3478,7 @@ export default function Home() {
             ),
         ),
       );
-      setSelectedMessageIds(selectedDialogMessages.map((message) => message.id));
+      setSelectedMessageIds(selectedForwardMessages.map((message) => message.id));
       setErrorMessage("Не получилось переслать сообщения.");
       return;
     }
@@ -3453,6 +3494,40 @@ export default function Home() {
       return mergeMessages(withoutOptimisticMessages, data ?? []);
     });
     setErrorMessage("Сообщения пересланы.");
+  }
+
+  function forwardMessagesToFavorites() {
+    if (!user || selectedForwardMessages.length === 0 || isForwardingMessages) {
+      return;
+    }
+
+    const now = Date.now();
+    const nextFavoriteItems: FavoriteItem[] = selectedForwardMessages.map((message, index) => {
+      const createdAt = new Date(now + index).toISOString();
+      const sourceProfile = message.user_id === user.id
+        ? currentProfile
+        : message.user_id
+          ? profilesByUserId.get(message.user_id)
+          : null;
+      const sourceName = sourceProfile?.display_name ?? message.author;
+
+      return {
+        author: activeUserName,
+        created_at: createdAt,
+        id: now + index,
+        recipient_id: user.id,
+        saved_at: createdAt,
+        text: createForwardMessageText(message, sourceName),
+        user_id: user.id,
+      };
+    });
+
+    saveFavoriteItems([...favoriteItems, ...nextFavoriteItems]);
+    setIsForwardDialogOpen(false);
+    setSelectedMessageIds([]);
+    setMessageContextMenu(null);
+    setFavoriteContextMenu(null);
+    setErrorMessage("Сообщения сохранены в избранном.");
   }
 
   function hideSelectedMessagesForMe() {
@@ -4572,14 +4647,18 @@ export default function Home() {
       ) : activeView === "favorites" ? (
         <FavoritesView
           cancelVoiceRecording={cancelVoiceRecording}
+          currentProfile={currentProfile}
           editingMessage={editingMessage}
           favoriteItems={favoriteItems}
+          forwardSelectedMessages={forwardSelectedMessages}
           friendProfile={friendProfile}
           getReadableMessageText={getReadableMessageText}
           handleAttachmentChange={handleAttachmentChange}
           handleAttachmentDrop={handleAttachmentDrop}
+          handleFavoriteSelectionClick={handleFavoriteSelectionClick}
           handleMessageTextChange={handleMessageTextChange}
           imageInputRef={imageInputRef}
+          isFavoriteSelectionMode={isFavoriteSelectionMode}
           isPinnedMessagesViewOpen={isPinnedMessagesViewOpen}
           isRecordingVoice={isRecordingVoice}
           isSelectedChatBlocked={isSelectedChatBlocked}
@@ -4589,9 +4668,12 @@ export default function Home() {
           messageText={messageText}
           openFavoriteContextMenu={openFavoriteContextMenu}
           pinnedFavoriteItem={pinnedFavoriteItem}
+          profilesByUserId={profilesByUserId}
           replyTarget={replyTarget}
           requestBlockChange={requestBlockChange}
+          removeSelectedFavoriteItems={removeSelectedFavoriteItems}
           selectedChatUserId={selectedChatUserId}
+          selectedFavoriteItems={selectedFavoriteItems}
           selectedMessageIdSet={selectedMessageIdSet}
           sendMessage={sendMessage}
           setEditingMessage={setEditingMessage}
@@ -4599,6 +4681,7 @@ export default function Home() {
           setPinnedFavoriteItem={setPinnedFavoriteItem}
           setReplyTarget={setReplyTarget}
           setSelectedImageUrl={setSelectedImageUrl}
+          setViewedProfile={setViewedProfile}
           stickerButtonRef={stickerButtonRef}
           toggleStickerPicker={toggleStickerPicker}
           toggleVoiceRecording={toggleVoiceRecording}
@@ -4852,8 +4935,9 @@ export default function Home() {
         isOpen={isForwardDialogOpen}
         onClose={() => setIsForwardDialogOpen(false)}
         onForward={(profile) => void forwardMessagesToProfile(profile)}
+        onForwardToFavorites={forwardMessagesToFavorites}
         profiles={profiles}
-        selectedMessages={selectedDialogMessages}
+        selectedMessages={selectedForwardMessages}
         userId={user?.id}
       />
       <ChatDeleteDialog

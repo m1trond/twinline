@@ -191,12 +191,13 @@ export function getMessageReply(text: string): ReplyMessagePayload | null {
 
 export function createForwardMessageText(message: MessageRow, authorName: string) {
   const reply = getMessageReply(message.text);
+  const forwarded = getMessageForward(reply?.body ?? message.text);
 
   return `${forwardMessagePrefix}${encodeURIComponent(
     JSON.stringify({
-      authorName,
-      authorUserId: message.user_id,
-      text: reply?.body ?? message.text,
+      authorName: forwarded?.authorName ?? authorName,
+      authorUserId: forwarded ? forwarded.authorUserId : message.user_id,
+      text: forwarded?.text ?? reply?.body ?? message.text,
     } satisfies ForwardMessagePayload),
   )}`;
 }
