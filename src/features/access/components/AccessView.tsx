@@ -21,11 +21,11 @@ function formatAccessDate(value: string | null, language: "en" | "ru") {
 }
 
 function getProfileLabel(profile: AccessProfileRow, fallback: string) {
-  return profile.display_name?.trim() || profile.email || profile.phone || fallback;
+  return profile.display_name?.trim() || profile.email || fallback;
 }
 
 const accessGridClass =
-  "sm:grid-cols-[minmax(180px,1fr)_minmax(260px,1fr)_minmax(150px,0.7fr)_minmax(120px,0.7fr)_40px]";
+  "sm:grid-cols-[minmax(180px,1fr)_minmax(260px,1fr)_minmax(120px,0.7fr)_40px]";
 
 export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
   const { language, t } = useI18n();
@@ -168,7 +168,6 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
             <div className={`hidden px-3 text-[10px] font-medium uppercase leading-4 tracking-[0.16em] text-[#a1a1aa] sm:grid ${accessGridClass} sm:items-center sm:gap-3`}>
               <span className="text-left">{t("nameAndUsername")}</span>
               <span className="text-left">{t("email")}</span>
-              <span className="text-left">{t("phone")}</span>
               <span className="text-left">{language === "en" ? "Registration" : "Регистрация"}</span>
               <span className="sr-only">{t("actions")}</span>
             </div>
@@ -191,11 +190,6 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium leading-5 text-[#f4f4f5]">
                       {profile.email || t("notSpecified")}
-                    </p>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium leading-5 text-[#f4f4f5]">
-                      {profile.phone || t("notSpecified")}
                     </p>
                   </div>
                   <div className="min-w-0">

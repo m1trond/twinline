@@ -1,46 +1,38 @@
 import Image from "next/image";
 import type { FormEvent } from "react";
 import { useI18n } from "@/shared/i18n-context";
-import type { AuthContactMethod, AuthMode } from "@/shared/types";
+import type { AuthMode } from "@/shared/types";
 import { formatUsernameInput } from "@/shared/utils/profile";
 
 type AuthScreenProps = {
-  authContactMethod: AuthContactMethod;
   authEmail: string;
   authMode: AuthMode;
   authPassword: string;
-  authPhone: string;
   authUsername: string;
   authUsernameError: string;
   errorMessage: string;
   isLightThemeEnabled: boolean;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  setAuthContactMethod: (method: AuthContactMethod) => void;
   setAuthEmail: (email: string) => void;
   setAuthMode: (mode: AuthMode) => void;
   setAuthPassword: (password: string) => void;
-  setAuthPhone: (phone: string) => void;
   setAuthUsername: (username: string) => void;
   setAuthUsernameError: (error: string) => void;
   setErrorMessage: (error: string) => void;
 };
 
 export function AuthScreen({
-  authContactMethod,
   authEmail,
   authMode,
   authPassword,
-  authPhone,
   authUsername,
   authUsernameError,
   errorMessage,
   isLightThemeEnabled,
   onSubmit,
-  setAuthContactMethod,
   setAuthEmail,
   setAuthMode,
   setAuthPassword,
-  setAuthPhone,
   setAuthUsername,
   setAuthUsernameError,
   setErrorMessage,
@@ -103,30 +95,6 @@ export function AuthScreen({
           </button>
         </div>
 
-        <div className="mb-4 grid grid-cols-2 rounded-xl border border-[#3f3f46]/35 bg-black/20 p-1">
-          {[
-            { label: t("email"), method: "email" as const },
-            { label: t("phone"), method: "phone" as const },
-          ].map((item) => (
-            <button
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                authContactMethod === item.method
-                  ? "bg-[#f4f4f5] text-[#050505]"
-                  : "text-[#f4f4f5] hover:bg-white/10"
-              }`}
-              key={item.method}
-              onClick={() => {
-                setAuthContactMethod(item.method);
-                setErrorMessage("");
-                setAuthUsernameError("");
-              }}
-              type="button"
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-
         <form className="grid gap-3" onSubmit={onSubmit}>
           {authMode === "sign-up" ? (
             <label className="grid gap-1.5">
@@ -157,76 +125,25 @@ export function AuthScreen({
               )}
             </label>
           ) : null}
-          {authContactMethod === "email" ? (
-            <>
-              <input
-                className="min-h-9 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5]"
-                onChange={(event) => setAuthEmail(event.target.value)}
-                placeholder="Email"
-                type="email"
-                value={authEmail}
-              />
-              <input
-                className="min-h-9 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5]"
-                onChange={(event) => setAuthPassword(event.target.value)}
-                placeholder={t("password")}
-                type="password"
-                value={authPassword}
-              />
-            </>
-          ) : (
-            <div className="rounded-2xl border border-[#3f3f46]/40 bg-black/22 p-3">
-              <div className="flex min-h-9 overflow-hidden rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 focus-within:border-[#f4f4f5]">
-                <select
-                  aria-label={t("country")}
-                  className="w-24 border-r border-[#3f3f46]/35 bg-transparent px-3 text-sm text-[#f4f4f5] outline-none"
-                  defaultValue="+7"
-                >
-                  <option className="bg-[#111111]" value="+7">+7</option>
-                  <option className="bg-[#111111]" value="+380">+380</option>
-                  <option className="bg-[#111111]" value="+375">+375</option>
-                  <option className="bg-[#111111]" value="+1">+1</option>
-                </select>
-                <input
-                  className="min-w-0 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-[#a1a1aa]/70"
-                  inputMode="tel"
-                  onChange={(event) => setAuthPhone(event.target.value)}
-                  placeholder={t("phoneNumber")}
-                  type="tel"
-                  value={authPhone}
-                />
-              </div>
-              <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-300/20 bg-amber-300/8 p-3 text-sm leading-5 text-amber-100">
-                <svg
-                  aria-hidden="true"
-                  className="mt-0.5 h-5 w-5 shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M12 8v5m0 3h.01M10.3 4.3 2.8 17.4A2 2 0 0 0 4.5 20h15a2 2 0 0 0 1.7-2.6L13.7 4.3a2 2 0 0 0-3.4 0Z"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                  />
-                </svg>
-                <p>
-                  {t("phoneLoginNotice")}
-                </p>
-              </div>
-            </div>
-          )}
+          <input
+            className="min-h-9 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5]"
+            onChange={(event) => setAuthEmail(event.target.value)}
+            placeholder="Email"
+            type="email"
+            value={authEmail}
+          />
+          <input
+            className="min-h-9 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5]"
+            onChange={(event) => setAuthPassword(event.target.value)}
+            placeholder={t("password")}
+            type="password"
+            value={authPassword}
+          />
           <button
             className="min-h-9 rounded-lg bg-[#f4f4f5] px-3 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b] disabled:text-[#a1a1aa]"
-            disabled={authContactMethod === "phone"}
             type="submit"
           >
-            {authContactMethod === "phone"
-              ? t("soonAvailable")
-              : authMode === "sign-in"
-                ? t("signIn")
-                : t("createAccount")}
+            {authMode === "sign-in" ? t("signIn") : t("createAccount")}
           </button>
         </form>
 

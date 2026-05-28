@@ -82,7 +82,6 @@ export type BlockMessagePayload = {
 
 export type ActiveView = "profile" | "messages" | "favorites" | "music" | "access" | "settings";
 export type AuthMode = "sign-in" | "sign-up";
-export type AuthContactMethod = "email" | "phone";
 export type CallStatus = "idle" | "calling" | "incoming" | "connecting" | "connected";
 export type MutedProfileUntil = Record<string, number | null>;
 export type PinnedMessageIdsByChat = Record<string, number[]>;
@@ -92,7 +91,6 @@ export type AccessProfileRow = {
   display_name: string | null;
   username: string | null;
   email: string | null;
-  phone: string | null;
   created_at: string | null;
   updated_at: string | null;
 };

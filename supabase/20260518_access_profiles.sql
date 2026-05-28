@@ -41,7 +41,6 @@ returns table (
   display_name text,
   username text,
   email text,
-  phone text,
   created_at timestamptz,
   updated_at timestamptz
 )
@@ -54,12 +53,10 @@ as $$
     coalesce(
       nullif(profile.display_name, ''),
       nullif(auth_user.raw_user_meta_data ->> 'display_name', ''),
-      nullif(auth_user.email, ''),
-      nullif(auth_user.phone, '')
+      nullif(auth_user.email, '')
     ) as display_name,
     profile.username,
     auth_user.email,
-    auth_user.phone,
     auth_user.created_at,
     profile.updated_at
   from auth.users auth_user

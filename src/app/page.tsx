@@ -159,7 +159,6 @@ type SyncedSettings = {
   areSoftEffectsEnabled?: boolean;
   isLightThemeEnabled?: boolean;
   isOnlineStatusVisible?: boolean;
-  isPhoneVisible?: boolean;
   isProfileSearchable?: boolean;
 };
 
@@ -239,8 +238,6 @@ function parseSyncedSettings(value: unknown): SyncedSettings {
       typeof settings.isLightThemeEnabled === "boolean" ? settings.isLightThemeEnabled : undefined,
     isOnlineStatusVisible:
       typeof settings.isOnlineStatusVisible === "boolean" ? settings.isOnlineStatusVisible : undefined,
-    isPhoneVisible:
-      typeof settings.isPhoneVisible === "boolean" ? settings.isPhoneVisible : undefined,
     isProfileSearchable:
       typeof settings.isProfileSearchable === "boolean" ? settings.isProfileSearchable : undefined,
   };
@@ -259,16 +256,12 @@ export default function Home() {
   const {
     authMode,
     setAuthMode,
-    authContactMethod,
-    setAuthContactMethod,
     authUsername,
     setAuthUsername,
     authUsernameError,
     setAuthUsernameError,
     authEmail,
     setAuthEmail,
-    authPhone,
-    setAuthPhone,
     authPassword,
     setAuthPassword,
   } = useAuthFormState();
@@ -402,8 +395,6 @@ export default function Home() {
     setAreNotificationsEnabled,
     isOnlineStatusVisible,
     setIsOnlineStatusVisible,
-    isPhoneVisible,
-    setIsPhoneVisible,
     isProfileSearchable,
     setIsProfileSearchable,
     areSoftEffectsEnabled,
@@ -610,11 +601,6 @@ export default function Home() {
         writeStoredBoolean("hush-settings-online-status-visible", syncedSettings.isOnlineStatusVisible);
       }
 
-      if (typeof syncedSettings.isPhoneVisible === "boolean") {
-        setIsPhoneVisible(syncedSettings.isPhoneVisible);
-        writeStoredBoolean("hush-settings-phone-visible", syncedSettings.isPhoneVisible);
-      }
-
       if (typeof syncedSettings.isProfileSearchable === "boolean") {
         setIsProfileSearchable(syncedSettings.isProfileSearchable);
         writeStoredBoolean("hush-settings-profile-searchable", syncedSettings.isProfileSearchable);
@@ -658,7 +644,6 @@ export default function Home() {
             areSoftEffectsEnabled,
             isLightThemeEnabled,
             isOnlineStatusVisible,
-            isPhoneVisible,
             isProfileSearchable,
           },
         };
@@ -674,7 +659,6 @@ export default function Home() {
             areSoftEffectsEnabled,
             isLightThemeEnabled,
             isOnlineStatusVisible,
-            isPhoneVisible,
             isProfileSearchable,
           },
         };
@@ -1794,11 +1778,6 @@ export default function Home() {
     setErrorMessage("");
     setAuthUsernameError("");
 
-    if (authContactMethod === "phone") {
-      setErrorMessage("Вход и регистрация по телефону уже в интерфейсе, SMS-логика пока в разработке.");
-      return;
-    }
-
     if (authMode === "sign-up") {
       const nextUsername = normalizeUsername(authUsername);
       const usernameValidationError = getUsernameError(nextUsername);
@@ -2358,7 +2337,6 @@ export default function Home() {
         areSoftEffectsEnabled,
         isLightThemeEnabled,
         isOnlineStatusVisible,
-        isPhoneVisible,
         isProfileSearchable,
       },
       ...patch,
@@ -2403,7 +2381,6 @@ export default function Home() {
         isLightThemeEnabled: key === "hush-settings-light-theme" ? nextValue : isLightThemeEnabled,
         isOnlineStatusVisible:
           key === "hush-settings-online-status-visible" ? nextValue : isOnlineStatusVisible,
-        isPhoneVisible: key === "hush-settings-phone-visible" ? nextValue : isPhoneVisible,
         isProfileSearchable:
           key === "hush-settings-profile-searchable" ? nextValue : isProfileSearchable,
       },
@@ -4586,21 +4563,17 @@ export default function Home() {
     return (
       <I18nProvider language={interfaceLanguage} setLanguage={setInterfaceLanguage}>
         <AuthScreen
-          authContactMethod={authContactMethod}
           authEmail={authEmail}
           authMode={authMode}
           authPassword={authPassword}
-          authPhone={authPhone}
           authUsername={authUsername}
           authUsernameError={authUsernameError}
           errorMessage={errorMessage}
           isLightThemeEnabled={isLightThemeEnabled}
           onSubmit={handleAuth}
-          setAuthContactMethod={setAuthContactMethod}
           setAuthEmail={setAuthEmail}
           setAuthMode={setAuthMode}
           setAuthPassword={setAuthPassword}
-          setAuthPhone={setAuthPhone}
           setAuthUsername={setAuthUsername}
           setAuthUsernameError={setAuthUsernameError}
           setErrorMessage={setErrorMessage}
@@ -4715,7 +4688,6 @@ export default function Home() {
           handleSignOut={handleSignOut}
           isLightThemeEnabled={isLightThemeEnabled}
           isOnlineStatusVisible={isOnlineStatusVisible}
-          isPhoneVisible={isPhoneVisible}
           isProfileSearchable={isProfileSearchable}
           isSigningOut={isSigningOut}
           mutedProfiles={mutedProfiles}
@@ -4723,7 +4695,6 @@ export default function Home() {
           setAreSoftEffectsEnabled={setAreSoftEffectsEnabled}
           setIsLightThemeEnabled={setIsLightThemeEnabled}
           setIsOnlineStatusVisible={setIsOnlineStatusVisible}
-          setIsPhoneVisible={setIsPhoneVisible}
           setIsProfileSearchable={setIsProfileSearchable}
           toggleNotifications={toggleNotifications}
           toggleStoredBooleanSetting={toggleStoredBooleanSetting}

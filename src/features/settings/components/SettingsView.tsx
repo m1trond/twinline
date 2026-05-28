@@ -24,7 +24,6 @@ type SettingsViewProps = {
   handleSignOut: () => void | Promise<void>;
   isLightThemeEnabled: boolean;
   isOnlineStatusVisible: boolean;
-  isPhoneVisible: boolean;
   isProfileSearchable: boolean;
   isSigningOut: boolean;
   mutedProfiles: MutedProfileUntil;
@@ -32,7 +31,6 @@ type SettingsViewProps = {
   setAreSoftEffectsEnabled: BooleanSetter;
   setIsLightThemeEnabled: BooleanSetter;
   setIsOnlineStatusVisible: BooleanSetter;
-  setIsPhoneVisible: BooleanSetter;
   setIsProfileSearchable: BooleanSetter;
   toggleNotifications: () => void | Promise<void>;
   toggleStoredBooleanSetting: (
@@ -52,7 +50,6 @@ export function SettingsView({
   handleSignOut,
   isLightThemeEnabled,
   isOnlineStatusVisible,
-  isPhoneVisible,
   isProfileSearchable,
   isSigningOut,
   mutedProfiles,
@@ -60,7 +57,6 @@ export function SettingsView({
   setAreSoftEffectsEnabled,
   setIsLightThemeEnabled,
   setIsOnlineStatusVisible,
-  setIsPhoneVisible,
   setIsProfileSearchable,
   toggleNotifications,
   toggleStoredBooleanSetting,
@@ -74,13 +70,6 @@ export function SettingsView({
       key: "hush-settings-online-status-visible",
       label: t("onlineVisible"),
       setter: setIsOnlineStatusVisible,
-    },
-    {
-      description: t("showPhoneDescription"),
-      enabled: isPhoneVisible,
-      key: "hush-settings-phone-visible",
-      label: t("showPhone"),
-      setter: setIsPhoneVisible,
     },
     {
       description: t("profileSearchDescription"),

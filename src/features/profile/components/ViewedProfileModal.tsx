@@ -190,7 +190,7 @@ export function ViewedProfileModal({
                 strokeWidth="2"
               />
             </svg>
-            <span className="text-xs font-medium leading-none text-[#d4d4d8]">{t("phone")}</span>
+            <span className="text-xs font-medium leading-none text-[#d4d4d8]">{t("call")}</span>
           </button>
           <div className="relative">
             <button
@@ -320,16 +320,6 @@ export function ViewedProfileModal({
             </p>
           </article>
 
-          <article className="rounded-xl border border-[#3f3f46]/40 bg-black/22 p-3">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#e5e5e5]">
-              {t("phone")}
-            </p>
-            <p className="mt-1.5 text-sm leading-5 text-[#a1a1aa]">
-              {language === "en"
-                ? "Hidden by privacy settings. Later we will add showing it only with the user's permission."
-                : "Скрыт настройками приватности. Позже добавим показ только с разрешения пользователя."}
-            </p>
-          </article>
 
           <article className="rounded-xl border border-[#3f3f46]/40 bg-black/22 p-3">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#e5e5e5]">

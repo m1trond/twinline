@@ -224,7 +224,7 @@ export function ProfileView({
             </form>
           </section>
 
-          <section className={cardClass}>
+          <section className={`${cardClass} sm:col-span-2`}>
             <p className={labelClass}>Email</p>
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               <p className="min-w-0 flex-1 break-words text-sm font-medium">{user.email}</p>
@@ -250,39 +250,6 @@ export function ProfileView({
             </p>
           </section>
 
-          <section className={cardClass}>
-            <p className={labelClass}>{t("phone")}</p>
-            <div className="mt-2 grid gap-2 sm:grid-cols-[84px_1fr_auto]">
-              <select
-                aria-label="Страна"
-                className="min-h-8 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-2 text-sm outline-none focus:border-[#f4f4f5]"
-                defaultValue="+7"
-              >
-                <option value="+7">RU +7</option>
-                <option value="+375">BY +375</option>
-                <option value="+380">UA +380</option>
-                <option value="+1">US +1</option>
-                <option value="+49">DE +49</option>
-              </select>
-              <input
-                aria-label="Номер телефона"
-                className={inputClass}
-                inputMode="tel"
-                placeholder="999 123-45-67"
-                type="tel"
-              />
-              <button
-                className="min-h-8 rounded-lg bg-[#52525b] px-3 text-xs font-medium text-[#050505] opacity-70"
-                disabled
-                type="button"
-              >
-                {t("phoneSoon")}
-              </button>
-            </div>
-            <p className="mt-1.5 text-xs leading-5 text-[#a1a1aa]">
-              {t("phoneSoonDescription")}
-            </p>
-          </section>
         </div>
         </div>
       </div>

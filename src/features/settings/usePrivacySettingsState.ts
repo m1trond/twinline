@@ -25,9 +25,6 @@ export function usePrivacySettingsState() {
   const [isOnlineStatusVisible, setIsOnlineStatusVisible] = useState(() =>
     readStoredBoolean("hush-settings-online-status-visible", true),
   );
-  const [isPhoneVisible, setIsPhoneVisible] = useState(() =>
-    readStoredBoolean("hush-settings-phone-visible", false),
-  );
   const [isProfileSearchable, setIsProfileSearchable] = useState(() =>
     readStoredBoolean("hush-settings-profile-searchable", true),
   );
@@ -49,8 +46,6 @@ export function usePrivacySettingsState() {
     setAreNotificationsEnabled,
     isOnlineStatusVisible,
     setIsOnlineStatusVisible,
-    isPhoneVisible,
-    setIsPhoneVisible,
     isProfileSearchable,
     setIsProfileSearchable,
     areSoftEffectsEnabled,
