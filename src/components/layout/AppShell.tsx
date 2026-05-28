@@ -12,6 +12,7 @@ type AppShellProps = {
   canViewAccess: boolean;
   chatSearchQuery: string;
   children: ReactNode;
+  areSoftEffectsEnabled: boolean;
   isLightThemeEnabled: boolean;
   searchableProfiles: ProfileRow[];
   setActiveView: Dispatch<SetStateAction<ActiveView>>;
@@ -60,6 +61,7 @@ export function AppShell({
   canViewAccess,
   chatSearchQuery,
   children,
+  areSoftEffectsEnabled,
   isLightThemeEnabled,
   searchableProfiles,
   setActiveView,
@@ -208,7 +210,7 @@ export function AppShell({
   }
 
   return (
-    <main className={`hush-shell ${isLightThemeEnabled ? "hush-light" : ""} relative h-dvh overflow-hidden bg-[#050505] text-[#f4f4f5]`}>
+    <main className={`hush-shell ${isLightThemeEnabled ? "hush-light" : ""} ${areSoftEffectsEnabled ? "" : "hush-reduced-effects"} relative h-dvh overflow-hidden bg-[#050505] text-[#f4f4f5]`}>
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(244,244,245,0.10),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(245,245,245,0.06),transparent_28%),linear-gradient(135deg,#050505_0%,#111111_46%,#000000_100%)]"

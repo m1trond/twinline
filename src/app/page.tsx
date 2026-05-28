@@ -4603,6 +4603,7 @@ export default function Home() {
       activeView={activeView}
       canViewAccess={canViewAccess}
       chatSearchQuery={chatSearchQuery}
+      areSoftEffectsEnabled={areSoftEffectsEnabled}
       isLightThemeEnabled={isLightThemeEnabled}
       searchableProfiles={searchableProfiles}
       setActiveView={setActiveView}

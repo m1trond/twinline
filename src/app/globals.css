@@ -52,8 +52,8 @@ a,
 .hush-shell button:not(:disabled),
 .hush-shell a,
 .hush-shell [role="button"] {
-  transition-property: background-color, border-color, box-shadow, color, filter, opacity, scale, translate;
-  transition-duration: 180ms;
+  transition-property: background-color, border-color, color, opacity, scale, translate;
+  transition-duration: 140ms;
   transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -77,7 +77,7 @@ a,
 }
 
 .hush-context-menu {
-  animation: hush-menu-enter 140ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: hush-menu-enter 100ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   transform-origin: top left;
 }
 
@@ -137,7 +137,7 @@ video {
 }
 
 .hush-view-transition {
-  animation: hush-view-enter 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: hush-view-enter 120ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -153,24 +153,32 @@ video {
 }
 
 .hush-panel-transition {
-  animation: hush-panel-enter 190ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: hush-panel-enter 110ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   transform-origin: center top;
 }
 
 .hush-modal-transition {
-  animation: hush-modal-enter 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: hush-modal-enter 120ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   transform-origin: center;
+}
+
+.hush-shell .hush-view-transition [class*="backdrop-blur"],
+.hush-shell .hush-panel-transition[class*="backdrop-blur"],
+.hush-shell .hush-panel-transition [class*="backdrop-blur"],
+.hush-shell aside[class*="backdrop-blur"],
+.hush-shell header[class*="backdrop-blur"],
+.hush-shell nav[class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
 
 @keyframes hush-view-enter {
   from {
-    filter: blur(2px);
     opacity: 0;
-    translate: 0 6px;
+    translate: 0 3px;
   }
 
   to {
-    filter: blur(0);
     opacity: 1;
     translate: 0 0;
   }
@@ -178,14 +186,12 @@ video {
 
 @keyframes hush-panel-enter {
   from {
-    filter: blur(2px);
     opacity: 0;
     scale: 0.992;
-    translate: 0 8px;
+    translate: 0 4px;
   }
 
   to {
-    filter: blur(0);
     opacity: 1;
     scale: 1;
     translate: 0 0;
@@ -194,26 +200,40 @@ video {
 
 @keyframes hush-modal-enter {
   from {
-    filter: blur(2px);
     opacity: 0;
+    scale: 0.992;
   }
 
   to {
-    filter: blur(0);
     opacity: 1;
+    scale: 1;
   }
+}
+
+.hush-reduced-effects *,
+.hush-reduced-effects *::before,
+.hush-reduced-effects *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.01ms !important;
+}
+
+.hush-reduced-effects button:not(:disabled):active,
+.hush-reduced-effects a:active,
+.hush-reduced-effects [role="button"]:active {
+  scale: 1;
+  translate: 0;
 }
 
 @keyframes hush-menu-enter {
   from {
-    filter: blur(1px);
     opacity: 0;
     scale: 0.98;
-    translate: 0 4px;
+    translate: 0 2px;
   }
 
   to {
-    filter: blur(0);
     opacity: 1;
     scale: 1;
     translate: 0 0;
