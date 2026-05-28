@@ -87,7 +87,7 @@ a,
   padding-top: 4px !important;
 }
 
-.hush-modal-transition button {
+.hush-modal-transition button:not([aria-label]) {
   min-height: 36px !important;
   border-radius: 10px !important;
 }

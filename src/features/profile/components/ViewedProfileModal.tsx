@@ -154,7 +154,7 @@ export function ViewedProfileModal({
         <div className="mt-5 grid grid-cols-4 gap-2">
           <button
             aria-label={language === "en" ? "Open chat" : "Открыть чат"}
-            className="flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5] transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
+            className="flex min-h-[62px] flex-col items-center justify-center gap-2 rounded-xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5] transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
             disabled={!canOpenChat}
             onClick={openChat}
             type="button"
@@ -174,7 +174,7 @@ export function ViewedProfileModal({
           </button>
           <button
             aria-label={language === "en" ? "Call" : "Позвонить"}
-            className="flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5] transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
+            className="flex min-h-[62px] flex-col items-center justify-center gap-2 rounded-xl border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5] transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
             disabled={!canCall}
             onClick={() => {
               openChat();
@@ -200,7 +200,7 @@ export function ViewedProfileModal({
             <button
               aria-expanded={profileNotificationMenuUserId === viewedProfile.userId}
               aria-label={t("notifications")}
-              className={`flex min-h-[74px] w-full flex-col items-center justify-center gap-1.5 rounded-2xl border text-center transition disabled:cursor-not-allowed disabled:opacity-45 ${
+              className={`flex min-h-[62px] w-full flex-col items-center justify-center gap-2 rounded-xl border text-center transition disabled:cursor-not-allowed disabled:opacity-45 ${
                 isMuted
                   ? "border-[#f4f4f5]/45 bg-[#f4f4f5]/10 text-[#f4f4f5] hover:bg-white/[0.12]"
                   : "border-[#3f3f46]/40 bg-black/24 text-[#f4f4f5] hover:bg-white/[0.08]"
@@ -278,7 +278,7 @@ export function ViewedProfileModal({
           </div>
           <button
             aria-label={language === "en" ? "Block" : "Заблокировать"}
-            className={`flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-2xl border text-center transition disabled:cursor-not-allowed disabled:opacity-45 ${
+            className={`flex min-h-[62px] flex-col items-center justify-center gap-2 rounded-xl border text-center transition disabled:cursor-not-allowed disabled:opacity-45 ${
               isBlockedByMe
                 ? "border-[#f4f4f5]/45 bg-[#f4f4f5]/10 text-[#f4f4f5] hover:bg-white/[0.12]"
                 : "border-[#3f3f46]/40 bg-black/24 text-[#f4f4f5] hover:bg-white/[0.08]"
