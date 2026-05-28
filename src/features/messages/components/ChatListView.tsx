@@ -117,9 +117,9 @@ export function ChatListView({
         </div>
         <div className="hush-panel-transition grid content-start gap-2" key={selectedChatFolderId ?? "all"}>
           {chatProfiles.length === 0 ? (
-            <article className="rounded-xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-4 text-center sm:rounded-2xl sm:p-6">
-              <p className="text-sm font-medium">{t("emptyChatsTitle")}</p>
-              <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">{t("emptyChatsText")}</p>
+            <article className="rounded-lg border border-dashed border-[#3f3f46]/40 bg-black/12 px-3 py-3 text-center">
+              <p className="text-sm font-medium leading-5">{t("emptyChatsTitle")}</p>
+              <p className="mt-1 text-xs leading-5 text-[#a1a1aa]">{t("emptyChatsText")}</p>
             </article>
           ) : null}
 

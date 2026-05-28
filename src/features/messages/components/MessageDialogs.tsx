@@ -223,7 +223,7 @@ export function ForwardMessagesDialog({
               ))}
             </div>
           ) : (
-            <p className="rounded-xl border border-dashed border-[#3f3f46]/45 px-3 py-5 text-center text-sm text-[#a1a1aa]">
+            <p className="rounded-lg border border-dashed border-[#3f3f46]/40 px-3 py-3 text-center text-xs leading-5 text-[#a1a1aa]">
               {normalizedQuery.length >= 2
                 ? language === "en" ? "No users found." : "Пользователь не найден."
                 : language === "en" ? "No dialogs yet." : "Диалогов пока нет."}
