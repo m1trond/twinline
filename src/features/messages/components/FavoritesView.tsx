@@ -358,7 +358,7 @@ export function FavoritesView({
                           {forwarded ? (
                             <div className={`mb-1.5 flex items-center gap-2 px-0.5 text-left ${!hasStandaloneBubble && !hasFramedMedia ? "text-[#050505]" : "text-[#f4f4f5]"}`}>
                               <button
-                                className={`grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full text-xs font-medium transition hover:scale-105 disabled:hover:scale-100 ${!hasStandaloneBubble && !hasFramedMedia ? "bg-[#050505] text-[#f4f4f5]" : "bg-[#f4f4f5] text-[#050505]"}`}
+                                className={`grid h-7 min-h-7 w-7 min-w-7 shrink-0 aspect-square place-items-center overflow-hidden rounded-full text-xs font-medium leading-none transition hover:scale-105 disabled:hover:scale-100 ${!hasStandaloneBubble && !hasFramedMedia ? "bg-[#050505] text-[#f4f4f5]" : "bg-[#f4f4f5] text-[#050505]"}`}
                                 disabled={!forwarded.authorUserId}
                                 onClick={() => {
                                   if (!forwarded.authorUserId) {
