@@ -783,6 +783,15 @@ export default function Home() {
     },
     [activeUserName, selectedChatUserId, user],
   );
+
+  function focusMessageInput() {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        messageInputRef.current?.focus();
+      });
+    });
+  }
+
   const sharedPinnedMessageIds = useMemo(() => {
     const pinnedIds = new Map<number, PinMessagePayload["action"]>();
 
@@ -3003,9 +3012,7 @@ export default function Home() {
     setFavoriteContextMenu(null);
     setErrorMessage("");
 
-    window.requestAnimationFrame(() => {
-      messageInputRef.current?.focus();
-    });
+    focusMessageInput();
   }
 
   function startEditingFavoriteItem(item: FavoriteItem) {
@@ -3021,9 +3028,7 @@ export default function Home() {
     setFavoriteContextMenu(null);
     setErrorMessage("");
 
-    window.requestAnimationFrame(() => {
-      messageInputRef.current?.focus();
-    });
+    focusMessageInput();
   }
 
   function togglePinnedFavoriteItem(item: FavoriteItem) {
@@ -3064,9 +3069,7 @@ export default function Home() {
     setMessageContextMenu(null);
     setErrorMessage("");
 
-    window.requestAnimationFrame(() => {
-      messageInputRef.current?.focus();
-    });
+    focusMessageInput();
   }
 
   function scrollToReplyMessage(reply: ReplyMessagePayload) {
@@ -3163,6 +3166,7 @@ export default function Home() {
     );
     setMessageContextMenu(null);
     setErrorMessage("");
+    focusMessageInput();
   }
 
   function requestPinnedMessage(message: MessageRow) {

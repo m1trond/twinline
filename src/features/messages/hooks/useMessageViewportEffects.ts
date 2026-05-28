@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import type { RefObject } from "react";
 import type { ActiveView } from "@/shared/types";
 
@@ -24,21 +24,6 @@ function scrollMessagesListToBottom(
   messagesList.scrollTop = messagesList.scrollHeight;
 }
 
-function isMessagesListNearBottom(
-  messagesListRef: RefObject<HTMLDivElement | null>,
-) {
-  const messagesList = messagesListRef.current;
-
-  if (!messagesList) {
-    return true;
-  }
-
-  return (
-    messagesList.scrollHeight - messagesList.scrollTop - messagesList.clientHeight <
-    96
-  );
-}
-
 export function useMessageViewportEffects({
   activeDialogMessagesCount,
   activeView,
@@ -48,46 +33,27 @@ export function useMessageViewportEffects({
   messagesListRef,
   selectedChatUserId,
 }: MessageViewportEffectsParams) {
-  const previousMessagesViewRef = useRef<{
-    activeDialogMessagesCount: number;
-    isLoadingMessages: boolean;
-    selectedChatUserId: string | null;
-  }>({
-    activeDialogMessagesCount: 0,
-    isLoadingMessages: false,
-    selectedChatUserId: null,
-  });
-
   useEffect(() => {
-    const previousMessagesView = previousMessagesViewRef.current;
-    const isChatChanged = previousMessagesView.selectedChatUserId !== selectedChatUserId;
-    const hasInitialLoadFinished =
-      previousMessagesView.isLoadingMessages && !isLoadingMessages;
-    const shouldKeepPinnedScroll =
-      !isChatChanged &&
-      !hasInitialLoadFinished &&
-      !isMessagesListNearBottom(messagesListRef);
-
-    previousMessagesViewRef.current = {
-      activeDialogMessagesCount,
-      isLoadingMessages,
-      selectedChatUserId,
-    };
-
     if (activeView !== "messages" || selectedChatUserId === null) {
       return;
     }
 
-    if (isLoadingMessages || shouldKeepPinnedScroll) {
+    if (isLoadingMessages) {
       return;
     }
 
     const frameId = window.requestAnimationFrame(() => {
       scrollMessagesListToBottom(messagesListRef);
     });
+    const settleFrameId = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        scrollMessagesListToBottom(messagesListRef);
+      });
+    });
 
     return () => {
       window.cancelAnimationFrame(frameId);
+      window.cancelAnimationFrame(settleFrameId);
     };
   }, [
     activeDialogMessagesCount,
