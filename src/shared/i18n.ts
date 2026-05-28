@@ -197,7 +197,7 @@ export const translations = {
     favorites: "Избранное",
     allChats: "Все",
     addToFolder: "Добавить в папку",
-    archive: "В архив",
+    archive: "Архив",
     archiveSoon: "Архив скоро подключим.",
     attachFile: "Прикрепить файл",
     changeAvatar: "Изменить аватарку",

@@ -740,14 +740,6 @@ export default function Home() {
     }
 
     if (selectedChatFolderId === archivedChatFolderId) {
-      if (archivedChatProfileIds.length === 0) {
-        const frameId = window.requestAnimationFrame(() => {
-          setSelectedChatFolderId(null);
-        });
-
-        return () => window.cancelAnimationFrame(frameId);
-      }
-
       return;
     }
 
@@ -758,7 +750,7 @@ export default function Home() {
 
       return () => window.cancelAnimationFrame(frameId);
     }
-  }, [archivedChatProfileIds.length, chatFolders, selectedChatFolderId]);
+  }, [chatFolders, selectedChatFolderId]);
 
   const selectedMessageIdSet = useMemo(() => {
     return new Set(selectedMessageIds);
@@ -1135,11 +1127,6 @@ export default function Home() {
         firstProfile.display_name.localeCompare(secondProfile.display_name, "ru"),
       );
   }, [dialogProfileIds, profiles, user?.id]);
-  const archivedChatProfilesCount = useMemo(() => {
-    return chatProfiles.filter((profile) =>
-      archivedChatProfileIds.includes(profile.user_id),
-    ).length;
-  }, [archivedChatProfileIds, chatProfiles]);
   const visibleChatProfiles = useMemo(() => {
     if (selectedChatFolderId === archivedChatFolderId) {
       return chatProfiles.filter((profile) =>
@@ -1159,17 +1146,6 @@ export default function Home() {
     );
   }, [archivedChatProfileIds, chatFolderAssignments, chatProfiles, selectedChatFolderId]);
 
-  useEffect(() => {
-    if (selectedChatFolderId !== archivedChatFolderId || archivedChatProfilesCount > 0) {
-      return;
-    }
-
-    const frameId = window.requestAnimationFrame(() => {
-      setSelectedChatFolderId(null);
-    });
-
-    return () => window.cancelAnimationFrame(frameId);
-  }, [archivedChatProfilesCount, selectedChatFolderId, setSelectedChatFolderId]);
   const searchableProfiles = useMemo(() => {
     const query = chatSearchQuery.trim().replace(/^@+/, "").toLowerCase();
 
@@ -2724,7 +2700,6 @@ export default function Home() {
 
   function archiveChatProfile(profile: ProfileRow) {
     saveArchivedChatProfileIds([...archivedChatProfileIds, profile.user_id]);
-    setSelectedChatFolderId(archivedChatFolderId);
     setChatContextMenu(null);
     setErrorMessage(`Чат с ${profile.display_name} отправлен в архив.`);
   }
@@ -2872,7 +2847,6 @@ export default function Home() {
     }
     const wasAssignedToProfile = Boolean(folderDialog?.profileUserId);
 
-    setSelectedChatFolderId(folder.id);
     setFolderDialog(null);
     setErrorMessage(
       wasAssignedToProfile
@@ -2896,7 +2870,6 @@ export default function Home() {
         new Set([...(chatFolderAssignments[profile.user_id] ?? []), folder.id]),
       ),
     });
-    setSelectedChatFolderId(folder.id);
     setChatContextMenu(null);
     setErrorMessage(`Чат добавлен в папку «${folder.name}».`);
   }
@@ -4662,8 +4635,7 @@ export default function Home() {
         />
       ) : selectedChatUserId === null ? (
         <ChatListView
-          allFolderName={allChatFolderName || translations[interfaceLanguage].allChats}
-          archivedChatCount={archivedChatProfilesCount}
+          allFolderName={translations[interfaceLanguage].allChats}
           chatFolders={chatFolders}
           chatProfiles={visibleChatProfiles}
           latestVisibleMessageByProfileId={latestVisibleMessageByProfileId}
