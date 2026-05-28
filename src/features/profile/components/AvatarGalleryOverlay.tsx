@@ -28,25 +28,25 @@ export function AvatarGalleryOverlay({
 
   return (
     <div
-      className="hush-panel-transition fixed inset-0 z-[125] flex flex-col bg-black/72 p-3 backdrop-blur-md sm:p-5"
+      className="hush-panel-transition fixed inset-0 z-[125] flex flex-col bg-black/72 p-2.5 backdrop-blur-md sm:p-3"
       onClick={onClose}
     >
       <div
-        className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/82 px-3 py-2 text-[#f4f4f5] shadow-[0_14px_45px_rgba(0,0,0,0.28)]"
+        className="mb-2 flex h-9 min-h-9 shrink-0 items-center justify-between gap-2 rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-0 text-[#f4f4f5] shadow-[0_14px_45px_rgba(0,0,0,0.28)]"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="min-w-0">
-          <p className="text-sm font-medium uppercase tracking-[0.16em] text-[#a1a1aa]">
+          <p className="text-xs font-medium uppercase leading-none tracking-[0.16em] text-[#a1a1aa]">
             {t("avatars")}
           </p>
-          <p className="mt-0.5 text-xs text-[#a1a1aa]">
+          <p className="mt-0.5 text-[11px] leading-none text-[#a1a1aa]">
             {(avatarGalleryIndex ?? 0) + 1} / {avatarGalleryItems.length}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {canDeleteAvatarFromGallery ? (
             <button
-              className="min-h-11 rounded-xl border border-[#3f3f46]/45 bg-[#f4f4f5]/8 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/12"
+              className="min-h-8 rounded-lg border border-[#3f3f46]/45 bg-[#f4f4f5]/8 px-3 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/12"
               onClick={() => setIsAvatarDeleteDialogOpen(true)}
               type="button"
             >
@@ -54,7 +54,7 @@ export function AvatarGalleryOverlay({
             </button>
           ) : null}
           <button
-            className="min-h-11 rounded-xl border border-[#3f3f46]/45 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
+            className="min-h-8 rounded-lg border border-[#3f3f46]/45 px-3 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
             onClick={onClose}
             type="button"
           >
@@ -64,7 +64,7 @@ export function AvatarGalleryOverlay({
       </div>
 
       <div
-        className="relative grid min-h-0 flex-1 place-items-center overflow-hidden rounded-2xl border border-[#3f3f46]/35 bg-[#050505]/72 p-3"
+        className="relative grid min-h-0 flex-1 place-items-center overflow-hidden rounded-lg border border-[#3f3f46]/35 bg-[#050505]/72 p-2.5"
         onClick={(event) => event.stopPropagation()}
       >
         {avatarGalleryItems.length > 1 ? (
@@ -105,7 +105,7 @@ export function AvatarGalleryOverlay({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           alt="Avatar preview"
-          className="h-auto max-h-[calc(100dvh-220px)] w-auto max-w-[calc(100vw-120px)] rounded-2xl object-contain shadow-[0_28px_90px_rgba(0,0,0,0.55)]"
+          className="h-auto max-h-[calc(100dvh-120px)] w-auto max-w-[calc(100vw-80px)] rounded-lg object-contain shadow-[0_28px_90px_rgba(0,0,0,0.55)]"
           src={avatarGalleryUrl}
         />
       </div>
