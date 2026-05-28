@@ -282,10 +282,10 @@ export function AppShell({
                   </button>
                   {isCollapsedSearchVisible ? (
                     <div
-                      className="hush-modal-transition absolute left-[calc(100%+12px)] top-0 z-50 w-[min(320px,calc(100vw-112px))] rounded-2xl border border-[#3f3f46]/55 bg-[#111111]/96 p-2 shadow-[0_22px_70px_rgba(0,0,0,0.58)] backdrop-blur-xl"
+                      className="hush-modal-transition absolute left-[calc(100%+10px)] top-0 z-50 w-[min(300px,calc(100vw-104px))] rounded-xl border border-[#3f3f46]/50 bg-[#111111]/96 p-2 shadow-[0_18px_56px_rgba(0,0,0,0.52)] backdrop-blur-xl"
                       ref={collapsedSearchPopoverRef}
                     >
-                        <label className="flex h-10 items-center rounded-xl bg-[#f4f4f5]/10 px-3 text-[#a1a1aa] transition focus-within:bg-[#f4f4f5]/14 focus-within:text-[#f4f4f5]">
+                        <label className="flex h-9 min-h-9 items-center rounded-lg bg-[#f4f4f5]/10 px-3 text-[#a1a1aa] transition focus-within:bg-[#f4f4f5]/14 focus-within:text-[#f4f4f5]">
                           <input
                             aria-label="User search by username"
                             autoFocus
@@ -297,7 +297,7 @@ export function AppShell({
                           />
                         </label>
                         {chatSearchQuery.trim().length > 0 ? (
-                          <div className="mt-2 grid max-h-72 gap-1.5 overflow-y-auto pr-1">
+                          <div className="mt-2 grid max-h-64 gap-1 overflow-y-auto pr-1">
                             {chatSearchQuery.trim().replace(/^@+/, "").length < 2 ? (
                               <p className="px-2 py-1 text-xs text-[#a1a1aa]">
                                 {t("searchMinUsername")}
@@ -309,7 +309,7 @@ export function AppShell({
                             ) : (
                               searchableProfiles.map((profile) => (
                                 <button
-                                  className="flex items-center gap-2 rounded-lg px-2 py-2 text-left transition hover:bg-[#f4f4f5]/10"
+                                  className="flex min-h-9 items-center gap-2 rounded-lg px-2 py-1 text-left transition hover:bg-[#f4f4f5]/10"
                                   key={"collapsed-search-" + profile.user_id}
                                   onClick={() => {
                                     setViewedProfile({
@@ -351,7 +351,7 @@ export function AppShell({
                             )}
                           </div>
                         ) : (
-                          <p className="px-2 py-2 text-xs leading-5 text-[#a1a1aa]">
+                          <p className="px-2 py-1.5 text-xs leading-5 text-[#a1a1aa]">
                             {t("searchUserByUsername")}
                           </p>
                         )}
