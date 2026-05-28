@@ -1,5 +1,6 @@
 import type { DragEvent, MouseEvent } from "react";
 import { useState } from "react";
+import { Avatar } from "@/components/ui/Avatar";
 import { useI18n } from "@/shared/i18n-context";
 import { archivedChatFolderId } from "@/shared/constants";
 import type { ChatFolder, MessageRow, ProfileRow } from "@/shared/types";
@@ -146,18 +147,12 @@ export function ChatListView({
                 type="button"
               >
                 <div className="relative h-10 w-10 shrink-0 sm:h-12 sm:w-12">
-                  <div className="grid h-full w-full place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-sm font-medium text-[#050505] sm:text-sm">
-                    {profile.avatar_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        alt={`${t("avatarAlt")} ${profile.display_name}`}
-                        className="h-full w-full object-cover"
-                        src={profile.avatar_url}
-                      />
-                    ) : (
-                      profile.display_name[0]?.toUpperCase()
-                    )}
-                  </div>
+                  <Avatar
+                    alt={`${t("avatarAlt")} ${profile.display_name}`}
+                    className="h-full w-full text-sm sm:text-sm"
+                    name={profile.display_name}
+                    src={profile.avatar_url}
+                  />
                   {isProfileOnline(profile.updated_at) ? (
                     <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#050505] bg-emerald-300 shadow-[0_0_14px_rgba(110,231,183,0.8)] sm:h-3.5 sm:w-3.5" />
                   ) : null}

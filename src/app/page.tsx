@@ -29,7 +29,7 @@ import { AuthScreen } from "@/features/auth/AuthScreen";
 import { useAuthFormState } from "@/features/auth/useAuthFormState";
 import { useAuthSessionState } from "@/features/auth/useAuthSessionState";
 import { AccessView } from "@/features/access/components/AccessView";
-import { checkAccessAdmin } from "@/features/access/queries";
+import { useAccessAdminState } from "@/features/access/useAccessAdminState";
 import { CallPanel } from "@/features/calls/components/CallPanel";
 import { useCallPanelEffects } from "@/features/calls/useCallPanelEffects";
 import { useCallSignals } from "@/features/calls/useCallSignals";
@@ -75,6 +75,7 @@ import { AvatarGalleryOverlay } from "@/features/profile/components/AvatarGaller
 import { ProfileView } from "@/features/profile/components/ProfileView";
 import { ViewedProfileModal } from "@/features/profile/components/ViewedProfileModal";
 import { useAvatarActions } from "@/features/profile/useAvatarActions";
+import { useEmailVerificationState } from "@/features/profile/useEmailVerificationState";
 import { useProfileEditorState } from "@/features/profile/useProfileEditorState";
 import { useProfilesState } from "@/features/profile/useProfilesState";
 import { SettingsView } from "@/features/settings/components/SettingsView";
@@ -294,10 +295,6 @@ export default function Home() {
     bio: string;
     userId: string;
   } | null>(null);
-  const [accessAdminUserId, setAccessAdminUserId] = useState<string | null>(null);
-  const [isEmailVerificationModalOpen, setIsEmailVerificationModalOpen] = useState(false);
-  const [isSendingEmailVerification, setIsSendingEmailVerification] = useState(false);
-  const [isEmailVerifiedInHush, setIsEmailVerifiedInHush] = useState(false);
   const [isForwardDialogOpen, setIsForwardDialogOpen] = useState(false);
   const [isForwardingMessages, setIsForwardingMessages] = useState(false);
 
@@ -525,27 +522,18 @@ export default function Home() {
     setErrorMessage,
     user,
   });
-
-  useEffect(() => {
-    let frameId = 0;
-
-    if (!user) {
-      frameId = window.requestAnimationFrame(() => {
-        setIsEmailVerifiedInHush(false);
-        setIsEmailVerificationModalOpen(false);
-      });
-
-      return () => window.cancelAnimationFrame(frameId);
-    }
-
-    frameId = window.requestAnimationFrame(() => {
-      const storedValue = window.localStorage.getItem(`hush-email-verified-${user.id}`);
-
-      setIsEmailVerifiedInHush(storedValue === "true");
-    });
-
-    return () => window.cancelAnimationFrame(frameId);
-  }, [user]);
+  const { canViewAccess } = useAccessAdminState(user);
+  const {
+    isEmailVerificationModalOpen,
+    isEmailVerifiedInHush,
+    isSendingEmailVerification,
+    sendEmailVerificationLetter,
+    setIsEmailVerifiedInHush,
+    setIsEmailVerificationModalOpen,
+  } = useEmailVerificationState({
+    setErrorMessage,
+    user,
+  });
 
   useEffect(() => {
     if (!user) {
@@ -1289,31 +1277,6 @@ export default function Home() {
   const isProfileBioChanged =
     profileBioInputValue.trim() !== profileBioSavedValue.trim();
   const profileUsernameInputValue = profileUsername ?? currentProfile?.username ?? "";
-  const canViewAccess = Boolean(user?.id && accessAdminUserId === user.id);
-
-  useEffect(() => {
-    if (!user?.id) {
-      return;
-    }
-
-    let isMounted = true;
-
-    async function syncAccessAdmin() {
-      const { data, error } = await checkAccessAdmin();
-
-      if (!isMounted) {
-        return;
-      }
-
-      setAccessAdminUserId(!error && data === true && user?.id ? user.id : null);
-    }
-
-    void syncAccessAdmin();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.id]);
 
   function handleProfileBioChange(nextBio: string) {
     setProfileBio(nextBio.slice(0, 100));
@@ -2300,34 +2263,6 @@ export default function Home() {
     callStatusRef.current = "idle";
     setCallStatus("idle");
     setCallPanelProfileSnapshot(null);
-  }
-
-  async function sendEmailVerificationLetter() {
-    if (!user?.email || isSendingEmailVerification) {
-      return;
-    }
-
-    setIsSendingEmailVerification(true);
-    setErrorMessage("");
-
-    const emailRedirectTo =
-      typeof window === "undefined" ? undefined : `${window.location.origin}/auth/confirm`;
-    const { error } = await supabase.auth.signInWithOtp({
-      email: user.email,
-      options: {
-        emailRedirectTo,
-        shouldCreateUser: false,
-      },
-    });
-
-    setIsSendingEmailVerification(false);
-
-    if (error) {
-      setErrorMessage("Не получилось отправить письмо подтверждения.");
-      return;
-    }
-
-    setIsEmailVerificationModalOpen(true);
   }
 
   function saveUserSyncPatch(patch: UserSyncPayload) {

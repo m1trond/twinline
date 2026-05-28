@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, Dispatch, PointerEvent, ReactNode, SetStateAction } from "react";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { NavButton, NavIcon } from "@/components/navigation/NavButton";
+import { Avatar } from "@/components/ui/Avatar";
 import { useI18n } from "@/shared/i18n-context";
 import { accessNavItem, navItems, settingsNavItem } from "@/shared/constants";
 import type { ActiveView, ProfileRow } from "@/shared/types";
@@ -328,18 +329,12 @@ export function AppShell({
                                   }}
                                   type="button"
                                 >
-                                  <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505]">
-                                    {profile.avatar_url ? (
-                                      // eslint-disable-next-line @next/next/no-img-element
-                                      <img
-                                        alt={"Avatar " + profile.display_name}
-                                        className="h-full w-full object-cover"
-                                        src={profile.avatar_url}
-                                      />
-                                    ) : (
-                                      profile.display_name[0]?.toUpperCase()
-                                    )}
-                                  </span>
+                                  <Avatar
+                                    alt={"Avatar " + profile.display_name}
+                                    className="h-8 w-8 text-xs"
+                                    name={profile.display_name}
+                                    src={profile.avatar_url}
+                                  />
                                   <span className="min-w-0">
                                     <span className="block truncate text-sm font-medium text-[#f4f4f5]">
                                       {profile.display_name}
@@ -423,18 +418,12 @@ export function AppShell({
                           }}
                           type="button"
                         >
-                          <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505]">
-                            {profile.avatar_url ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                alt={"Avatar " + profile.display_name}
-                                className="h-full w-full object-cover"
-                                src={profile.avatar_url}
-                              />
-                            ) : (
-                              profile.display_name[0]?.toUpperCase()
-                            )}
-                          </span>
+                          <Avatar
+                            alt={"Avatar " + profile.display_name}
+                            className="h-8 w-8 text-xs"
+                            name={profile.display_name}
+                            src={profile.avatar_url}
+                          />
                           <span className="min-w-0">
                             <span className="block truncate text-sm font-medium text-[#f4f4f5]">
                               {profile.display_name}

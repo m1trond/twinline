@@ -1,6 +1,7 @@
 import type { ChangeEvent, FormEvent, RefObject } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createPortal } from "react-dom";
+import { Avatar } from "@/components/ui/Avatar";
 import { useI18n } from "@/shared/i18n-context";
 import type { ProfileRow } from "@/shared/types";
 import {
@@ -92,22 +93,13 @@ export function ProfileView({
       <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-3">
         <div className="w-full max-w-[760px]">
         <div className="mb-2.5 flex items-center gap-2.5 border-b border-[#3f3f46]/35 pb-2.5">
-          <button
-            className="hush-avatar grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-full bg-[#18181b] text-base font-medium text-[#f4f4f5] transition hover:scale-[1.03] focus:outline-none sm:h-[72px] sm:w-[72px]"
+          <Avatar
+            alt={t("avatarAlt")}
+            className="h-16 w-16 bg-[#18181b] text-base text-[#f4f4f5] hover:scale-[1.03] focus:outline-none sm:h-[72px] sm:w-[72px]"
+            name={activeUserName}
             onClick={() => openAvatarGallery(currentProfile?.avatar_url)}
-            type="button"
-          >
-            {currentProfile?.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                alt={t("avatarAlt")}
-                className="h-full w-full object-cover"
-                src={currentProfile.avatar_url}
-              />
-            ) : (
-              activeUserName[0]?.toUpperCase()
-            )}
-          </button>
+            src={currentProfile?.avatar_url}
+          />
           <div className="min-w-0">
             <h2 className="truncate text-base font-medium">{activeUserName}</h2>
             <p className="mt-0.5 truncate text-sm font-medium text-[#a1a1aa]">
