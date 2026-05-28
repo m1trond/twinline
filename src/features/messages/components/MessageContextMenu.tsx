@@ -1,6 +1,7 @@
 import type { FavoriteItem, MessageRow } from "@/shared/types";
 import type { ReactNode } from "react";
 import { useI18n } from "@/shared/i18n-context";
+import { getMessageAudioUrl } from "@/shared/utils/messages";
 
 type MessageContextMenuState = {
   left: number;
@@ -63,6 +64,7 @@ export function MessageContextMenu({
   }
 
   const isMine = contextMenu.message.user_id === currentUserId;
+  const canEditMessage = isMine && !getMessageAudioUrl(contextMenu.message.text);
   const isPinned = activePinnedMessageIdSet.has(contextMenu.message.id);
   const isSelected = selectedMessageIdSet.has(contextMenu.message.id);
 
@@ -81,7 +83,7 @@ export function MessageContextMenu({
         <MenuButton icon={<ReplyIcon />} onClick={() => replyToMessage(contextMenu.message)}>
           {t("reply")}
         </MenuButton>
-        {isMine ? (
+        {canEditMessage ? (
           <MenuButton
             icon={<EditIcon />}
             onClick={() => startEditingMessage(contextMenu.message)}
@@ -141,6 +143,7 @@ export function FavoriteContextMenu({
   }
 
   const isPinned = pinnedFavoriteItem?.id === contextMenu.item.id;
+  const canEditItem = !getMessageAudioUrl(contextMenu.item.text);
   const isSelected = selectedMessageIdSet.has(contextMenu.item.id);
 
   return (
@@ -158,9 +161,11 @@ export function FavoriteContextMenu({
         <MenuButton icon={<ReplyIcon />} onClick={() => replyToFavoriteItem(contextMenu.item)}>
           {t("reply")}
         </MenuButton>
-        <MenuButton icon={<EditIcon />} onClick={() => startEditingFavoriteItem(contextMenu.item)}>
-          {t("edit")}
-        </MenuButton>
+        {canEditItem ? (
+          <MenuButton icon={<EditIcon />} onClick={() => startEditingFavoriteItem(contextMenu.item)}>
+            {t("edit")}
+          </MenuButton>
+        ) : null}
         <MenuButton icon={<PinIcon />} onClick={() => togglePinnedFavoriteItem(contextMenu.item)}>
           {isPinned ? t("unpin") : t("pin")}
         </MenuButton>

@@ -138,6 +138,7 @@ import {
   createTypingMessageText,
   getBlockMessagePayload,
   getMessageAttachmentCaption,
+  getMessageAudioUrl,
   getPinMessagePayload,
   getReadableMessageText,
   getReceiptMessagePayload,
@@ -3008,6 +3009,12 @@ export default function Home() {
   }
 
   function startEditingFavoriteItem(item: FavoriteItem) {
+    if (getMessageAudioUrl(item.text)) {
+      setFavoriteContextMenu(null);
+      setErrorMessage("Голосовые сообщения нельзя изменять.");
+      return;
+    }
+
     setEditingMessage(item);
     setReplyTarget(null);
     setMessageText(getReadableMessageText(item.text));
@@ -3135,6 +3142,12 @@ export default function Home() {
   function startEditingMessage(message: MessageRow) {
     if (!user || message.user_id !== user.id) {
       setErrorMessage("Можно изменять только свои сообщения.");
+      setMessageContextMenu(null);
+      return;
+    }
+
+    if (getMessageAudioUrl(message.text)) {
+      setErrorMessage("Голосовые сообщения нельзя изменять.");
       setMessageContextMenu(null);
       return;
     }
@@ -3929,10 +3942,11 @@ export default function Home() {
     if (activeView === "favorites") {
       if (editingMessage) {
         const editedText = updateEditableMessageText(editingMessage.text, trimmedText);
+        const hasTextChanged = editedText !== editingMessage.text;
         const editedAt = new Date().toISOString();
         const updatedFavoriteItem: FavoriteItem = {
           ...(editingMessage as FavoriteItem),
-          edited_at: editedAt,
+          edited_at: hasTextChanged ? editedAt : editingMessage.edited_at ?? null,
           text: editedText,
         };
 
@@ -3979,10 +3993,11 @@ export default function Home() {
     if (editingMessage) {
       const previousMessages = messages;
       const editedText = updateEditableMessageText(editingMessage.text, trimmedText);
+      const hasTextChanged = editedText !== editingMessage.text;
       const editedAt = new Date().toISOString();
       const updatedMessage: MessageRow = {
         ...editingMessage,
-        edited_at: editedAt,
+        edited_at: hasTextChanged ? editedAt : editingMessage.edited_at ?? null,
         text: editedText,
       };
 
@@ -3996,7 +4011,7 @@ export default function Home() {
 
       const { data, error } = await supabase
         .from("messages")
-        .update({ edited_at: editedAt, text: editedText })
+        .update({ edited_at: hasTextChanged ? editedAt : editingMessage.edited_at ?? null, text: editedText })
         .eq("id", editingMessage.id)
         .eq("user_id", user.id)
         .select(messageColumns)
