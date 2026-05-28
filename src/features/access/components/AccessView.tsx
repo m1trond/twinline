@@ -140,10 +140,12 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
 
   return (
     <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
-      <div className="mb-2 flex h-9 min-h-9 items-center gap-3 rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-4">
-        <h2 className="text-base font-medium leading-none text-[#f4f4f5]">{t("access")}</h2>
-        <span aria-hidden="true" className="h-4 w-px shrink-0 rounded-full bg-[#f4f4f5]/35" />
-        <p className="truncate text-xs font-medium leading-none text-[#a1a1aa]">
+      <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-4">
+        <div className="inline-flex min-w-0 items-center gap-3 leading-none">
+          <h2 className="text-base font-medium leading-none text-[#f4f4f5]">{t("access")}</h2>
+          <span aria-hidden="true" className="h-4 w-px shrink-0 self-center rounded-full bg-[#f4f4f5]/35" />
+        </div>
+        <p className="ml-3 min-w-0 truncate text-xs font-medium leading-none text-[#a1a1aa]">
           {isLoading ? t("loadingUsers") : userCountText}
         </p>
       </div>

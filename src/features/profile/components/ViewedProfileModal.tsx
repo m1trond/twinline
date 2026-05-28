@@ -124,8 +124,7 @@ export function ViewedProfileModal({
               <p className="mt-1 truncate text-sm font-medium text-[#a1a1aa]">
                 {viewedProfile.username ? `@${viewedProfile.username}` : t("nicknameNotSet")}
               </p>
-              <div className="mt-1.5 inline-flex items-center gap-2 text-xs font-medium leading-none text-[#a1a1aa]">
-                <span className="h-2 w-2 rounded-full bg-[#f4f4f5]" />
+              <div className="mt-1.5 text-xs font-medium leading-none text-[#a1a1aa]">
                 {formatLastSeen(viewedProfile.updatedAt, language)}
               </div>
             </div>
