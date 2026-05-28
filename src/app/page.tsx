@@ -58,6 +58,7 @@ import { OpenChatView } from "@/features/messages/components/OpenChatView";
 import { StickerPicker } from "@/features/messages/components/StickerPicker";
 import { useChatFoldersState } from "@/features/messages/hooks/useChatFoldersState";
 import { useFavoritesState } from "@/features/messages/hooks/useFavoritesState";
+import { useForwardMessagesState } from "@/features/messages/hooks/useForwardMessagesState";
 import { useMessageComposerState } from "@/features/messages/hooks/useMessageComposerState";
 import { useMessageReceiptEffects } from "@/features/messages/hooks/useMessageReceiptEffects";
 import { useMessagesRealtimeState } from "@/features/messages/hooks/useMessagesRealtimeState";
@@ -129,7 +130,6 @@ import {
 import {
   createBlockMessageText,
   createFileMessageText,
-  createForwardMessageText,
   createPinMessageText,
   createReplyMessageText,
   createTypingMessageText,
@@ -251,9 +251,6 @@ export default function Home() {
     bio: string;
     userId: string;
   } | null>(null);
-  const [isForwardDialogOpen, setIsForwardDialogOpen] = useState(false);
-  const [isForwardingMessages, setIsForwardingMessages] = useState(false);
-
   useEffect(() => {
     window.localStorage.setItem(interfaceLanguageStorageKey, interfaceLanguage);
     document.documentElement.lang = interfaceLanguage;
@@ -964,6 +961,29 @@ export default function Home() {
   const selectedForwardMessages = activeView === "favorites"
     ? selectedFavoriteItems
     : selectedDialogMessages;
+  const {
+    forwardMessagesToFavorites,
+    forwardMessagesToProfile,
+    forwardSelectedMessages,
+    isForwardDialogOpen,
+    isForwardingMessages,
+    setIsForwardDialogOpen,
+  } = useForwardMessagesState({
+    activeUserName,
+    blockedByMeProfileIds,
+    currentProfile,
+    favoriteItems,
+    profilesByUserId,
+    saveFavoriteItems,
+    selectedForwardMessages,
+    setErrorMessage,
+    setFavoriteContextMenu,
+    setMessageContextMenu,
+    setMessages,
+    setSelectedChatUserId,
+    setSelectedMessageIds,
+    user,
+  });
   const isMessageSelectionMode = selectedDialogMessages.length > 0;
   const isFavoriteSelectionMode = activeView === "favorites" && selectedFavoriteItems.length > 0;
   const activePinnedMessageIdSet = useMemo(() => {
@@ -3046,129 +3066,6 @@ export default function Home() {
     event.preventDefault();
     event.stopPropagation();
     toggleSelectedMessage(message);
-  }
-
-  function forwardSelectedMessages() {
-    if (selectedForwardMessages.length === 0) {
-      return;
-    }
-
-    setIsForwardDialogOpen(true);
-    setMessageContextMenu(null);
-    setFavoriteContextMenu(null);
-    setErrorMessage("");
-  }
-
-  async function forwardMessagesToProfile(profile: ProfileRow) {
-    if (!user || selectedForwardMessages.length === 0 || isForwardingMessages) {
-      return;
-    }
-
-    if (blockedByMeProfileIds.includes(profile.user_id)) {
-      setErrorMessage("Сначала разблокируй пользователя, чтобы переслать ему сообщение.");
-      return;
-    }
-
-    const forwardedTexts = selectedForwardMessages.map((message) => {
-      const sourceProfile = message.user_id === user.id
-        ? currentProfile
-        : message.user_id
-          ? profilesByUserId.get(message.user_id)
-          : null;
-      const sourceName = sourceProfile?.display_name ?? message.author;
-
-      return createForwardMessageText(message, sourceName);
-    });
-    const optimisticMessages: MessageRow[] = forwardedTexts.map((text, index) => ({
-      author: activeUserName,
-      created_at: new Date(Date.now() + index).toISOString(),
-      id: -(Date.now() + index + 1),
-      recipient_id: profile.user_id,
-      text,
-      user_id: user.id,
-    }));
-
-    setIsForwardingMessages(true);
-    setIsForwardDialogOpen(false);
-    setSelectedMessageIds([]);
-    setSelectedChatUserId(profile.user_id);
-    setMessages((currentMessages) =>
-      mergeMessages(currentMessages, optimisticMessages),
-    );
-
-    const { data, error } = await supabase
-      .from("messages")
-      .insert(
-        forwardedTexts.map((text) => ({
-          author: activeUserName,
-          recipient_id: profile.user_id,
-          text,
-          user_id: user.id,
-        })),
-      )
-      .select(messageColumns);
-
-    setIsForwardingMessages(false);
-
-    if (error) {
-      setMessages((currentMessages) =>
-        currentMessages.filter(
-          (message) =>
-            !optimisticMessages.some(
-              (optimisticMessage) => optimisticMessage.id === message.id,
-            ),
-        ),
-      );
-      setSelectedMessageIds(selectedForwardMessages.map((message) => message.id));
-      setErrorMessage("Не получилось переслать сообщения.");
-      return;
-    }
-
-    setMessages((currentMessages) => {
-      const withoutOptimisticMessages = currentMessages.filter(
-        (message) =>
-          !optimisticMessages.some(
-            (optimisticMessage) => optimisticMessage.id === message.id,
-          ),
-      );
-
-      return mergeMessages(withoutOptimisticMessages, data ?? []);
-    });
-    setErrorMessage("Сообщения пересланы.");
-  }
-
-  function forwardMessagesToFavorites() {
-    if (!user || selectedForwardMessages.length === 0 || isForwardingMessages) {
-      return;
-    }
-
-    const now = Date.now();
-    const nextFavoriteItems: FavoriteItem[] = selectedForwardMessages.map((message, index) => {
-      const createdAt = new Date(now + index).toISOString();
-      const sourceProfile = message.user_id === user.id
-        ? currentProfile
-        : message.user_id
-          ? profilesByUserId.get(message.user_id)
-          : null;
-      const sourceName = sourceProfile?.display_name ?? message.author;
-
-      return {
-        author: activeUserName,
-        created_at: createdAt,
-        id: now + index,
-        recipient_id: user.id,
-        saved_at: createdAt,
-        text: createForwardMessageText(message, sourceName),
-        user_id: user.id,
-      };
-    });
-
-    saveFavoriteItems([...favoriteItems, ...nextFavoriteItems]);
-    setIsForwardDialogOpen(false);
-    setSelectedMessageIds([]);
-    setMessageContextMenu(null);
-    setFavoriteContextMenu(null);
-    setErrorMessage("Сообщения сохранены в избранном.");
   }
 
   function hideSelectedMessagesForMe() {
