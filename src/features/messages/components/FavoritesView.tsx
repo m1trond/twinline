@@ -338,7 +338,7 @@ export function FavoritesView({
                               : hasFramedMedia
                                 ? "bg-transparent p-0 text-[#f4f4f5] shadow-none"
                               : `bg-[#f4f4f5] text-[#050505] shadow-[0_10px_30px_rgba(0,0,0,0.18)] ${
-                                  hasAttachment ? "p-1.5 sm:p-2" : "px-3 py-2 sm:px-3.5 sm:py-2.5"
+                                  hasAttachment ? "p-1.5" : "px-3 py-1.5 sm:px-3 sm:py-1.5"
                                 } ${isPreviousSameAuthor ? "rounded-tr-lg" : ""} ${
                                   isNextSameAuthor ? "rounded-br-lg" : "rounded-br-md"
                                 }`
@@ -444,7 +444,7 @@ export function FavoritesView({
                               </span>
                             </div>
                           ) : (
-                            <p className="whitespace-pre-wrap break-words text-sm leading-6 sm:text-base">
+                            <p className="whitespace-pre-wrap break-words text-sm leading-5">
                               {displayText}
                               <span className="ml-2 inline-flex translate-y-[1px] items-center gap-1 align-baseline">
                                 <span className="text-xs font-medium leading-none text-[#404040]">
@@ -455,7 +455,7 @@ export function FavoritesView({
                           )}
 
                           {hasCaptionableAttachment && attachmentCaption ? (
-                            <p className="mt-2 max-w-[min(320px,70vw)] whitespace-pre-wrap break-words px-1 text-sm leading-6 text-[#f4f4f5]">
+                            <p className="mt-1.5 max-w-[min(320px,70vw)] whitespace-pre-wrap break-words px-1 text-sm leading-5 text-[#f4f4f5]">
                               {attachmentCaption}
                             </p>
                           ) : null}
