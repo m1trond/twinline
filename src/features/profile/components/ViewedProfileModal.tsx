@@ -93,12 +93,12 @@ export function ViewedProfileModal({
         onClick={onClose}
         type="button"
       />
-      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] max-h-[calc(100dvh-24px)] w-[min(430px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/50 bg-[#101010]/96 p-3 text-left shadow-[0_28px_90px_rgba(0,0,0,0.68)] backdrop-blur-xl sm:p-4">
+      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] max-h-[calc(100dvh-24px)] w-[min(410px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/50 bg-[#101010]/96 p-3 text-left shadow-[0_28px_90px_rgba(0,0,0,0.68)] backdrop-blur-xl">
         <div className="relative">
           <div className="grid min-w-0 place-items-center text-center">
             <button
               aria-label={language === "en" ? "Open avatar" : "Открыть аватар"}
-              className="hush-avatar grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-base font-medium text-[#050505] shadow-[0_18px_45px_rgba(0,0,0,0.35)] transition hover:scale-[1.03] disabled:cursor-default disabled:hover:scale-100"
+              className="hush-avatar grid h-[72px] w-[72px] shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-base font-medium text-[#050505] shadow-[0_14px_36px_rgba(0,0,0,0.32)] transition hover:scale-[1.03] disabled:cursor-default disabled:hover:scale-100"
               disabled={!viewedProfile.avatarUrl}
               onClick={() => {
                 if (viewedProfile.avatarUrl) {
@@ -118,16 +118,16 @@ export function ViewedProfileModal({
                 viewedProfile.name[0]?.toUpperCase()
               )}
             </button>
-            <div className="mt-3 min-w-0">
+            <div className="mt-2 min-w-0">
               <h2 className="truncate text-base font-medium leading-tight text-[#f4f4f5]">
                 {viewedProfile.name}
               </h2>
               <UsernameCopyButton
-                className="mt-1 text-sm font-medium text-[#a1a1aa] hover:text-[#e5e5e5]"
+                className="mt-0.5 text-sm font-medium leading-tight text-[#a1a1aa] hover:text-[#e5e5e5]"
                 fallback={t("nicknameNotSet")}
                 username={viewedProfile.username}
               />
-              <div className="mt-1.5 text-xs font-medium leading-none text-[#a1a1aa]">
+              <div className="mt-1 text-xs font-medium leading-none text-[#a1a1aa]">
                 {formatLastSeen(viewedProfile.updatedAt, language)}
               </div>
             </div>
@@ -150,15 +150,15 @@ export function ViewedProfileModal({
           </button>
         </div>
 
-        <div className="mt-4 grid grid-cols-4 gap-1.5">
+        <div className="mt-3 grid grid-cols-4 gap-1.5">
           <button
             aria-label={language === "en" ? "Open chat" : "Открыть чат"}
-            className="flex min-h-[52px] flex-col items-center justify-center gap-1.5 rounded-lg border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5] transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
+            className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5] transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
             disabled={!canOpenChat}
             onClick={openChat}
             type="button"
           >
-            <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24">
               <path
                 d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"
                 stroke="currentColor"
@@ -173,7 +173,7 @@ export function ViewedProfileModal({
           </button>
           <button
             aria-label={language === "en" ? "Call" : "Позвонить"}
-            className="flex min-h-[52px] flex-col items-center justify-center gap-1.5 rounded-lg border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5] transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
+            className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5] transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
             disabled={!canCall}
             onClick={() => {
               openChat();
@@ -184,7 +184,7 @@ export function ViewedProfileModal({
             }}
             type="button"
           >
-            <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24">
               <path
                 d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"
                 stroke="currentColor"
@@ -199,7 +199,7 @@ export function ViewedProfileModal({
             <button
               aria-expanded={profileNotificationMenuUserId === viewedProfile.userId}
               aria-label={t("notifications")}
-              className={`flex min-h-[52px] w-full flex-col items-center justify-center gap-1.5 rounded-lg border text-center transition disabled:cursor-not-allowed disabled:opacity-45 ${
+              className={`flex min-h-12 w-full flex-col items-center justify-center gap-1 rounded-lg border text-center transition disabled:cursor-not-allowed disabled:opacity-45 ${
                 isMuted
                   ? "border-[#f4f4f5]/45 bg-[#f4f4f5]/10 text-[#f4f4f5] hover:bg-white/[0.12]"
                   : "border-[#3f3f46]/40 bg-black/24 text-[#f4f4f5] hover:bg-white/[0.08]"
@@ -216,7 +216,7 @@ export function ViewedProfileModal({
               }}
               type="button"
             >
-              <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+              <svg aria-hidden="true" className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24">
                 <path
                   d="M10.268 21a2 2 0 0 0 3.464 0"
                   stroke="currentColor"
@@ -277,7 +277,7 @@ export function ViewedProfileModal({
           </div>
           <button
             aria-label={language === "en" ? "Block" : "Заблокировать"}
-            className={`flex min-h-[52px] flex-col items-center justify-center gap-1.5 rounded-lg border text-center transition disabled:cursor-not-allowed disabled:opacity-45 ${
+            className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg border text-center transition disabled:cursor-not-allowed disabled:opacity-45 ${
               isBlockedByMe
                 ? "border-[#f4f4f5]/45 bg-[#f4f4f5]/10 text-[#f4f4f5] hover:bg-white/[0.12]"
                 : "border-[#3f3f46]/40 bg-black/24 text-[#f4f4f5] hover:bg-white/[0.08]"
@@ -295,7 +295,7 @@ export function ViewedProfileModal({
             }}
             type="button"
           >
-            <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24">
               <path
                 d="M4.929 4.929 19.07 19.071"
                 stroke="currentColor"
@@ -313,22 +313,22 @@ export function ViewedProfileModal({
           </button>
         </div>
 
-        <div className="mt-3 grid gap-2">
-          <article className="rounded-xl border border-[#3f3f46]/40 bg-black/22 p-3">
+        <div className="mt-2.5 grid gap-2">
+          <article className="rounded-lg border border-[#3f3f46]/40 bg-black/22 p-2.5">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#e5e5e5]">
               {t("bio")}
             </p>
-            <p className="mt-1.5 whitespace-pre-line text-sm leading-5 text-[#a1a1aa]">
+            <p className="mt-1 whitespace-pre-line text-sm leading-5 text-[#a1a1aa]">
               {profileBio}
             </p>
           </article>
 
 
-          <article className="rounded-xl border border-[#3f3f46]/40 bg-black/22 p-3">
+          <article className="rounded-lg border border-[#3f3f46]/40 bg-black/22 p-2.5">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#e5e5e5]">
               {language === "en" ? "Shared data" : "Общие данные"}
             </p>
-            <p className="mt-1.5 text-sm leading-5 text-[#a1a1aa]">
+            <p className="mt-1 text-sm leading-5 text-[#a1a1aa]">
               {language === "en"
                 ? "Shared chats and groups will appear here later."
                 : "Общие чаты и группы появятся здесь позже."}
