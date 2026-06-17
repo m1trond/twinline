@@ -42,12 +42,12 @@ type ProfileViewProps = {
   user: User;
 };
 
-const cardClass =
-  "rounded-lg border border-[#3f3f46]/35 bg-black/18 px-3 py-2";
+const sectionClass =
+  "rounded-lg border border-[#3f3f46]/35 bg-[#0c0c0d]/76 p-2.5";
 const labelClass =
   "text-[11px] font-medium uppercase tracking-[0.18em] text-[#d4d4d8]";
 const inputClass =
-  "min-h-8 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/65 focus:border-[#f4f4f5]";
+  "h-8 min-h-8 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/65 focus:border-[#f4f4f5]";
 const iconButtonClass =
   "grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#f4f4f5] text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b] disabled:opacity-70";
 
@@ -61,6 +61,21 @@ function CheckIcon({ className = "h-4 w-4" }: { className?: string }) {
         strokeLinejoin="round"
         strokeWidth="2"
       />
+    </svg>
+  );
+}
+
+function CameraIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 24 24">
+      <path
+        d="M14.5 4.5 16 7h2.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-7A2.5 2.5 0 0 1 5.5 7H8l1.5-2.5h5Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+      <circle cx="12" cy="13" r="3" stroke="currentColor" strokeWidth="2" />
     </svg>
   );
 }
@@ -98,6 +113,12 @@ export function ProfileView({
 }: ProfileViewProps) {
   const { language, t } = useI18n();
   const isEmailConfirmed = isEmailVerifiedInHush;
+  const usernameHelpText = profileUsernameError ||
+    (isUsernameChangeAllowed
+      ? t("usernameCanChangeMonthly")
+      : language === "en"
+        ? `Username can be changed again ${nextUsernameChangeDate ?? "later"}.`
+        : `Ник снова можно будет изменить ${nextUsernameChangeDate ?? "позже"}.`);
 
   return (
     <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
@@ -106,181 +127,187 @@ export function ProfileView({
       </div>
 
       <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-3">
-        <div className="w-full max-w-[760px]">
-          <div className="mb-2.5 flex items-start gap-3 border-b border-[#3f3f46]/35 pb-2.5">
-            <Avatar
-              alt={t("avatarAlt")}
-              className="h-16 w-16 bg-[#18181b] text-base text-[#f4f4f5] hover:scale-[1.03] focus:outline-none sm:h-[72px] sm:w-[72px]"
-              name={activeUserName}
-              onClick={() => openAvatarGallery(currentProfile?.avatar_url)}
-              src={currentProfile?.avatar_url}
-            />
-            <div className="grid min-w-0 justify-items-start pt-0.5">
-              <h2 className="truncate text-base font-medium leading-tight">{activeUserName}</h2>
-              <UsernameCopyButton
-                className="block text-sm font-medium leading-tight text-[#a1a1aa] hover:text-[#e5e5e5]"
-                fallback={t("nicknameNotSet")}
-                username={currentProfile?.username}
+        <div className="w-full max-w-[780px]">
+          <section className="mb-2.5 rounded-lg border border-[#3f3f46]/35 bg-[#0b0b0c]/78 p-2.5">
+            <div className="flex items-center gap-3">
+              <Avatar
+                alt={t("avatarAlt")}
+                className="h-16 w-16 bg-[#18181b] text-base text-[#f4f4f5] hover:scale-[1.03] focus:outline-none sm:h-[72px] sm:w-[72px]"
+                name={activeUserName}
+                onClick={() => openAvatarGallery(currentProfile?.avatar_url)}
+                src={currentProfile?.avatar_url}
               />
-              <input
-                accept="image/*"
-                className="hidden"
-                onChange={handleAvatarChange}
-                ref={avatarInputRef}
-                type="file"
-              />
-              <button
-                aria-label={t("changeAvatar")}
-                className="mt-1 inline-flex h-7 items-center gap-1.5 rounded-lg border border-[#3f3f46]/35 px-2.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={isUploadingAvatar}
-                onClick={() => avatarInputRef.current?.click()}
-                title={t("changeAvatar")}
-                type="button"
-              >
-                <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M14.5 4.5 16 7h2.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-7A2.5 2.5 0 0 1 5.5 7H8l1.5-2.5h5Z"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                  />
-                  <circle cx="12" cy="13" r="3" stroke="currentColor" strokeWidth="2" />
-                </svg>
-                <span>{isUploadingAvatar ? t("uploading") : t("avatarAlt")}</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-2">
-            <section className={cardClass}>
-              <p className={labelClass}>{t("profileName")}</p>
-              <form className="mt-2 flex items-center gap-2" onSubmit={updateProfileName}>
-              <input
-                className={`${inputClass} min-w-0 flex-1`}
-                maxLength={24}
-                minLength={2}
-                onChange={(event) => setProfileName(event.target.value)}
-                placeholder={t("profileName")}
-                type="text"
-                value={profileNameInputValue}
-              />
-              <button
-                aria-label={t("saveName")}
-                className={iconButtonClass}
-                disabled={!profileName.trim() || profileName.trim() === activeUserName}
-                title={t("saveName")}
-                type="submit"
-              >
-                <CheckIcon />
-              </button>
-            </form>
-          </section>
-
-          <section className={cardClass}>
-            <p className={labelClass}>{t("username")}</p>
-            <form className="mt-2 flex items-center gap-2" onSubmit={updateProfileUsername}>
-              <label className="flex min-h-8 min-w-0 flex-1 items-center rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm focus-within:border-[#f4f4f5]">
-                <span className="font-medium text-[#a1a1aa]">@</span>
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h2 className="truncate text-base font-medium leading-tight">
+                      {activeUserName}
+                    </h2>
+                    <UsernameCopyButton
+                      className="mt-0.5 block text-sm font-medium leading-none text-[#a1a1aa] hover:text-[#e5e5e5]"
+                      fallback={t("nicknameNotSet")}
+                      username={currentProfile?.username}
+                    />
+                  </div>
+                  {isEmailConfirmed ? (
+                    <span className="hidden h-7 shrink-0 items-center gap-1.5 rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/10 px-2.5 text-xs font-medium text-[#d4d4d8] sm:inline-flex">
+                      <CheckIcon className="h-3.5 w-3.5" />
+                      {language === "en" ? "Confirmed" : "Подтверждена"}
+                    </span>
+                  ) : null}
+                </div>
                 <input
-                  aria-label="Ник Hush"
-                  className="min-w-0 flex-1 bg-transparent pl-1 outline-none placeholder:text-[#a1a1aa]/65"
-                  maxLength={24}
-                  minLength={3}
-                  onChange={(event) => {
-                    setProfileUsername(formatUsernameInput(event.target.value));
-                    setProfileUsernameError("");
-                  }}
-                  placeholder="m1trond"
-                  type="text"
-                  value={profileUsernameInputValue}
-                />
-              </label>
-              <button
-                aria-label={t("saveNick")}
-                className={iconButtonClass}
-                disabled={
-                  !profileUsernameInputValue.trim() ||
-                  normalizeUsername(profileUsernameInputValue) === currentProfile?.username
-                }
-                title={t("saveNick")}
-                type="submit"
-              >
-                <CheckIcon />
-              </button>
-            </form>
-            <p className={`mt-1.5 text-xs leading-5 ${profileUsernameError ? "font-medium text-red-300" : "text-[#a1a1aa]"}`}>
-              {profileUsernameError ||
-                (isUsernameChangeAllowed
-                  ? t("usernameCanChangeMonthly")
-                  : `Ник снова можно будет изменить ${nextUsernameChangeDate ?? "позже"}.`)}
-            </p>
-          </section>
-
-          <section className={`${cardClass} sm:col-span-2`}>
-            <p className={labelClass}>{t("bio")}</p>
-            <form className="mt-2 grid gap-2" onSubmit={updateProfileBio}>
-              <div className="relative">
-                <textarea
-                  className="min-h-12 w-full resize-none rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 py-2 pr-12 text-sm leading-5 outline-none placeholder:text-[#a1a1aa]/65 focus:border-[#f4f4f5]"
-                  maxLength={100}
-                  onChange={(event) => setProfileBio(event.target.value.slice(0, 100))}
-                  placeholder={t("bioPlaceholder")}
-                  value={profileBioInputValue}
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarChange}
+                  ref={avatarInputRef}
+                  type="file"
                 />
                 <button
-                  aria-label={t("save")}
-                  className={`absolute bottom-2 right-2 grid h-7 w-7 place-items-center rounded-lg text-[#050505] transition disabled:cursor-not-allowed ${
-                    isSavingProfileBio || !isProfileBioChanged
-                      ? "bg-[#52525b] opacity-70"
-                      : "bg-[#f4f4f5] hover:bg-[#e5e5e5]"
-                  }`}
-                  disabled={
-                    isSavingProfileBio ||
-                    !isProfileBioChanged
-                  }
-                  title={isSavingProfileBio ? t("saving") : t("save")}
-                  type="submit"
+                  aria-label={t("changeAvatar")}
+                  className="mt-2 inline-flex h-7 items-center gap-1.5 rounded-lg border border-[#3f3f46]/35 px-2.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isUploadingAvatar}
+                  onClick={() => avatarInputRef.current?.click()}
+                  title={t("changeAvatar")}
+                  type="button"
                 >
-                  <CheckIcon className="h-3.5 w-3.5" />
+                  <CameraIcon className="h-3.5 w-3.5" />
+                  <span>{isUploadingAvatar ? t("uploading") : t("changeAvatar")}</span>
                 </button>
               </div>
-              {profileBioSaveError ? (
-                <p className="text-xs font-medium leading-5 text-red-300">
-                  {profileBioSaveError}
-                </p>
-              ) : null}
-            </form>
-          </section>
-
-          <section className={`${cardClass} sm:col-span-2`}>
-            <p className={labelClass}>Email</p>
-            <div className="mt-1.5 flex flex-wrap items-center gap-2">
-              <p className="min-w-0 flex-1 break-words text-sm font-medium">{user.email}</p>
-              <button
-                className={`inline-flex h-7 shrink-0 items-center rounded-lg px-2.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-70 ${
-                  isEmailConfirmed
-                    ? "border border-[#3f3f46]/35 bg-[#f4f4f5]/10 text-[#d4d4d8]"
-                    : "border border-red-400/45 bg-red-500/18 text-red-100 hover:bg-red-500/26"
-                }`}
-                disabled={isEmailConfirmed || isSendingEmailVerification}
-                onClick={() => void sendEmailVerificationLetter()}
-                type="button"
-              >
-                <CheckIcon className="mr-1.5 h-3.5 w-3.5" />
-                {isEmailConfirmed
-                  ? language === "en" ? "Confirmed" : "Подтверждена"
-                  : isSendingEmailVerification
-                    ? language === "en" ? "Sending..." : "Отправляю..."
-                    : language === "en" ? "Confirm" : "Подтвердить"}
-              </button>
             </div>
-            <p className="mt-1 text-xs leading-5 text-[#a1a1aa]">
-              Его видишь только ты в своем аккаунте.
-            </p>
           </section>
 
-        </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <section className={sectionClass}>
+              <p className={labelClass}>{t("profileName")}</p>
+              <form className="mt-2 flex items-center gap-2" onSubmit={updateProfileName}>
+                <input
+                  className={`${inputClass} min-w-0 flex-1`}
+                  maxLength={24}
+                  minLength={2}
+                  onChange={(event) => setProfileName(event.target.value)}
+                  placeholder={t("profileName")}
+                  type="text"
+                  value={profileNameInputValue}
+                />
+                <button
+                  aria-label={t("saveName")}
+                  className={iconButtonClass}
+                  disabled={!profileName.trim() || profileName.trim() === activeUserName}
+                  title={t("saveName")}
+                  type="submit"
+                >
+                  <CheckIcon />
+                </button>
+              </form>
+            </section>
+
+            <section className={sectionClass}>
+              <p className={labelClass}>{t("username")}</p>
+              <form className="mt-2 flex items-center gap-2" onSubmit={updateProfileUsername}>
+                <label className="flex h-8 min-w-0 flex-1 items-center rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm focus-within:border-[#f4f4f5]">
+                  <span className="font-medium text-[#a1a1aa]">@</span>
+                  <input
+                    aria-label={language === "en" ? "Hush username" : "Ник Hush"}
+                    className="min-w-0 flex-1 bg-transparent pl-1 outline-none placeholder:text-[#a1a1aa]/65"
+                    maxLength={24}
+                    minLength={3}
+                    onChange={(event) => {
+                      setProfileUsername(formatUsernameInput(event.target.value));
+                      setProfileUsernameError("");
+                    }}
+                    placeholder="m1trond"
+                    type="text"
+                    value={profileUsernameInputValue}
+                  />
+                </label>
+                <button
+                  aria-label={t("saveNick")}
+                  className={iconButtonClass}
+                  disabled={
+                    !profileUsernameInputValue.trim() ||
+                    normalizeUsername(profileUsernameInputValue) === currentProfile?.username
+                  }
+                  title={t("saveNick")}
+                  type="submit"
+                >
+                  <CheckIcon />
+                </button>
+              </form>
+              <p className={`mt-1.5 text-xs leading-5 ${profileUsernameError ? "font-medium text-red-300" : "text-[#a1a1aa]"}`}>
+                {usernameHelpText}
+              </p>
+            </section>
+
+            <section className={`${sectionClass} sm:col-span-2`}>
+              <div className="flex items-center justify-between gap-2">
+                <p className={labelClass}>{t("bio")}</p>
+                <span className="text-xs font-medium text-[#71717a]">
+                  {profileBioInputValue.length}/100
+                </span>
+              </div>
+              <form className="mt-2" onSubmit={updateProfileBio}>
+                <div className="relative">
+                  <textarea
+                    className="min-h-12 w-full resize-none rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 py-2 pr-12 text-sm leading-5 outline-none placeholder:text-[#a1a1aa]/65 focus:border-[#f4f4f5]"
+                    maxLength={100}
+                    onChange={(event) => setProfileBio(event.target.value.slice(0, 100))}
+                    placeholder={t("bioPlaceholder")}
+                    value={profileBioInputValue}
+                  />
+                  <button
+                    aria-label={t("save")}
+                    className={`absolute bottom-2 right-2 grid h-7 w-7 place-items-center rounded-lg text-[#050505] transition disabled:cursor-not-allowed ${
+                      isSavingProfileBio || !isProfileBioChanged
+                        ? "bg-[#52525b] opacity-70"
+                        : "bg-[#f4f4f5] hover:bg-[#e5e5e5]"
+                    }`}
+                    disabled={isSavingProfileBio || !isProfileBioChanged}
+                    title={isSavingProfileBio ? t("saving") : t("save")}
+                    type="submit"
+                  >
+                    <CheckIcon className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                {profileBioSaveError ? (
+                  <p className="mt-1 text-xs font-medium leading-5 text-red-300">
+                    {profileBioSaveError}
+                  </p>
+                ) : null}
+              </form>
+            </section>
+
+            <section className={`${sectionClass} sm:col-span-2`}>
+              <p className={labelClass}>Email</p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <p className="min-w-0 flex-1 break-words text-sm font-medium">{user.email}</p>
+                {isEmailConfirmed ? (
+                  <span className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/10 px-2.5 text-xs font-medium text-[#d4d4d8]">
+                    <CheckIcon className="h-3.5 w-3.5" />
+                    {language === "en" ? "Confirmed" : "Подтверждена"}
+                  </span>
+                ) : (
+                  <button
+                    className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg border border-red-400/45 bg-red-500/18 px-2.5 text-xs font-medium text-red-100 transition hover:bg-red-500/26 disabled:cursor-not-allowed disabled:opacity-70"
+                    disabled={isSendingEmailVerification}
+                    onClick={() => void sendEmailVerificationLetter()}
+                    type="button"
+                  >
+                    <CheckIcon className="h-3.5 w-3.5" />
+                    {isSendingEmailVerification
+                      ? language === "en" ? "Sending..." : "Отправляю..."
+                      : language === "en" ? "Confirm" : "Подтвердить"}
+                  </button>
+                )}
+              </div>
+              <p className="mt-1 text-xs leading-5 text-[#a1a1aa]">
+                {language === "en"
+                  ? "Only you can see it in your account."
+                  : "Его видишь только ты в своем аккаунте."}
+              </p>
+            </section>
+          </div>
         </div>
       </div>
       {isEmailVerificationModalOpen && typeof document !== "undefined"
