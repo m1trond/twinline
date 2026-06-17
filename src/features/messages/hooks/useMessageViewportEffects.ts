@@ -4,8 +4,10 @@ import type { ActiveView } from "@/shared/types";
 
 type MessageViewportEffectsParams = {
   activeDialogMessagesCount: number;
+  activeDialogMessagesKey: string;
   activeView: ActiveView;
   favoriteItemsCount: number;
+  favoriteItemsKey: string;
   highlightedMessageTimeoutRef: RefObject<number | null>;
   isLoadingMessages: boolean;
   messagesListRef: RefObject<HTMLDivElement | null>;
@@ -59,8 +61,10 @@ function keepMessagesListAtBottom(messagesListRef: RefObject<HTMLDivElement | nu
 
 export function useMessageViewportEffects({
   activeDialogMessagesCount,
+  activeDialogMessagesKey,
   activeView,
   favoriteItemsCount,
+  favoriteItemsKey,
   highlightedMessageTimeoutRef,
   isLoadingMessages,
   messagesListRef,
@@ -78,6 +82,7 @@ export function useMessageViewportEffects({
     return keepMessagesListAtBottom(messagesListRef);
   }, [
     activeDialogMessagesCount,
+    activeDialogMessagesKey,
     activeView,
     isLoadingMessages,
     messagesListRef,
@@ -90,7 +95,7 @@ export function useMessageViewportEffects({
     }
 
     return keepMessagesListAtBottom(messagesListRef);
-  }, [activeView, favoriteItemsCount, messagesListRef]);
+  }, [activeView, favoriteItemsCount, favoriteItemsKey, messagesListRef]);
 
   useEffect(() => {
     const timeoutRef = highlightedMessageTimeoutRef;

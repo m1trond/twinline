@@ -1009,6 +1009,24 @@ export default function Home() {
     ? activePinnedMessages
     : activeDialogMessages;
   const visibleDialogMessagesCount = visibleDialogMessages.length;
+  const visibleDialogLastMessage = visibleDialogMessages.at(-1);
+  const visibleDialogMessagesKey = visibleDialogLastMessage
+    ? [
+        visibleDialogLastMessage.id,
+        visibleDialogLastMessage.created_at,
+        visibleDialogLastMessage.edited_at ?? "",
+        visibleDialogLastMessage.text.length,
+      ].join(":")
+    : "";
+  const favoriteLastItem = favoriteItems.at(-1);
+  const favoriteItemsKey = favoriteLastItem
+    ? [
+        favoriteLastItem.id,
+        favoriteLastItem.created_at,
+        favoriteLastItem.edited_at ?? "",
+        favoriteLastItem.text.length,
+      ].join(":")
+    : "";
   const unreadMessagesByUserId = useMemo(() => {
     const unreadByUserId = new Map<string, number>();
 
@@ -1297,8 +1315,10 @@ export default function Home() {
 
   useMessageViewportEffects({
     activeDialogMessagesCount: activeDialogMessages.length,
+    activeDialogMessagesKey: visibleDialogMessagesKey,
     activeView,
     favoriteItemsCount: favoriteItems.length,
+    favoriteItemsKey,
     highlightedMessageTimeoutRef,
     isLoadingMessages,
     messagesListRef,

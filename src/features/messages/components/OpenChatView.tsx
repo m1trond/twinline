@@ -214,7 +214,7 @@ export function OpenChatView({
   }
 
   return (<div
-                className="hush-panel-transition relative flex min-h-0 flex-col overflow-hidden"
+                className="hush-panel-transition relative flex min-h-0 flex-col overflow-hidden [overflow-anchor:none]"
                 onDragEnter={handleAttachmentDragEnter}
                 onDragLeave={handleAttachmentDragLeave}
                 onDragOver={handleAttachmentDragOver}
