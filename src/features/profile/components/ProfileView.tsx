@@ -49,7 +49,7 @@ const labelClass =
 const inputClass =
   "h-8 min-h-8 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/65 focus:border-[#f4f4f5]";
 const iconButtonClass =
-  "grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#f4f4f5] text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b] disabled:opacity-70";
+  "grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#f4f4f5] text-[#050505] transition hover:scale-[1.03] hover:bg-[#e5e5e5] active:scale-[0.97] disabled:cursor-not-allowed disabled:bg-[#52525b] disabled:opacity-70 disabled:hover:scale-100 disabled:active:scale-100";
 
 function CheckIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -138,23 +138,15 @@ export function ProfileView({
                 src={currentProfile?.avatar_url}
               />
               <div className="min-w-0 flex-1">
-                <div className="flex min-w-0 items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h2 className="truncate text-base font-medium leading-tight">
-                      {activeUserName}
-                    </h2>
-                    <UsernameCopyButton
-                      className="mt-0.5 block text-sm font-medium leading-none text-[#a1a1aa] hover:text-[#e5e5e5]"
-                      fallback={t("nicknameNotSet")}
-                      username={currentProfile?.username}
-                    />
-                  </div>
-                  {isEmailConfirmed ? (
-                    <span className="hidden h-7 shrink-0 items-center gap-1.5 rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/10 px-2.5 text-xs font-medium text-[#d4d4d8] sm:inline-flex">
-                      <CheckIcon className="h-3.5 w-3.5" />
-                      {language === "en" ? "Confirmed" : "Подтверждена"}
-                    </span>
-                  ) : null}
+                <div className="min-w-0">
+                  <h2 className="truncate text-base font-medium leading-tight">
+                    {activeUserName}
+                  </h2>
+                  <UsernameCopyButton
+                    className="mt-0.5 block text-sm font-medium leading-none text-[#a1a1aa] hover:text-[#e5e5e5]"
+                    fallback={t("nicknameNotSet")}
+                    username={currentProfile?.username}
+                  />
                 </div>
                 <input
                   accept="image/*"
@@ -258,10 +250,10 @@ export function ProfileView({
                   />
                   <button
                     aria-label={t("save")}
-                    className={`absolute bottom-2 right-2 grid h-7 w-7 place-items-center rounded-lg text-[#050505] transition disabled:cursor-not-allowed ${
+                    className={`absolute bottom-2 right-2 grid h-7 w-7 place-items-center rounded-lg text-[#050505] transition disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 ${
                       isSavingProfileBio || !isProfileBioChanged
                         ? "bg-[#52525b] opacity-70"
-                        : "bg-[#f4f4f5] hover:bg-[#e5e5e5]"
+                        : "bg-[#f4f4f5] hover:scale-[1.03] hover:bg-[#e5e5e5] active:scale-[0.97]"
                     }`}
                     disabled={isSavingProfileBio || !isProfileBioChanged}
                     title={isSavingProfileBio ? t("saving") : t("save")}
