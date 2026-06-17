@@ -24,6 +24,36 @@ function scrollMessagesListToBottom(
   messagesList.scrollTop = messagesList.scrollHeight;
 }
 
+function keepMessagesListAtBottom(messagesListRef: RefObject<HTMLDivElement | null>) {
+  const frameIds: number[] = [];
+  const timeoutIds: number[] = [];
+
+  const scroll = () => scrollMessagesListToBottom(messagesListRef);
+
+  scroll();
+
+  frameIds.push(
+    window.requestAnimationFrame(() => {
+      scroll();
+      frameIds.push(
+        window.requestAnimationFrame(() => {
+          scroll();
+        }),
+      );
+    }),
+  );
+
+  timeoutIds.push(
+    window.setTimeout(scroll, 80),
+    window.setTimeout(scroll, 180),
+  );
+
+  return () => {
+    frameIds.forEach((frameId) => window.cancelAnimationFrame(frameId));
+    timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
+  };
+}
+
 export function useMessageViewportEffects({
   activeDialogMessagesCount,
   activeView,
@@ -42,19 +72,7 @@ export function useMessageViewportEffects({
       return;
     }
 
-    const frameId = window.requestAnimationFrame(() => {
-      scrollMessagesListToBottom(messagesListRef);
-    });
-    const settleFrameId = window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        scrollMessagesListToBottom(messagesListRef);
-      });
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-      window.cancelAnimationFrame(settleFrameId);
-    };
+    return keepMessagesListAtBottom(messagesListRef);
   }, [
     activeDialogMessagesCount,
     activeView,
@@ -68,13 +86,7 @@ export function useMessageViewportEffects({
       return;
     }
 
-    const frameId = window.requestAnimationFrame(() => {
-      scrollMessagesListToBottom(messagesListRef);
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-    };
+    return keepMessagesListAtBottom(messagesListRef);
   }, [activeView, favoriteItemsCount, messagesListRef]);
 
   useEffect(() => {
