@@ -1278,6 +1278,21 @@ export default function Home() {
     setProfileBioSaveError("");
   }
 
+  const setActiveViewFromShell = useCallback<typeof setActiveView>(
+    (nextView) => {
+      const resolvedView =
+        typeof nextView === "function" ? nextView(activeViewRef.current) : nextView;
+
+      if (resolvedView !== "profile" && profileBio !== null) {
+        setProfileBio(null);
+        setProfileBioSaveError("");
+      }
+
+      setActiveView(resolvedView);
+    },
+    [profileBio, setActiveView, setProfileBio],
+  );
+
   const {
     avatarGalleryUrl,
     deleteAvatarFromGallery,
@@ -4153,7 +4168,7 @@ export default function Home() {
       areSoftEffectsEnabled={areSoftEffectsEnabled}
       isLightThemeEnabled={isLightThemeEnabled}
       searchableProfiles={searchableProfiles}
-      setActiveView={setActiveView}
+      setActiveView={setActiveViewFromShell}
       setChatSearchQuery={setChatSearchQuery}
       setSelectedChatUserId={setSelectedChatUserId}
       setUnreadMessageCount={setUnreadMessageCount}
