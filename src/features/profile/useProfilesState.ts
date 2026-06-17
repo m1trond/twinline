@@ -118,9 +118,11 @@ export function useProfilesState({
   const [profiles, setProfiles] = useState<ProfileRow[]>(() =>
     readStoredProfiles(user?.id),
   );
+  const storedProfiles = useMemo(() => readStoredProfiles(user?.id), [user?.id]);
+  const effectiveProfiles = profiles.length > 0 ? profiles : storedProfiles;
   const currentProfile = useMemo(() => {
-    return profiles.find((profile) => profile.user_id === user?.id) ?? null;
-  }, [profiles, user?.id]);
+    return effectiveProfiles.find((profile) => profile.user_id === user?.id) ?? null;
+  }, [effectiveProfiles, user?.id]);
   const currentProfileRef = useRef<ProfileRow | null>(null);
 
   useEffect(() => {
@@ -138,12 +140,12 @@ export function useProfilesState({
   const profilesByUserId = useMemo(() => {
     const nextProfilesByUserId = new Map<string, ProfileRow>();
 
-    for (const profile of profiles) {
+    for (const profile of effectiveProfiles) {
       nextProfilesByUserId.set(profile.user_id, profile);
     }
 
     return nextProfilesByUserId;
-  }, [profiles]);
+  }, [effectiveProfiles]);
 
   useEffect(() => {
     let clearFrameId = 0;
@@ -286,7 +288,7 @@ export function useProfilesState({
   }, [setErrorMessage, user]);
 
   return {
-    profiles,
+    profiles: effectiveProfiles,
     setProfiles,
     currentProfile,
     profilesByUserId,
