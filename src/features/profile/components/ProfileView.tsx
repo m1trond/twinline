@@ -2,6 +2,7 @@ import type { ChangeEvent, FormEvent, RefObject } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createPortal } from "react-dom";
 import { Avatar } from "@/components/ui/Avatar";
+import { UsernameCopyButton } from "@/components/ui/UsernameCopyButton";
 import { useI18n } from "@/shared/i18n-context";
 import type { ProfileRow } from "@/shared/types";
 import {
@@ -102,9 +103,11 @@ export function ProfileView({
           />
           <div className="min-w-0">
             <h2 className="truncate text-base font-medium">{activeUserName}</h2>
-            <p className="mt-0.5 truncate text-sm font-medium text-[#a1a1aa]">
-              {currentProfile?.username ? `@${currentProfile.username}` : t("nicknameNotSet")}
-            </p>
+            <UsernameCopyButton
+              className="mt-0.5 text-sm font-medium text-[#a1a1aa] hover:text-[#e5e5e5]"
+              fallback={t("nicknameNotSet")}
+              username={currentProfile?.username}
+            />
             <input
               accept="image/*"
               className="hidden"

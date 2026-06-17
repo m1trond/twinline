@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { User } from "@supabase/supabase-js";
+import { UsernameCopyButton } from "@/components/ui/UsernameCopyButton";
 import type { CallStatus, MutedProfileUntil } from "@/shared/types";
 import type { ViewedProfileState } from "@/features/navigation/useNavigationState";
 import { useI18n } from "@/shared/i18n-context";
@@ -121,9 +122,11 @@ export function ViewedProfileModal({
               <h2 className="truncate text-base font-medium leading-tight text-[#f4f4f5]">
                 {viewedProfile.name}
               </h2>
-              <p className="mt-1 truncate text-sm font-medium text-[#a1a1aa]">
-                {viewedProfile.username ? `@${viewedProfile.username}` : t("nicknameNotSet")}
-              </p>
+              <UsernameCopyButton
+                className="mt-1 text-sm font-medium text-[#a1a1aa] hover:text-[#e5e5e5]"
+                fallback={t("nicknameNotSet")}
+                username={viewedProfile.username}
+              />
               <div className="mt-1.5 text-xs font-medium leading-none text-[#a1a1aa]">
                 {formatLastSeen(viewedProfile.updatedAt, language)}
               </div>
