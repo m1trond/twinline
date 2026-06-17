@@ -240,9 +240,9 @@ export function ProfileView({
                 </span>
               </div>
               <form className="mt-2" onSubmit={updateProfileBio}>
-                <div className="relative">
+                <div className="flex min-h-12 items-center rounded-lg border border-transparent bg-[#f4f4f5]/12 focus-within:border-[#f4f4f5]">
                   <textarea
-                    className="min-h-12 w-full resize-none rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 py-2 pr-12 text-sm leading-5 outline-none placeholder:text-[#a1a1aa]/65 focus:border-[#f4f4f5]"
+                    className="min-h-12 min-w-0 flex-1 resize-none bg-transparent px-3 py-2 text-sm leading-5 outline-none placeholder:text-[#a1a1aa]/65"
                     maxLength={100}
                     onChange={(event) => setProfileBio(event.target.value.slice(0, 100))}
                     placeholder={t("bioPlaceholder")}
@@ -250,7 +250,7 @@ export function ProfileView({
                   />
                   <button
                     aria-label={t("save")}
-                    className={`absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-lg text-[#050505] transition disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 ${
+                    className={`mr-2 grid h-7 w-7 shrink-0 place-items-center rounded-lg text-[#050505] transition disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 ${
                       isSavingProfileBio || !isProfileBioChanged
                         ? "bg-[#52525b] opacity-70"
                         : "bg-[#f4f4f5] hover:scale-[1.03] hover:bg-[#e5e5e5] active:scale-[0.97]"
