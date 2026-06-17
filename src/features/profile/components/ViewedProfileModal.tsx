@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import type { User } from "@supabase/supabase-js";
 import { UsernameCopyButton } from "@/components/ui/UsernameCopyButton";
 import type { CallStatus, MutedProfileUntil } from "@/shared/types";
@@ -53,6 +53,10 @@ export function ViewedProfileModal({
   unmuteProfileNotifications,
 }: ViewedProfileModalProps) {
   const { language, t } = useI18n();
+  const [notificationMenuPosition, setNotificationMenuPosition] = useState({
+    left: 0,
+    top: 0,
+  });
 
   if (!viewedProfile) {
     return null;
@@ -205,11 +209,16 @@ export function ViewedProfileModal({
                   : "border-[#3f3f46]/40 bg-black/24 text-[#f4f4f5] hover:bg-white/[0.08]"
               }`}
               disabled={!canUseProfileActions}
-              onClick={() => {
+              onClick={(event) => {
                 if (!viewedProfile.userId || isSelf) {
                   return;
                 }
 
+                const buttonRect = event.currentTarget.getBoundingClientRect();
+                setNotificationMenuPosition({
+                  left: buttonRect.left + buttonRect.width / 2,
+                  top: buttonRect.bottom + 8,
+                });
                 setProfileNotificationMenuUserId((currentUserId) =>
                   currentUserId === viewedProfile.userId ? null : viewedProfile.userId,
                 );
@@ -246,7 +255,13 @@ export function ViewedProfileModal({
                   onClick={() => setProfileNotificationMenuUserId(null)}
                   type="button"
                 />
-                <div className="absolute left-1/2 top-[calc(100%+8px)] z-[110] w-60 -translate-x-1/2 rounded-lg border border-[#3f3f46]/55 bg-[#171717]/98 p-1 text-left shadow-[0_18px_55px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+                <div
+                  className="fixed z-[110] w-60 -translate-x-1/2 rounded-lg border border-[#3f3f46]/55 bg-[#171717]/98 p-1 text-left shadow-[0_18px_55px_rgba(0,0,0,0.55)] backdrop-blur-xl"
+                  style={{
+                    left: notificationMenuPosition.left,
+                    top: notificationMenuPosition.top,
+                  }}
+                >
                   {isMuted ? (
                     <button
                       className="min-h-8 w-full rounded-lg px-3 text-left text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"

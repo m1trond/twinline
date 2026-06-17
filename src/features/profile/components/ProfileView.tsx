@@ -94,33 +94,13 @@ export function ProfileView({
       <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-3">
         <div className="w-full max-w-[760px]">
           <div className="mb-2.5 flex items-start gap-3 border-b border-[#3f3f46]/35 pb-2.5">
-            <div className="relative shrink-0">
-              <Avatar
-                alt={t("avatarAlt")}
-                className="h-16 w-16 bg-[#18181b] text-base text-[#f4f4f5] hover:scale-[1.03] focus:outline-none sm:h-[72px] sm:w-[72px]"
-                name={activeUserName}
-                onClick={() => openAvatarGallery(currentProfile?.avatar_url)}
-                src={currentProfile?.avatar_url}
-              />
-              <button
-                aria-label={t("changeAvatar")}
-                className="absolute -bottom-1 -right-1 grid h-7 w-7 place-items-center rounded-lg border border-[#3f3f46]/55 bg-[#18181b] text-[#f4f4f5] shadow-[0_10px_24px_rgba(0,0,0,0.35)] transition hover:bg-[#2a2a2d] disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={isUploadingAvatar}
-                onClick={() => avatarInputRef.current?.click()}
-                type="button"
-              >
-                <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M14.5 4.5 16 7h2.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-7A2.5 2.5 0 0 1 5.5 7H8l1.5-2.5h5Z"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                  />
-                  <circle cx="12" cy="13" r="3" stroke="currentColor" strokeWidth="2" />
-                </svg>
-              </button>
-            </div>
+            <Avatar
+              alt={t("avatarAlt")}
+              className="h-16 w-16 bg-[#18181b] text-base text-[#f4f4f5] hover:scale-[1.03] focus:outline-none sm:h-[72px] sm:w-[72px]"
+              name={activeUserName}
+              onClick={() => openAvatarGallery(currentProfile?.avatar_url)}
+              src={currentProfile?.avatar_url}
+            />
             <div className="grid min-w-0 justify-items-start pt-0.5">
               <h2 className="truncate text-base font-medium leading-tight">{activeUserName}</h2>
               <UsernameCopyButton
@@ -135,6 +115,14 @@ export function ProfileView({
                 ref={avatarInputRef}
                 type="file"
               />
+              <button
+                className="mt-1 min-h-8 rounded-lg border border-[#3f3f46]/35 px-3 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isUploadingAvatar}
+                onClick={() => avatarInputRef.current?.click()}
+                type="button"
+              >
+                {isUploadingAvatar ? t("uploading") : t("changeAvatar")}
+              </button>
             </div>
           </div>
 
