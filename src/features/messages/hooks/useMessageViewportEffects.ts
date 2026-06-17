@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import type { RefObject } from "react";
 import type { ActiveView } from "@/shared/types";
 
@@ -21,7 +21,10 @@ function scrollMessagesListToBottom(
     return;
   }
 
-  messagesList.scrollTop = messagesList.scrollHeight;
+  messagesList.scrollTop = Math.max(
+    0,
+    messagesList.scrollHeight - messagesList.clientHeight,
+  );
 }
 
 function keepMessagesListAtBottom(messagesListRef: RefObject<HTMLDivElement | null>) {
@@ -63,7 +66,7 @@ export function useMessageViewportEffects({
   messagesListRef,
   selectedChatUserId,
 }: MessageViewportEffectsParams) {
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (activeView !== "messages" || selectedChatUserId === null) {
       return;
     }
@@ -81,7 +84,7 @@ export function useMessageViewportEffects({
     selectedChatUserId,
   ]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (activeView !== "favorites") {
       return;
     }
