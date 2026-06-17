@@ -150,6 +150,7 @@ import {
   isMessageBetweenUsers,
   isServiceMessage,
   mergeMessages,
+  settleOptimisticMessage,
   updateEditableMessageText,
 } from "@/shared/utils/messages";
 import { useFloatingUiState } from "@/shared/hooks/useFloatingUiState";
@@ -402,6 +403,28 @@ export default function Home() {
   const shouldDiscardRecordingRef = useRef(false);
   const recordingAudioContextRef = useRef<AudioContext | null>(null);
   const recordingAnimationFrameRef = useRef<number | null>(null);
+
+  function createOptimisticMessage({
+    recipientId,
+    text,
+    offset = 0,
+  }: {
+    recipientId: string;
+    text: string;
+    offset?: number;
+  }): MessageRow {
+    const now = Date.now() + offset;
+
+    return {
+      author: activeUserName,
+      client_key: `local-message-${now}-${crypto.randomUUID()}`,
+      created_at: new Date(now).toISOString(),
+      id: -now,
+      recipient_id: recipientId,
+      text,
+      user_id: user?.id ?? null,
+    };
+  }
   const typingSentAtRef = useRef(0);
   const notificationsEnabledRef = useRef(false);
   const mutedProfilesRef = useRef<MutedProfileUntil>({});
@@ -1012,7 +1035,7 @@ export default function Home() {
   const visibleDialogLastMessage = visibleDialogMessages.at(-1);
   const visibleDialogMessagesKey = visibleDialogLastMessage
     ? [
-        visibleDialogLastMessage.id,
+        visibleDialogLastMessage.client_key ?? visibleDialogLastMessage.id,
         visibleDialogLastMessage.created_at,
         visibleDialogLastMessage.edited_at ?? "",
         visibleDialogLastMessage.text.length,
@@ -1021,7 +1044,7 @@ export default function Home() {
   const favoriteLastItem = favoriteItems.at(-1);
   const favoriteItemsKey = favoriteLastItem
     ? [
-        favoriteLastItem.id,
+        favoriteLastItem.client_key ?? favoriteLastItem.id,
         favoriteLastItem.created_at,
         favoriteLastItem.edited_at ?? "",
         favoriteLastItem.text.length,
@@ -2164,14 +2187,10 @@ export default function Home() {
 
     hasSavedCallSummaryRef.current = true;
 
-    const optimisticMessage: MessageRow = {
-      id: -Date.now(),
-      author: activeUserName,
-      recipient_id: partnerId,
+    const optimisticMessage = createOptimisticMessage({
+      recipientId: partnerId,
       text: `${callMessagePrefix}${duration}`,
-      created_at: new Date().toISOString(),
-      user_id: user.id,
-    };
+    });
 
     setMessages((currentMessages) =>
       mergeMessages(currentMessages, [optimisticMessage]),
@@ -2197,13 +2216,11 @@ export default function Home() {
       return;
     }
 
-    setMessages((currentMessages) => {
-      const withoutOptimisticMessage = currentMessages.filter(
-        (message) => message.id !== optimisticMessage.id,
-      );
-
-      return data ? mergeMessages(withoutOptimisticMessage, [data]) : currentMessages;
-    });
+    setMessages((currentMessages) =>
+      data
+        ? settleOptimisticMessage(currentMessages, optimisticMessage, data)
+        : currentMessages,
+    );
   }
 
   async function closeCall(notifyPartner: boolean) {
@@ -2374,14 +2391,10 @@ export default function Home() {
     writeStoredStringList("hush-blocked-profiles", nextLocalBlockedProfileIds);
     saveUserSyncPatch({ blockedProfileIds: nextLocalBlockedProfileIds });
 
-    const optimisticMessage: MessageRow = {
-      author: activeUserName,
-      created_at: new Date().toISOString(),
-      id: -Date.now(),
-      recipient_id: userId,
+    const optimisticMessage = createOptimisticMessage({
+      recipientId: userId,
       text: createBlockMessageText(userId, action),
-      user_id: user.id,
-    };
+    });
 
     setMessages((currentMessages) =>
       mergeMessages(currentMessages, [optimisticMessage]),
@@ -2407,10 +2420,7 @@ export default function Home() {
     }
 
     setMessages((currentMessages) =>
-      mergeMessages(
-        currentMessages.filter((message) => message.id !== optimisticMessage.id),
-        [data],
-      ),
+      settleOptimisticMessage(currentMessages, optimisticMessage, data),
     );
 
     if (action === "block") {
@@ -2957,14 +2967,10 @@ export default function Home() {
     }
 
     const action: PinMessagePayload["action"] = isSharedPinned ? "unpin" : "pin";
-    const optimisticMessage: MessageRow = {
-      id: -Date.now(),
-      author: activeUserName,
-      recipient_id: selectedChatUserId,
+    const optimisticMessage = createOptimisticMessage({
+      recipientId: selectedChatUserId,
       text: createPinMessageText(messagePinTarget.id, action),
-      created_at: new Date().toISOString(),
-      user_id: user.id,
-    };
+    });
 
     setMessagePinTarget(null);
     setMessages((currentMessages) =>
@@ -2991,10 +2997,7 @@ export default function Home() {
     }
 
     setMessages((currentMessages) =>
-      mergeMessages(
-        currentMessages.filter((message) => message.id !== optimisticMessage.id),
-        [data],
-      ),
+      settleOptimisticMessage(currentMessages, optimisticMessage, data),
     );
     setErrorMessage("");
   }
@@ -3024,14 +3027,13 @@ export default function Home() {
       return;
     }
 
-    const optimisticMessages = sharedPinnedIds.map((messageId, index) => ({
-      id: -(Date.now() + index),
-      author: activeUserName,
-      recipient_id: selectedChatUserId,
-      text: createPinMessageText(messageId, "unpin"),
-      created_at: new Date(Date.now() + index).toISOString(),
-      user_id: user.id,
-    }));
+    const optimisticMessages = sharedPinnedIds.map((messageId, index) =>
+      createOptimisticMessage({
+        offset: index,
+        recipientId: selectedChatUserId,
+        text: createPinMessageText(messageId, "unpin"),
+      }),
+    );
 
     setMessages((currentMessages) => mergeMessages(currentMessages, optimisticMessages));
 
@@ -3060,12 +3062,13 @@ export default function Home() {
     }
 
     setMessages((currentMessages) =>
-      mergeMessages(
-        currentMessages.filter(
-          (message) => !optimisticMessages.some((optimisticMessage) => optimisticMessage.id === message.id),
-        ),
-        data ?? [],
-      ),
+      optimisticMessages.reduce((nextMessages, optimisticMessage, index) => {
+        const savedMessage = data?.[index];
+
+        return savedMessage
+          ? settleOptimisticMessage(nextMessages, optimisticMessage, savedMessage)
+          : nextMessages;
+      }, currentMessages),
     );
     setIsPinnedMessagesViewOpen(false);
     setErrorMessage("");
@@ -3600,14 +3603,10 @@ export default function Home() {
       ? createReplyMessageText(replyTarget, trimmedText)
       : trimmedText;
 
-    const optimisticMessage: MessageRow = {
-      id: -Date.now(),
-      author: activeUserName,
-      recipient_id: selectedChatUserId,
+    const optimisticMessage = createOptimisticMessage({
+      recipientId: selectedChatUserId,
       text: outgoingText,
-      created_at: new Date().toISOString(),
-      user_id: user.id,
-    };
+    });
 
     setMessageText("");
     setReplyTarget(null);
@@ -3634,13 +3633,11 @@ export default function Home() {
       setReplyTarget(replyTarget);
       setErrorMessage("Не получилось отправить сообщение.");
     } else {
-      setMessages((currentMessages) => {
-        const withoutOptimisticMessage = currentMessages.filter(
-          (message) => message.id !== optimisticMessage.id,
-        );
-
-        return data ? mergeMessages(withoutOptimisticMessage, [data]) : currentMessages;
-      });
+      setMessages((currentMessages) =>
+        data
+          ? settleOptimisticMessage(currentMessages, optimisticMessage, data)
+          : currentMessages,
+      );
       setErrorMessage("");
     }
   }
@@ -3665,14 +3662,10 @@ export default function Home() {
       return;
     }
 
-    const optimisticMessage: MessageRow = {
-      id: -Date.now(),
-      author: activeUserName,
-      recipient_id: selectedChatUserId,
+    const optimisticMessage = createOptimisticMessage({
+      recipientId: selectedChatUserId,
       text: stickerText,
-      created_at: new Date().toISOString(),
-      user_id: user.id,
-    };
+    });
 
     setIsStickerPickerOpen(false);
     setMessages((currentMessages) =>
@@ -3698,13 +3691,11 @@ export default function Home() {
       return;
     }
 
-    setMessages((currentMessages) => {
-      const withoutOptimisticMessage = currentMessages.filter(
-        (message) => message.id !== optimisticMessage.id,
-      );
-
-      return data ? mergeMessages(withoutOptimisticMessage, [data]) : currentMessages;
-    });
+    setMessages((currentMessages) =>
+      data
+        ? settleOptimisticMessage(currentMessages, optimisticMessage, data)
+        : currentMessages,
+    );
     setErrorMessage("");
   }
 
@@ -3771,14 +3762,10 @@ export default function Home() {
       return;
     }
 
-    const optimisticMessage: MessageRow = {
-      id: -Date.now(),
-      author: activeUserName,
-      recipient_id: selectedChatUserId,
+    const optimisticMessage = createOptimisticMessage({
+      recipientId: selectedChatUserId,
       text: messageText,
-      created_at: new Date().toISOString(),
-      user_id: user.id,
-    };
+    });
 
     setMessages((currentMessages) =>
       mergeMessages(currentMessages, [optimisticMessage]),
@@ -3803,13 +3790,11 @@ export default function Home() {
       );
       setErrorMessage("Не получилось отправить файл.");
     } else {
-      setMessages((currentMessages) => {
-        const withoutOptimisticMessage = currentMessages.filter(
-          (message) => message.id !== optimisticMessage.id,
-        );
-
-        return data ? mergeMessages(withoutOptimisticMessage, [data]) : currentMessages;
-      });
+      setMessages((currentMessages) =>
+        data
+          ? settleOptimisticMessage(currentMessages, optimisticMessage, data)
+          : currentMessages,
+      );
     }
   }
 
@@ -3859,14 +3844,10 @@ export default function Home() {
       return;
     }
 
-    const optimisticMessage: MessageRow = {
-      id: -Date.now(),
-      author: activeUserName,
-      recipient_id: selectedChatUserId,
+    const optimisticMessage = createOptimisticMessage({
+      recipientId: selectedChatUserId,
       text: `${audioMessagePrefix}${publicUrlData.publicUrl}`,
-      created_at: new Date().toISOString(),
-      user_id: user.id,
-    };
+    });
 
     setMessages((currentMessages) =>
       mergeMessages(currentMessages, [optimisticMessage]),
@@ -3891,13 +3872,11 @@ export default function Home() {
       );
       setErrorMessage("Не получилось отправить голосовое сообщение.");
     } else {
-      setMessages((currentMessages) => {
-        const withoutOptimisticMessage = currentMessages.filter(
-          (message) => message.id !== optimisticMessage.id,
-        );
-
-        return data ? mergeMessages(withoutOptimisticMessage, [data]) : currentMessages;
-      });
+      setMessages((currentMessages) =>
+        data
+          ? settleOptimisticMessage(currentMessages, optimisticMessage, data)
+          : currentMessages,
+      );
     }
   }
 

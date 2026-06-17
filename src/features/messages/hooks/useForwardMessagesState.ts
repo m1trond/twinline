@@ -7,6 +7,7 @@ import type { FavoriteItem, MessageRow, ProfileRow } from "@/shared/types";
 import {
   createForwardMessageText,
   mergeMessages,
+  settleOptimisticMessage,
 } from "@/shared/utils/messages";
 
 type ForwardMessagesStateParams = {
@@ -83,11 +84,13 @@ export function useForwardMessagesState({
       return;
     }
 
+    const now = Date.now();
     const forwardedTexts = getForwardedTexts();
     const optimisticMessages: MessageRow[] = forwardedTexts.map((text, index) => ({
       author: activeUserName,
-      created_at: new Date(Date.now() + index).toISOString(),
-      id: -(Date.now() + index + 1),
+      client_key: `local-forward-${now + index}-${crypto.randomUUID()}`,
+      created_at: new Date(now + index).toISOString(),
+      id: -(now + index + 1),
       recipient_id: profile.user_id,
       text,
       user_id: user.id,
@@ -129,16 +132,15 @@ export function useForwardMessagesState({
       return;
     }
 
-    setMessages((currentMessages) => {
-      const withoutOptimisticMessages = currentMessages.filter(
-        (message) =>
-          !optimisticMessages.some(
-            (optimisticMessage) => optimisticMessage.id === message.id,
-          ),
-      );
+    setMessages((currentMessages) =>
+      optimisticMessages.reduce((nextMessages, optimisticMessage, index) => {
+        const savedMessage = data?.[index];
 
-      return mergeMessages(withoutOptimisticMessages, data ?? []);
-    });
+        return savedMessage
+          ? settleOptimisticMessage(nextMessages, optimisticMessage, savedMessage)
+          : nextMessages;
+      }, currentMessages),
+    );
     setErrorMessage("Сообщения пересланы.");
   }
 

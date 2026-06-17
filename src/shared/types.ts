@@ -3,6 +3,7 @@ export type MessageRow = {
   author: string;
   text: string;
   created_at: string;
+  client_key?: string;
   edited_at?: string | null;
   recipient_id: string | null;
   user_id: string | null;

@@ -481,7 +481,7 @@ export function OpenChatView({
                           isPreviousSameAuthor ? "mt-1" : "mt-3"
                         } ${isMine ? "justify-end" : "justify-start"}`}
                         data-message-id={message.id}
-                        key={message.id}
+                        key={message.client_key ?? message.id}
                         onClickCapture={(event) => handleMessageSelectionClick(event, message)}
                       >
                         {isMessageSelectionMode && isMine ? (

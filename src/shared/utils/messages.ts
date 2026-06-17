@@ -572,7 +572,18 @@ export function mergeMessages(currentMessages: MessageRow[], nextMessages: Messa
   }
 
   for (const message of nextMessages) {
-    messagesById.set(message.id, message);
+    const existingMessage = messagesById.get(message.id);
+
+    messagesById.set(
+      message.id,
+      existingMessage?.client_key && !message.client_key
+        ? {
+            ...message,
+            client_key: existingMessage.client_key,
+            created_at: existingMessage.created_at,
+          }
+        : message,
+    );
   }
 
   return Array.from(messagesById.values()).sort((firstMessage, secondMessage) => {
@@ -581,6 +592,26 @@ export function mergeMessages(currentMessages: MessageRow[], nextMessages: Messa
       new Date(secondMessage.created_at).getTime()
     );
   });
+}
+
+export function settleOptimisticMessage(
+  currentMessages: MessageRow[],
+  optimisticMessage: MessageRow,
+  savedMessage: MessageRow,
+) {
+  const settledMessage: MessageRow = {
+    ...savedMessage,
+    client_key:
+      optimisticMessage.client_key ?? `optimistic-message-${optimisticMessage.id}`,
+    created_at: optimisticMessage.created_at,
+  };
+
+  return mergeMessages(
+    currentMessages.map((message) =>
+      message.id === optimisticMessage.id ? settledMessage : message,
+    ),
+    [],
+  );
 }
 
 export function isDirectMessageForUser(message: MessageRow, userId: string) {
