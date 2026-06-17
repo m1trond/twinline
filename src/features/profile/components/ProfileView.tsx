@@ -104,7 +104,7 @@ export function ProfileView({
           <div className="min-w-0">
             <h2 className="truncate text-base font-medium">{activeUserName}</h2>
             <UsernameCopyButton
-              className="mt-0.5 text-sm font-medium text-[#a1a1aa] hover:text-[#e5e5e5]"
+              className="mt-0.5 block text-sm font-medium text-[#a1a1aa] hover:text-[#e5e5e5]"
               fallback={t("nicknameNotSet")}
               username={currentProfile?.username}
             />
