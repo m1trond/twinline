@@ -65,7 +65,7 @@ export function UsernameCopyButton({
   return (
     <>
       <button
-        className={`inline-block max-w-full cursor-pointer truncate text-left underline-offset-4 transition hover:underline ${className}`}
+        className={`max-w-full cursor-pointer truncate text-left underline-offset-4 transition hover:underline ${className}`}
         onClick={() => void copyUsername()}
         title={usernameWithAt}
         type="button"

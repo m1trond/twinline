@@ -101,7 +101,7 @@ export function ProfileView({
             onClick={() => openAvatarGallery(currentProfile?.avatar_url)}
             src={currentProfile?.avatar_url}
           />
-          <div className="min-w-0">
+          <div className="grid min-w-0 justify-items-start">
             <h2 className="truncate text-base font-medium">{activeUserName}</h2>
             <UsernameCopyButton
               className="mt-0.5 block text-sm font-medium text-[#a1a1aa] hover:text-[#e5e5e5]"

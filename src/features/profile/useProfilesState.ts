@@ -10,6 +10,62 @@ type UseProfilesStateParams = {
   user: User | null;
 };
 
+const profilesCacheKeyPrefix = "hush-profiles-cache";
+
+function getProfilesCacheKey(userId: string) {
+  return `${profilesCacheKeyPrefix}-${userId}`;
+}
+
+function isProfileRow(item: unknown): item is ProfileRow {
+  if (!item || typeof item !== "object") {
+    return false;
+  }
+
+  const profile = item as ProfileRow;
+
+  return (
+    typeof profile.user_id === "string" &&
+    typeof profile.display_name === "string" &&
+    (typeof profile.username === "string" || profile.username === null) &&
+    (typeof profile.bio === "string" || profile.bio === null) &&
+    (typeof profile.username_changed_at === "string" ||
+      profile.username_changed_at === null) &&
+    (typeof profile.avatar_url === "string" || profile.avatar_url === null) &&
+    (typeof profile.name_changed_at === "string" ||
+      profile.name_changed_at === null) &&
+    typeof profile.updated_at === "string"
+  );
+}
+
+function readStoredProfiles(userId: string | null | undefined) {
+  if (!userId || typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const storedProfiles = window.localStorage.getItem(getProfilesCacheKey(userId));
+
+    if (!storedProfiles) {
+      return [];
+    }
+
+    const parsedProfiles: unknown = JSON.parse(storedProfiles);
+
+    return Array.isArray(parsedProfiles)
+      ? parsedProfiles.filter(isProfileRow)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeStoredProfiles(userId: string, profiles: ProfileRow[]) {
+  try {
+    window.localStorage.setItem(getProfilesCacheKey(userId), JSON.stringify(profiles));
+  } catch {
+  }
+}
+
 function mergeProfile(currentProfiles: ProfileRow[], nextProfile: ProfileRow) {
   const currentProfile = currentProfiles.find(
     (profile) => profile.user_id === nextProfile.user_id,
@@ -59,7 +115,9 @@ export function useProfilesState({
   setErrorMessage,
   user,
 }: UseProfilesStateParams) {
-  const [profiles, setProfiles] = useState<ProfileRow[]>([]);
+  const [profiles, setProfiles] = useState<ProfileRow[]>(() =>
+    readStoredProfiles(user?.id),
+  );
   const currentProfile = useMemo(() => {
     return profiles.find((profile) => profile.user_id === user?.id) ?? null;
   }, [profiles, user?.id]);
@@ -68,6 +126,14 @@ export function useProfilesState({
   useEffect(() => {
     currentProfileRef.current = currentProfile;
   }, [currentProfile]);
+
+  useEffect(() => {
+    if (!user || profiles.length === 0) {
+      return;
+    }
+
+    writeStoredProfiles(user.id, profiles);
+  }, [profiles, user]);
 
   const profilesByUserId = useMemo(() => {
     const nextProfilesByUserId = new Map<string, ProfileRow>();
