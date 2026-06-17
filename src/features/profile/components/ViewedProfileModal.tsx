@@ -118,7 +118,7 @@ export function ViewedProfileModal({
                 viewedProfile.name[0]?.toUpperCase()
               )}
             </button>
-            <div className="mt-1.5 flex min-w-0 flex-col items-center gap-1">
+            <div className="mt-1 flex min-w-0 flex-col items-center gap-0.5">
               <h2 className="truncate text-base font-medium leading-none text-[#f4f4f5]">
                 {viewedProfile.name}
               </h2>
