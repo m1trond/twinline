@@ -95,7 +95,7 @@ export function ViewedProfileModal({
       />
       <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] max-h-[calc(100dvh-24px)] w-[min(410px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/50 bg-[#101010]/96 p-3 text-left shadow-[0_28px_90px_rgba(0,0,0,0.68)] backdrop-blur-xl">
         <div className="relative">
-          <div className="grid min-w-0 place-items-center text-center">
+          <div className="flex min-w-0 flex-col items-center gap-1.5 text-center">
             <button
               aria-label={language === "en" ? "Open avatar" : "Открыть аватар"}
               className="hush-avatar grid h-[72px] w-[72px] shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-base font-medium text-[#050505] shadow-[0_14px_36px_rgba(0,0,0,0.32)] transition hover:scale-[1.03] disabled:cursor-default disabled:hover:scale-100"
@@ -118,7 +118,7 @@ export function ViewedProfileModal({
                 viewedProfile.name[0]?.toUpperCase()
               )}
             </button>
-            <div className="mt-1 flex min-w-0 flex-col items-center gap-0.5">
+            <div className="flex min-w-0 flex-col items-center gap-1.5">
               <h2 className="truncate text-base font-medium leading-none text-[#f4f4f5]">
                 {viewedProfile.name}
               </h2>
