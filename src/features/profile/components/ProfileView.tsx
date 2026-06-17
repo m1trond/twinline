@@ -104,7 +104,7 @@ export function ProfileView({
           <div className="grid min-w-0 justify-items-start">
             <h2 className="truncate text-base font-medium">{activeUserName}</h2>
             <UsernameCopyButton
-              className="mt-0.5 block text-sm font-medium text-[#a1a1aa] hover:text-[#e5e5e5]"
+              className="block text-sm font-medium leading-tight text-[#a1a1aa] hover:text-[#e5e5e5]"
               fallback={t("nicknameNotSet")}
               username={currentProfile?.username}
             />
@@ -116,7 +116,7 @@ export function ProfileView({
               type="file"
             />
             <button
-              className="mt-2 min-h-8 rounded-lg border border-[#3f3f46]/35 px-3 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-1 min-h-8 rounded-lg border border-[#3f3f46]/35 px-3 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isUploadingAvatar}
               onClick={() => avatarInputRef.current?.click()}
               type="button"
