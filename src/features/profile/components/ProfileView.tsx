@@ -48,8 +48,22 @@ const labelClass =
   "text-[11px] font-medium uppercase tracking-[0.18em] text-[#d4d4d8]";
 const inputClass =
   "min-h-8 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/65 focus:border-[#f4f4f5]";
-const buttonClass =
-  "min-h-8 justify-self-start rounded-lg bg-[#f4f4f5] px-3 text-xs font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b]";
+const iconButtonClass =
+  "grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#f4f4f5] text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b] disabled:opacity-70";
+
+function CheckIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 24 24">
+      <path
+        d="m5 12 4 4 10-10"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
 
 export function ProfileView({
   activeUserName,
@@ -116,22 +130,34 @@ export function ProfileView({
                 type="file"
               />
               <button
-                className="mt-1 min-h-8 rounded-lg border border-[#3f3f46]/35 px-3 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                aria-label={t("changeAvatar")}
+                className="mt-1 inline-flex h-7 items-center gap-1.5 rounded-lg border border-[#3f3f46]/35 px-2.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isUploadingAvatar}
                 onClick={() => avatarInputRef.current?.click()}
+                title={t("changeAvatar")}
                 type="button"
               >
-                {isUploadingAvatar ? t("uploading") : t("changeAvatar")}
+                <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                  <path
+                    d="M14.5 4.5 16 7h2.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-7A2.5 2.5 0 0 1 5.5 7H8l1.5-2.5h5Z"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                  />
+                  <circle cx="12" cy="13" r="3" stroke="currentColor" strokeWidth="2" />
+                </svg>
+                <span>{isUploadingAvatar ? t("uploading") : t("avatarAlt")}</span>
               </button>
             </div>
           </div>
 
           <div className="grid gap-2 sm:grid-cols-2">
-          <section className={cardClass}>
-            <p className={labelClass}>{t("profileName")}</p>
-            <form className="mt-2 grid gap-2" onSubmit={updateProfileName}>
+            <section className={cardClass}>
+              <p className={labelClass}>{t("profileName")}</p>
+              <form className="mt-2 flex items-center gap-2" onSubmit={updateProfileName}>
               <input
-                className={inputClass}
+                className={`${inputClass} min-w-0 flex-1`}
                 maxLength={24}
                 minLength={2}
                 onChange={(event) => setProfileName(event.target.value)}
@@ -140,19 +166,21 @@ export function ProfileView({
                 value={profileNameInputValue}
               />
               <button
-                className={buttonClass}
+                aria-label={t("saveName")}
+                className={iconButtonClass}
                 disabled={!profileName.trim() || profileName.trim() === activeUserName}
+                title={t("saveName")}
                 type="submit"
               >
-                {t("saveName")}
+                <CheckIcon />
               </button>
             </form>
           </section>
 
           <section className={cardClass}>
             <p className={labelClass}>{t("username")}</p>
-            <form className="mt-2 grid gap-2" onSubmit={updateProfileUsername}>
-              <label className="flex min-h-8 items-center rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm focus-within:border-[#f4f4f5]">
+            <form className="mt-2 flex items-center gap-2" onSubmit={updateProfileUsername}>
+              <label className="flex min-h-8 min-w-0 flex-1 items-center rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm focus-within:border-[#f4f4f5]">
                 <span className="font-medium text-[#a1a1aa]">@</span>
                 <input
                   aria-label="Ник Hush"
@@ -169,14 +197,16 @@ export function ProfileView({
                 />
               </label>
               <button
-                className={buttonClass}
+                aria-label={t("saveNick")}
+                className={iconButtonClass}
                 disabled={
                   !profileUsernameInputValue.trim() ||
                   normalizeUsername(profileUsernameInputValue) === currentProfile?.username
                 }
+                title={t("saveNick")}
                 type="submit"
               >
-                {t("saveNick")}
+                <CheckIcon />
               </button>
             </form>
             <p className={`mt-1.5 text-xs leading-5 ${profileUsernameError ? "font-medium text-red-300" : "text-[#a1a1aa]"}`}>
@@ -190,27 +220,31 @@ export function ProfileView({
           <section className={`${cardClass} sm:col-span-2`}>
             <p className={labelClass}>{t("bio")}</p>
             <form className="mt-2 grid gap-2" onSubmit={updateProfileBio}>
-              <textarea
-                className="min-h-12 resize-none rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 py-2 text-sm leading-5 outline-none placeholder:text-[#a1a1aa]/65 focus:border-[#f4f4f5]"
-                maxLength={100}
-                onChange={(event) => setProfileBio(event.target.value.slice(0, 100))}
-                placeholder={t("bioPlaceholder")}
-                value={profileBioInputValue}
-              />
-              <button
-                className={`min-h-8 justify-self-start rounded-lg px-3 text-xs font-medium text-[#050505] transition disabled:cursor-not-allowed ${
-                  isSavingProfileBio || !isProfileBioChanged
-                    ? "bg-[#52525b] opacity-70"
-                    : "bg-[#f4f4f5] hover:bg-[#e5e5e5]"
-                }`}
-                disabled={
-                  isSavingProfileBio ||
-                  !isProfileBioChanged
-                }
-                type="submit"
-              >
-                {isSavingProfileBio ? t("saving") : t("save")}
-              </button>
+              <div className="relative">
+                <textarea
+                  className="min-h-12 w-full resize-none rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 py-2 pr-12 text-sm leading-5 outline-none placeholder:text-[#a1a1aa]/65 focus:border-[#f4f4f5]"
+                  maxLength={100}
+                  onChange={(event) => setProfileBio(event.target.value.slice(0, 100))}
+                  placeholder={t("bioPlaceholder")}
+                  value={profileBioInputValue}
+                />
+                <button
+                  aria-label={t("save")}
+                  className={`absolute bottom-2 right-2 grid h-7 w-7 place-items-center rounded-lg text-[#050505] transition disabled:cursor-not-allowed ${
+                    isSavingProfileBio || !isProfileBioChanged
+                      ? "bg-[#52525b] opacity-70"
+                      : "bg-[#f4f4f5] hover:bg-[#e5e5e5]"
+                  }`}
+                  disabled={
+                    isSavingProfileBio ||
+                    !isProfileBioChanged
+                  }
+                  title={isSavingProfileBio ? t("saving") : t("save")}
+                  type="submit"
+                >
+                  <CheckIcon className="h-3.5 w-3.5" />
+                </button>
+              </div>
               {profileBioSaveError ? (
                 <p className="text-xs font-medium leading-5 text-red-300">
                   {profileBioSaveError}
@@ -224,15 +258,16 @@ export function ProfileView({
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               <p className="min-w-0 flex-1 break-words text-sm font-medium">{user.email}</p>
               <button
-                className={`min-h-8 shrink-0 rounded-lg px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-70 ${
+                className={`inline-flex h-7 shrink-0 items-center rounded-lg px-2.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-70 ${
                   isEmailConfirmed
-                    ? "bg-[#52525b] text-[#050505]"
+                    ? "border border-[#3f3f46]/35 bg-[#f4f4f5]/10 text-[#d4d4d8]"
                     : "border border-red-400/45 bg-red-500/18 text-red-100 hover:bg-red-500/26"
                 }`}
                 disabled={isEmailConfirmed || isSendingEmailVerification}
                 onClick={() => void sendEmailVerificationLetter()}
                 type="button"
               >
+                <CheckIcon className="mr-1.5 h-3.5 w-3.5" />
                 {isEmailConfirmed
                   ? language === "en" ? "Confirmed" : "Подтверждена"
                   : isSendingEmailVerification
