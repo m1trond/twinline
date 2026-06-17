@@ -215,8 +215,12 @@ export function ViewedProfileModal({
                 }
 
                 const buttonRect = event.currentTarget.getBoundingClientRect();
+                const menuHalfWidth = 120;
                 setNotificationMenuPosition({
-                  left: buttonRect.left + buttonRect.width / 2,
+                  left: Math.min(
+                    Math.max(buttonRect.left + buttonRect.width / 2, menuHalfWidth + 8),
+                    window.innerWidth - menuHalfWidth - 8,
+                  ),
                   top: buttonRect.bottom + 8,
                 });
                 setProfileNotificationMenuUserId((currentUserId) =>
@@ -247,48 +251,6 @@ export function ViewedProfileModal({
                   : language === "en" ? "Notify" : "Уведомл."}
               </span>
             </button>
-            {profileNotificationMenuUserId === viewedProfile.userId && viewedProfile.userId ? (
-              <>
-                <button
-                  aria-label={language === "en" ? "Close notifications menu" : "Закрыть меню уведомлений"}
-                  className="fixed inset-0 z-[105] cursor-default bg-transparent"
-                  onClick={() => setProfileNotificationMenuUserId(null)}
-                  type="button"
-                />
-                <div
-                  className="fixed z-[110] w-60 -translate-x-1/2 rounded-lg border border-[#3f3f46]/55 bg-[#171717]/98 p-1 text-left shadow-[0_18px_55px_rgba(0,0,0,0.55)] backdrop-blur-xl"
-                  style={{
-                    left: notificationMenuPosition.left,
-                    top: notificationMenuPosition.top,
-                  }}
-                >
-                  {isMuted ? (
-                    <button
-                      className="min-h-8 w-full rounded-lg px-3 text-left text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
-                      onClick={() => unmuteProfileNotifications(viewedProfile.userId!)}
-                      type="button"
-                    >
-                      {language === "en" ? "Enable notifications" : "Включить уведомления"}
-                    </button>
-                  ) : (
-                    muteOptions.map((option) => (
-                      <button
-                        className="min-h-8 w-full whitespace-nowrap rounded-lg px-3 text-left text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
-                        key={option.labelKey}
-                        onClick={() =>
-                          viewedProfile.userId
-                            ? muteProfileNotifications(viewedProfile.userId, option.durationMs)
-                            : undefined
-                        }
-                        type="button"
-                      >
-                        {t(option.labelKey)}
-                      </button>
-                    ))
-                  )}
-                </div>
-              </>
-            ) : null}
           </div>
           <button
             aria-label={language === "en" ? "Block" : "Заблокировать"}
@@ -351,6 +313,48 @@ export function ViewedProfileModal({
           </article>
         </div>
       </section>
+      {profileNotificationMenuUserId === viewedProfile.userId && viewedProfile.userId ? (
+        <>
+          <button
+            aria-label={language === "en" ? "Close notifications menu" : "Close notifications menu"}
+            className="fixed inset-0 z-[105] cursor-default bg-transparent"
+            onClick={() => setProfileNotificationMenuUserId(null)}
+            type="button"
+          />
+          <div
+            className="fixed z-[110] w-60 -translate-x-1/2 rounded-lg border border-[#3f3f46]/55 bg-[#171717]/98 p-1 text-left shadow-[0_18px_55px_rgba(0,0,0,0.55)] backdrop-blur-xl"
+            style={{
+              left: notificationMenuPosition.left,
+              top: notificationMenuPosition.top,
+            }}
+          >
+            {isMuted ? (
+              <button
+                className="min-h-8 w-full rounded-lg px-3 text-left text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
+                onClick={() => unmuteProfileNotifications(viewedProfile.userId!)}
+                type="button"
+              >
+                {language === "en" ? "Enable notifications" : "Включить уведомления"}
+              </button>
+            ) : (
+              muteOptions.map((option) => (
+                <button
+                  className="min-h-8 w-full whitespace-nowrap rounded-lg px-3 text-left text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
+                  key={option.labelKey}
+                  onClick={() =>
+                    viewedProfile.userId
+                      ? muteProfileNotifications(viewedProfile.userId, option.durationMs)
+                      : undefined
+                  }
+                  type="button"
+                >
+                  {t(option.labelKey)}
+                </button>
+              ))
+            )}
+          </div>
+        </>
+      ) : null}
     </>
   );
 }
