@@ -1,3 +1,6 @@
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+
 type UsernameCopyButtonProps = {
   className?: string;
   fallback: string;
@@ -26,20 +29,65 @@ export function UsernameCopyButton({
   fallback,
   username,
 }: UsernameCopyButtonProps) {
+  const [toastState, setToastState] = useState({ key: 0, visible: false });
+
+  useEffect(() => {
+    if (!toastState.visible) {
+      return;
+    }
+
+    const hideToastTimeoutId = window.setTimeout(() => {
+      setToastState((currentState) => ({
+        ...currentState,
+        visible: false,
+      }));
+    }, 2000);
+
+    return () => {
+      window.clearTimeout(hideToastTimeoutId);
+    };
+  }, [toastState.key, toastState.visible]);
+
   if (!username) {
     return <span className={className}>{fallback}</span>;
   }
 
   const usernameWithAt = `@${username}`;
 
+  async function copyUsername() {
+    await copyText(usernameWithAt);
+    setToastState((currentState) => ({
+      key: currentState.key + 1,
+      visible: true,
+    }));
+  }
+
   return (
-    <button
-      className={`inline-block max-w-full cursor-pointer truncate text-left underline-offset-4 transition hover:underline ${className}`}
-      onClick={() => void copyText(usernameWithAt)}
-      title={usernameWithAt}
-      type="button"
-    >
-      {usernameWithAt}
-    </button>
+    <>
+      <button
+        className={`inline-block max-w-full cursor-pointer truncate text-left underline-offset-4 transition hover:underline ${className}`}
+        onClick={() => void copyUsername()}
+        title={usernameWithAt}
+        type="button"
+      >
+        {usernameWithAt}
+      </button>
+      {typeof document !== "undefined"
+        ? createPortal(
+            <div
+              aria-live="polite"
+              className={`pointer-events-none fixed left-1/2 top-[calc(100dvh-86px)] z-[140] w-[min(320px,calc(100vw-32px))] -translate-x-1/2 rounded-lg border border-[#3f3f46]/45 bg-[#050505]/95 px-3 py-2 text-center text-sm font-medium text-[#f4f4f5] shadow-[0_16px_45px_rgba(0,0,0,0.38)] transition duration-200 ${
+                toastState.visible
+                  ? "translate-y-0 opacity-100"
+                  : "translate-y-2 opacity-0"
+              }`}
+              role="status"
+            >
+              Имя пользователя скопировано
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
   );
 }
