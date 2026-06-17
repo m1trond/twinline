@@ -118,16 +118,16 @@ export function ViewedProfileModal({
                 viewedProfile.name[0]?.toUpperCase()
               )}
             </button>
-            <div className="mt-2 min-w-0">
-              <h2 className="truncate text-base font-medium leading-tight text-[#f4f4f5]">
+            <div className="mt-1.5 flex min-w-0 flex-col items-center gap-1">
+              <h2 className="truncate text-base font-medium leading-none text-[#f4f4f5]">
                 {viewedProfile.name}
               </h2>
               <UsernameCopyButton
-                className="mt-0.5 text-sm font-medium leading-tight text-[#a1a1aa] hover:text-[#e5e5e5]"
+                className="block text-sm font-medium leading-none text-[#a1a1aa] hover:text-[#e5e5e5]"
                 fallback={t("nicknameNotSet")}
                 username={viewedProfile.username}
               />
-              <div className="mt-1 text-xs font-medium leading-none text-[#a1a1aa]">
+              <div className="text-xs font-medium leading-none text-[#a1a1aa]">
                 {formatLastSeen(viewedProfile.updatedAt, language)}
               </div>
             </div>
