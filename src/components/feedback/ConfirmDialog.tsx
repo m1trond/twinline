@@ -1,4 +1,7 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 type ConfirmDialogProps = {
   cancelLabel: string;
@@ -26,7 +29,7 @@ export function ConfirmDialog({
   title,
   zIndex = { backdrop: "z-[115]", panel: "z-[116]" },
 }: ConfirmDialogProps) {
-  return (
+  const dialog = (
     <>
       <button
         aria-label={cancelLabel}
@@ -71,4 +74,10 @@ export function ConfirmDialog({
       </section>
     </>
   );
+
+  if (typeof document === "undefined") {
+    return dialog;
+  }
+
+  return createPortal(dialog, document.body);
 }
