@@ -4,6 +4,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { useI18n } from "@/shared/i18n-context";
 import { archivedChatFolderId } from "@/shared/constants";
 import type { ChatFolder, MessageRow, ProfileRow } from "@/shared/types";
+import type { ViewedProfileState } from "@/features/navigation/useNavigationState";
 import { formatMessageTime } from "@/shared/utils/format";
 import { getChatPreviewText } from "@/shared/utils/messages";
 import { isProfileOnline } from "@/shared/utils/profile";
@@ -23,6 +24,7 @@ type ChatListViewProps = {
   selectedChatFolderId: string | null;
   setSelectedChatFolderId: (folderId: string | null) => void;
   setSelectedChatUserId: (userId: string) => void;
+  setViewedProfile: (profile: ViewedProfileState | null) => void;
   setUnreadMessageCount: (count: number) => void;
   unreadMessagesByUserId: Map<string, number>;
 };
@@ -39,6 +41,7 @@ export function ChatListView({
   selectedChatFolderId,
   setSelectedChatFolderId,
   setSelectedChatUserId,
+  setViewedProfile,
   setUnreadMessageCount,
   unreadMessagesByUserId,
 }: ChatListViewProps) {
@@ -95,7 +98,7 @@ export function ChatListView({
               onDragOver={(event) => event.preventDefault()}
               onDragStart={(event) => {
                 event.dataTransfer.effectAllowed = "move";
-                event.dataTransfer.setData("text/plain", folder.id);
+                event.dataTransfer.setData("application/x-hush-folder", folder.id);
                 setDraggedFolderId(folder.id);
               }}
               onDrop={(event) => dropFolder(event, folder.id)}
@@ -146,7 +149,38 @@ export function ChatListView({
                 onContextMenu={(event) => openChatContextMenu(event, profile)}
                 type="button"
               >
-                <div className="relative h-10 w-10 shrink-0 sm:h-12 sm:w-12">
+                <div
+                  className="relative h-10 w-10 shrink-0 cursor-pointer sm:h-12 sm:w-12"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setViewedProfile({
+                      avatarUrl: profile.avatar_url,
+                      bio: profile.bio,
+                      name: profile.display_name,
+                      username: profile.username,
+                      updatedAt: profile.updated_at,
+                      userId: profile.user_id,
+                    });
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter" && event.key !== " ") {
+                      return;
+                    }
+
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setViewedProfile({
+                      avatarUrl: profile.avatar_url,
+                      bio: profile.bio,
+                      name: profile.display_name,
+                      username: profile.username,
+                      updatedAt: profile.updated_at,
+                      userId: profile.user_id,
+                    });
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
                   <Avatar
                     alt={`${t("avatarAlt")} ${profile.display_name}`}
                     className="h-full w-full text-sm sm:text-sm"

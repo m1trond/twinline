@@ -38,7 +38,7 @@ export function ConfirmDialog({
         type="button"
       />
       <section className={`hush-modal-transition fixed left-1/2 top-1/2 ${zIndex.panel} max-h-[calc(100dvh-24px)] w-[min(430px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 text-left shadow-[0_24px_80px_rgba(0,0,0,0.58)] backdrop-blur-xl sm:rounded-3xl sm:p-5`}>
-        <div className="flex items-start gap-3">
+        <div className={`flex gap-3 ${description ? "items-start" : "items-center"}`}>
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#3f3f46]/45 bg-[#f4f4f5]/10 text-[#f4f4f5]">
             {icon}
           </span>

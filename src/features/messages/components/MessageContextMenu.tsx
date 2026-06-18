@@ -1,5 +1,6 @@
 import type { FavoriteItem, MessageRow } from "@/shared/types";
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { useI18n } from "@/shared/i18n-context";
 import { getMessageAudioUrl } from "@/shared/utils/messages";
 
@@ -18,7 +19,7 @@ type FavoriteContextMenuState = {
 type MessageContextMenuProps = {
   activePinnedMessageIdSet: Set<number>;
   contextMenu: MessageContextMenuState | null;
-  copyMessageText: (message: MessageRow) => void;
+  copyMessageText: (message: MessageRow) => void | Promise<void>;
   currentUserId: string | undefined;
   replyToMessage: (message: MessageRow) => void;
   requestMessageDelete: (message: MessageRow) => void;
@@ -32,7 +33,7 @@ type MessageContextMenuProps = {
 
 type FavoriteContextMenuProps = {
   contextMenu: FavoriteContextMenuState | null;
-  copyFavoriteText: (item: FavoriteItem) => void;
+  copyFavoriteText: (item: FavoriteItem) => void | Promise<void>;
   pinnedFavoriteItem: FavoriteItem | null;
   removeFavoriteItem: (favoriteItemId: number) => void;
   replyToFavoriteItem: (item: FavoriteItem) => void;
@@ -58,6 +59,7 @@ export function MessageContextMenu({
   toggleSelectedMessage,
 }: MessageContextMenuProps) {
   const { t } = useI18n();
+  const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
 
   if (!contextMenu) {
     return null;
@@ -101,8 +103,22 @@ export function MessageContextMenu({
         >
           {isPinned ? t("unpin") : t("pin")}
         </MenuButton>
-        <MenuButton icon={<CopyIcon />} onClick={() => copyMessageText(contextMenu.message)}>
-          {t("copyText")}
+        <MenuButton
+          icon={<CopyIcon />}
+          onClick={() => {
+            const messageId = contextMenu.message.id;
+            void Promise.resolve(copyMessageText(contextMenu.message)).then(() => {
+              setCopiedMessageId(messageId);
+              window.setTimeout(() => {
+                setCopiedMessageId((currentMessageId) =>
+                  currentMessageId === messageId ? null : currentMessageId,
+                );
+                setMessageContextMenu(null);
+              }, 2000);
+            });
+          }}
+        >
+          {copiedMessageId === contextMenu.message.id ? "Скопировано" : t("copyText")}
         </MenuButton>
         {isMine ? (
           <MenuButton
@@ -137,6 +153,7 @@ export function FavoriteContextMenu({
   toggleSelectedFavoriteItem,
 }: FavoriteContextMenuProps) {
   const { t } = useI18n();
+  const [copiedFavoriteId, setCopiedFavoriteId] = useState<number | null>(null);
 
   if (!contextMenu) {
     return null;
@@ -169,8 +186,22 @@ export function FavoriteContextMenu({
         <MenuButton icon={<PinIcon />} onClick={() => togglePinnedFavoriteItem(contextMenu.item)}>
           {isPinned ? t("unpin") : t("pin")}
         </MenuButton>
-        <MenuButton icon={<CopyIcon />} onClick={() => copyFavoriteText(contextMenu.item)}>
-          {t("copyText")}
+        <MenuButton
+          icon={<CopyIcon />}
+          onClick={() => {
+            const favoriteId = contextMenu.item.id;
+            void Promise.resolve(copyFavoriteText(contextMenu.item)).then(() => {
+              setCopiedFavoriteId(favoriteId);
+              window.setTimeout(() => {
+                setCopiedFavoriteId((currentFavoriteId) =>
+                  currentFavoriteId === favoriteId ? null : currentFavoriteId,
+                );
+                setFavoriteContextMenu(null);
+              }, 2000);
+            });
+          }}
+        >
+          {copiedFavoriteId === contextMenu.item.id ? "Скопировано" : t("copyText")}
         </MenuButton>
         <MenuButton danger icon={<TrashIcon />} onClick={() => removeFavoriteItem(contextMenu.item.id)}>
           {t("delete")}

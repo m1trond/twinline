@@ -1,5 +1,6 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
 import type { User } from "@supabase/supabase-js";
+import { ConfirmDialog } from "@/components/feedback/ConfirmDialog";
 import { UsernameCopyButton } from "@/components/ui/UsernameCopyButton";
 import type { CallStatus, MutedProfileUntil } from "@/shared/types";
 import type { ViewedProfileState } from "@/features/navigation/useNavigationState";
@@ -57,6 +58,7 @@ export function ViewedProfileModal({
     left: 0,
     top: 0,
   });
+  const [isCallConfirmOpen, setIsCallConfirmOpen] = useState(false);
 
   if (!viewedProfile) {
     return null;
@@ -179,13 +181,7 @@ export function ViewedProfileModal({
             aria-label={language === "en" ? "Call" : "Позвонить"}
             className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg border border-[#3f3f46]/40 bg-black/24 text-center text-[#f4f4f5] transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
             disabled={!canCall}
-            onClick={() => {
-              openChat();
-
-              if (viewedProfile.userId) {
-                void startCall(viewedProfile.userId);
-              }
-            }}
+            onClick={() => setIsCallConfirmOpen(true)}
             type="button"
           >
             <svg aria-hidden="true" className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24">
@@ -354,6 +350,37 @@ export function ViewedProfileModal({
             )}
           </div>
         </>
+      ) : null}
+      {isCallConfirmOpen ? (
+        <ConfirmDialog
+          cancelLabel={t("no")}
+          confirmLabel={t("yes")}
+          description={
+            language === "en"
+              ? `Start a call with ${viewedProfile.name}?`
+              : `Начать звонок с ${viewedProfile.name}?`
+          }
+          icon={
+            <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+              <path
+                d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+              />
+            </svg>
+          }
+          onCancel={() => setIsCallConfirmOpen(false)}
+          onConfirm={() => {
+            setIsCallConfirmOpen(false);
+            if (viewedProfile.userId) {
+              openChat();
+              void startCall(viewedProfile.userId);
+            }
+          }}
+          title={language === "en" ? "Confirm call" : "Подтвердить звонок"}
+        />
       ) : null}
     </>
   );

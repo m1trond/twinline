@@ -14,6 +14,7 @@ import type { MessageRow, ProfileRow, ReplyMessagePayload } from "@/shared/types
 import { FileAttachment } from "@/features/messages/components/FileAttachment";
 import { MessageReceiptIcon } from "@/features/messages/components/MessageReceiptIcon";
 import { VoiceMessage } from "@/features/messages/components/VoiceMessage";
+import { ConfirmDialog } from "@/components/feedback/ConfirmDialog";
 import { useI18n } from "@/shared/i18n-context";
 import { formatAudioTime, formatCallDuration, formatMessageTime } from "@/shared/utils/format";
 import { formatLastSeen } from "@/shared/utils/profile";
@@ -158,6 +159,7 @@ export function OpenChatView({
 }: OpenChatViewProps) {
   const { language, t } = useI18n();
   const [isDraggingAttachment, setIsDraggingAttachment] = useState(false);
+  const [isCallConfirmOpen, setIsCallConfirmOpen] = useState(false);
   const isAttachmentDropDisabled = isUploadingAttachment || isRecordingVoice || isSelectedChatBlocked;
 
   function hasDraggedFiles(event: DragEvent<HTMLDivElement>) {
@@ -318,7 +320,7 @@ export function OpenChatView({
                       aria-label={callStatus === "idle" ? t("call") : callStatusText}
                       className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:border-[#3f3f46]/25 disabled:text-[#71717a] sm:rounded-xl"
                       disabled={!friendProfile?.userId || callStatus !== "idle"}
-                      onClick={() => startCall()}
+                      onClick={() => setIsCallConfirmOpen(true)}
                       type="button"
                     >
                       <svg
@@ -338,6 +340,34 @@ export function OpenChatView({
                     </button>
                   </div>
                 </div>
+                {isCallConfirmOpen ? (
+                  <ConfirmDialog
+                    cancelLabel={t("no")}
+                    confirmLabel={t("yes")}
+                    description={
+                      language === "en"
+                        ? `Start a call with ${friendProfile?.name ?? t("user")}?`
+                        : `Начать звонок с ${friendProfile?.name ?? t("user")}?`
+                    }
+                    icon={
+                      <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                        <path
+                          d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                    }
+                    onCancel={() => setIsCallConfirmOpen(false)}
+                    onConfirm={() => {
+                      setIsCallConfirmOpen(false);
+                      void startCall();
+                    }}
+                    title={language === "en" ? "Confirm call" : "Подтвердить звонок"}
+                  />
+                ) : null}
                 {isMessageSelectionMode ? (
                   <div className="mb-2 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/88 px-3 py-2 text-[#f4f4f5] shadow-[0_12px_35px_rgba(0,0,0,0.25)] backdrop-blur-md sm:mb-3">
                     <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-[#d4d4d8]">
@@ -498,7 +528,7 @@ export function OpenChatView({
                         {!isMine ? (
                           shouldShowFriendAvatar ? (
                             <button
-                              className="hush-avatar grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505] transition sm:h-8 sm:w-8 sm:text-xs"
+                              className="hush-avatar grid h-7 w-7 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505] transition sm:h-8 sm:w-8 sm:text-xs"
                               onClick={() =>
                                 setViewedProfile({
                                   avatarUrl: messageProfile?.avatar_url ?? null,
@@ -594,7 +624,7 @@ export function OpenChatView({
                             <div className={`mb-1.5 flex items-center gap-2 px-0.5 text-left ${isMine && !hasStandaloneBubble && !hasFramedMedia ? "text-[#050505]" : "text-[#f4f4f5]"}`}>
                               <button
                                 aria-label={forwardedName}
-                                className={`hush-avatar grid h-7 min-h-7 w-7 min-w-7 shrink-0 aspect-square place-items-center overflow-hidden rounded-full text-xs font-medium leading-none transition ${isMine && !hasStandaloneBubble && !hasFramedMedia ? "bg-[#050505] text-[#f4f4f5]" : "bg-[#f4f4f5] text-[#050505]"}`}
+                                className={`hush-avatar grid h-7 min-h-7 w-7 min-w-7 shrink-0 aspect-square place-items-center overflow-hidden rounded-full text-xs font-medium leading-none transition disabled:cursor-default ${forwarded.authorUserId ? "cursor-pointer" : ""} ${isMine && !hasStandaloneBubble && !hasFramedMedia ? "bg-[#050505] text-[#f4f4f5]" : "bg-[#f4f4f5] text-[#050505]"}`}
                                 disabled={!forwarded.authorUserId}
                                 onClick={() => {
                                   if (!forwarded.authorUserId) {
@@ -798,7 +828,7 @@ export function OpenChatView({
                         {isMine ? (
                           shouldShowOwnAvatar ? (
                             <button
-                              className="hush-avatar grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505] transition sm:h-8 sm:w-8 sm:text-xs"
+                              className="hush-avatar grid h-7 w-7 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505] transition sm:h-8 sm:w-8 sm:text-xs"
                               onClick={() =>
                                 setViewedProfile({
                                   avatarUrl: currentProfile?.avatar_url ?? null,

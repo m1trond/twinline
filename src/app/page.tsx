@@ -2723,8 +2723,6 @@ export default function Home() {
     } catch {
       setErrorMessage("Не получилось скопировать текст.");
     }
-
-    setMessageContextMenu(null);
   }
 
   async function copyFavoriteText(item: FavoriteItem) {
@@ -2734,8 +2732,6 @@ export default function Home() {
     } catch {
       setErrorMessage("Не получилось скопировать текст.");
     }
-
-    setFavoriteContextMenu(null);
   }
   function addFavoriteChatMessage(text: string) {
     if (!user) {
@@ -4380,6 +4376,7 @@ export default function Home() {
           selectedChatFolderId={selectedChatFolderId}
           setSelectedChatFolderId={setSelectedChatFolderId}
           setSelectedChatUserId={setSelectedChatUserId}
+          setViewedProfile={setViewedProfile}
           setUnreadMessageCount={setUnreadMessageCount}
           unreadMessagesByUserId={unreadMessagesByUserId}
         />
