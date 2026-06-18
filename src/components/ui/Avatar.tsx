@@ -29,7 +29,7 @@ export function Avatar({
     return (
       <button
         aria-label={ariaLabel ?? alt}
-        className={`${avatarClassName} transition hover:scale-105 disabled:cursor-default disabled:hover:scale-100`}
+        className={`${avatarClassName} transition disabled:cursor-default`}
         disabled={disabled}
         onClick={onClick}
         type="button"

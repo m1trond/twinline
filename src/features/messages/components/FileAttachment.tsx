@@ -49,7 +49,7 @@ export function FileAttachment({
 
   return (
     <div
-      className={`w-[min(340px,78vw)] rounded-xl border px-2.5 py-2 text-left shadow-[0_10px_30px_rgba(0,0,0,0.18)] transition hover:scale-[1.01] sm:rounded-xl ${
+      className={`w-[min(340px,78vw)] rounded-xl border px-2.5 py-2 text-left shadow-[0_10px_30px_rgba(0,0,0,0.18)] transition sm:rounded-xl ${
         isMine
           ? "border-[#3f3f46]/45 bg-[#1f1f1f] text-[#f4f4f5] hover:bg-[#262626]"
           : "border-white/10 bg-white/[0.06] text-[#f4f4f5] hover:bg-white/10"
@@ -87,7 +87,7 @@ export function FileAttachment({
         </span>
         <button
           aria-label={`${t("download")} ${file.name}`}
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.06] text-[#f4f4f5] transition hover:scale-105 hover:bg-white/12"
+          className="hush-stable-button grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.06] text-[#f4f4f5] transition hover:bg-white/12"
           onClick={downloadFile}
           title={t("download")}
           type="button"

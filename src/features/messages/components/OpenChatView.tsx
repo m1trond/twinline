@@ -498,7 +498,7 @@ export function OpenChatView({
                         {!isMine ? (
                           shouldShowFriendAvatar ? (
                             <button
-                              className="hush-avatar grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505] transition hover:scale-105 sm:h-8 sm:w-8 sm:text-xs"
+                              className="hush-avatar grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505] transition sm:h-8 sm:w-8 sm:text-xs"
                               onClick={() =>
                                 setViewedProfile({
                                   avatarUrl: messageProfile?.avatar_url ?? null,
@@ -574,7 +574,7 @@ export function OpenChatView({
                           ) : null}
                           {reply ? (
                             <button
-                              className={`hush-reply-preview mb-2 block w-full rounded-xl border-l-4 px-3 py-2 text-left transition hover:scale-[1.01] ${
+                              className={`hush-reply-preview mb-2 block w-full rounded-xl border-l-4 px-3 py-2 text-left transition ${
                                 isMine
                                   ? "border-[#050505]/45 bg-[#050505]/12 hover:bg-[#050505]/18"
                                   : "border-[#f4f4f5]/45 bg-white/8 hover:bg-white/12"
@@ -594,7 +594,7 @@ export function OpenChatView({
                             <div className={`mb-1.5 flex items-center gap-2 px-0.5 text-left ${isMine && !hasStandaloneBubble && !hasFramedMedia ? "text-[#050505]" : "text-[#f4f4f5]"}`}>
                               <button
                                 aria-label={forwardedName}
-                                className={`hush-avatar grid h-7 min-h-7 w-7 min-w-7 shrink-0 aspect-square place-items-center overflow-hidden rounded-full text-xs font-medium leading-none transition hover:scale-105 disabled:hover:scale-100 ${isMine && !hasStandaloneBubble && !hasFramedMedia ? "bg-[#050505] text-[#f4f4f5]" : "bg-[#f4f4f5] text-[#050505]"}`}
+                                className={`hush-avatar grid h-7 min-h-7 w-7 min-w-7 shrink-0 aspect-square place-items-center overflow-hidden rounded-full text-xs font-medium leading-none transition ${isMine && !hasStandaloneBubble && !hasFramedMedia ? "bg-[#050505] text-[#f4f4f5]" : "bg-[#f4f4f5] text-[#050505]"}`}
                                 disabled={!forwarded.authorUserId}
                                 onClick={() => {
                                   if (!forwarded.authorUserId) {
@@ -798,7 +798,7 @@ export function OpenChatView({
                         {isMine ? (
                           shouldShowOwnAvatar ? (
                             <button
-                              className="hush-avatar grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505] transition hover:scale-105 sm:h-8 sm:w-8 sm:text-xs"
+                              className="hush-avatar grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505] transition sm:h-8 sm:w-8 sm:text-xs"
                               onClick={() =>
                                 setViewedProfile({
                                   avatarUrl: currentProfile?.avatar_url ?? null,

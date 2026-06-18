@@ -76,7 +76,7 @@ export function FolderContextMenu({
                 {folderColors.map((color) => (
                   <button
                     aria-label={color}
-                    className="hush-color-swatch h-6 w-6 rounded-full border border-white/15 transition hover:scale-110"
+                    className="hush-stable-button hush-color-swatch h-6 w-6 rounded-full border border-white/15 transition hover:border-white/45"
                     key={color}
                     onClick={() => {
                       if (contextMenu.folder) {

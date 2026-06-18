@@ -49,7 +49,7 @@ const labelClass =
 const inputClass =
   "h-8 min-h-8 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none placeholder:text-[#a1a1aa]/65 focus:border-[#f4f4f5]";
 const iconButtonClass =
-  "grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#f4f4f5] text-[#050505] transition hover:scale-[1.03] hover:bg-[#e5e5e5] active:scale-[0.97] disabled:cursor-not-allowed disabled:bg-[#52525b] disabled:opacity-70 disabled:hover:scale-100 disabled:active:scale-100";
+  "hush-stable-button grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#f4f4f5] text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:bg-[#52525b] disabled:opacity-70";
 
 function CheckIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -132,7 +132,7 @@ export function ProfileView({
             <div className="flex items-center gap-3">
               <Avatar
                 alt={t("avatarAlt")}
-                className="h-16 w-16 bg-[#18181b] text-base text-[#f4f4f5] hover:scale-[1.03] focus:outline-none sm:h-[72px] sm:w-[72px]"
+                className="h-16 w-16 bg-[#18181b] text-base text-[#f4f4f5] focus:outline-none sm:h-[72px] sm:w-[72px]"
                 name={activeUserName}
                 onClick={() => openAvatarGallery(currentProfile?.avatar_url)}
                 src={currentProfile?.avatar_url}
@@ -157,7 +157,7 @@ export function ProfileView({
                 />
                 <button
                   aria-label={t("changeAvatar")}
-                  className="mt-2 inline-flex h-7 items-center gap-1.5 rounded-lg border border-[#3f3f46]/35 px-2.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="hush-stable-button mt-2 inline-flex h-7 items-center gap-1.5 rounded-lg border border-[#3f3f46]/35 px-2.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={isUploadingAvatar}
                   onClick={() => avatarInputRef.current?.click()}
                   title={t("changeAvatar")}
@@ -250,10 +250,10 @@ export function ProfileView({
                   />
                   <button
                     aria-label={t("save")}
-                    className={`mr-2 grid h-7 w-7 shrink-0 place-items-center rounded-lg text-[#050505] transition disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 ${
+                    className={`hush-stable-button mr-2 grid h-7 w-7 shrink-0 place-items-center rounded-lg text-[#050505] transition disabled:cursor-not-allowed ${
                       isSavingProfileBio || !isProfileBioChanged
                         ? "bg-[#52525b] opacity-70"
-                        : "bg-[#f4f4f5] hover:scale-[1.03] hover:bg-[#e5e5e5] active:scale-[0.97]"
+                        : "bg-[#f4f4f5] hover:bg-[#e5e5e5]"
                     }`}
                     disabled={isSavingProfileBio || !isProfileBioChanged}
                     title={isSavingProfileBio ? t("saving") : t("save")}
@@ -281,7 +281,7 @@ export function ProfileView({
                   </span>
                 ) : (
                   <button
-                    className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg border border-red-400/45 bg-red-500/18 px-2.5 text-xs font-medium text-red-100 transition hover:bg-red-500/26 disabled:cursor-not-allowed disabled:opacity-70"
+                    className="hush-stable-button inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg border border-red-400/45 bg-red-500/18 px-2.5 text-xs font-medium text-red-100 transition hover:bg-red-500/26 disabled:cursor-not-allowed disabled:opacity-70"
                     disabled={isSendingEmailVerification}
                     onClick={() => void sendEmailVerificationLetter()}
                     type="button"

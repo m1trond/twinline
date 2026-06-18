@@ -73,7 +73,7 @@ export function VoiceMessage({
       <div className="flex items-center gap-2.5">
         <button
           aria-label={isPlaying ? "Пауза" : "Воспроизвести голосовое"}
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#f4f4f5] text-[#050505] shadow-[0_10px_24px_rgba(0,0,0,0.22)] transition hover:scale-105"
+          className="hush-stable-button grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#f4f4f5] text-[#050505] shadow-[0_10px_24px_rgba(0,0,0,0.22)] transition"
           onClick={togglePlayback}
           type="button"
         >

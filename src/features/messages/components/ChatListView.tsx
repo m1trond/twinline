@@ -105,7 +105,7 @@ export function ChatListView({
           ))}
           <button
             aria-label={t("newFolder")}
-            className="grid h-8 min-h-8 w-8 shrink-0 place-items-center rounded-lg text-[#a1a1aa] transition hover:bg-[#f4f4f5]/8 hover:text-[#f4f4f5]"
+            className="hush-stable-button grid h-8 min-h-8 w-8 shrink-0 place-items-center rounded-lg text-[#a1a1aa] transition hover:bg-[#f4f4f5]/8 hover:text-[#f4f4f5]"
             onClick={openCreateChatFolderDialog}
             title={t("newFolder")}
             type="button"
@@ -227,13 +227,13 @@ function FolderFilterButton({
 
   return (
     <button
-      className={`inline-flex min-h-8 shrink-0 items-center rounded-lg border px-3 text-xs font-medium transition ${
+      className={`hush-stable-button inline-flex min-h-8 shrink-0 cursor-pointer items-center rounded-lg border px-3 text-xs font-medium transition ${
         color
           ? "border-2 hover:bg-[#f4f4f5]/8"
           : isActive
             ? "border-[#f4f4f5]/60 bg-[#f4f4f5] text-[#050505]"
             : "border-[#3f3f46]/35 bg-[#f4f4f5]/10 text-[#f4f4f5] hover:bg-[#f4f4f5]/18"
-      } ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`}
+      }`}
       draggable={draggable}
       onClick={onClick}
       onContextMenu={onContextMenu}

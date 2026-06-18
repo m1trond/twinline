@@ -58,7 +58,7 @@ export function StickerPicker({
         <div className="mt-3 grid grid-cols-4 gap-2">
           {stickers.map((sticker) => (
             <button
-              className="grid h-14 place-items-center rounded-xl bg-[#f4f4f5]/10 text-base leading-none transition hover:scale-[1.03] hover:bg-[#f4f4f5]/18 active:scale-95"
+              className="hush-stable-button grid h-14 place-items-center rounded-xl bg-[#f4f4f5]/10 text-base leading-none transition hover:bg-[#f4f4f5]/18"
               key={sticker}
               onClick={() => onSendSticker(sticker)}
               type="button"

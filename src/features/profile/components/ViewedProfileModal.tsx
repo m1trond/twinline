@@ -102,7 +102,7 @@ export function ViewedProfileModal({
           <div className="flex min-w-0 flex-col items-center gap-1.5 text-center">
             <button
               aria-label={language === "en" ? "Open avatar" : "Открыть аватар"}
-              className="hush-avatar grid h-[72px] w-[72px] shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-base font-medium text-[#050505] shadow-[0_14px_36px_rgba(0,0,0,0.32)] transition hover:scale-[1.03] disabled:cursor-default disabled:hover:scale-100"
+              className="hush-avatar grid h-[72px] w-[72px] shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-base font-medium text-[#050505] shadow-[0_14px_36px_rgba(0,0,0,0.32)] transition disabled:cursor-default"
               disabled={!viewedProfile.avatarUrl}
               onClick={() => {
                 if (viewedProfile.avatarUrl) {
