@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
+import { ConfirmDialog } from "@/components/feedback/ConfirmDialog";
 import { useI18n } from "@/shared/i18n-context";
 import { interfaceLanguageLabels } from "@/shared/i18n";
 import type { InterfaceLanguage } from "@/shared/i18n";
@@ -63,6 +64,7 @@ export function SettingsView({
   userEmail,
 }: SettingsViewProps) {
   const { language, setLanguage, t } = useI18n();
+  const [isSignOutDialogOpen, setIsSignOutDialogOpen] = useState(false);
   const privacySettings = [
     {
       description: t("onlineVisibleDescription"),
@@ -178,7 +180,7 @@ export function SettingsView({
               <button
                 className="mt-0.5 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-red-400/40 bg-red-500/15 px-3 text-xs font-medium text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isSigningOut}
-                onClick={() => void handleSignOut()}
+                onClick={() => setIsSignOutDialogOpen(true)}
                 type="button"
               >
                 <SignOutIcon />
@@ -240,6 +242,26 @@ export function SettingsView({
           </div>
         </div>
       </div>
+
+      {isSignOutDialogOpen ? (
+        <ConfirmDialog
+          cancelLabel={t("cancel")}
+          confirmLabel={isSigningOut ? t("signingOut") : t("signOut")}
+          description={
+            language === "en"
+              ? "Are you sure you want to sign out of your account?"
+              : "Вы уверены, что хотите выйти из аккаунта?"
+          }
+          icon={<SignOutIcon />}
+          isConfirmDisabled={isSigningOut}
+          onCancel={() => setIsSignOutDialogOpen(false)}
+          onConfirm={() => {
+            setIsSignOutDialogOpen(false);
+            void handleSignOut();
+          }}
+          title={language === "en" ? "Sign out?" : "Выйти из аккаунта?"}
+        />
+      ) : null}
     </div>
   );
 }
