@@ -69,6 +69,15 @@ a,
   translate: 0 1px;
 }
 
+.hush-shell .hush-nav-button:not(:disabled) {
+  transition-property: background-color, border-color, color, opacity;
+}
+
+.hush-shell .hush-nav-button:not(:disabled):active {
+  scale: 1;
+  translate: 0;
+}
+
 .hush-shell button:not(:disabled):focus-visible,
 .hush-shell a:focus-visible,
 .hush-shell [role="button"]:focus-visible {
