@@ -70,9 +70,13 @@ a,
 }
 
 .hush-shell .hush-nav-button:not(:disabled) {
+  box-sizing: border-box;
+  line-height: 1;
   transition-property: background-color, border-color, color, opacity;
+  transform: translateZ(0);
 }
 
+.hush-shell .hush-nav-button:not(:disabled):hover,
 .hush-shell .hush-nav-button:not(:disabled):active {
   scale: 1;
   translate: 0;

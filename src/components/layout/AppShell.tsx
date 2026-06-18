@@ -469,10 +469,10 @@ export function AppShell({
                 <button
                   aria-label={isSidebarIconMode ? translatedSettingsNavItem.label : undefined}
                   title={isSidebarIconMode ? translatedSettingsNavItem.label : undefined}
-                  className={`hush-nav-button ${isSidebarIconMode ? "mx-auto grid h-9 min-h-9 w-9 place-items-center px-0 py-0" : "flex min-h-9 items-center px-3.5 py-2 text-left"} rounded-xl text-sm font-medium leading-none transition ${
+                  className={`hush-nav-button border ${isSidebarIconMode ? "mx-auto grid h-9 min-h-9 w-9 place-items-center px-0 py-0" : "flex h-9 min-h-9 items-center px-3.5 py-0 text-left"} rounded-xl text-sm font-medium leading-none transition ${
                     activeView === translatedSettingsNavItem.view
-                      ? "bg-[#f4f4f5] text-[#050505]"
-                      : "border border-[#3f3f46]/25 text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
+                      ? "border-transparent bg-[#f4f4f5] text-[#050505]"
+                      : "border-[#3f3f46]/25 text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
                   }`}
                   onClick={() => setActiveView(translatedSettingsNavItem.view)}
                   type="button"
