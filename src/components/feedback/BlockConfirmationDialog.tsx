@@ -1,7 +1,7 @@
 import { ConfirmDialog } from "@/components/feedback/ConfirmDialog";
 import { useI18n } from "@/shared/i18n-context";
 
-export type BlockConfirmationState = {
+type BlockConfirmationState = {
   action: "block" | "unblock";
   targetLabel: string;
   userId: string;

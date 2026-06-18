@@ -1,4 +1,4 @@
-export function getViewportSize() {
+function getViewportSize() {
   if (typeof window === "undefined") {
     return { height: 0, width: 0 };
   }

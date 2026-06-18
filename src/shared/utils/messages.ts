@@ -69,27 +69,27 @@ function getMediaMessagePayload(text: string, prefix: string): MediaMessagePaylo
   return { url: rawPayload };
 }
 
-export function createImageMessageText(payload: MediaMessagePayload) {
+function createImageMessageText(payload: MediaMessagePayload) {
   return createMediaMessageText(imageMessagePrefix, payload);
 }
 
-export function createVideoMessageText(payload: MediaMessagePayload) {
+function createVideoMessageText(payload: MediaMessagePayload) {
   return createMediaMessageText(videoMessagePrefix, payload);
 }
 
-export function createAudioMessageText(payload: MediaMessagePayload) {
+function createAudioMessageText(payload: MediaMessagePayload) {
   return createMediaMessageText(audioMessagePrefix, payload);
 }
 
-export function getMessageImagePayload(text: string) {
+function getMessageImagePayload(text: string) {
   return getMediaMessagePayload(text, imageMessagePrefix);
 }
 
-export function getMessageVideoPayload(text: string) {
+function getMessageVideoPayload(text: string) {
   return getMediaMessagePayload(text, videoMessagePrefix);
 }
 
-export function getMessageAudioPayload(text: string) {
+function getMessageAudioPayload(text: string) {
   return getMediaMessagePayload(text, audioMessagePrefix);
 }
 
@@ -508,7 +508,7 @@ export function createReplyMessageText(replyTarget: MessageRow, body: string) {
   )}`;
 }
 
-export function updateReplyMessageBody(text: string, body: string) {
+function updateReplyMessageBody(text: string, body: string) {
   const reply = getMessageReply(text);
 
   if (!reply) {
