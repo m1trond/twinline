@@ -16,6 +16,7 @@ import {
   isServiceMessage,
   mergeMessages,
 } from "@/shared/utils/messages";
+import { showHushMessageNotification } from "@/shared/utils/notifications";
 import { isProfileMuted } from "@/shared/utils/storage";
 
 type UseMessagesRealtimeStateParams = {
@@ -359,26 +360,40 @@ export function useMessagesRealtimeState({
           "Notification" in window &&
           Notification.permission === "granted"
         ) {
-          const notification = new Notification(newMessage.author, {
-            body: getNotificationMessageText(newMessage.text),
-            tag: `hush-message-${newMessage.id}`,
-          });
+          const notificationBody = getNotificationMessageText(newMessage.text);
+          const notificationTag = `hush-message-${newMessage.id}`;
 
-          window.setTimeout(() => {
-            notification.close();
-          }, 3000);
-
-          notification.onclick = () => {
-            window.focus();
-            setActiveView("messages");
-
-            if (newMessage.user_id) {
-              setSelectedChatUserId(newMessage.user_id);
+          void showHushMessageNotification({
+            body: notificationBody,
+            chatUserId: newMessage.user_id,
+            tag: notificationTag,
+            title: newMessage.author,
+          }).then((wasShownByServiceWorker) => {
+            if (wasShownByServiceWorker) {
+              return;
             }
 
-            setUnreadMessageCount(0);
-            notification.close();
-          };
+            const notification = new Notification(newMessage.author, {
+              body: notificationBody,
+              tag: notificationTag,
+            });
+
+            window.setTimeout(() => {
+              notification.close();
+            }, 3000);
+
+            notification.onclick = () => {
+              window.focus();
+              setActiveView("messages");
+
+              if (newMessage.user_id) {
+                setSelectedChatUserId(newMessage.user_id);
+              }
+
+              setUnreadMessageCount(0);
+              notification.close();
+            };
+          });
         }
       }
     }

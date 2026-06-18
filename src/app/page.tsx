@@ -158,6 +158,7 @@ import {
   clampPanelPosition,
   getCenteredCallPanelPosition,
 } from "@/shared/utils/viewport";
+import { registerHushServiceWorker } from "@/shared/utils/notifications";
 
 type SyncedSettings = {
   areSoftEffectsEnabled?: boolean;
@@ -1504,6 +1505,66 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (!areNotificationsEnabled) {
+      return;
+    }
+
+    void registerHushServiceWorker();
+  }, [areNotificationsEnabled]);
+
+  useEffect(() => {
+    function openChatFromNotification(userId: string | null) {
+      setActiveView("messages");
+
+      if (userId) {
+        setSelectedChatUserId(userId);
+      }
+
+      setUnreadMessageCount(0);
+    }
+
+    function handleServiceWorkerMessage(event: MessageEvent) {
+      const payload = event.data;
+
+      if (
+        !payload ||
+        typeof payload !== "object" ||
+        payload.type !== "hush-open-chat"
+      ) {
+        return;
+      }
+
+      openChatFromNotification(
+        typeof payload.userId === "string" ? payload.userId : null,
+      );
+    }
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.addEventListener("message", handleServiceWorkerMessage);
+    }
+
+    const notificationChatUserId = new URLSearchParams(window.location.search).get(
+      "hushChat",
+    );
+
+    if (notificationChatUserId) {
+      openChatFromNotification(notificationChatUserId);
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete("hushChat");
+      window.history.replaceState(null, "", cleanUrl);
+    }
+
+    return () => {
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.removeEventListener(
+          "message",
+          handleServiceWorkerMessage,
+        );
+      }
+    };
+  }, [setActiveView, setSelectedChatUserId, setUnreadMessageCount, user?.id]);
+
+  useEffect(() => {
     if (totalUnreadMessageCount > 0) {
       document.title = `(${totalUnreadMessageCount}) Hush`;
       return;
@@ -2327,6 +2388,13 @@ export default function Home() {
 
       if (permission !== "granted") {
         setErrorMessage("Браузер не разрешил уведомления.");
+        return;
+      }
+
+      const serviceWorkerRegistration = await registerHushServiceWorker();
+
+      if (!serviceWorkerRegistration) {
+        setErrorMessage("Браузер не смог подключить уведомления Hush.");
         return;
       }
     }
