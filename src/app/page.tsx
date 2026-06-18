@@ -1283,14 +1283,35 @@ export default function Home() {
       const resolvedView =
         typeof nextView === "function" ? nextView(activeViewRef.current) : nextView;
 
-      if (resolvedView !== "profile" && profileBio !== null) {
-        setProfileBio(null);
+      if (resolvedView !== "profile") {
+        if (profileBio !== null) {
+          setProfileBio(null);
+        }
+
+        if (profileName) {
+          setProfileName("");
+        }
+
+        if (profileUsername !== null) {
+          setProfileUsername(null);
+        }
+
         setProfileBioSaveError("");
+        setProfileUsernameError("");
       }
 
       setActiveView(resolvedView);
     },
-    [profileBio, setActiveView, setProfileBio],
+    [
+      profileBio,
+      profileName,
+      profileUsername,
+      setActiveView,
+      setProfileBio,
+      setProfileName,
+      setProfileUsername,
+      setProfileUsernameError,
+    ],
   );
 
   const {

@@ -132,7 +132,7 @@ export function ProfileView({
             <div className="flex items-center gap-3">
               <Avatar
                 alt={t("avatarAlt")}
-                className="h-16 w-16 bg-[#18181b] text-base text-[#f4f4f5] focus:outline-none sm:h-[72px] sm:w-[72px]"
+                className="h-16 w-16 cursor-pointer bg-[#18181b] text-base text-[#f4f4f5] focus:outline-none sm:h-[72px] sm:w-[72px]"
                 name={activeUserName}
                 onClick={() => openAvatarGallery(currentProfile?.avatar_url)}
                 src={currentProfile?.avatar_url}
