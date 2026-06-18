@@ -32,38 +32,6 @@ export function AvatarGalleryOverlay({
       onClick={onClose}
     >
       <div
-        className="mb-2 flex h-12 min-h-12 shrink-0 items-center justify-between gap-3 rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 px-3.5 py-1.5 text-[#f4f4f5] shadow-[0_14px_45px_rgba(0,0,0,0.28)]"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="min-w-0">
-          <p className="text-xs font-medium uppercase leading-none tracking-[0.16em] text-[#a1a1aa]">
-            {t("avatars")}
-          </p>
-          <p className="mt-0.5 text-[11px] leading-none text-[#a1a1aa]">
-            {(avatarGalleryIndex ?? 0) + 1} / {avatarGalleryItems.length}
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2.5">
-          {canDeleteAvatarFromGallery ? (
-            <button
-              className="min-h-9 rounded-lg border border-[#3f3f46]/45 bg-[#f4f4f5]/8 px-[18px] text-sm font-medium text-[#f4f4f5] transition hover:bg-white/12"
-              onClick={() => setIsAvatarDeleteDialogOpen(true)}
-              type="button"
-            >
-              {t("delete")}
-            </button>
-          ) : null}
-          <button
-            className="min-h-9 rounded-lg border border-[#3f3f46]/45 px-[18px] text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
-            onClick={onClose}
-            type="button"
-          >
-            {t("close")}
-          </button>
-        </div>
-      </div>
-
-      <div
         className="relative grid min-h-0 flex-1 place-items-center overflow-hidden rounded-lg border border-[#3f3f46]/35 bg-[#050505]/72 p-2.5"
         onClick={(event) => event.stopPropagation()}
       >
@@ -108,6 +76,38 @@ export function AvatarGalleryOverlay({
           className="h-auto max-h-[calc(100dvh-120px)] w-auto max-w-[calc(100vw-80px)] rounded-lg object-contain shadow-[0_28px_90px_rgba(0,0,0,0.55)]"
           src={avatarGalleryUrl}
         />
+      </div>
+
+      <div
+        className="mt-2 flex h-12 min-h-12 shrink-0 items-center justify-between gap-3 rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 px-3.5 py-1.5 text-[#f4f4f5] shadow-[0_14px_45px_rgba(0,0,0,0.28)]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="min-w-0">
+          <p className="text-xs font-medium uppercase leading-none tracking-[0.16em] text-[#a1a1aa]">
+            {t("avatars")}
+          </p>
+          <p className="mt-0.5 text-[11px] leading-none text-[#a1a1aa]">
+            {(avatarGalleryIndex ?? 0) + 1} / {avatarGalleryItems.length}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2.5">
+          {canDeleteAvatarFromGallery ? (
+            <button
+              className="min-h-9 rounded-lg border border-[#3f3f46]/45 bg-[#f4f4f5]/8 px-[18px] text-sm font-medium text-[#f4f4f5] transition hover:bg-white/12"
+              onClick={() => setIsAvatarDeleteDialogOpen(true)}
+              type="button"
+            >
+              {t("delete")}
+            </button>
+          ) : null}
+          <button
+            className="min-h-9 rounded-lg border border-[#3f3f46]/45 px-[18px] text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
+            onClick={onClose}
+            type="button"
+          >
+            {t("close")}
+          </button>
+        </div>
       </div>
 
       {avatarGalleryItems.length > 1 ? (
