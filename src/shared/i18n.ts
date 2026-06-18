@@ -279,7 +279,7 @@ export const translations = {
     saveNick: "Сохранить ник",
     saving: "Сохраняю...",
     searchPlaceholder: "Найти...",
-    searchMinUsername: "Введи минимум 2 символа после @.",
+    searchMinUsername: "Введите минимум 2 символа",
     searchUserByUsername: "Найди пользователя по нику.",
     searchUserNotFound: "Пользователь не найден.",
     settings: "Настройки",
