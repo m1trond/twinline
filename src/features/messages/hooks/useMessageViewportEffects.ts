@@ -4,6 +4,8 @@ import type { ActiveView } from "@/shared/types";
 
 type MessageViewportEffectsParams = {
   activeView: ActiveView;
+  activeDialogMessagesCount: number;
+  activeDialogMessagesKey: string;
   favoriteItemsCount: number;
   favoriteItemsKey: string;
   highlightedMessageTimeoutRef: RefObject<number | null>;
@@ -29,6 +31,8 @@ function scrollMessagesListToBottom(
 
 export function useMessageViewportEffects({
   activeView,
+  activeDialogMessagesCount,
+  activeDialogMessagesKey,
   favoriteItemsCount,
   favoriteItemsKey,
   highlightedMessageTimeoutRef,
@@ -52,8 +56,49 @@ export function useMessageViewportEffects({
     }
 
     lastOpenedChatUserIdRef.current = selectedChatUserId;
-    scrollMessagesListToBottom(messagesListRef);
+    let wasUserScrollDetected = false;
+    const messagesList = messagesListRef.current;
+    const frameIds: number[] = [];
+    const timeoutIds: number[] = [];
+
+    const markUserScroll = () => {
+      wasUserScrollDetected = true;
+    };
+
+    const scroll = () => {
+      if (!wasUserScrollDetected) {
+        scrollMessagesListToBottom(messagesListRef);
+      }
+    };
+
+    messagesList?.addEventListener("wheel", markUserScroll, { passive: true });
+    messagesList?.addEventListener("touchmove", markUserScroll, { passive: true });
+    messagesList?.addEventListener("pointerdown", markUserScroll);
+    messagesList?.addEventListener("keydown", markUserScroll);
+
+    scroll();
+    frameIds.push(
+      window.requestAnimationFrame(() => {
+        scroll();
+        frameIds.push(window.requestAnimationFrame(scroll));
+      }),
+    );
+    timeoutIds.push(
+      window.setTimeout(scroll, 80),
+      window.setTimeout(scroll, 180),
+    );
+
+    return () => {
+      messagesList?.removeEventListener("wheel", markUserScroll);
+      messagesList?.removeEventListener("touchmove", markUserScroll);
+      messagesList?.removeEventListener("pointerdown", markUserScroll);
+      messagesList?.removeEventListener("keydown", markUserScroll);
+      frameIds.forEach((frameId) => window.cancelAnimationFrame(frameId));
+      timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
+    };
   }, [
+    activeDialogMessagesCount,
+    activeDialogMessagesKey,
     activeView,
     isLoadingMessages,
     messagesListRef,

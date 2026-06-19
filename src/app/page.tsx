@@ -1223,6 +1223,15 @@ export default function Home() {
     ? activePinnedMessages
     : activeDialogMessages;
   const visibleDialogMessagesCount = visibleDialogMessages.length;
+  const visibleDialogLastMessage = visibleDialogMessages.at(-1);
+  const visibleDialogMessagesKey = visibleDialogLastMessage
+    ? [
+        visibleDialogLastMessage.client_key ?? visibleDialogLastMessage.id,
+        visibleDialogLastMessage.created_at,
+        visibleDialogLastMessage.edited_at ?? "",
+        visibleDialogLastMessage.text.length,
+      ].join(":")
+    : "";
   const favoriteLastItem = favoriteItems.at(-1);
   const favoriteItemsKey = favoriteLastItem
     ? [
@@ -1582,6 +1591,8 @@ export default function Home() {
 
   useMessageViewportEffects({
     activeView,
+    activeDialogMessagesCount: activeDialogMessages.length,
+    activeDialogMessagesKey: visibleDialogMessagesKey,
     favoriteItemsCount: favoriteItems.length,
     favoriteItemsKey,
     highlightedMessageTimeoutRef,

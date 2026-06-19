@@ -65,6 +65,11 @@ export function MessageContextMenu({
     return null;
   }
 
+  const closeContextMenu = () => {
+    setCopiedMessageId(null);
+    setMessageContextMenu(null);
+  };
+
   const isMine = contextMenu.message.user_id === currentUserId;
   const canEditMessage = isMine && !getMessageAudioUrl(contextMenu.message.text);
   const isPinned = activePinnedMessageIdSet.has(contextMenu.message.id);
@@ -74,7 +79,7 @@ export function MessageContextMenu({
     <>
       <MenuBackdrop
         ariaLabel={t("cancel")}
-        onClose={() => setMessageContextMenu(null)}
+        onClose={closeContextMenu}
       />
       <div
         className="hush-context-menu fixed z-[90] w-[min(220px,calc(100vw-24px))] overflow-hidden rounded-lg border border-white/10 bg-[#18181b] py-1 text-[#f4f4f5] shadow-[0_18px_60px_rgba(0,0,0,0.55)]"
@@ -105,15 +110,11 @@ export function MessageContextMenu({
         </MenuButton>
         <MenuButton
           icon={<CopyIcon />}
+          rightIcon={copiedMessageId === contextMenu.message.id ? <CheckIcon /> : null}
           onClick={() => {
             const messageId = contextMenu.message.id;
             void Promise.resolve(copyMessageText(contextMenu.message)).then(() => {
               setCopiedMessageId(messageId);
-              window.setTimeout(() => {
-                setCopiedMessageId((currentMessageId) =>
-                  currentMessageId === messageId ? null : currentMessageId,
-                );
-              }, 2000);
             });
           }}
         >
@@ -158,6 +159,11 @@ export function FavoriteContextMenu({
     return null;
   }
 
+  const closeContextMenu = () => {
+    setCopiedFavoriteId(null);
+    setFavoriteContextMenu(null);
+  };
+
   const isPinned = pinnedFavoriteItem?.id === contextMenu.item.id;
   const canEditItem = !getMessageAudioUrl(contextMenu.item.text);
   const isSelected = selectedMessageIdSet.has(contextMenu.item.id);
@@ -166,7 +172,7 @@ export function FavoriteContextMenu({
     <>
       <MenuBackdrop
         ariaLabel={t("cancel")}
-        onClose={() => setFavoriteContextMenu(null)}
+        onClose={closeContextMenu}
       />
       <div
         className="hush-context-menu fixed z-[90] w-[min(220px,calc(100vw-24px))] overflow-hidden rounded-lg border border-white/10 bg-[#18181b] py-1 text-[#f4f4f5] shadow-[0_18px_60px_rgba(0,0,0,0.55)]"
@@ -187,15 +193,11 @@ export function FavoriteContextMenu({
         </MenuButton>
         <MenuButton
           icon={<CopyIcon />}
+          rightIcon={copiedFavoriteId === contextMenu.item.id ? <CheckIcon /> : null}
           onClick={() => {
             const favoriteId = contextMenu.item.id;
             void Promise.resolve(copyFavoriteText(contextMenu.item)).then(() => {
               setCopiedFavoriteId(favoriteId);
-              window.setTimeout(() => {
-                setCopiedFavoriteId((currentFavoriteId) =>
-                  currentFavoriteId === favoriteId ? null : currentFavoriteId,
-                );
-              }, 2000);
             });
           }}
         >
@@ -238,11 +240,13 @@ function MenuButton({
   danger = false,
   icon,
   onClick,
+  rightIcon = null,
 }: {
   children: string;
   danger?: boolean;
   icon: ReactNode;
   onClick: () => void;
+  rightIcon?: ReactNode;
 }) {
   return (
     <button
@@ -253,7 +257,8 @@ function MenuButton({
       type="button"
     >
       {icon}
-      {children}
+      <span className="min-w-0 flex-1 truncate">{children}</span>
+      {rightIcon}
     </button>
   );
 }
@@ -303,6 +308,15 @@ function TrashIcon() {
 }
 
 function SelectIcon() {
+  return (
+    <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+      <path d="m9 12 2 2 4-4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
   return (
     <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
