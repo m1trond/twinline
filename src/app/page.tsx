@@ -538,7 +538,6 @@ export default function Home() {
     isEmailVerifiedInHush,
     isSendingEmailVerification,
     sendEmailVerificationLetter,
-    setIsEmailVerifiedInHush,
     setIsEmailVerificationModalOpen,
   } = useEmailVerificationState({
     setErrorMessage,
@@ -1925,9 +1924,6 @@ export default function Home() {
           );
           setProfileName(profileDisplayName);
           setProfileUsername(nextUsername);
-
-          window.localStorage.setItem(`hush-email-verified-${signedUpUser.id}`, "false");
-          setIsEmailVerifiedInHush(false);
         }
 
         setErrorMessage("");

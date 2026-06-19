@@ -7,6 +7,10 @@ type EmailVerificationStateParams = {
   user: User | null;
 };
 
+function isSupabaseEmailVerified(user: User | null) {
+  return Boolean(user?.email_confirmed_at || user?.confirmed_at);
+}
+
 export function useEmailVerificationState({
   setErrorMessage,
   user,
@@ -16,24 +20,60 @@ export function useEmailVerificationState({
   const [isEmailVerifiedInHush, setIsEmailVerifiedInHush] = useState(false);
 
   useEffect(() => {
-    let frameId = 0;
+    let clearFrameId = 0;
 
     if (!user) {
-      frameId = window.requestAnimationFrame(() => {
+      clearFrameId = window.requestAnimationFrame(() => {
         setIsEmailVerifiedInHush(false);
         setIsEmailVerificationModalOpen(false);
       });
 
-      return () => window.cancelAnimationFrame(frameId);
+      return () => window.cancelAnimationFrame(clearFrameId);
     }
 
-    frameId = window.requestAnimationFrame(() => {
-      const storedValue = window.localStorage.getItem(`hush-email-verified-${user.id}`);
+    let isMounted = true;
 
-      setIsEmailVerifiedInHush(storedValue === "true");
+    async function syncEmailVerification() {
+      const { data } = await supabase.auth.getUser();
+      const nextUser = data.user ?? user;
+      const isVerified = isSupabaseEmailVerified(nextUser);
+
+      if (!isMounted) {
+        return;
+      }
+
+      setIsEmailVerifiedInHush(isVerified);
+
+      if (isVerified) {
+        setIsEmailVerificationModalOpen(false);
+      }
+    }
+
+    clearFrameId = window.requestAnimationFrame(() => {
+      setIsEmailVerifiedInHush(isSupabaseEmailVerified(user));
     });
+    void syncEmailVerification();
 
-    return () => window.cancelAnimationFrame(frameId);
+    const verificationInterval = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void syncEmailVerification();
+      }
+    }, 15_000);
+
+    function syncOnFocus() {
+      void syncEmailVerification();
+    }
+
+    window.addEventListener("focus", syncOnFocus);
+    document.addEventListener("visibilitychange", syncOnFocus);
+
+    return () => {
+      isMounted = false;
+      window.cancelAnimationFrame(clearFrameId);
+      window.clearInterval(verificationInterval);
+      window.removeEventListener("focus", syncOnFocus);
+      document.removeEventListener("visibilitychange", syncOnFocus);
+    };
   }, [user]);
 
   const sendEmailVerificationLetter = useCallback(async () => {
@@ -69,7 +109,6 @@ export function useEmailVerificationState({
     isEmailVerifiedInHush,
     isSendingEmailVerification,
     sendEmailVerificationLetter,
-    setIsEmailVerifiedInHush,
     setIsEmailVerificationModalOpen,
   };
 }

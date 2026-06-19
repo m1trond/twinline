@@ -17,14 +17,6 @@ export default function AuthConfirmPage() {
   const [statusText, setStatusText] = useState("Подтверждаем почту...");
 
   useEffect(() => {
-    async function markEmailVerified() {
-      const { data: userData } = await supabase.auth.getUser();
-
-      if (userData.user) {
-        window.localStorage.setItem(`hush-email-verified-${userData.user.id}`, "true");
-      }
-    }
-
     function finishConfirmation(nextPath: string) {
       setStatusText("Почта подтверждена. Открываем Hush...");
       window.setTimeout(() => {
@@ -54,7 +46,6 @@ export default function AuthConfirmPage() {
           return;
         }
 
-        await markEmailVerified();
         finishConfirmation(nextPath);
         return;
       }
@@ -67,7 +58,6 @@ export default function AuthConfirmPage() {
           return;
         }
 
-        await markEmailVerified();
         finishConfirmation(nextPath);
         return;
       }
@@ -87,7 +77,6 @@ export default function AuthConfirmPage() {
         return;
       }
 
-      await markEmailVerified();
       finishConfirmation(nextPath);
     }
 
