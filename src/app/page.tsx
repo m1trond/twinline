@@ -1267,12 +1267,38 @@ export default function Home() {
     return latestMessagesByProfileId;
   }, [user, visibleMessages]);
   const chatProfiles = useMemo(() => {
-    return profiles
-      .filter((profile) => profile.user_id !== user?.id && dialogProfileIds.has(profile.user_id))
+    if (!user) {
+      return [];
+    }
+
+    return Array.from(dialogProfileIds)
+      .map((profileId) => {
+        const profile = profilesByUserId.get(profileId);
+
+        if (profile) {
+          return profile;
+        }
+
+        const latestMessage = latestVisibleMessageByProfileId.get(profileId);
+
+        return {
+          avatar_url: null,
+          bio: null,
+          display_name:
+            latestMessage?.user_id === profileId
+              ? latestMessage.author
+              : "Пользователь",
+          name_changed_at: null,
+          updated_at: latestMessage?.created_at ?? new Date(0).toISOString(),
+          user_id: profileId,
+          username: null,
+          username_changed_at: null,
+        } satisfies ProfileRow;
+      })
       .sort((firstProfile, secondProfile) =>
         firstProfile.display_name.localeCompare(secondProfile.display_name, "ru"),
       );
-  }, [dialogProfileIds, profiles, user?.id]);
+  }, [dialogProfileIds, latestVisibleMessageByProfileId, profilesByUserId, user]);
   const visibleChatProfiles = useMemo(() => {
     if (selectedChatFolderId === archivedChatFolderId) {
       return chatProfiles.filter((profile) =>
