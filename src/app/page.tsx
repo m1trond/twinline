@@ -83,6 +83,7 @@ import {
   upsertUserSyncState,
   type UserSyncPayload,
 } from "@/features/sync/queries";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import {
   audioMessagePrefix,
   archivedChatFolderId,
@@ -391,6 +392,8 @@ export default function Home() {
   const callPartnerIdRef = useRef<string | null>(null);
   const localCallStreamRef = useRef<MediaStream | null>(null);
   const userSyncPayloadRef = useRef<UserSyncPayload>({});
+  const userSyncChannelRef = useRef<RealtimeChannel | null>(null);
+  const userSyncClientIdRef = useRef<string | null>(null);
   const isApplyingRemoteSyncRef = useRef(false);
   const callStartedAtRef = useRef<number | null>(null);
   const hasSavedCallSummaryRef = useRef(false);
@@ -493,11 +496,13 @@ export default function Home() {
     user,
   });
   const {
+    applyFavoritesSyncPayload,
     favoriteItems,
     pinnedFavoriteItem,
+    readLocalFavoritesSyncPayload,
     setPinnedFavoriteItem,
     saveFavoriteItems,
-  } = useFavoritesState(user?.id);
+  } = useFavoritesState(user?.id, saveUserSyncPatch);
   const {
     hiddenMessageIdSet,
     setHiddenMessageIds,
@@ -565,6 +570,7 @@ export default function Home() {
       userSyncPayloadRef.current = payload;
 
       applyChatFoldersSyncPayload(payload, syncUserId);
+      applyFavoritesSyncPayload(payload, syncUserId);
       setMutedProfiles(nextMutedProfiles);
       setLocalBlockedProfileIds(nextBlockedProfileIds);
       writeStoredMutedProfiles(nextMutedProfiles);
@@ -599,6 +605,7 @@ export default function Home() {
       try {
         return {
           blockedProfileIds: localBlockedProfileIds,
+          ...readLocalFavoritesSyncPayload(syncUserId),
           ...readLocalChatFoldersSyncPayload(syncUserId),
           mutedProfiles,
           settings: {
@@ -615,6 +622,8 @@ export default function Home() {
           blockedProfileIds: localBlockedProfileIds,
           chatFolderAssignments: {},
           chatFolders: [],
+          favoriteItems: [],
+          favoriteItemsUpdatedAt: "1970-01-01T00:00:00.000Z",
           mutedProfiles,
           settings: {
             areSoftEffectsEnabled,
@@ -626,10 +635,63 @@ export default function Home() {
       }
     }
 
+    function getSyncPayloadStringValue(payload: UserSyncPayload, key: string) {
+      const value = payload[key];
+
+      return typeof value === "string" ? value : "1970-01-01T00:00:00.000Z";
+    }
+
+    function mergeNewerLocalFavorites(remotePayload: UserSyncPayload) {
+      const localFavoritesPayload = readLocalFavoritesSyncPayload(syncUserId);
+      const localFavoritesUpdatedAt = getSyncPayloadStringValue(
+        localFavoritesPayload,
+        "favoriteItemsUpdatedAt",
+      );
+      const remoteFavoritesUpdatedAt = getSyncPayloadStringValue(
+        remotePayload,
+        "favoriteItemsUpdatedAt",
+      );
+
+      if (localFavoritesUpdatedAt <= remoteFavoritesUpdatedAt) {
+        return remotePayload;
+      }
+
+      return {
+        ...remotePayload,
+        favoriteItems: localFavoritesPayload.favoriteItems,
+        favoriteItemsUpdatedAt: localFavoritesPayload.favoriteItemsUpdatedAt,
+      };
+    }
+
+    function areSyncPayloadsEqual(
+      firstPayload: UserSyncPayload,
+      secondPayload: UserSyncPayload,
+    ) {
+      try {
+        return JSON.stringify(firstPayload) === JSON.stringify(secondPayload);
+      } catch {
+        return false;
+      }
+    }
+
+    function applyRemoteSyncPayload(remotePayload: UserSyncPayload) {
+      const nextPayload = mergeNewerLocalFavorites(remotePayload);
+
+      if (areSyncPayloadsEqual(userSyncPayloadRef.current, nextPayload)) {
+        return;
+      }
+
+      applySyncPayload(nextPayload);
+
+      if (nextPayload !== remotePayload) {
+        userSyncPayloadRef.current = nextPayload;
+        broadcastUserSyncPayload(nextPayload);
+        void upsertUserSyncState(syncUserId, nextPayload);
+      }
+    }
+
     const frameId = window.requestAnimationFrame(() => {
       const localPayload = readLocalSyncPayload();
-
-      applySyncPayload(localPayload);
 
       void fetchUserSyncState().then(({ data, error }) => {
         if (!isMounted) {
@@ -637,17 +699,85 @@ export default function Home() {
         }
 
         if (!error && data?.payload && typeof data.payload === "object") {
-          applySyncPayload(data.payload as UserSyncPayload);
+          const remotePayload = data.payload as UserSyncPayload;
+          const localBackfillPayload: UserSyncPayload = {};
+
+          for (const key of [
+            "allChatFolderName",
+            "archivedChatProfileIds",
+            "chatFolderAssignments",
+            "chatFolders",
+            "favoriteItems",
+            "favoriteItemsUpdatedAt",
+          ]) {
+            if (!(key in remotePayload) && key in localPayload) {
+              localBackfillPayload[key] = localPayload[key];
+            }
+          }
+
+          const nextPayload =
+            Object.keys(localBackfillPayload).length > 0
+              ? { ...remotePayload, ...localBackfillPayload }
+              : remotePayload;
+
+        applyRemoteSyncPayload(nextPayload);
+
+          if (nextPayload !== remotePayload) {
+            userSyncPayloadRef.current = nextPayload;
+            broadcastUserSyncPayload(nextPayload);
+            void upsertUserSyncState(syncUserId, nextPayload);
+          }
+
           return;
         }
 
+        if (error) {
+          return;
+        }
+
+        applySyncPayload(localPayload);
         userSyncPayloadRef.current = localPayload;
+        broadcastUserSyncPayload(localPayload);
         void upsertUserSyncState(syncUserId, localPayload);
       });
     });
 
     const syncChannel = supabase
-      .channel(`user-sync-state-${syncUserId}`)
+      .channel(`user-sync-state-${syncUserId}`, {
+        config: {
+          broadcast: {
+            ack: true,
+            self: false,
+          },
+        },
+      })
+      .on(
+        "broadcast",
+        { event: "sync-payload" },
+        (event) => {
+          const broadcastPayload = event.payload;
+
+          if (!broadcastPayload || typeof broadcastPayload !== "object") {
+            return;
+          }
+
+          const {
+            originId,
+            payload: nextPayload,
+          } = broadcastPayload as {
+            originId?: unknown;
+            payload?: unknown;
+          };
+
+          if (originId === userSyncClientIdRef.current) {
+            return;
+          }
+
+          if (nextPayload && typeof nextPayload === "object") {
+            applyRemoteSyncPayload(nextPayload as UserSyncPayload);
+          }
+        },
+      )
       .on(
         "postgres_changes",
         {
@@ -664,15 +794,47 @@ export default function Home() {
           const nextPayload = payload.new.payload;
 
           if (nextPayload && typeof nextPayload === "object") {
-            applySyncPayload(nextPayload as UserSyncPayload);
+            applyRemoteSyncPayload(nextPayload as UserSyncPayload);
           }
         },
       )
       .subscribe();
 
+    userSyncChannelRef.current = syncChannel;
+
+    function fetchRemoteSyncState() {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+
+      void fetchUserSyncState().then(({ data, error }) => {
+        if (
+          !isMounted ||
+          error ||
+          !data?.payload ||
+          typeof data.payload !== "object"
+        ) {
+          return;
+        }
+
+        applyRemoteSyncPayload(data.payload as UserSyncPayload);
+      });
+    }
+
+    const syncFallbackInterval = window.setInterval(fetchRemoteSyncState, 5_000);
+
+    window.addEventListener("focus", fetchRemoteSyncState);
+    document.addEventListener("visibilitychange", fetchRemoteSyncState);
+
     return () => {
       isMounted = false;
       window.cancelAnimationFrame(frameId);
+      window.clearInterval(syncFallbackInterval);
+      window.removeEventListener("focus", fetchRemoteSyncState);
+      document.removeEventListener("visibilitychange", fetchRemoteSyncState);
+      if (userSyncChannelRef.current === syncChannel) {
+        userSyncChannelRef.current = null;
+      }
       void supabase.removeChannel(syncChannel);
     };
     // Remote sync is loaded only when the account changes. Setting/folder writes go through saveUserSyncPatch.
@@ -2350,6 +2512,28 @@ export default function Home() {
     setCallPanelProfileSnapshot(null);
   }
 
+  function getUserSyncClientId() {
+    if (!userSyncClientIdRef.current) {
+      userSyncClientIdRef.current =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `sync-client-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    return userSyncClientIdRef.current;
+  }
+
+  function broadcastUserSyncPayload(payload: UserSyncPayload) {
+    void userSyncChannelRef.current?.send({
+      event: "sync-payload",
+      payload: {
+        originId: getUserSyncClientId(),
+        payload,
+      },
+      type: "broadcast",
+    });
+  }
+
   function saveUserSyncPatch(patch: UserSyncPayload) {
     if (!user || isApplyingRemoteSyncRef.current) {
       return;
@@ -2362,6 +2546,7 @@ export default function Home() {
       blockedProfileIds: localBlockedProfileIds,
       chatFolderAssignments,
       chatFolders,
+      favoriteItems,
       mutedProfiles,
       settings: {
         areSoftEffectsEnabled,
@@ -2373,6 +2558,7 @@ export default function Home() {
     };
 
     userSyncPayloadRef.current = nextPayload;
+    broadcastUserSyncPayload(nextPayload);
     void upsertUserSyncState(user.id, nextPayload);
   }
 
