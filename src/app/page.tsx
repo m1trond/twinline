@@ -5,6 +5,7 @@ import {
   FormEvent,
   MouseEvent,
   PointerEvent,
+  SetStateAction,
   useCallback,
   useEffect,
   useMemo,
@@ -105,6 +106,7 @@ import type {
   MessageRow,
   MutedProfileUntil,
   PinMessagePayload,
+  PinnedMessageIdsByChat,
   ProfileRow,
   ReceiptMessagePayload,
   ReplyMessagePayload,
@@ -172,6 +174,25 @@ function parseStringArray(value: unknown) {
   return Array.isArray(value)
     ? Array.from(new Set(value.filter((item): item is string => typeof item === "string")))
     : [];
+}
+
+function parseNumberArray(value: unknown) {
+  return Array.isArray(value)
+    ? Array.from(new Set(value.filter((item): item is number => Number.isInteger(item))))
+    : [];
+}
+
+function parsePinnedMessageIdsByChat(value: unknown): PinnedMessageIdsByChat {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter((entry): entry is [string, unknown] => typeof entry[0] === "string")
+      .map(([chatUserId, ids]) => [chatUserId, parseNumberArray(ids)])
+      .filter(([, ids]) => ids.length > 0),
+  );
 }
 
 function parseMutedProfiles(value: unknown): MutedProfileUntil {
@@ -504,6 +525,7 @@ export default function Home() {
     saveFavoriteItems,
   } = useFavoritesState(user?.id, saveUserSyncPatch);
   const {
+    hiddenMessageIds,
     hiddenMessageIdSet,
     setHiddenMessageIds,
     pinnedMessageIdsByChat,
@@ -563,7 +585,13 @@ export default function Home() {
 
     function applySyncPayload(payload: UserSyncPayload) {
       const syncedSettings = parseSyncedSettings(payload.settings);
+      const nextAvatarHistory = parseStringArray(payload.avatarHistory);
+      const nextHiddenMessageIds = parseNumberArray(payload.hiddenMessageIds);
+      const nextInterfaceLanguage = isInterfaceLanguage(payload.interfaceLanguage)
+        ? payload.interfaceLanguage
+        : null;
       const nextMutedProfiles = parseMutedProfiles(payload.mutedProfiles);
+      const nextPinnedMessageIdsByChat = parsePinnedMessageIdsByChat(payload.pinnedMessageIdsByChat);
       const nextBlockedProfileIds = parseStringArray(payload.blockedProfileIds);
 
       isApplyingRemoteSyncRef.current = true;
@@ -571,10 +599,21 @@ export default function Home() {
 
       applyChatFoldersSyncPayload(payload, syncUserId);
       applyFavoritesSyncPayload(payload, syncUserId);
+      setAvatarHistory(nextAvatarHistory);
+      setHiddenMessageIds(nextHiddenMessageIds);
       setMutedProfiles(nextMutedProfiles);
+      setPinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
       setLocalBlockedProfileIds(nextBlockedProfileIds);
+      window.localStorage.setItem(`hush-avatar-history-${syncUserId}`, JSON.stringify(nextAvatarHistory));
+      window.localStorage.setItem(`hush-hidden-messages-${syncUserId}`, JSON.stringify(nextHiddenMessageIds));
       writeStoredMutedProfiles(nextMutedProfiles);
+      writeStoredPinnedMessageIds(syncUserId, nextPinnedMessageIdsByChat);
       writeStoredStringList("hush-blocked-profiles", nextBlockedProfileIds);
+
+      if (nextInterfaceLanguage) {
+        setInterfaceLanguage(nextInterfaceLanguage);
+        window.localStorage.setItem(interfaceLanguageStorageKey, nextInterfaceLanguage);
+      }
 
       if (typeof syncedSettings.isOnlineStatusVisible === "boolean") {
         setIsOnlineStatusVisible(syncedSettings.isOnlineStatusVisible);
@@ -604,10 +643,14 @@ export default function Home() {
     function readLocalSyncPayload(): UserSyncPayload {
       try {
         return {
+          avatarHistory,
           blockedProfileIds: localBlockedProfileIds,
+          hiddenMessageIds,
+          interfaceLanguage,
           ...readLocalFavoritesSyncPayload(syncUserId),
           ...readLocalChatFoldersSyncPayload(syncUserId),
           mutedProfiles,
+          pinnedMessageIdsByChat,
           settings: {
             areSoftEffectsEnabled,
             isLightThemeEnabled,
@@ -619,13 +662,17 @@ export default function Home() {
         return {
           allChatFolderName: translations[interfaceLanguage].allChats,
           archivedChatProfileIds: [],
+          avatarHistory,
           blockedProfileIds: localBlockedProfileIds,
           chatFolderAssignments: {},
           chatFolders: [],
           chatFoldersUpdatedAt: "1970-01-01T00:00:00.000Z",
           favoriteItems: [],
           favoriteItemsUpdatedAt: "1970-01-01T00:00:00.000Z",
+          hiddenMessageIds,
+          interfaceLanguage,
           mutedProfiles,
+          pinnedMessageIdsByChat,
           settings: {
             areSoftEffectsEnabled,
             isLightThemeEnabled,
@@ -733,11 +780,18 @@ export default function Home() {
           for (const key of [
             "allChatFolderName",
             "archivedChatProfileIds",
+            "avatarHistory",
+            "blockedProfileIds",
             "chatFolderAssignments",
             "chatFolders",
             "chatFoldersUpdatedAt",
             "favoriteItems",
             "favoriteItemsUpdatedAt",
+            "hiddenMessageIds",
+            "interfaceLanguage",
+            "mutedProfiles",
+            "pinnedMessageIdsByChat",
+            "settings",
           ]) {
             if (!(key in remotePayload) && key in localPayload) {
               localBackfillPayload[key] = localPayload[key];
@@ -1546,6 +1600,7 @@ export default function Home() {
     canDeleteAvatarFromGallery,
     currentProfile,
     isAvatarDeleteDialogOpen,
+    saveUserSyncPatch,
     setAvatarGalleryIndex,
     setAvatarGalleryItems,
     setAvatarHistory,
@@ -2598,11 +2653,15 @@ export default function Home() {
       ...userSyncPayloadRef.current,
       allChatFolderName,
       archivedChatProfileIds,
+      avatarHistory,
       blockedProfileIds: localBlockedProfileIds,
       chatFolderAssignments,
       chatFolders,
       favoriteItems,
+      hiddenMessageIds,
+      interfaceLanguage,
       mutedProfiles,
+      pinnedMessageIdsByChat,
       settings: {
         areSoftEffectsEnabled,
         isLightThemeEnabled,
@@ -2615,6 +2674,39 @@ export default function Home() {
     userSyncPayloadRef.current = nextPayload;
     broadcastUserSyncPayload(nextPayload);
     void upsertUserSyncState(user.id, nextPayload);
+  }
+
+  function setSyncedInterfaceLanguage(nextLanguageValue: SetStateAction<InterfaceLanguage>) {
+    const nextLanguage =
+      typeof nextLanguageValue === "function"
+        ? nextLanguageValue(interfaceLanguage)
+        : nextLanguageValue;
+
+    setInterfaceLanguage(nextLanguage);
+    window.localStorage.setItem(interfaceLanguageStorageKey, nextLanguage);
+    saveUserSyncPatch({ interfaceLanguage: nextLanguage });
+  }
+
+  function saveHiddenMessageIds(nextIds: number[]) {
+    if (!user) {
+      return;
+    }
+
+    const normalizedIds = parseNumberArray(nextIds);
+
+    setHiddenMessageIds(normalizedIds);
+    window.localStorage.setItem(`hush-hidden-messages-${user.id}`, JSON.stringify(normalizedIds));
+    saveUserSyncPatch({ hiddenMessageIds: normalizedIds });
+  }
+
+  function savePinnedMessageIdsByChat(nextPinnedMessageIdsByChat: PinnedMessageIdsByChat) {
+    if (!user) {
+      return;
+    }
+
+    setPinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
+    writeStoredPinnedMessageIds(user.id, nextPinnedMessageIdsByChat);
+    saveUserSyncPatch({ pinnedMessageIdsByChat: nextPinnedMessageIdsByChat });
   }
 
   async function toggleNotifications() {
@@ -2820,8 +2912,7 @@ export default function Home() {
     );
     const nextPinnedMessageIdsByChat = { ...pinnedMessageIdsByChat };
     delete nextPinnedMessageIdsByChat[targetChatUserId];
-    setPinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
-    writeStoredPinnedMessageIds(user.id, nextPinnedMessageIdsByChat);
+    savePinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
     setSelectedMessageIds((currentIds) =>
       currentIds.filter((id) => !selectedChatMessageIds.includes(id)),
     );
@@ -2834,8 +2925,7 @@ export default function Home() {
     if (error) {
       resetMessageSyncCursor();
       setMessages(previousMessages);
-      setPinnedMessageIdsByChat(previousPinnedMessageIdsByChat);
-      writeStoredPinnedMessageIds(user.id, previousPinnedMessageIdsByChat);
+      savePinnedMessageIdsByChat(previousPinnedMessageIdsByChat);
       setSelectedMessageIds(previousSelectedMessageIds);
       setIsDeletingChat(false);
       isDeletingChatRef.current = false;
@@ -3220,8 +3310,7 @@ export default function Home() {
       [chatUserId]: currentPinnedIds.filter((pinnedMessageId) => pinnedMessageId !== messageId),
     };
 
-    setPinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
-    writeStoredPinnedMessageIds(user.id, nextPinnedMessageIdsByChat);
+    savePinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
   }
 
   function requestUnpinPinnedMessage(message: MessageRow) {
@@ -3249,8 +3338,7 @@ export default function Home() {
         ),
       };
 
-      setPinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
-      writeStoredPinnedMessageIds(user.id, nextPinnedMessageIdsByChat);
+      savePinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
     }
 
     if (wasSharedPinned) {
@@ -3286,8 +3374,7 @@ export default function Home() {
         [selectedChatUserId]: Array.from(new Set(nextPinnedIds)),
       };
 
-      setPinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
-      writeStoredPinnedMessageIds(user.id, nextPinnedMessageIdsByChat);
+      savePinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
       setMessagePinTarget(null);
       setErrorMessage("");
       return;
@@ -3355,8 +3442,7 @@ export default function Home() {
       [selectedChatUserId]: [],
     };
 
-    setPinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
-    writeStoredPinnedMessageIds(user.id, nextPinnedMessageIdsByChat);
+    savePinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
 
     if (sharedPinnedIds.length === 0) {
       setIsPinnedMessagesViewOpen(false);
@@ -3387,8 +3473,7 @@ export default function Home() {
       .select(messageColumns);
 
     if (error) {
-      setPinnedMessageIdsByChat(previousPinnedMessageIdsByChat);
-      writeStoredPinnedMessageIds(user.id, previousPinnedMessageIdsByChat);
+      savePinnedMessageIdsByChat(previousPinnedMessageIdsByChat);
       setMessages((currentMessages) =>
         currentMessages.filter(
           (message) => !optimisticMessages.some((optimisticMessage) => optimisticMessage.id === message.id),
@@ -3449,16 +3534,7 @@ export default function Home() {
     );
 
     if (positiveIds.length > 0) {
-      setHiddenMessageIds((currentIds) => {
-        const nextIds = Array.from(new Set([...currentIds, ...positiveIds]));
-
-        window.localStorage.setItem(
-          "hush-hidden-messages-" + user.id,
-          JSON.stringify(nextIds),
-        );
-
-        return nextIds;
-      });
+      saveHiddenMessageIds([...hiddenMessageIds, ...positiveIds]);
     }
 
     if (selectedChatUserId) {
@@ -3469,8 +3545,7 @@ export default function Home() {
         ),
       };
 
-      setPinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
-      writeStoredPinnedMessageIds(user.id, nextPinnedMessageIdsByChat);
+      savePinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
     }
 
     setSelectedMessageIds((currentIds) =>
@@ -3504,8 +3579,7 @@ export default function Home() {
         ),
       };
 
-      setPinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
-      writeStoredPinnedMessageIds(user.id, nextPinnedMessageIdsByChat);
+      savePinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
     }
 
     setSelectedMessageIds((currentIds) =>
@@ -3525,8 +3599,7 @@ export default function Home() {
 
     if (error) {
       setMessages(previousMessages);
-      setPinnedMessageIdsByChat(previousPinnedMessageIdsByChat);
-      writeStoredPinnedMessageIds(user.id, previousPinnedMessageIdsByChat);
+      savePinnedMessageIdsByChat(previousPinnedMessageIdsByChat);
       setSelectedMessageIds(previousSelectedMessageIds);
       setErrorMessage("\u041d\u0435 \u043f\u043e\u043b\u0443\u0447\u0438\u043b\u043e\u0441\u044c \u0443\u0434\u0430\u043b\u0438\u0442\u044c \u0432\u044b\u0434\u0435\u043b\u0435\u043d\u043d\u044b\u0435 \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u044f \u0443 \u0434\u0432\u043e\u0438\u0445.");
       return;
@@ -4430,18 +4503,7 @@ export default function Home() {
       return;
     }
 
-    setHiddenMessageIds((currentIds) => {
-      const nextIds = currentIds.includes(message.id)
-        ? currentIds
-        : [...currentIds, message.id];
-
-      window.localStorage.setItem(
-        `hush-hidden-messages-${user.id}`,
-        JSON.stringify(nextIds),
-      );
-
-      return nextIds;
-    });
+    saveHiddenMessageIds([...hiddenMessageIds, message.id]);
     setMessageDeleteTarget(null);
     removeLocalPinnedMessageId(message.id, message.user_id === user.id ? selectedChatUserId : message.user_id);
     setSelectedMessageIds((currentIds) =>
@@ -4452,7 +4514,7 @@ export default function Home() {
 
   if (isAuthLoading) {
     return (
-      <I18nProvider language={interfaceLanguage} setLanguage={setInterfaceLanguage}>
+      <I18nProvider language={interfaceLanguage} setLanguage={setSyncedInterfaceLanguage}>
         <LoadingScreen />
       </I18nProvider>
     );
@@ -4460,7 +4522,7 @@ export default function Home() {
 
   if (!user) {
     return (
-      <I18nProvider language={interfaceLanguage} setLanguage={setInterfaceLanguage}>
+      <I18nProvider language={interfaceLanguage} setLanguage={setSyncedInterfaceLanguage}>
         <AuthScreen
           authEmail={authEmail}
           authMode={authMode}
@@ -4482,7 +4544,7 @@ export default function Home() {
   }
 
   return (
-    <I18nProvider language={interfaceLanguage} setLanguage={setInterfaceLanguage}>
+    <I18nProvider language={interfaceLanguage} setLanguage={setSyncedInterfaceLanguage}>
     <AppShell
       activeView={activeView}
       canViewAccess={canViewAccess}

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import type { ChangeEvent, RefObject } from "react";
 import type { User } from "@supabase/supabase-js";
+import type { UserSyncPayload } from "@/features/sync/queries";
 import { supabase } from "@/lib/supabase";
 import { profileColumns } from "@/shared/constants";
 import type { ProfileRow } from "@/shared/types";
@@ -20,6 +21,7 @@ type UseAvatarActionsParams = {
   canDeleteAvatarFromGallery: boolean;
   currentProfile: ProfileRow | null;
   isAvatarDeleteDialogOpen: boolean;
+  saveUserSyncPatch: (patch: UserSyncPayload) => void;
   setAvatarGalleryIndex: (value: number | null | ((currentIndex: number | null) => number | null)) => void;
   setAvatarGalleryItems: (items: string[]) => void;
   setAvatarHistory: (items: string[]) => void;
@@ -49,6 +51,7 @@ export function useAvatarActions({
   canDeleteAvatarFromGallery,
   currentProfile,
   isAvatarDeleteDialogOpen,
+  saveUserSyncPatch,
   setAvatarGalleryIndex,
   setAvatarGalleryItems,
   setAvatarHistory,
@@ -209,6 +212,7 @@ export function useAvatarActions({
         `hush-avatar-history-${user.id}`,
         JSON.stringify(nextAvatarHistory),
       );
+      saveUserSyncPatch({ avatarHistory: nextAvatarHistory });
       setAvatarGalleryIndex(0);
     }
 
@@ -231,6 +235,7 @@ export function useAvatarActions({
         `hush-avatar-history-${user.id}`,
         JSON.stringify(nextAvatarHistory),
       );
+      saveUserSyncPatch({ avatarHistory: nextAvatarHistory });
     }
 
     setAvatarHistory(nextAvatarHistory);
@@ -320,6 +325,7 @@ export function useAvatarActions({
       `hush-avatar-history-${user.id}`,
       JSON.stringify(nextAvatarHistory),
     );
+    saveUserSyncPatch({ avatarHistory: nextAvatarHistory });
     setAvatarHistory(nextAvatarHistory);
     setAvatarGalleryItems(nextAvatarHistory);
     setIsAvatarDeleteDialogOpen(false);
