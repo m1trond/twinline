@@ -1,10 +1,8 @@
-import { useEffect, useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import type { RefObject } from "react";
 import type { ActiveView } from "@/shared/types";
 
 type MessageViewportEffectsParams = {
-  activeDialogMessagesCount: number;
-  activeDialogMessagesKey: string;
   activeView: ActiveView;
   favoriteItemsCount: number;
   favoriteItemsKey: string;
@@ -29,64 +27,7 @@ function scrollMessagesListToBottom(
   );
 }
 
-function keepMessagesListAtBottom(messagesListRef: RefObject<HTMLDivElement | null>) {
-  const frameIds: number[] = [];
-  const timeoutIds: number[] = [];
-  const intervalIds: number[] = [];
-  const messagesList = messagesListRef.current;
-
-  const scroll = () => scrollMessagesListToBottom(messagesListRef);
-
-  scroll();
-
-  messagesList?.addEventListener("load", scroll, true);
-  messagesList?.addEventListener("loadedmetadata", scroll, true);
-  messagesList?.addEventListener("canplay", scroll, true);
-
-  frameIds.push(
-    window.requestAnimationFrame(() => {
-      scroll();
-      frameIds.push(
-        window.requestAnimationFrame(() => {
-          scroll();
-        }),
-      );
-    }),
-  );
-
-  timeoutIds.push(
-    window.setTimeout(scroll, 80),
-    window.setTimeout(scroll, 180),
-    window.setTimeout(scroll, 320),
-    window.setTimeout(scroll, 600),
-    window.setTimeout(scroll, 1000),
-  );
-
-  const startedAt = Date.now();
-  intervalIds.push(
-    window.setInterval(() => {
-      if (Date.now() - startedAt > 1200) {
-        intervalIds.forEach((intervalId) => window.clearInterval(intervalId));
-        return;
-      }
-
-      scroll();
-    }, 50),
-  );
-
-  return () => {
-    messagesList?.removeEventListener("load", scroll, true);
-    messagesList?.removeEventListener("loadedmetadata", scroll, true);
-    messagesList?.removeEventListener("canplay", scroll, true);
-    frameIds.forEach((frameId) => window.cancelAnimationFrame(frameId));
-    timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
-    intervalIds.forEach((intervalId) => window.clearInterval(intervalId));
-  };
-}
-
 export function useMessageViewportEffects({
-  activeDialogMessagesCount,
-  activeDialogMessagesKey,
   activeView,
   favoriteItemsCount,
   favoriteItemsKey,
@@ -95,6 +36,8 @@ export function useMessageViewportEffects({
   messagesListRef,
   selectedChatUserId,
 }: MessageViewportEffectsParams) {
+  const lastOpenedChatUserIdRef = useRef<string | null>(null);
+
   useLayoutEffect(() => {
     if (activeView !== "messages" || selectedChatUserId === null) {
       return;
@@ -104,10 +47,13 @@ export function useMessageViewportEffects({
       return;
     }
 
-    return keepMessagesListAtBottom(messagesListRef);
+    if (lastOpenedChatUserIdRef.current === selectedChatUserId) {
+      return;
+    }
+
+    lastOpenedChatUserIdRef.current = selectedChatUserId;
+    scrollMessagesListToBottom(messagesListRef);
   }, [
-    activeDialogMessagesCount,
-    activeDialogMessagesKey,
     activeView,
     isLoadingMessages,
     messagesListRef,
@@ -115,11 +61,17 @@ export function useMessageViewportEffects({
   ]);
 
   useLayoutEffect(() => {
+    if (activeView !== "messages" || selectedChatUserId === null) {
+      lastOpenedChatUserIdRef.current = null;
+    }
+  }, [activeView, selectedChatUserId]);
+
+  useLayoutEffect(() => {
     if (activeView !== "favorites") {
       return;
     }
 
-    return keepMessagesListAtBottom(messagesListRef);
+    scrollMessagesListToBottom(messagesListRef);
   }, [activeView, favoriteItemsCount, favoriteItemsKey, messagesListRef]);
 
   useEffect(() => {

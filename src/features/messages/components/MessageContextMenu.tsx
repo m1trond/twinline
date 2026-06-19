@@ -113,7 +113,6 @@ export function MessageContextMenu({
                 setCopiedMessageId((currentMessageId) =>
                   currentMessageId === messageId ? null : currentMessageId,
                 );
-                setMessageContextMenu(null);
               }, 2000);
             });
           }}
@@ -196,7 +195,6 @@ export function FavoriteContextMenu({
                 setCopiedFavoriteId((currentFavoriteId) =>
                   currentFavoriteId === favoriteId ? null : currentFavoriteId,
                 );
-                setFavoriteContextMenu(null);
               }, 2000);
             });
           }}
