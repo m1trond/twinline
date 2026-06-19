@@ -622,6 +622,7 @@ export default function Home() {
           blockedProfileIds: localBlockedProfileIds,
           chatFolderAssignments: {},
           chatFolders: [],
+          chatFoldersUpdatedAt: "1970-01-01T00:00:00.000Z",
           favoriteItems: [],
           favoriteItemsUpdatedAt: "1970-01-01T00:00:00.000Z",
           mutedProfiles,
@@ -663,6 +664,31 @@ export default function Home() {
       };
     }
 
+    function mergeNewerLocalChatFolders(remotePayload: UserSyncPayload) {
+      const localChatFoldersPayload = readLocalChatFoldersSyncPayload(syncUserId);
+      const localChatFoldersUpdatedAt = getSyncPayloadStringValue(
+        localChatFoldersPayload,
+        "chatFoldersUpdatedAt",
+      );
+      const remoteChatFoldersUpdatedAt = getSyncPayloadStringValue(
+        remotePayload,
+        "chatFoldersUpdatedAt",
+      );
+
+      if (localChatFoldersUpdatedAt <= remoteChatFoldersUpdatedAt) {
+        return remotePayload;
+      }
+
+      return {
+        ...remotePayload,
+        allChatFolderName: localChatFoldersPayload.allChatFolderName,
+        archivedChatProfileIds: localChatFoldersPayload.archivedChatProfileIds,
+        chatFolderAssignments: localChatFoldersPayload.chatFolderAssignments,
+        chatFolders: localChatFoldersPayload.chatFolders,
+        chatFoldersUpdatedAt: localChatFoldersPayload.chatFoldersUpdatedAt,
+      };
+    }
+
     function areSyncPayloadsEqual(
       firstPayload: UserSyncPayload,
       secondPayload: UserSyncPayload,
@@ -675,7 +701,9 @@ export default function Home() {
     }
 
     function applyRemoteSyncPayload(remotePayload: UserSyncPayload) {
-      const nextPayload = mergeNewerLocalFavorites(remotePayload);
+      const nextPayload = mergeNewerLocalFavorites(
+        mergeNewerLocalChatFolders(remotePayload),
+      );
 
       if (areSyncPayloadsEqual(userSyncPayloadRef.current, nextPayload)) {
         return;
@@ -707,6 +735,7 @@ export default function Home() {
             "archivedChatProfileIds",
             "chatFolderAssignments",
             "chatFolders",
+            "chatFoldersUpdatedAt",
             "favoriteItems",
             "favoriteItemsUpdatedAt",
           ]) {

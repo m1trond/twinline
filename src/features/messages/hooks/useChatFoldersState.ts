@@ -58,7 +58,11 @@ function parseFolderAssignments(value: unknown): Record<string, string[]> {
 
 type ChatFoldersSyncPayload = Pick<
   UserSyncPayload,
-  "allChatFolderName" | "archivedChatProfileIds" | "chatFolderAssignments" | "chatFolders"
+  | "allChatFolderName"
+  | "archivedChatProfileIds"
+  | "chatFolderAssignments"
+  | "chatFolders"
+  | "chatFoldersUpdatedAt"
 >;
 
 type ChatFoldersStateParams = {
@@ -86,6 +90,21 @@ export function useChatFoldersState({
   const [folderNameDraft, setFolderNameDraft] = useState("");
   const [selectedChatFolderId, setSelectedChatFolderId] = useState<string | null>(null);
 
+  function getChatFoldersUpdatedAtKey(syncUserId: string) {
+    return `hush-chat-folders-updated-at-${syncUserId}`;
+  }
+
+  function readChatFoldersUpdatedAt(syncUserId: string) {
+    return (
+      window.localStorage.getItem(getChatFoldersUpdatedAtKey(syncUserId)) ??
+      "1970-01-01T00:00:00.000Z"
+    );
+  }
+
+  function writeChatFoldersUpdatedAt(syncUserId: string, updatedAt: string) {
+    window.localStorage.setItem(getChatFoldersUpdatedAtKey(syncUserId), updatedAt);
+  }
+
   useEffect(() => {
     if (!selectedChatFolderId) {
       return;
@@ -111,6 +130,16 @@ export function useChatFoldersState({
   }
 
   function applyChatFoldersSyncPayload(payload: UserSyncPayload, syncUserId: string) {
+    const nextChatFoldersUpdatedAt =
+      typeof payload.chatFoldersUpdatedAt === "string"
+        ? payload.chatFoldersUpdatedAt
+        : "1970-01-01T00:00:00.000Z";
+    const localChatFoldersUpdatedAt = readChatFoldersUpdatedAt(syncUserId);
+
+    if (localChatFoldersUpdatedAt > nextChatFoldersUpdatedAt) {
+      return;
+    }
+
     const nextAllChatFolderName =
       typeof payload.allChatFolderName === "string" && payload.allChatFolderName.trim()
         ? payload.allChatFolderName
@@ -133,6 +162,7 @@ export function useChatFoldersState({
       `hush-chat-archived-profiles-${syncUserId}`,
       JSON.stringify(nextArchivedChatProfileIds),
     );
+    writeChatFoldersUpdatedAt(syncUserId, nextChatFoldersUpdatedAt);
   }
 
   function readLocalChatFoldersSyncPayload(syncUserId: string): ChatFoldersSyncPayload {
@@ -153,6 +183,7 @@ export function useChatFoldersState({
       archivedChatProfileIds: parseStringArray(parsedArchivedChatProfileIds),
       chatFolderAssignments: parseFolderAssignments(parsedAssignments),
       chatFolders: parseChatFolders(parsedFolders),
+      chatFoldersUpdatedAt: readChatFoldersUpdatedAt(syncUserId),
     };
   }
 
@@ -161,12 +192,15 @@ export function useChatFoldersState({
       return;
     }
 
+    const updatedAt = new Date().toISOString();
+
     setChatFolders(nextFolders);
     window.localStorage.setItem(
       `hush-chat-folders-${user.id}`,
       JSON.stringify(nextFolders),
     );
-    saveUserSyncPatch({ chatFolders: nextFolders });
+    writeChatFoldersUpdatedAt(user.id, updatedAt);
+    saveUserSyncPatch({ chatFolders: nextFolders, chatFoldersUpdatedAt: updatedAt });
   }
 
   function saveChatFolderAssignments(nextAssignments: Record<string, string[]>) {
@@ -174,12 +208,43 @@ export function useChatFoldersState({
       return;
     }
 
+    const updatedAt = new Date().toISOString();
+
     setChatFolderAssignments(nextAssignments);
     window.localStorage.setItem(
       `hush-chat-folder-assignments-${user.id}`,
       JSON.stringify(nextAssignments),
     );
-    saveUserSyncPatch({ chatFolderAssignments: nextAssignments });
+    writeChatFoldersUpdatedAt(user.id, updatedAt);
+    saveUserSyncPatch({
+      chatFolderAssignments: nextAssignments,
+      chatFoldersUpdatedAt: updatedAt,
+    });
+  }
+
+  function saveChatFoldersAndAssignments(
+    nextFolders: ChatFolder[],
+    nextAssignments: Record<string, string[]>,
+  ) {
+    if (!user) {
+      return;
+    }
+
+    const updatedAt = new Date().toISOString();
+
+    setChatFolders(nextFolders);
+    setChatFolderAssignments(nextAssignments);
+    window.localStorage.setItem(`hush-chat-folders-${user.id}`, JSON.stringify(nextFolders));
+    window.localStorage.setItem(
+      `hush-chat-folder-assignments-${user.id}`,
+      JSON.stringify(nextAssignments),
+    );
+    writeChatFoldersUpdatedAt(user.id, updatedAt);
+    saveUserSyncPatch({
+      chatFolderAssignments: nextAssignments,
+      chatFolders: nextFolders,
+      chatFoldersUpdatedAt: updatedAt,
+    });
   }
 
   function saveArchivedChatProfileIds(nextProfileIds: string[]) {
@@ -188,13 +253,18 @@ export function useChatFoldersState({
     }
 
     const normalizedProfileIds = Array.from(new Set(nextProfileIds));
+    const updatedAt = new Date().toISOString();
 
     setArchivedChatProfileIds(normalizedProfileIds);
     window.localStorage.setItem(
       `hush-chat-archived-profiles-${user.id}`,
       JSON.stringify(normalizedProfileIds),
     );
-    saveUserSyncPatch({ archivedChatProfileIds: normalizedProfileIds });
+    writeChatFoldersUpdatedAt(user.id, updatedAt);
+    saveUserSyncPatch({
+      archivedChatProfileIds: normalizedProfileIds,
+      chatFoldersUpdatedAt: updatedAt,
+    });
   }
 
   function saveAllChatFolderName(nextName: string) {
@@ -202,9 +272,12 @@ export function useChatFoldersState({
       return;
     }
 
+    const updatedAt = new Date().toISOString();
+
     setAllChatFolderName(nextName);
     window.localStorage.setItem(`hush-chat-all-folder-name-${user.id}`, nextName);
-    saveUserSyncPatch({ allChatFolderName: nextName });
+    writeChatFoldersUpdatedAt(user.id, updatedAt);
+    saveUserSyncPatch({ allChatFolderName: nextName, chatFoldersUpdatedAt: updatedAt });
   }
 
   function archiveChatProfile(profile: ProfileRow) {
@@ -295,13 +368,14 @@ export function useChatFoldersState({
       };
     const nextFolders = existingFolder ? chatFolders : [...chatFolders, folder];
 
-    saveChatFolders(nextFolders);
     if (folderDialog?.profileUserId) {
       const currentFolderIds = chatFolderAssignments[folderDialog.profileUserId] ?? [];
-      saveChatFolderAssignments({
+      saveChatFoldersAndAssignments(nextFolders, {
         ...chatFolderAssignments,
         [folderDialog.profileUserId]: Array.from(new Set([...currentFolderIds, folder.id])),
       });
+    } else {
+      saveChatFolders(nextFolders);
     }
     const wasAssignedToProfile = Boolean(folderDialog?.profileUserId);
 
@@ -371,17 +445,34 @@ export function useChatFoldersState({
   }
 
   function deleteChatFolder(folderId: string) {
-    saveChatFolders(chatFolders.filter((folder) => folder.id !== folderId));
-    saveChatFolderAssignments(
-      Object.fromEntries(
-        Object.entries(chatFolderAssignments)
-          .map(([profileUserId, folderIds]) => [
-            profileUserId,
-            folderIds.filter((currentFolderId) => currentFolderId !== folderId),
-          ] as const)
-          .filter(([, folderIds]) => folderIds.length > 0),
-      ),
+    if (!user) {
+      return;
+    }
+
+    const nextFolders = chatFolders.filter((folder) => folder.id !== folderId);
+    const nextAssignments = Object.fromEntries(
+      Object.entries(chatFolderAssignments)
+        .map(([profileUserId, folderIds]) => [
+          profileUserId,
+          folderIds.filter((currentFolderId) => currentFolderId !== folderId),
+        ] as const)
+        .filter(([, folderIds]) => folderIds.length > 0),
     );
+    const updatedAt = new Date().toISOString();
+
+    setChatFolders(nextFolders);
+    setChatFolderAssignments(nextAssignments);
+    window.localStorage.setItem(`hush-chat-folders-${user.id}`, JSON.stringify(nextFolders));
+    window.localStorage.setItem(
+      `hush-chat-folder-assignments-${user.id}`,
+      JSON.stringify(nextAssignments),
+    );
+    writeChatFoldersUpdatedAt(user.id, updatedAt);
+    saveUserSyncPatch({
+      chatFolderAssignments: nextAssignments,
+      chatFolders: nextFolders,
+      chatFoldersUpdatedAt: updatedAt,
+    });
 
     if (selectedChatFolderId === folderId) {
       setSelectedChatFolderId(null);
