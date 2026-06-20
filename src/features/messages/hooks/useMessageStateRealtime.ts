@@ -81,6 +81,7 @@ function mergePins(currentRows: MessagePinRow[], incomingRows: MessagePinRow[]) 
 }
 
 export function useMessageStateRealtime(user: User | null) {
+  const [loadedMessageReceiptsUserId, setLoadedMessageReceiptsUserId] = useState<string | null>(null);
   const [messageReceipts, setMessageReceipts] = useState<MessageReceiptRow[]>([]);
   const [messageTypingStates, setMessageTypingStates] = useState<MessageTypingStateRow[]>([]);
   const [messagePins, setMessagePins] = useState<MessagePinRow[]>([]);
@@ -92,6 +93,7 @@ export function useMessageStateRealtime(user: User | null) {
         setMessageReceipts([]);
         setMessageTypingStates([]);
         setMessagePins([]);
+        setLoadedMessageReceiptsUserId(null);
       });
 
       return () => window.cancelAnimationFrame(frameId);
@@ -118,6 +120,8 @@ export function useMessageStateRealtime(user: User | null) {
       } else {
         console.warn("Hush message receipts sync failed:", receiptsResponse.error.message);
       }
+
+      setLoadedMessageReceiptsUserId(signedInUser.id);
 
       if (!typingResponse.error) {
         setMessageTypingStates((currentRows) =>
@@ -249,6 +253,7 @@ export function useMessageStateRealtime(user: User | null) {
     broadcastPin,
     broadcastReceipt,
     broadcastTypingState,
+    hasLoadedMessageReceipts: loadedMessageReceiptsUserId === user?.id,
     messagePins,
     messageReceipts,
     messageTypingStates,

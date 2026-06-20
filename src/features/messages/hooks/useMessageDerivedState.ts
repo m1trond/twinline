@@ -16,6 +16,7 @@ import {
 import { useTypingClock } from "@/features/messages/hooks/useTypingClock";
 
 type UseMessageDerivedStateParams = {
+  hasLoadedMessageReceipts: boolean;
   hiddenMessageIdSet: Set<number>;
   messagePins: MessagePinRow[];
   messageReceipts: MessageReceiptRow[];
@@ -26,6 +27,7 @@ type UseMessageDerivedStateParams = {
 };
 
 export function useMessageDerivedState({
+  hasLoadedMessageReceipts,
   hiddenMessageIdSet,
   messagePins,
   messageReceipts,
@@ -181,7 +183,7 @@ export function useMessageDerivedState({
   }, [messageReceipts, messages, userId]);
 
   const incomingUnreadMessageIds = useMemo(() => {
-    if (!userId) {
+    if (!userId || !hasLoadedMessageReceipts) {
       return new Set<number>();
     }
 
@@ -219,7 +221,7 @@ export function useMessageDerivedState({
         })
         .map((message) => message.id),
     );
-  }, [hiddenMessageIdSet, messageReceipts, messages, userId]);
+  }, [hasLoadedMessageReceipts, hiddenMessageIdSet, messageReceipts, messages, userId]);
 
   const unreadMessageCountFromReceipts = incomingUnreadMessageIds.size;
   const totalUnreadMessageCount = unreadMessageCountFromReceipts;

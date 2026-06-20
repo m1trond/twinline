@@ -548,6 +548,7 @@ export default function Home() {
     broadcastPin,
     broadcastReceipt,
     broadcastTypingState,
+    hasLoadedMessageReceipts,
     messagePins,
     messageReceipts,
     messageTypingStates,
@@ -1071,6 +1072,7 @@ export default function Home() {
     sharedPinnedMessageIdSet,
     totalUnreadMessageCount,
   } = useMessageDerivedState({
+    hasLoadedMessageReceipts,
     hiddenMessageIdSet,
     messagePins,
     messageReceipts,
