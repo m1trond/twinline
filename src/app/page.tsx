@@ -341,7 +341,6 @@ export default function Home() {
   const {
     highlightedMessageId,
     setHighlightedMessageId,
-    unreadMessageCount,
     setUnreadMessageCount,
     replyTarget,
     setReplyTarget,
@@ -1079,10 +1078,7 @@ export default function Home() {
     );
   }, [hiddenMessageIdSet, messages, user]);
   const unreadMessageCountFromReceipts = incomingUnreadMessageIds.size;
-  const totalUnreadMessageCount = Math.max(
-    unreadMessageCount,
-    unreadMessageCountFromReceipts,
-  );
+  const totalUnreadMessageCount = unreadMessageCountFromReceipts;
   const friendTypingUntilFromMessages = useMemo(() => {
     if (!user || !selectedChatUserId) {
       return 0;
