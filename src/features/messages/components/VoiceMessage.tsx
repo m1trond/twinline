@@ -7,7 +7,7 @@ import { formatAudioTime, formatMessageTime } from "@/shared/utils/format";
 export function VoiceMessage({
   editedAt = null,
   isMine,
-  isUnplayedByRecipient = false,
+  isUnplayed = false,
   onPlaybackStart,
   receiptStatus = null,
   sentAt,
@@ -15,7 +15,7 @@ export function VoiceMessage({
 }: {
   editedAt?: string | null;
   isMine: boolean;
-  isUnplayedByRecipient?: boolean;
+  isUnplayed?: boolean;
   onPlaybackStart?: () => void;
   receiptStatus?: MessageReceiptStatus | null;
   sentAt: string;
@@ -135,7 +135,7 @@ export function VoiceMessage({
           <p className="mt-0 flex items-center justify-between gap-3 text-xs font-medium leading-4 tabular-nums opacity-65">
             <span className="inline-flex items-center gap-1.5">
               {formatAudioTime(currentTime || duration)}
-              {isUnplayedByRecipient ? (
+              {isUnplayed ? (
                 <span
                   aria-label="Голосовое не прослушано"
                   className="h-1.5 w-1.5 rounded-full bg-[#f4f4f5]"

@@ -692,8 +692,7 @@ export function OpenChatView({
                           <VoiceMessage
                             editedAt={message.edited_at ?? null}
                             isMine={isMine}
-                            isUnplayedByRecipient={
-                              isMine &&
+                            isUnplayed={
                               message.id > 0 &&
                               !playedVoiceMessageIds.has(message.id)
                             }
