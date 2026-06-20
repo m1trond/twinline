@@ -1062,10 +1062,7 @@ export default function Home() {
     for (const message of messages) {
       const receiptPayload = getReceiptMessagePayload(message.text);
 
-      if (
-        receiptPayload?.status === "played" &&
-        message.user_id !== user.id
-      ) {
+      if (receiptPayload?.status === "played") {
         playedMessageIds.add(receiptPayload.messageId);
       }
     }
@@ -1724,10 +1721,16 @@ export default function Home() {
       return;
     }
 
-    void sendServiceMessage(
-      createReceiptMessageText(message.id, "played"),
-      message.user_id,
+    const playedReceiptText = createReceiptMessageText(message.id, "played");
+    const optimisticReceipt = createOptimisticMessage({
+      recipientId: message.user_id,
+      text: playedReceiptText,
+    });
+
+    setMessages((currentMessages) =>
+      mergeMessages(currentMessages, [optimisticReceipt]),
     );
+    void sendServiceMessage(playedReceiptText, message.user_id);
   }
 
 
