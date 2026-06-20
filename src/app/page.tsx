@@ -1321,9 +1321,22 @@ export default function Home() {
           username_changed_at: null,
         } satisfies ProfileRow;
       })
-      .sort((firstProfile, secondProfile) =>
-        firstProfile.display_name.localeCompare(secondProfile.display_name, "ru"),
-      );
+      .sort((firstProfile, secondProfile) => {
+        const firstMessageTime = new Date(
+          latestVisibleMessageByProfileId.get(firstProfile.user_id)?.created_at ??
+            firstProfile.updated_at,
+        ).getTime();
+        const secondMessageTime = new Date(
+          latestVisibleMessageByProfileId.get(secondProfile.user_id)?.created_at ??
+            secondProfile.updated_at,
+        ).getTime();
+
+        if (firstMessageTime !== secondMessageTime) {
+          return secondMessageTime - firstMessageTime;
+        }
+
+        return firstProfile.display_name.localeCompare(secondProfile.display_name, "ru");
+      });
   }, [dialogProfileIds, latestVisibleMessageByProfileId, profilesByUserId, user]);
   const visibleChatProfiles = useMemo(() => {
     const pinnedOrderByProfileId = new Map(
