@@ -16,6 +16,7 @@ import type {
   MessageTypingAction,
   MessageTypingStateRow,
 } from "@/shared/types";
+import { compareMessageIds } from "@/shared/utils/messages";
 
 function sortMessagesAscending(messages: MessageRow[] | null) {
   return messages
@@ -28,7 +29,7 @@ function sortMessagesAscending(messages: MessageRow[] | null) {
           return createdAtDiff;
         }
 
-        return firstMessage.id - secondMessage.id;
+        return compareMessageIds(firstMessage.id, secondMessage.id);
       })
     : messages;
 }

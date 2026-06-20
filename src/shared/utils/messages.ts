@@ -598,8 +598,27 @@ export function mergeMessages(currentMessages: MessageRow[], nextMessages: Messa
       return createdAtDiff;
     }
 
-    return firstMessage.id - secondMessage.id;
+    return compareMessageIds(firstMessage.id, secondMessage.id);
   });
+}
+
+export function compareMessageIds(firstId: number, secondId: number) {
+  const isFirstOptimistic = firstId < 0;
+  const isSecondOptimistic = secondId < 0;
+
+  if (isFirstOptimistic && isSecondOptimistic) {
+    return Math.abs(firstId) - Math.abs(secondId);
+  }
+
+  if (isFirstOptimistic) {
+    return 1;
+  }
+
+  if (isSecondOptimistic) {
+    return -1;
+  }
+
+  return firstId - secondId;
 }
 
 export function settleOptimisticMessage(

@@ -114,7 +114,12 @@ export function useMessageViewportEffects({
     frameIds.push(
       window.requestAnimationFrame(() => {
         scroll();
-        frameIds.push(window.requestAnimationFrame(scroll));
+        frameIds.push(
+          window.requestAnimationFrame(() => {
+            scroll();
+            shouldKeepOpenedChatAtBottomRef.current = false;
+          }),
+        );
       }),
     );
 

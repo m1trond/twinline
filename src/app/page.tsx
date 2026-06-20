@@ -1226,7 +1226,6 @@ export default function Home() {
     ? [
         selectedChatUserId,
         lastOwnDialogMessage.client_key ?? lastOwnDialogMessage.id,
-        lastOwnDialogMessage.created_at,
       ].join(":")
     : "";
   const favoriteLastItem = favoriteItems.at(-1);
