@@ -44,13 +44,13 @@ export function useMessageViewportEffects({
 }: MessageViewportEffectsParams) {
   const lastOpenedChatUserIdRef = useRef<string | null>(null);
   const lastOwnDialogMessageKeyRef = useRef("");
+  const shouldKeepOpenedChatAtBottomRef = useRef(false);
 
   useLayoutEffect(() => {
     if (activeView !== "messages" || selectedChatUserId === null) {
-      return;
-    }
-
-    if (isLoadingMessages) {
+      lastOpenedChatUserIdRef.current = null;
+      lastOwnDialogMessageKeyRef.current = "";
+      shouldKeepOpenedChatAtBottomRef.current = false;
       return;
     }
 
@@ -59,25 +59,56 @@ export function useMessageViewportEffects({
     }
 
     lastOpenedChatUserIdRef.current = selectedChatUserId;
-    let wasUserScrollDetected = false;
-    const messagesList = messagesListRef.current;
-    const frameIds: number[] = [];
-    const timeoutIds: number[] = [];
+    lastOwnDialogMessageKeyRef.current = lastOwnDialogMessageKey;
+    shouldKeepOpenedChatAtBottomRef.current = true;
+    scrollMessagesListToBottom(messagesListRef);
+  }, [activeView, lastOwnDialogMessageKey, messagesListRef, selectedChatUserId]);
 
-    const markUserScroll = () => {
-      wasUserScrollDetected = true;
+  useLayoutEffect(() => {
+    if (activeView !== "messages" || selectedChatUserId === null) {
+      return;
+    }
+
+    const messagesList = messagesListRef.current;
+
+    if (!messagesList) {
+      return;
+    }
+
+    const stopKeepingOpenedChatAtBottom = () => {
+      shouldKeepOpenedChatAtBottomRef.current = false;
     };
 
-    const scroll = () => {
-      if (!wasUserScrollDetected) {
+    messagesList.addEventListener("wheel", stopKeepingOpenedChatAtBottom, { passive: true });
+    messagesList.addEventListener("touchmove", stopKeepingOpenedChatAtBottom, { passive: true });
+    messagesList.addEventListener("pointerdown", stopKeepingOpenedChatAtBottom);
+    messagesList.addEventListener("keydown", stopKeepingOpenedChatAtBottom);
+
+    return () => {
+      messagesList.removeEventListener("wheel", stopKeepingOpenedChatAtBottom);
+      messagesList.removeEventListener("touchmove", stopKeepingOpenedChatAtBottom);
+      messagesList.removeEventListener("pointerdown", stopKeepingOpenedChatAtBottom);
+      messagesList.removeEventListener("keydown", stopKeepingOpenedChatAtBottom);
+    };
+  }, [activeView, messagesListRef, selectedChatUserId]);
+
+  useLayoutEffect(() => {
+    if (
+      activeView !== "messages" ||
+      selectedChatUserId === null ||
+      isLoadingMessages ||
+      !shouldKeepOpenedChatAtBottomRef.current
+    ) {
+      return;
+    }
+
+    const frameIds: number[] = [];
+
+    function scroll() {
+      if (shouldKeepOpenedChatAtBottomRef.current) {
         scrollMessagesListToBottom(messagesListRef);
       }
-    };
-
-    messagesList?.addEventListener("wheel", markUserScroll, { passive: true });
-    messagesList?.addEventListener("touchmove", markUserScroll, { passive: true });
-    messagesList?.addEventListener("pointerdown", markUserScroll);
-    messagesList?.addEventListener("keydown", markUserScroll);
+    }
 
     scroll();
     frameIds.push(
@@ -86,18 +117,9 @@ export function useMessageViewportEffects({
         frameIds.push(window.requestAnimationFrame(scroll));
       }),
     );
-    timeoutIds.push(
-      window.setTimeout(scroll, 80),
-      window.setTimeout(scroll, 180),
-    );
 
     return () => {
-      messagesList?.removeEventListener("wheel", markUserScroll);
-      messagesList?.removeEventListener("touchmove", markUserScroll);
-      messagesList?.removeEventListener("pointerdown", markUserScroll);
-      messagesList?.removeEventListener("keydown", markUserScroll);
       frameIds.forEach((frameId) => window.cancelAnimationFrame(frameId));
-      timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
     };
   }, [
     activeDialogMessagesCount,
