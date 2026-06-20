@@ -524,6 +524,7 @@ export default function Home() {
   } = useStoredMessageState(user?.id);
   const {
     broadcastMessage,
+    hasLoadedInitialMessages,
     loadedDialogUserIds,
     messages,
     setMessages,
@@ -4247,6 +4248,7 @@ export default function Home() {
           allFolderName={translations[interfaceLanguage].allChats}
           chatFolders={chatFolders}
           chatProfiles={visibleChatProfiles}
+          isLoadingChats={!hasLoadedInitialMessages}
           latestVisibleMessageByProfileId={latestVisibleMessageByProfileId}
           openFolderContextMenu={openFolderContextMenu}
           openChatContextMenu={openChatContextMenu}

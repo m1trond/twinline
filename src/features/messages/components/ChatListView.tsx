@@ -13,6 +13,7 @@ type ChatListViewProps = {
   allFolderName: string;
   chatFolders: ChatFolder[];
   chatProfiles: ProfileRow[];
+  isLoadingChats: boolean;
   latestVisibleMessageByProfileId: Map<string, MessageRow>;
   openFolderContextMenu: (
     event: MouseEvent<HTMLElement>,
@@ -33,6 +34,7 @@ export function ChatListView({
   allFolderName,
   chatFolders,
   chatProfiles,
+  isLoadingChats,
   latestVisibleMessageByProfileId,
   openFolderContextMenu,
   openChatContextMenu,
@@ -121,14 +123,20 @@ export function ChatListView({
           </button>
         </div>
         <div className="hush-panel-transition grid content-start gap-2" key={selectedChatFolderId ?? "all"}>
-          {chatProfiles.length === 0 ? (
+          {isLoadingChats ? (
+            <article className="rounded-lg border border-dashed border-[#3f3f46]/40 bg-black/12 px-3 py-3 text-center">
+              <p className="text-sm font-medium leading-5">Загружаю чаты...</p>
+            </article>
+          ) : null}
+
+          {!isLoadingChats && chatProfiles.length === 0 ? (
             <article className="rounded-lg border border-dashed border-[#3f3f46]/40 bg-black/12 px-3 py-3 text-center">
               <p className="text-sm font-medium leading-5">{t("emptyChatsTitle")}</p>
               <p className="mt-1 text-xs leading-5 text-[#a1a1aa]">{t("emptyChatsText")}</p>
             </article>
           ) : null}
 
-          {chatProfiles.map((profile) => {
+          {!isLoadingChats && chatProfiles.map((profile) => {
             const latestProfileMessage = latestVisibleMessageByProfileId.get(profile.user_id);
             const profileUnreadCount = unreadMessagesByUserId.get(profile.user_id) ?? 0;
             const isPinnedChat = pinnedChatProfileIdSet.has(profile.user_id);

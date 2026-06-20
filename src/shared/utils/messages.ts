@@ -584,6 +584,7 @@ export function mergeMessages(currentMessages: MessageRow[], nextMessages: Messa
         ? {
             ...message,
             client_key: existingMessage.client_key,
+            created_at: existingMessage.created_at,
           }
         : message,
     );
@@ -630,6 +631,7 @@ export function settleOptimisticMessage(
     ...savedMessage,
     client_key:
       optimisticMessage.client_key ?? `optimistic-message-${optimisticMessage.id}`,
+    created_at: optimisticMessage.created_at,
   };
 
   return mergeMessages(

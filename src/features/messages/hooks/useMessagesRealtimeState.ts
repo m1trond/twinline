@@ -162,14 +162,20 @@ export function useMessagesRealtimeState({
   user,
 }: UseMessagesRealtimeStateParams) {
   const [messages, setMessages] = useState<MessageRow[]>(readInitialStoredMessages);
+  const [hasLoadedInitialMessages, setHasLoadedInitialMessages] = useState(false);
   const [loadedDialogUserIds, setLoadedDialogUserIds] = useState<Set<string>>(
     () => new Set(),
   );
   const hadSignedInUserRef = useRef(false);
   const messagesRef = useRef<MessageRow[]>(messages);
   const latestMessageCreatedAtRef = useRef<string | null>(null);
+  const hasLoadedInitialMessagesRef = useRef(false);
   const messagesChannelRef = useRef<RealtimeChannel | null>(null);
   const notifiedMessageIdsRef = useRef<Set<number>>(new Set());
+
+  useEffect(() => {
+    hasLoadedInitialMessagesRef.current = hasLoadedInitialMessages;
+  }, [hasLoadedInitialMessages]);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -190,6 +196,8 @@ export function useMessagesRealtimeState({
     if (!user) {
       const frameId = window.requestAnimationFrame(() => {
         setMessages([]);
+        setHasLoadedInitialMessages(false);
+        hasLoadedInitialMessagesRef.current = false;
         setLoadedDialogUserIds(new Set());
         latestMessageCreatedAtRef.current = null;
         notifiedMessageIdsRef.current.clear();
@@ -271,6 +279,7 @@ export function useMessagesRealtimeState({
             : mergedMessages;
         });
         setErrorMessage("");
+        setHasLoadedInitialMessages(true);
       }
 
       setLoadedDialogUserIds((currentIds) => {
@@ -427,6 +436,7 @@ export function useMessagesRealtimeState({
             : mergedMessages;
         });
         setErrorMessage("");
+        setHasLoadedInitialMessages(true);
       }
 
       if (showLoading) {
@@ -459,7 +469,9 @@ export function useMessagesRealtimeState({
         setErrorMessage("Не получилось загрузить новые сообщения.");
       } else if (data?.length) {
         setMessages((currentMessages) => mergeMessages(currentMessages, data));
-        handleIncomingNotifications(data);
+        if (hasLoadedInitialMessagesRef.current) {
+          handleIncomingNotifications(data);
+        }
         setErrorMessage("");
       }
     }
@@ -620,6 +632,7 @@ export function useMessagesRealtimeState({
 
   return {
     broadcastMessage,
+    hasLoadedInitialMessages,
     loadedDialogUserIds,
     messages,
     setMessages,
