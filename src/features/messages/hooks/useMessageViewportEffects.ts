@@ -44,18 +44,13 @@ export function useMessageViewportEffects({
 }: MessageViewportEffectsParams) {
   const lastOpenedChatUserIdRef = useRef<string | null>(null);
   const lastOwnDialogMessageKeyRef = useRef("");
-  const openedChatBottomTimeoutRef = useRef<number | null>(null);
-  const shouldKeepOpenedChatAtBottomRef = useRef(false);
+  const shouldOpenChatAtBottomRef = useRef(false);
 
   useLayoutEffect(() => {
     if (activeView !== "messages" || selectedChatUserId === null) {
       lastOpenedChatUserIdRef.current = null;
       lastOwnDialogMessageKeyRef.current = "";
-      shouldKeepOpenedChatAtBottomRef.current = false;
-      if (openedChatBottomTimeoutRef.current !== null) {
-        window.clearTimeout(openedChatBottomTimeoutRef.current);
-        openedChatBottomTimeoutRef.current = null;
-      }
+      shouldOpenChatAtBottomRef.current = false;
       return;
     }
 
@@ -65,14 +60,7 @@ export function useMessageViewportEffects({
 
     lastOpenedChatUserIdRef.current = selectedChatUserId;
     lastOwnDialogMessageKeyRef.current = lastOwnDialogMessageKey;
-    shouldKeepOpenedChatAtBottomRef.current = true;
-    if (openedChatBottomTimeoutRef.current !== null) {
-      window.clearTimeout(openedChatBottomTimeoutRef.current);
-    }
-    openedChatBottomTimeoutRef.current = window.setTimeout(() => {
-      shouldKeepOpenedChatAtBottomRef.current = false;
-      openedChatBottomTimeoutRef.current = null;
-    }, 900);
+    shouldOpenChatAtBottomRef.current = true;
     scrollMessagesListToBottom(messagesListRef);
   }, [activeView, lastOwnDialogMessageKey, messagesListRef, selectedChatUserId]);
 
@@ -88,11 +76,7 @@ export function useMessageViewportEffects({
     }
 
     const stopKeepingOpenedChatAtBottom = () => {
-      shouldKeepOpenedChatAtBottomRef.current = false;
-      if (openedChatBottomTimeoutRef.current !== null) {
-        window.clearTimeout(openedChatBottomTimeoutRef.current);
-        openedChatBottomTimeoutRef.current = null;
-      }
+      shouldOpenChatAtBottomRef.current = false;
     };
 
     messagesList.addEventListener("wheel", stopKeepingOpenedChatAtBottom, { passive: true });
@@ -113,7 +97,7 @@ export function useMessageViewportEffects({
       activeView !== "messages" ||
       selectedChatUserId === null ||
       isLoadingMessages ||
-      !shouldKeepOpenedChatAtBottomRef.current
+      !shouldOpenChatAtBottomRef.current
     ) {
       return;
     }
@@ -121,7 +105,7 @@ export function useMessageViewportEffects({
     const frameIds: number[] = [];
 
     function scroll() {
-      if (shouldKeepOpenedChatAtBottomRef.current) {
+      if (shouldOpenChatAtBottomRef.current) {
         scrollMessagesListToBottom(messagesListRef);
       }
     }
@@ -130,7 +114,12 @@ export function useMessageViewportEffects({
     frameIds.push(window.requestAnimationFrame(scroll));
     frameIds.push(
       window.requestAnimationFrame(() => {
-        frameIds.push(window.requestAnimationFrame(scroll));
+        frameIds.push(
+          window.requestAnimationFrame(() => {
+            scroll();
+            shouldOpenChatAtBottomRef.current = false;
+          }),
+        );
       }),
     );
 
@@ -150,6 +139,7 @@ export function useMessageViewportEffects({
     if (activeView !== "messages" || selectedChatUserId === null) {
       lastOpenedChatUserIdRef.current = null;
       lastOwnDialogMessageKeyRef.current = "";
+      shouldOpenChatAtBottomRef.current = false;
     }
   }, [activeView, selectedChatUserId]);
 
@@ -204,11 +194,6 @@ export function useMessageViewportEffects({
     const timeoutRef = highlightedMessageTimeoutRef;
 
     return () => {
-      if (openedChatBottomTimeoutRef.current !== null) {
-        window.clearTimeout(openedChatBottomTimeoutRef.current);
-        openedChatBottomTimeoutRef.current = null;
-      }
-
       const highlightedMessageTimeoutId = timeoutRef.current;
 
       if (highlightedMessageTimeoutId !== null) {

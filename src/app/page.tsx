@@ -524,6 +524,7 @@ export default function Home() {
   } = useStoredMessageState(user?.id);
   const {
     broadcastMessage,
+    loadedDialogUserIds,
     messages,
     setMessages,
     resetMessageSyncCursor,
@@ -1236,7 +1237,14 @@ export default function Home() {
     user,
   });
 
-  const visibleDialogMessages = isPinnedMessagesViewOpen
+  const isActiveDialogLoading = Boolean(
+    activeView === "messages" &&
+      selectedChatUserId &&
+      !loadedDialogUserIds.has(selectedChatUserId),
+  );
+  const visibleDialogMessages = isActiveDialogLoading
+    ? []
+    : isPinnedMessagesViewOpen
     ? activePinnedMessages
     : activeDialogMessages;
   const visibleDialogMessagesCount = visibleDialogMessages.length;
@@ -1672,7 +1680,7 @@ export default function Home() {
     favoriteItemsCount: favoriteItems.length,
     favoriteItemsKey,
     highlightedMessageTimeoutRef,
-    isLoadingMessages,
+    isLoadingMessages: isLoadingMessages || isActiveDialogLoading,
     lastOwnDialogMessageKey,
     messagesListRef,
     selectedChatUserId,
@@ -4273,7 +4281,7 @@ export default function Home() {
           imageInputRef={imageInputRef}
           isDeletingChat={isDeletingChat}
           isFriendTyping={isFriendTyping}
-          isLoadingMessages={isLoadingMessages}
+          isLoadingMessages={isLoadingMessages || isActiveDialogLoading}
           isMessageSelectionMode={isMessageSelectionMode}
           isPinnedMessagesViewOpen={isPinnedMessagesViewOpen}
           isRecordingVoice={isRecordingVoice}

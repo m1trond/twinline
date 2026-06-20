@@ -56,7 +56,7 @@ export async function fetchDialogMessages(userId: string, friendId: string) {
       `and(user_id.eq.${userId},recipient_id.eq.${friendId}),and(user_id.eq.${friendId},recipient_id.eq.${userId})`,
     )
     .order("created_at", { ascending: false })
-    .limit(400);
+    .limit(2000);
 
   return {
     ...response,

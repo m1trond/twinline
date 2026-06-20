@@ -12,7 +12,6 @@ import { getDisplayName, normalizeUsername } from "@/shared/utils/profile";
 import {
   getNotificationMessageText,
   isDirectMessageForUser,
-  isMessageBetweenUsers,
   isServiceMessage,
   mergeMessages,
 } from "@/shared/utils/messages";
@@ -163,6 +162,9 @@ export function useMessagesRealtimeState({
   user,
 }: UseMessagesRealtimeStateParams) {
   const [messages, setMessages] = useState<MessageRow[]>(readInitialStoredMessages);
+  const [loadedDialogUserIds, setLoadedDialogUserIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const hadSignedInUserRef = useRef(false);
   const messagesRef = useRef<MessageRow[]>(messages);
   const latestMessageCreatedAtRef = useRef<string | null>(null);
@@ -188,6 +190,7 @@ export function useMessagesRealtimeState({
     if (!user) {
       const frameId = window.requestAnimationFrame(() => {
         setMessages([]);
+        setLoadedDialogUserIds(new Set());
         latestMessageCreatedAtRef.current = null;
         notifiedMessageIdsRef.current.clear();
       });
@@ -242,13 +245,7 @@ export function useMessagesRealtimeState({
     let isMounted = true;
 
     async function syncSelectedDialogMessages() {
-      const hasCachedDialogMessages = messagesRef.current.some((message) =>
-        isMessageBetweenUsers(message, signedInUser.id, activeChatUserId),
-      );
-
-      if (!hasCachedDialogMessages) {
-        setIsLoadingMessages(true);
-      }
+      setIsLoadingMessages(true);
 
       const { data, error } = await fetchDialogMessages(
         signedInUser.id,
@@ -256,9 +253,7 @@ export function useMessagesRealtimeState({
       );
 
       if (!isMounted || isDeletingChatRef.current) {
-        if (!hasCachedDialogMessages) {
-          setIsLoadingMessages(false);
-        }
+        setIsLoadingMessages(false);
         return;
       }
 
@@ -278,9 +273,14 @@ export function useMessagesRealtimeState({
         setErrorMessage("");
       }
 
-      if (!hasCachedDialogMessages) {
-        setIsLoadingMessages(false);
-      }
+      setLoadedDialogUserIds((currentIds) => {
+        if (currentIds.has(activeChatUserId)) {
+          return currentIds;
+        }
+
+        return new Set([...currentIds, activeChatUserId]);
+      });
+      setIsLoadingMessages(false);
     }
 
     syncSelectedDialogMessages();
@@ -418,8 +418,8 @@ export function useMessagesRealtimeState({
 
         setMessages((currentMessages) => {
           const mergedMessages = mergeMessages(
-            nextMessages,
-            getPendingOptimisticMessages(currentMessages),
+            currentMessages,
+            [...getPendingOptimisticMessages(currentMessages), ...nextMessages],
           );
 
           return areMessagesEqual(currentMessages, mergedMessages)
@@ -620,6 +620,7 @@ export function useMessagesRealtimeState({
 
   return {
     broadcastMessage,
+    loadedDialogUserIds,
     messages,
     setMessages,
     resetMessageSyncCursor,
