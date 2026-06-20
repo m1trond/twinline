@@ -85,6 +85,39 @@ a,
   translate: 0;
 }
 
+.hush-shell:not(.hush-light) [class*="bg-[#050505]/82"] {
+  background-color: rgba(5, 5, 5, 0.58) !important;
+}
+
+.hush-shell:not(.hush-light) [class*="bg-[#050505]/52"],
+.hush-shell:not(.hush-light) [class*="bg-[#050505]/42"] {
+  background-color: rgba(5, 5, 5, 0.32) !important;
+}
+
+.hush-shell:not(.hush-light) [class*="bg-[#0b0b0c]/78"],
+.hush-shell:not(.hush-light) [class*="bg-[#0c0c0d]/76"] {
+  background-color: rgba(12, 12, 13, 0.48) !important;
+}
+
+.hush-shell:not(.hush-light) [class*="bg-[#101010]/96"],
+.hush-shell:not(.hush-light) [class*="bg-[#101010]/98"] {
+  background-color: rgba(16, 16, 16, 0.72) !important;
+}
+
+.hush-shell:not(.hush-light) [class*="bg-[#111111]/78"],
+.hush-shell:not(.hush-light) [class*="bg-[#111111]/82"],
+.hush-shell:not(.hush-light) [class*="bg-[#111111]/86"],
+.hush-shell:not(.hush-light) [class*="bg-[#111111]/88"] {
+  background-color: rgba(17, 17, 17, 0.56) !important;
+}
+
+.hush-shell:not(.hush-light) [class*="bg-[#111111]/96"],
+.hush-shell:not(.hush-light) [class*="bg-[#111111]/98"],
+.hush-shell:not(.hush-light) [class*="bg-[#18181b]/94"],
+.hush-shell:not(.hush-light) [class*="bg-[#18181b]/98"] {
+  background-color: rgba(24, 24, 27, 0.76) !important;
+}
+
 .hush-galaxy-background {
   background:
     radial-gradient(ellipse 760px 520px at 16% 8%, rgba(244, 244, 245, 0.14), transparent 62%),

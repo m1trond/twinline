@@ -56,7 +56,7 @@ export async function fetchDialogMessages(userId: string, friendId: string) {
       `and(user_id.eq.${userId},recipient_id.eq.${friendId}),and(user_id.eq.${friendId},recipient_id.eq.${userId})`,
     )
     .order("created_at", { ascending: false })
-    .limit(2000);
+    .limit(6000);
 
   return {
     ...response,
@@ -100,6 +100,21 @@ export async function upsertMessageReceipt(
     )
     .select(messageReceiptColumns)
     .single<MessageReceiptRow>();
+}
+
+export async function upsertMessageReceipts(
+  receipts: Array<{
+    message_id: number;
+    recipient_id: string;
+    sender_id: string;
+    status: MessageReceiptStatus;
+  }>,
+) {
+  return supabase
+    .from("message_receipts")
+    .upsert(receipts, { onConflict: "message_id,sender_id,status" })
+    .select(messageReceiptColumns)
+    .returns<MessageReceiptRow[]>();
 }
 
 export async function fetchMessageTypingStates(userId: string) {

@@ -158,6 +158,19 @@ export function useMessageStateRealtime(user: User | null) {
           setMessageReceipts((currentRows) => mergeReceipts(currentRows, [receipt]));
         }
       })
+      .on("broadcast", { event: "receipts-upsert" }, (event) => {
+        const receipts = (event.payload as { receipts?: MessageReceiptRow[] } | null)?.receipts;
+
+        if (Array.isArray(receipts)) {
+          const userReceipts = receipts.filter((receipt) =>
+            isReceiptForUser(receipt, signedInUser.id),
+          );
+
+          if (userReceipts.length > 0) {
+            setMessageReceipts((currentRows) => mergeReceipts(currentRows, userReceipts));
+          }
+        }
+      })
       .on("broadcast", { event: "typing-upsert" }, (event) => {
         const typingState = (event.payload as { typingState?: MessageTypingStateRow } | null)?.typingState;
 
@@ -233,6 +246,20 @@ export function useMessageStateRealtime(user: User | null) {
     });
   }, []);
 
+  const broadcastReceipts = useCallback((receipts: MessageReceiptRow[]) => {
+    if (receipts.length === 0) {
+      return;
+    }
+
+    for (let receiptIndex = 0; receiptIndex < receipts.length; receiptIndex += 250) {
+      void channelRef.current?.send({
+        event: "receipts-upsert",
+        payload: { receipts: receipts.slice(receiptIndex, receiptIndex + 250) },
+        type: "broadcast",
+      });
+    }
+  }, []);
+
   const broadcastTypingState = useCallback((typingState: MessageTypingStateRow) => {
     void channelRef.current?.send({
       event: "typing-upsert",
@@ -252,6 +279,7 @@ export function useMessageStateRealtime(user: User | null) {
   return {
     broadcastPin,
     broadcastReceipt,
+    broadcastReceipts,
     broadcastTypingState,
     hasLoadedMessageReceipts: loadedMessageReceiptsUserId === user?.id,
     messagePins,

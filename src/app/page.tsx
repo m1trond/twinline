@@ -547,6 +547,7 @@ export default function Home() {
   const {
     broadcastPin,
     broadcastReceipt,
+    broadcastReceipts,
     broadcastTypingState,
     hasLoadedMessageReceipts,
     messagePins,
@@ -1046,6 +1047,7 @@ export default function Home() {
   const { sendMessageReceipt, sendMessageReceipts, sendTypingState } = useMessageStateActions({
     activeUserName,
     broadcastReceipt,
+    broadcastReceipts,
     broadcastTypingState,
     selectedChatUserId,
     sendLegacyServiceMessage: sendServiceMessage,

@@ -30,6 +30,9 @@ import {
   getMessageVideoUrl,
 } from "@/shared/utils/messages";
 
+const dialogRenderBatchSize = 700;
+const initialRenderWindowKey = "";
+
 type OpenChatViewProps = {
   activePinnedMessageIdSet: Set<number>;
   activePinnedMessages: MessageRow[];
@@ -166,7 +169,21 @@ export function OpenChatView({
   const { language, t } = useI18n();
   const [isDraggingAttachment, setIsDraggingAttachment] = useState(false);
   const [isCallConfirmOpen, setIsCallConfirmOpen] = useState(false);
+  const [renderWindow, setRenderWindow] = useState({
+    key: initialRenderWindowKey,
+    limit: dialogRenderBatchSize,
+  });
   const isAttachmentDropDisabled = isUploadingAttachment || isRecordingVoice || isSelectedChatBlocked;
+  const renderWindowKey = `${selectedChatUserId}:${isPinnedMessagesViewOpen ? "pins" : "chat"}`;
+  const renderedMessageLimit =
+    renderWindow.key === renderWindowKey
+      ? renderWindow.limit
+      : dialogRenderBatchSize;
+  const renderedDialogMessages =
+    !isPinnedMessagesViewOpen && visibleDialogMessages.length > renderedMessageLimit
+      ? visibleDialogMessages.slice(-renderedMessageLimit)
+      : visibleDialogMessages;
+  const hiddenDialogMessagesCount = visibleDialogMessages.length - renderedDialogMessages.length;
 
   function hasDraggedFiles(event: DragEvent<HTMLDivElement>) {
     return Array.from(event.dataTransfer.types).includes("Files");
@@ -457,10 +474,37 @@ export function OpenChatView({
                     </p>
                   ) : null}
 
-                  {visibleDialogMessages.map((message, messageIndex) => {
+                  {hiddenDialogMessagesCount > 0 ? (
+                    <button
+                      className="mx-auto mb-3 min-h-9 rounded-lg border border-[#3f3f46]/35 bg-[#111111]/44 px-3 text-sm font-medium text-[#d4d4d8] shadow-[0_10px_30px_rgba(0,0,0,0.18)] transition hover:border-[#f4f4f5]/35 hover:bg-[#f4f4f5]/10 hover:text-[#f4f4f5]"
+                      onClick={() =>
+                        setRenderWindow((currentWindow) => {
+                          const currentLimit =
+                            currentWindow.key === renderWindowKey
+                              ? currentWindow.limit
+                              : dialogRenderBatchSize;
+
+                          return {
+                            key: renderWindowKey,
+                            limit: Math.min(
+                              visibleDialogMessages.length,
+                              currentLimit + dialogRenderBatchSize,
+                            ),
+                          };
+                        })
+                      }
+                      type="button"
+                    >
+                      {language === "en"
+                        ? `Show ${Math.min(hiddenDialogMessagesCount, dialogRenderBatchSize)} earlier messages`
+                        : `Показать ещё ${Math.min(hiddenDialogMessagesCount, dialogRenderBatchSize)} сообщений`}
+                    </button>
+                  ) : null}
+
+                  {renderedDialogMessages.map((message, messageIndex) => {
                     const isMine = message.user_id === user.id;
-                    const previousMessage = visibleDialogMessages[messageIndex - 1];
-                    const nextMessage = visibleDialogMessages[messageIndex + 1];
+                    const previousMessage = renderedDialogMessages[messageIndex - 1];
+                    const nextMessage = renderedDialogMessages[messageIndex + 1];
                     const isPreviousSameAuthor =
                       previousMessage?.user_id === message.user_id;
                     const isNextSameAuthor = nextMessage?.user_id === message.user_id;

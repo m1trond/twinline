@@ -4,6 +4,7 @@ import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import {
   upsertMessageReceipt,
+  upsertMessageReceipts,
   upsertMessageTypingState,
 } from "@/features/messages/queries";
 import type {
@@ -20,6 +21,7 @@ import {
 type UseMessageStateActionsParams = {
   activeUserName: string;
   broadcastReceipt: (receipt: MessageReceiptRow) => void;
+  broadcastReceipts: (receipts: MessageReceiptRow[]) => void;
   broadcastTypingState: (typingState: MessageTypingStateRow) => void;
   selectedChatUserId: string | null;
   sendLegacyServiceMessage: (text: string, recipientId?: string | null) => void | Promise<void>;
@@ -65,6 +67,7 @@ function mergeMessageTypingStates(
 export function useMessageStateActions({
   activeUserName,
   broadcastReceipt,
+  broadcastReceipts,
   broadcastTypingState,
   selectedChatUserId,
   sendLegacyServiceMessage,
@@ -107,45 +110,91 @@ export function useMessageStateActions({
         mergeMessageReceipts(currentRows, optimisticReceipts),
       );
 
-      await Promise.all(
-        receiptMessages.map(async (message, index) => {
-          if (!message.user_id) {
-            return;
-          }
-
-          const optimisticReceipt = optimisticReceipts[index];
-          const { data, error } = await upsertMessageReceipt(
-            message.id,
-            user.id,
-            message.user_id,
-            status,
-          );
-
-          if (error || !data) {
-            void sendLegacyServiceMessage(
-              createReceiptMessageText(message.id, status),
-              message.user_id,
-            );
-            return;
-          }
-
-          setMessageReceipts((currentRows) =>
-            mergeMessageReceipts(
-              currentRows.filter((receipt) => receipt.id !== optimisticReceipt.id),
-              [data],
-            ),
-          );
-          broadcastReceipt(data);
-        }),
+      const { data, error } = await upsertMessageReceipts(
+        receiptMessages.map((message) => ({
+          message_id: message.id,
+          recipient_id: message.user_id ?? "",
+          sender_id: user.id,
+          status,
+        })),
       );
+
+      if (error || !data) {
+        const fallbackMessage = receiptMessages.length === 1 ? receiptMessages[0] : null;
+
+        if (fallbackMessage?.user_id) {
+          void sendLegacyServiceMessage(
+            createReceiptMessageText(fallbackMessage.id, status),
+            fallbackMessage.user_id,
+          );
+        } else {
+          console.warn("Hush message receipts batch failed:", error?.message);
+        }
+        return;
+      }
+
+      const optimisticReceiptIds = new Set(
+        optimisticReceipts.map((receipt) => receipt.id),
+      );
+
+      setMessageReceipts((currentRows) =>
+        mergeMessageReceipts(
+          currentRows.filter((receipt) => !optimisticReceiptIds.has(receipt.id)),
+          data,
+        ),
+      );
+      broadcastReceipts(data);
     },
-    [broadcastReceipt, sendLegacyServiceMessage, setMessageReceipts, user],
+    [broadcastReceipts, sendLegacyServiceMessage, setMessageReceipts, user],
   );
   const sendMessageReceipt = useCallback(
     async (message: MessageRow, status: MessageReceiptStatus) => {
-      await sendMessageReceipts([message], status);
+      if (!user || !message.user_id || message.id <= 0 || message.user_id === user.id) {
+        return;
+      }
+
+      const optimisticReceipt: MessageReceiptRow = {
+        created_at: new Date().toISOString(),
+        id: -Date.now(),
+        message_id: message.id,
+        recipient_id: message.user_id,
+        sender_id: user.id,
+        status,
+      };
+
+      setMessageReceipts((currentRows) =>
+        mergeMessageReceipts(currentRows, [optimisticReceipt]),
+      );
+
+      const { data, error } = await upsertMessageReceipt(
+        message.id,
+        user.id,
+        message.user_id,
+        status,
+      );
+
+      if (error || !data) {
+        void sendLegacyServiceMessage(
+          createReceiptMessageText(message.id, status),
+          message.user_id,
+        );
+        return;
+      }
+
+      setMessageReceipts((currentRows) =>
+        mergeMessageReceipts(
+          currentRows.filter((receipt) => receipt.id !== optimisticReceipt.id),
+          [data],
+        ),
+      );
+      broadcastReceipt(data);
     },
-    [sendMessageReceipts],
+    [
+      broadcastReceipt,
+      sendLegacyServiceMessage,
+      setMessageReceipts,
+      user,
+    ],
   );
 
   const sendTypingState = useCallback(
