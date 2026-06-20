@@ -5,6 +5,7 @@ import { isServiceMessage } from "@/shared/utils/messages";
 
 type UseMessageReceiptEffectsParams = {
   activeView: ActiveView;
+  isDialogLoading: boolean;
   messagesListRef: RefObject<HTMLDivElement | null>;
   selectedChatUserId: string | null;
   sendMessageReceipt: (
@@ -22,6 +23,7 @@ type UseMessageReceiptEffectsParams = {
 
 export function useMessageReceiptEffects({
   activeView,
+  isDialogLoading,
   messagesListRef,
   selectedChatUserId,
   sendMessageReceipt,
@@ -29,6 +31,8 @@ export function useMessageReceiptEffects({
   userId,
   visibleMessages,
 }: UseMessageReceiptEffectsParams) {
+  const openedChatUserIdRef = useRef<string | null>(null);
+  const pendingOpenReadChatUserIdRef = useRef<string | null>(null);
   const sentDeliveryReceiptIdsRef = useRef<Set<number>>(new Set());
   const sentReadReceiptIdsRef = useRef<Set<number>>(new Set());
 
@@ -61,7 +65,14 @@ export function useMessageReceiptEffects({
     }
 
     if (activeView !== "messages" || selectedChatUserId === null) {
+      openedChatUserIdRef.current = null;
+      pendingOpenReadChatUserIdRef.current = null;
       return;
+    }
+
+    if (openedChatUserIdRef.current !== selectedChatUserId) {
+      openedChatUserIdRef.current = selectedChatUserId;
+      pendingOpenReadChatUserIdRef.current = selectedChatUserId;
     }
 
     let frameId = 0;
@@ -70,6 +81,28 @@ export function useMessageReceiptEffects({
         .filter((message) => message.user_id === selectedChatUserId)
         .map((message) => [message.id, message]),
     );
+
+    function markMessagesAsRead(messagesToRead: MessageRow[]) {
+      for (const message of messagesToRead) {
+        if (
+          sentReceiptMessageIdSets.readMessageIds.has(message.id) ||
+          sentReadReceiptIdsRef.current.has(message.id)
+        ) {
+          continue;
+        }
+
+        sentReadReceiptIdsRef.current.add(message.id);
+        void sendMessageReceipt(message, "read");
+      }
+    }
+
+    if (
+      !isDialogLoading &&
+      pendingOpenReadChatUserIdRef.current === selectedChatUserId
+    ) {
+      markMessagesAsRead(Array.from(friendMessagesById.values()));
+      pendingOpenReadChatUserIdRef.current = null;
+    }
 
     function markVisibleMessagesAsRead() {
       if (document.visibilityState !== "visible") {
@@ -99,13 +132,6 @@ export function useMessageReceiptEffects({
           continue;
         }
 
-        if (
-          sentReceiptMessageIdSets.readMessageIds.has(messageId) ||
-          sentReadReceiptIdsRef.current.has(messageId)
-        ) {
-          continue;
-        }
-
         const messageRect = messageElement.getBoundingClientRect();
         const isVisible =
           messageRect.bottom > listRect.top + 8 &&
@@ -115,8 +141,7 @@ export function useMessageReceiptEffects({
           continue;
         }
 
-        sentReadReceiptIdsRef.current.add(messageId);
-        void sendMessageReceipt(message, "read");
+        markMessagesAsRead([message]);
       }
     }
 
@@ -150,6 +175,7 @@ export function useMessageReceiptEffects({
     };
   }, [
     activeView,
+    isDialogLoading,
     messagesListRef,
     selectedChatUserId,
     sendMessageReceipt,

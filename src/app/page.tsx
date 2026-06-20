@@ -1724,6 +1724,7 @@ export default function Home() {
   });
   useMessageReceiptEffects({
     activeView,
+    isDialogLoading: isLoadingMessages || isActiveDialogLoading,
     messagesListRef,
     selectedChatUserId,
     sendMessageReceipt,
