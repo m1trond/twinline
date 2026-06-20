@@ -120,11 +120,10 @@ a,
 
 .hush-galaxy-background {
   background:
-    radial-gradient(ellipse 760px 520px at 16% 8%, rgba(244, 244, 245, 0.14), transparent 62%),
-    radial-gradient(ellipse 620px 420px at 88% 4%, rgba(148, 163, 184, 0.11), transparent 64%),
-    radial-gradient(ellipse 940px 500px at 62% 74%, rgba(99, 102, 241, 0.075), transparent 68%),
-    radial-gradient(ellipse 540px 340px at 28% 84%, rgba(45, 212, 191, 0.055), transparent 70%),
-    linear-gradient(136deg, #010101 0%, #070708 38%, #101014 58%, #030304 100%);
+    radial-gradient(ellipse 780px 520px at 12% 0%, rgba(244, 244, 245, 0.11), transparent 64%),
+    radial-gradient(ellipse 640px 420px at 84% 10%, rgba(125, 132, 150, 0.1), transparent 66%),
+    radial-gradient(ellipse 900px 540px at 62% 92%, rgba(18, 80, 72, 0.11), transparent 72%),
+    linear-gradient(145deg, #030303 0%, #070707 34%, #111113 57%, #050506 100%);
 }
 
 .hush-galaxy-background::before,
@@ -137,39 +136,40 @@ a,
 
 .hush-galaxy-background::before {
   background:
-    linear-gradient(116deg, transparent 0%, rgba(255, 255, 255, 0.035) 34%, rgba(148, 163, 184, 0.065) 45%, rgba(255, 255, 255, 0.028) 53%, transparent 74%),
-    radial-gradient(ellipse 820px 220px at 50% 42%, rgba(244, 244, 245, 0.052), transparent 72%);
-  filter: blur(0.2px);
-  opacity: 0.72;
+    linear-gradient(120deg, transparent 0 24%, rgba(255, 255, 255, 0.042) 34%, rgba(255, 255, 255, 0.015) 42%, transparent 54%),
+    linear-gradient(22deg, transparent 0 42%, rgba(45, 212, 191, 0.035) 50%, transparent 63%),
+    radial-gradient(ellipse 780px 180px at 50% 38%, rgba(244, 244, 245, 0.045), transparent 72%);
+  filter: blur(0.25px);
+  opacity: 0.82;
 }
 
 .hush-galaxy-background::after {
   background:
-    radial-gradient(circle at 52% 46%, rgba(255, 255, 255, 0.18) 0 1px, transparent 1.6px),
-    radial-gradient(circle at 18% 22%, rgba(255, 255, 255, 0.15) 0 1px, transparent 1.7px),
-    radial-gradient(circle at 78% 16%, rgba(255, 255, 255, 0.14) 0 1px, transparent 1.8px),
-    radial-gradient(circle at 70% 72%, rgba(255, 255, 255, 0.1) 0 1px, transparent 1.9px);
-  opacity: 0.32;
+    linear-gradient(90deg, rgba(244, 244, 245, 0.045) 1px, transparent 1px),
+    linear-gradient(rgba(244, 244, 245, 0.04) 1px, transparent 1px);
+  background-size: 88px 88px;
+  mask-image: radial-gradient(ellipse at center, black 0%, transparent 78%);
+  opacity: 0.36;
 }
 
 .hush-galaxy-stars {
   background-image:
-    radial-gradient(circle, rgba(244, 244, 245, 0.5) 0 0.7px, transparent 1.2px),
-    radial-gradient(circle, rgba(212, 212, 216, 0.28) 0 0.8px, transparent 1.3px),
-    linear-gradient(rgba(244, 244, 245, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(244, 244, 245, 0.045) 1px, transparent 1px);
+    linear-gradient(135deg, transparent 0 44%, rgba(255, 255, 255, 0.055) 48%, transparent 52%),
+    radial-gradient(ellipse 360px 120px at 18% 20%, rgba(255, 255, 255, 0.06), transparent 74%),
+    radial-gradient(ellipse 320px 140px at 78% 76%, rgba(45, 212, 191, 0.045), transparent 76%),
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.028) 0 1px, transparent 1px 18px);
   background-position:
     0 0,
-    34px 18px,
+    0 0,
     0 0,
     0 0;
   background-size:
-    97px 89px,
-    151px 137px,
-    56px 56px,
-    56px 56px;
-  opacity: 0.42;
-  mix-blend-mode: screen;
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    220px 220px;
+  opacity: 0.5;
+  mix-blend-mode: normal;
 }
 
 .hush-shell .hush-chat-list-row {
