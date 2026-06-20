@@ -228,12 +228,6 @@ export function ChatListView({
                   </div>
                   <div className="mt-1 flex items-center justify-between gap-3">
                     <div className="flex min-w-0 flex-1 items-center gap-1.5">
-                      {latestMessageReceiptStatus ? (
-                        <MessageReceiptIcon
-                          className="h-4 w-4 shrink-0 text-[#a1a1aa]"
-                          status={latestMessageReceiptStatus}
-                        />
-                      ) : null}
                       <p
                         className={`truncate text-xs sm:text-sm ${
                           profileUnreadCount > 0 ? "font-medium text-[#f4f4f5]" : "text-[#a1a1aa]"
@@ -241,6 +235,12 @@ export function ChatListView({
                       >
                         {previewText}
                       </p>
+                      {latestMessageReceiptStatus ? (
+                        <MessageReceiptIcon
+                          className="h-4 w-4 shrink-0 text-[#a1a1aa]"
+                          status={latestMessageReceiptStatus}
+                        />
+                      ) : null}
                     </div>
                     {profileUnreadCount > 0 ? (
                       <span className="grid h-6 min-w-6 shrink-0 place-items-center rounded-full bg-[#f4f4f5] px-2 text-xs font-medium text-[#050505]">
