@@ -212,11 +212,11 @@ export function AppShell({
     <main className={`hush-shell ${isLightThemeEnabled ? "hush-light" : ""} ${areSoftEffectsEnabled ? "" : "hush-reduced-effects"} relative h-dvh overflow-hidden bg-[#050505] text-[#f4f4f5]`}>
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(244,244,245,0.10),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(245,245,245,0.06),transparent_28%),linear-gradient(135deg,#050505_0%,#111111_46%,#000000_100%)]"
+        className="hush-galaxy-background absolute inset-0"
       />
       <div
         aria-hidden="true"
-        className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(245,245,245,0.35)_1px,transparent_1px),linear-gradient(90deg,rgba(245,245,245,0.35)_1px,transparent_1px)] [background-size:44px_44px]"
+        className="hush-galaxy-stars absolute inset-0"
       />
       <div className="relative h-full overflow-hidden bg-[#0a0a0a]/35">
         <div className="safe-bottom flex h-full w-full flex-col overflow-hidden px-1.5 py-1.5 sm:px-3 sm:py-3 lg:px-4 xl:px-5">
