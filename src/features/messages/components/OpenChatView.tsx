@@ -60,6 +60,7 @@ type OpenChatViewProps = {
   isSelectedChatBlockingMe: boolean;
   isUploadingAttachment: boolean;
   messageInputRef: RefObject<HTMLInputElement | null>;
+  messagesBottomAnchorRef: RefObject<HTMLDivElement | null>;
   messageReceiptStatuses: Map<number, "delivered" | "read">;
   messageText: string;
   messagesListRef: RefObject<HTMLDivElement | null>;
@@ -126,6 +127,7 @@ export function OpenChatView({
   isSelectedChatBlockingMe,
   isUploadingAttachment,
   messageInputRef,
+  messagesBottomAnchorRef,
   messageReceiptStatuses,
   messageText,
   messagesListRef,
@@ -868,6 +870,11 @@ export function OpenChatView({
                       </article>
                     );
                   })}
+                  <div
+                    aria-hidden="true"
+                    className="h-px shrink-0"
+                    ref={messagesBottomAnchorRef}
+                  />
                 </div>
 
                 {!isPinnedMessagesViewOpen ? (

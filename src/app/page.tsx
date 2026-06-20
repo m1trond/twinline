@@ -392,6 +392,7 @@ export default function Home() {
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const messageInputRef = useRef<HTMLInputElement | null>(null);
+  const messagesBottomAnchorRef = useRef<HTMLDivElement | null>(null);
   const messagesListRef = useRef<HTMLDivElement | null>(null);
   const stickerButtonRef = useRef<HTMLButtonElement | null>(null);
   const highlightedMessageTimeoutRef = useRef<number | null>(null);
@@ -996,6 +997,13 @@ export default function Home() {
       }
 
       function scroll() {
+        const bottomAnchor = messagesBottomAnchorRef.current;
+
+        if (bottomAnchor) {
+          bottomAnchor.scrollIntoView({ block: "end", behavior: "auto" });
+          return;
+        }
+
         const messagesList = messagesListRef.current;
 
         if (!messagesList) {
@@ -1678,6 +1686,7 @@ export default function Home() {
     activeView,
     activeDialogMessagesCount: activeDialogMessages.length,
     activeDialogMessagesKey: visibleDialogMessagesKey,
+    bottomAnchorRef: messagesBottomAnchorRef,
     favoriteItemsCount: favoriteItems.length,
     favoriteItemsKey,
     highlightedMessageTimeoutRef,
@@ -4248,8 +4257,10 @@ export default function Home() {
           allFolderName={translations[interfaceLanguage].allChats}
           chatFolders={chatFolders}
           chatProfiles={visibleChatProfiles}
+          currentUserId={user.id}
           isLoadingChats={!hasLoadedInitialMessages}
           latestVisibleMessageByProfileId={latestVisibleMessageByProfileId}
+          messageReceiptStatuses={messageReceiptStatuses}
           openFolderContextMenu={openFolderContextMenu}
           openChatContextMenu={openChatContextMenu}
           openCreateChatFolderDialog={openCreateEmptyChatFolderDialog}
@@ -4293,6 +4304,7 @@ export default function Home() {
           isUploadingAttachment={isUploadingAttachment}
           key={`chat-${selectedChatUserId}`}
           messageInputRef={messageInputRef}
+          messagesBottomAnchorRef={messagesBottomAnchorRef}
           messageReceiptStatuses={messageReceiptStatuses}
           messageText={messageText}
           messagesListRef={messagesListRef}

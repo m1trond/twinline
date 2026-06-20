@@ -6,6 +6,7 @@ type MessageViewportEffectsParams = {
   activeView: ActiveView;
   activeDialogMessagesCount: number;
   activeDialogMessagesKey: string;
+  bottomAnchorRef: RefObject<HTMLDivElement | null>;
   favoriteItemsCount: number;
   favoriteItemsKey: string;
   highlightedMessageTimeoutRef: RefObject<number | null>;
@@ -17,7 +18,15 @@ type MessageViewportEffectsParams = {
 
 function scrollMessagesListToBottom(
   messagesListRef: RefObject<HTMLDivElement | null>,
+  bottomAnchorRef?: RefObject<HTMLDivElement | null>,
 ) {
+  const bottomAnchor = bottomAnchorRef?.current;
+
+  if (bottomAnchor) {
+    bottomAnchor.scrollIntoView({ block: "end", behavior: "auto" });
+    return;
+  }
+
   const messagesList = messagesListRef.current;
 
   if (!messagesList) {
@@ -34,6 +43,7 @@ export function useMessageViewportEffects({
   activeView,
   activeDialogMessagesCount,
   activeDialogMessagesKey,
+  bottomAnchorRef,
   favoriteItemsCount,
   favoriteItemsKey,
   highlightedMessageTimeoutRef,
@@ -44,13 +54,24 @@ export function useMessageViewportEffects({
 }: MessageViewportEffectsParams) {
   const lastOpenedChatUserIdRef = useRef<string | null>(null);
   const lastOwnDialogMessageKeyRef = useRef("");
+  const openedChatStopTimeoutRef = useRef<number | null>(null);
   const shouldOpenChatAtBottomRef = useRef(false);
+
+  function clearOpenedChatStopTimeout() {
+    if (openedChatStopTimeoutRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(openedChatStopTimeoutRef.current);
+    openedChatStopTimeoutRef.current = null;
+  }
 
   useLayoutEffect(() => {
     if (activeView !== "messages" || selectedChatUserId === null) {
       lastOpenedChatUserIdRef.current = null;
       lastOwnDialogMessageKeyRef.current = "";
       shouldOpenChatAtBottomRef.current = false;
+      clearOpenedChatStopTimeout();
       return;
     }
 
@@ -61,8 +82,9 @@ export function useMessageViewportEffects({
     lastOpenedChatUserIdRef.current = selectedChatUserId;
     lastOwnDialogMessageKeyRef.current = lastOwnDialogMessageKey;
     shouldOpenChatAtBottomRef.current = true;
-    scrollMessagesListToBottom(messagesListRef);
-  }, [activeView, lastOwnDialogMessageKey, messagesListRef, selectedChatUserId]);
+    clearOpenedChatStopTimeout();
+    scrollMessagesListToBottom(messagesListRef, bottomAnchorRef);
+  }, [activeView, bottomAnchorRef, lastOwnDialogMessageKey, messagesListRef, selectedChatUserId]);
 
   useLayoutEffect(() => {
     if (activeView !== "messages" || selectedChatUserId === null) {
@@ -77,6 +99,7 @@ export function useMessageViewportEffects({
 
     const stopKeepingOpenedChatAtBottom = () => {
       shouldOpenChatAtBottomRef.current = false;
+      clearOpenedChatStopTimeout();
     };
 
     messagesList.addEventListener("wheel", stopKeepingOpenedChatAtBottom, { passive: true });
@@ -93,6 +116,30 @@ export function useMessageViewportEffects({
   }, [activeView, messagesListRef, selectedChatUserId]);
 
   useLayoutEffect(() => {
+    if (activeView !== "messages" || selectedChatUserId === null) {
+      return;
+    }
+
+    const messagesList = messagesListRef.current;
+
+    if (!messagesList || typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      if (shouldOpenChatAtBottomRef.current) {
+        scrollMessagesListToBottom(messagesListRef, bottomAnchorRef);
+      }
+    });
+
+    observer.observe(messagesList);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [activeView, bottomAnchorRef, messagesListRef, selectedChatUserId]);
+
+  useLayoutEffect(() => {
     if (
       activeView !== "messages" ||
       selectedChatUserId === null ||
@@ -106,10 +153,11 @@ export function useMessageViewportEffects({
 
     function scroll() {
       if (shouldOpenChatAtBottomRef.current) {
-        scrollMessagesListToBottom(messagesListRef);
+        scrollMessagesListToBottom(messagesListRef, bottomAnchorRef);
       }
     }
 
+    clearOpenedChatStopTimeout();
     scroll();
     frameIds.push(window.requestAnimationFrame(scroll));
     frameIds.push(
@@ -117,7 +165,11 @@ export function useMessageViewportEffects({
         frameIds.push(
           window.requestAnimationFrame(() => {
             scroll();
-            shouldOpenChatAtBottomRef.current = false;
+            clearOpenedChatStopTimeout();
+            openedChatStopTimeoutRef.current = window.setTimeout(() => {
+              shouldOpenChatAtBottomRef.current = false;
+              openedChatStopTimeoutRef.current = null;
+            }, 900);
           }),
         );
       }),
@@ -130,6 +182,7 @@ export function useMessageViewportEffects({
     activeDialogMessagesCount,
     activeDialogMessagesKey,
     activeView,
+    bottomAnchorRef,
     isLoadingMessages,
     messagesListRef,
     selectedChatUserId,
@@ -140,6 +193,7 @@ export function useMessageViewportEffects({
       lastOpenedChatUserIdRef.current = null;
       lastOwnDialogMessageKeyRef.current = "";
       shouldOpenChatAtBottomRef.current = false;
+      clearOpenedChatStopTimeout();
     }
   }, [activeView, selectedChatUserId]);
 
@@ -159,19 +213,19 @@ export function useMessageViewportEffects({
       return;
     }
 
-    scrollMessagesListToBottom(messagesListRef);
+    scrollMessagesListToBottom(messagesListRef, bottomAnchorRef);
     const frameIds: number[] = [];
 
     frameIds.push(
       window.requestAnimationFrame(() => {
-        scrollMessagesListToBottom(messagesListRef);
+        scrollMessagesListToBottom(messagesListRef, bottomAnchorRef);
       }),
     );
     frameIds.push(
       window.requestAnimationFrame(() => {
         frameIds.push(
           window.requestAnimationFrame(() => {
-            scrollMessagesListToBottom(messagesListRef);
+            scrollMessagesListToBottom(messagesListRef, bottomAnchorRef);
           }),
         );
       }),
@@ -180,15 +234,15 @@ export function useMessageViewportEffects({
     return () => {
       frameIds.forEach((frameId) => window.cancelAnimationFrame(frameId));
     };
-  }, [activeView, lastOwnDialogMessageKey, messagesListRef, selectedChatUserId]);
+  }, [activeView, bottomAnchorRef, lastOwnDialogMessageKey, messagesListRef, selectedChatUserId]);
 
   useLayoutEffect(() => {
     if (activeView !== "favorites") {
       return;
     }
 
-    scrollMessagesListToBottom(messagesListRef);
-  }, [activeView, favoriteItemsCount, favoriteItemsKey, messagesListRef]);
+    scrollMessagesListToBottom(messagesListRef, bottomAnchorRef);
+  }, [activeView, bottomAnchorRef, favoriteItemsCount, favoriteItemsKey, messagesListRef]);
 
   useEffect(() => {
     const timeoutRef = highlightedMessageTimeoutRef;
@@ -199,6 +253,8 @@ export function useMessageViewportEffects({
       if (highlightedMessageTimeoutId !== null) {
         window.clearTimeout(highlightedMessageTimeoutId);
       }
+
+      clearOpenedChatStopTimeout();
     };
   }, [highlightedMessageTimeoutRef]);
 }

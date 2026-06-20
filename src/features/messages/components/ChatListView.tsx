@@ -1,6 +1,7 @@
 import type { DragEvent, MouseEvent } from "react";
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
+import { MessageReceiptIcon } from "@/features/messages/components/MessageReceiptIcon";
 import { useI18n } from "@/shared/i18n-context";
 import { archivedChatFolderId } from "@/shared/constants";
 import type { ChatFolder, MessageRow, ProfileRow } from "@/shared/types";
@@ -13,8 +14,10 @@ type ChatListViewProps = {
   allFolderName: string;
   chatFolders: ChatFolder[];
   chatProfiles: ProfileRow[];
+  currentUserId: string;
   isLoadingChats: boolean;
   latestVisibleMessageByProfileId: Map<string, MessageRow>;
+  messageReceiptStatuses: Map<number, "delivered" | "read">;
   openFolderContextMenu: (
     event: MouseEvent<HTMLElement>,
     folder: ChatFolder | null,
@@ -34,8 +37,10 @@ export function ChatListView({
   allFolderName,
   chatFolders,
   chatProfiles,
+  currentUserId,
   isLoadingChats,
   latestVisibleMessageByProfileId,
+  messageReceiptStatuses,
   openFolderContextMenu,
   openChatContextMenu,
   openCreateChatFolderDialog,
@@ -140,6 +145,13 @@ export function ChatListView({
             const latestProfileMessage = latestVisibleMessageByProfileId.get(profile.user_id);
             const profileUnreadCount = unreadMessagesByUserId.get(profile.user_id) ?? 0;
             const isPinnedChat = pinnedChatProfileIdSet.has(profile.user_id);
+            const isLatestMessageMine = latestProfileMessage?.user_id === currentUserId;
+            const latestMessageReceiptStatus =
+              latestProfileMessage && isLatestMessageMine
+                ? latestProfileMessage.id > 0
+                  ? messageReceiptStatuses.get(latestProfileMessage.id) ?? "delivered"
+                  : "delivered"
+                : null;
             const previewText = latestProfileMessage
               ? getChatPreviewText(latestProfileMessage.text)
               : t("openChat");
@@ -215,13 +227,21 @@ export function ChatListView({
                     ) : null}
                   </div>
                   <div className="mt-1 flex items-center justify-between gap-3">
-                    <p
-                      className={`truncate text-xs sm:text-sm ${
-                        profileUnreadCount > 0 ? "font-medium text-[#f4f4f5]" : "text-[#a1a1aa]"
-                      }`}
-                    >
-                      {previewText}
-                    </p>
+                    <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                      {latestMessageReceiptStatus ? (
+                        <MessageReceiptIcon
+                          className="h-4 w-4 shrink-0 text-[#a1a1aa]"
+                          status={latestMessageReceiptStatus}
+                        />
+                      ) : null}
+                      <p
+                        className={`truncate text-xs sm:text-sm ${
+                          profileUnreadCount > 0 ? "font-medium text-[#f4f4f5]" : "text-[#a1a1aa]"
+                        }`}
+                      >
+                        {previewText}
+                      </p>
+                    </div>
                     {profileUnreadCount > 0 ? (
                       <span className="grid h-6 min-w-6 shrink-0 place-items-center rounded-full bg-[#f4f4f5] px-2 text-xs font-medium text-[#050505]">
                         {profileUnreadCount > 99 ? "99+" : profileUnreadCount}
