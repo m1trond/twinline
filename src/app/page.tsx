@@ -65,6 +65,7 @@ import { useMessageDerivedState } from "@/features/messages/hooks/useMessageDeri
 import { useMessageReceiptEffects } from "@/features/messages/hooks/useMessageReceiptEffects";
 import { useMessagesRealtimeState } from "@/features/messages/hooks/useMessagesRealtimeState";
 import { useMessageSelectionState } from "@/features/messages/hooks/useMessageSelectionState";
+import { useMessageStateActions } from "@/features/messages/hooks/useMessageStateActions";
 import { useMessageStateRealtime } from "@/features/messages/hooks/useMessageStateRealtime";
 import { useMessageViewportEffects } from "@/features/messages/hooks/useMessageViewportEffects";
 import { useStoredMessageState } from "@/features/messages/hooks/useStoredMessageState";
@@ -101,8 +102,6 @@ import {
 import {
   fetchUsernameOwner,
   upsertMessagePin,
-  upsertMessageReceipt,
-  upsertMessageTypingState,
 } from "@/features/messages/queries";
 import type {
   ActiveView,
@@ -110,10 +109,7 @@ import type {
   CallStatus,
   FavoriteItem,
   MessagePinRow,
-  MessageReceiptRow,
-  MessageReceiptStatus,
   MessageRow,
-  MessageTypingStateRow,
   MutedProfileUntil,
   PinnedMessageIdsByChat,
   ProfileRow,
@@ -147,9 +143,7 @@ import {
   createBlockMessageText,
   createFileMessageText,
   createPinMessageText,
-  createReceiptMessageText,
   createReplyMessageText,
-  createTypingMessageText,
   getBlockMessagePayload,
   getMessageAttachmentCaption,
   getMessageAudioUrl,
@@ -234,40 +228,6 @@ function parseSyncedSettings(value: unknown): SyncedSettings {
     isProfileSearchable:
       typeof settings.isProfileSearchable === "boolean" ? settings.isProfileSearchable : undefined,
   };
-}
-
-function mergeMessageReceipts(
-  currentRows: MessageReceiptRow[],
-  incomingRows: MessageReceiptRow[],
-) {
-  const rowsByKey = new Map<string, MessageReceiptRow>();
-
-  for (const row of currentRows) {
-    rowsByKey.set(`${row.message_id}:${row.sender_id}:${row.status}`, row);
-  }
-
-  for (const row of incomingRows) {
-    rowsByKey.set(`${row.message_id}:${row.sender_id}:${row.status}`, row);
-  }
-
-  return Array.from(rowsByKey.values());
-}
-
-function mergeMessageTypingStates(
-  currentRows: MessageTypingStateRow[],
-  incomingRows: MessageTypingStateRow[],
-) {
-  const rowsByKey = new Map<string, MessageTypingStateRow>();
-
-  for (const row of currentRows) {
-    rowsByKey.set(`${row.sender_id}:${row.recipient_id}`, row);
-  }
-
-  for (const row of incomingRows) {
-    rowsByKey.set(`${row.sender_id}:${row.recipient_id}`, row);
-  }
-
-  return Array.from(rowsByKey.values());
 }
 
 function mergeMessagePins(currentRows: MessagePinRow[], incomingRows: MessagePinRow[]) {
@@ -1043,107 +1003,16 @@ export default function Home() {
     },
     [activeUserName, broadcastMessage, selectedChatUserId, setMessages, user],
   );
-  const sendMessageReceipt = useCallback(
-    async (message: MessageRow, status: MessageReceiptStatus) => {
-      if (!user || !message.user_id || message.id <= 0 || message.user_id === user.id) {
-        return;
-      }
-
-      const optimisticReceipt: MessageReceiptRow = {
-        created_at: new Date().toISOString(),
-        id: -Date.now(),
-        message_id: message.id,
-        recipient_id: message.user_id,
-        sender_id: user.id,
-        status,
-      };
-
-      setMessageReceipts((currentRows) =>
-        mergeMessageReceipts(currentRows, [optimisticReceipt]),
-      );
-
-      const { data, error } = await upsertMessageReceipt(
-        message.id,
-        user.id,
-        message.user_id,
-        status,
-      );
-
-      if (error || !data) {
-        void sendServiceMessage(
-          createReceiptMessageText(message.id, status),
-          message.user_id,
-        );
-        return;
-      }
-
-      setMessageReceipts((currentRows) =>
-        mergeMessageReceipts(
-          currentRows.filter((receipt) => receipt.id !== optimisticReceipt.id),
-          [data],
-        ),
-      );
-      broadcastReceipt(data);
-    },
-    [broadcastReceipt, sendServiceMessage, setMessageReceipts, user],
-  );
-  const sendTypingState = useCallback(
-    async (action: "start" | "stop") => {
-      if (!user || !selectedChatUserId) {
-        return;
-      }
-
-      const eventAt = new Date().toISOString();
-
-      const optimisticTypingState: MessageTypingStateRow = {
-        action,
-        event_at: eventAt,
-        expires_at: new Date(
-          action === "start" ? Date.now() + 4500 : Date.now(),
-        ).toISOString(),
-        recipient_id: selectedChatUserId,
-        sender_id: user.id,
-      };
-
-      setMessageTypingStates((currentRows) =>
-        mergeMessageTypingStates(currentRows, [optimisticTypingState]),
-      );
-      broadcastTypingState(optimisticTypingState);
-
-      const { data, error } = await upsertMessageTypingState(
-        user.id,
-        selectedChatUserId,
-        action,
-        eventAt,
-      );
-
-      if (error || !data) {
-        const fallbackResponse = await supabase.from("messages").insert({
-          author: activeUserName,
-          recipient_id: selectedChatUserId,
-          text: createTypingMessageText(action, eventAt),
-          user_id: user.id,
-        });
-
-        if (fallbackResponse.error) {
-          console.error("Hush typing state failed:", fallbackResponse.error.message);
-        }
-        return;
-      }
-
-      setMessageTypingStates((currentRows) =>
-        mergeMessageTypingStates(currentRows, [data]),
-      );
-      broadcastTypingState(data);
-    },
-    [
-      activeUserName,
-      broadcastTypingState,
-      selectedChatUserId,
-      setMessageTypingStates,
-      user,
-    ],
-  );
+  const { sendMessageReceipt, sendTypingState } = useMessageStateActions({
+    activeUserName,
+    broadcastReceipt,
+    broadcastTypingState,
+    selectedChatUserId,
+    sendLegacyServiceMessage: sendServiceMessage,
+    setMessageReceipts,
+    setMessageTypingStates,
+    user,
+  });
 
   function focusMessageInput() {
     window.requestAnimationFrame(() => {
