@@ -61,6 +61,7 @@ import { useChatFoldersState } from "@/features/messages/hooks/useChatFoldersSta
 import { useDirectMessageSender } from "@/features/messages/hooks/useDirectMessageSender";
 import { useFavoritesState } from "@/features/messages/hooks/useFavoritesState";
 import { useForwardMessagesState } from "@/features/messages/hooks/useForwardMessagesState";
+import { useMessageAttachmentSender } from "@/features/messages/hooks/useMessageAttachmentSender";
 import { useMessageComposerState } from "@/features/messages/hooks/useMessageComposerState";
 import { useMessageDerivedState } from "@/features/messages/hooks/useMessageDerivedState";
 import { useMessagePinActions } from "@/features/messages/hooks/useMessagePinActions";
@@ -90,16 +91,12 @@ import {
 } from "@/features/sync/queries";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import {
-  audioMessagePrefix,
   archivedChatFolderId,
   callMessagePrefix,
-  imageMessagePrefix,
-  maxAttachmentSize,
   messageColumns,
   profileColumns,
   stickerOptions,
   stickerMessagePrefix,
-  videoMessagePrefix,
 } from "@/shared/constants";
 import {
   fetchUsernameOwner,
@@ -122,10 +119,6 @@ import {
   speechAudioConstraints,
 } from "@/shared/utils/audio";
 import {
-  getAttachmentFolder,
-  getSafeFileExtension,
-} from "@/shared/utils/files";
-import {
   canChangeName,
   getDisplayName,
   getNextNameChangeDate,
@@ -141,7 +134,6 @@ import {
 } from "@/shared/utils/storage";
 import {
   createBlockMessageText,
-  createFileMessageText,
   createReplyMessageText,
   getBlockMessagePayload,
   getMessageAttachmentCaption,
@@ -995,6 +987,15 @@ export default function Home() {
     setErrorMessage,
     setMessages,
     user,
+  });
+  const { sendAttachment, sendVoiceMessage } = useMessageAttachmentSender({
+    activeView,
+    addFavoriteChatMessage,
+    selectedChatUserId,
+    sendDirectMessage,
+    setErrorMessage,
+    setIsUploadingAttachment,
+    userId: user?.id,
   });
   const { sendMessageReceipt, sendTypingState } = useMessageStateActions({
     activeUserName,
@@ -3796,138 +3797,6 @@ export default function Home() {
     await sendDirectMessage(stickerText, {
       errorMessage: "Не получилось отправить стикер.",
     });
-  }
-
-  async function sendAttachment(file: File) {
-    if (!user) {
-      setErrorMessage("Сначала войди в аккаунт.");
-      return;
-    }
-
-    const isImage = file.type.startsWith("image/");
-    const isVideo = file.type.startsWith("video/");
-
-    if (file.size > maxAttachmentSize) {
-      setErrorMessage("Файл должен быть меньше 50 МБ.");
-      return;
-    }
-
-    setIsUploadingAttachment(true);
-    setErrorMessage("");
-
-    const fileExtension = getSafeFileExtension(file.name);
-    const filePath = `${user.id}/${getAttachmentFolder(file)}/${Date.now()}-${crypto.randomUUID()}.${fileExtension}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("message-images")
-      .upload(filePath, file, {
-        cacheControl: "3600",
-        contentType: file.type || "application/octet-stream",
-        upsert: false,
-      });
-
-    if (uploadError) {
-      console.error("Hush file upload failed:", uploadError.message);
-      setIsUploadingAttachment(false);
-      setErrorMessage("Не получилось загрузить файл.");
-      return;
-    }
-
-    const { data: publicUrlData } = supabase.storage
-      .from("message-images")
-      .getPublicUrl(filePath);
-
-    const attachmentUrl = publicUrlData.publicUrl;
-    const messageText = isImage
-      ? `${imageMessagePrefix}${attachmentUrl}`
-      : isVideo
-        ? `${videoMessagePrefix}${attachmentUrl}`
-        : createFileMessageText({
-            name: file.name || "Файл",
-            size: file.size,
-            type: file.type,
-            url: attachmentUrl,
-          });
-
-    if (activeView === "favorites") {
-      addFavoriteChatMessage(messageText);
-      setIsUploadingAttachment(false);
-      return;
-    }
-
-    if (!selectedChatUserId) {
-      setIsUploadingAttachment(false);
-      setErrorMessage("Сначала выбери собеседника.");
-      return;
-    }
-
-    const sentMessage = await sendDirectMessage(messageText, {
-      errorMessage: "Не получилось отправить файл.",
-    });
-    setIsUploadingAttachment(false);
-
-    if (sentMessage) {
-      setErrorMessage("");
-    }
-  }
-
-  async function sendVoiceMessage(audioBlob: Blob) {
-    if (!user) {
-      setErrorMessage("Сначала войди в аккаунт.");
-      return;
-    }
-
-    if (audioBlob.size > maxAttachmentSize) {
-      setErrorMessage("Голосовое сообщение должно быть меньше 50 МБ.");
-      return;
-    }
-
-    setIsUploadingAttachment(true);
-    setErrorMessage("");
-
-    const filePath = `${user.id}/voice-${Date.now()}-${crypto.randomUUID()}.webm`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("message-images")
-      .upload(filePath, audioBlob, {
-        cacheControl: "3600",
-        contentType: audioBlob.type || "audio/webm",
-        upsert: false,
-      });
-
-    if (uploadError) {
-      setIsUploadingAttachment(false);
-      setErrorMessage("Не получилось загрузить голосовое сообщение.");
-      return;
-    }
-
-    const { data: publicUrlData } = supabase.storage
-      .from("message-images")
-      .getPublicUrl(filePath);
-
-    if (activeView === "favorites") {
-      addFavoriteChatMessage(`${audioMessagePrefix}${publicUrlData.publicUrl}`);
-      setIsUploadingAttachment(false);
-      return;
-    }
-
-    if (!selectedChatUserId) {
-      setIsUploadingAttachment(false);
-      setErrorMessage("Сначала выбери собеседника.");
-      return;
-    }
-
-    const sentMessage = await sendDirectMessage(
-      `${audioMessagePrefix}${publicUrlData.publicUrl}`,
-      {
-        errorMessage: "Не получилось отправить голосовое сообщение.",
-      },
-    );
-    setIsUploadingAttachment(false);
-
-    if (sentMessage) {
-      setErrorMessage("");
-    }
   }
 
   function stopVoiceInputMeter() {
