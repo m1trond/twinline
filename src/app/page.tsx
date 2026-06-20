@@ -58,6 +58,7 @@ import {
 import { OpenChatView } from "@/features/messages/components/OpenChatView";
 import { StickerPicker } from "@/features/messages/components/StickerPicker";
 import { useChatFoldersState } from "@/features/messages/hooks/useChatFoldersState";
+import { useDirectMessageSender } from "@/features/messages/hooks/useDirectMessageSender";
 import { useFavoritesState } from "@/features/messages/hooks/useFavoritesState";
 import { useForwardMessagesState } from "@/features/messages/hooks/useForwardMessagesState";
 import { useMessageComposerState } from "@/features/messages/hooks/useMessageComposerState";
@@ -987,6 +988,14 @@ export default function Home() {
     },
     [activeUserName, broadcastMessage, selectedChatUserId, setMessages, user],
   );
+  const sendDirectMessage = useDirectMessageSender({
+    activeUserName,
+    broadcastMessage,
+    selectedChatUserId,
+    setErrorMessage,
+    setMessages,
+    user,
+  });
   const { sendMessageReceipt, sendTypingState } = useMessageStateActions({
     activeUserName,
     broadcastReceipt,
@@ -3752,46 +3761,15 @@ export default function Home() {
       ? createReplyMessageText(replyTarget, trimmedText)
       : trimmedText;
 
-    const optimisticMessage = createOptimisticMessage({
-      recipientId: selectedChatUserId,
-      text: outgoingText,
-    });
-
     setMessageText("");
     setReplyTarget(null);
-    setMessages((currentMessages) =>
-      mergeMessages(currentMessages, [optimisticMessage]),
-    );
-
-    const { data, error } = await supabase
-      .from("messages")
-      .insert({
-        author: activeUserName,
-        recipient_id: selectedChatUserId,
-        text: outgoingText,
-        user_id: user.id,
-      })
-      .select(messageColumns)
-      .single();
-
-    if (error) {
-      setMessages((currentMessages) =>
-        currentMessages.filter((message) => message.id !== optimisticMessage.id),
-      );
-      setMessageText(trimmedText);
-      setReplyTarget(replyTarget);
-      setErrorMessage("Не получилось отправить сообщение.");
-    } else {
-      setMessages((currentMessages) =>
-        data
-          ? settleOptimisticMessage(currentMessages, optimisticMessage, data)
-          : currentMessages,
-      );
-      if (data) {
-        broadcastMessage(data);
-      }
-      setErrorMessage("");
-    }
+    await sendDirectMessage(outgoingText, {
+      errorMessage: "Не получилось отправить сообщение.",
+      onError: () => {
+        setMessageText(trimmedText);
+        setReplyTarget(replyTarget);
+      },
+    });
   }
 
   async function sendSticker(sticker: string) {
@@ -3814,44 +3792,10 @@ export default function Home() {
       return;
     }
 
-    const optimisticMessage = createOptimisticMessage({
-      recipientId: selectedChatUserId,
-      text: stickerText,
-    });
-
     setIsStickerPickerOpen(false);
-    setMessages((currentMessages) =>
-      mergeMessages(currentMessages, [optimisticMessage]),
-    );
-
-    const { data, error } = await supabase
-      .from("messages")
-      .insert({
-        author: activeUserName,
-        recipient_id: selectedChatUserId,
-        text: stickerText,
-        user_id: user.id,
-      })
-      .select(messageColumns)
-      .single();
-
-    if (error) {
-      setMessages((currentMessages) =>
-        currentMessages.filter((message) => message.id !== optimisticMessage.id),
-      );
-      setErrorMessage("Не получилось отправить стикер.");
-      return;
-    }
-
-    setMessages((currentMessages) =>
-      data
-        ? settleOptimisticMessage(currentMessages, optimisticMessage, data)
-        : currentMessages,
-    );
-    if (data) {
-      broadcastMessage(data);
-    }
-    setErrorMessage("");
+    await sendDirectMessage(stickerText, {
+      errorMessage: "Не получилось отправить стикер.",
+    });
   }
 
   async function sendAttachment(file: File) {
@@ -3917,42 +3861,13 @@ export default function Home() {
       return;
     }
 
-    const optimisticMessage = createOptimisticMessage({
-      recipientId: selectedChatUserId,
-      text: messageText,
+    const sentMessage = await sendDirectMessage(messageText, {
+      errorMessage: "Не получилось отправить файл.",
     });
-
-    setMessages((currentMessages) =>
-      mergeMessages(currentMessages, [optimisticMessage]),
-    );
-
-    const { data, error } = await supabase
-      .from("messages")
-      .insert({
-        author: activeUserName,
-        recipient_id: selectedChatUserId,
-        text: messageText,
-        user_id: user.id,
-      })
-      .select(messageColumns)
-      .single();
-
     setIsUploadingAttachment(false);
 
-    if (error) {
-      setMessages((currentMessages) =>
-        currentMessages.filter((message) => message.id !== optimisticMessage.id),
-      );
-      setErrorMessage("Не получилось отправить файл.");
-    } else {
-      setMessages((currentMessages) =>
-        data
-          ? settleOptimisticMessage(currentMessages, optimisticMessage, data)
-          : currentMessages,
-      );
-      if (data) {
-        broadcastMessage(data);
-      }
+    if (sentMessage) {
+      setErrorMessage("");
     }
   }
 
@@ -4002,42 +3917,16 @@ export default function Home() {
       return;
     }
 
-    const optimisticMessage = createOptimisticMessage({
-      recipientId: selectedChatUserId,
-      text: `${audioMessagePrefix}${publicUrlData.publicUrl}`,
-    });
-
-    setMessages((currentMessages) =>
-      mergeMessages(currentMessages, [optimisticMessage]),
+    const sentMessage = await sendDirectMessage(
+      `${audioMessagePrefix}${publicUrlData.publicUrl}`,
+      {
+        errorMessage: "Не получилось отправить голосовое сообщение.",
+      },
     );
-
-    const { data, error } = await supabase
-      .from("messages")
-      .insert({
-        author: activeUserName,
-        recipient_id: selectedChatUserId,
-        text: `${audioMessagePrefix}${publicUrlData.publicUrl}`,
-        user_id: user.id,
-      })
-      .select(messageColumns)
-      .single();
-
     setIsUploadingAttachment(false);
 
-    if (error) {
-      setMessages((currentMessages) =>
-        currentMessages.filter((message) => message.id !== optimisticMessage.id),
-      );
-      setErrorMessage("Не получилось отправить голосовое сообщение.");
-    } else {
-      setMessages((currentMessages) =>
-        data
-          ? settleOptimisticMessage(currentMessages, optimisticMessage, data)
-          : currentMessages,
-      );
-      if (data) {
-        broadcastMessage(data);
-      }
+    if (sentMessage) {
+      setErrorMessage("");
     }
   }
 
