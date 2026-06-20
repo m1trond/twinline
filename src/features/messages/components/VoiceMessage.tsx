@@ -7,18 +7,23 @@ import { formatAudioTime, formatMessageTime } from "@/shared/utils/format";
 export function VoiceMessage({
   editedAt = null,
   isMine,
+  isUnplayedByRecipient = false,
+  onPlaybackStart,
   receiptStatus = null,
   sentAt,
   src,
 }: {
   editedAt?: string | null;
   isMine: boolean;
+  isUnplayedByRecipient?: boolean;
+  onPlaybackStart?: () => void;
   receiptStatus?: MessageReceiptStatus | null;
   sentAt: string;
   src: string;
 }) {
   const { t } = useI18n();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const hasReportedPlaybackRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -42,6 +47,15 @@ export function VoiceMessage({
     }
   }
 
+  function reportPlaybackStart() {
+    if (hasReportedPlaybackRef.current) {
+      return;
+    }
+
+    hasReportedPlaybackRef.current = true;
+    onPlaybackStart?.();
+  }
+
   function seekAudio(event: ChangeEvent<HTMLInputElement>) {
     const audio = audioRef.current;
     const nextTime = Number(event.target.value);
@@ -52,6 +66,7 @@ export function VoiceMessage({
 
     audio.currentTime = nextTime;
     setCurrentTime(nextTime);
+    reportPlaybackStart();
   }
 
   return (
@@ -64,7 +79,10 @@ export function VoiceMessage({
         onEnded={() => setIsPlaying(false)}
         onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)}
         onPause={() => setIsPlaying(false)}
-        onPlay={() => setIsPlaying(true)}
+        onPlay={() => {
+          setIsPlaying(true);
+          reportPlaybackStart();
+        }}
         onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
         preload="metadata"
         ref={audioRef}
@@ -115,7 +133,15 @@ export function VoiceMessage({
             />
           </div>
           <p className="mt-0 flex items-center justify-between gap-3 text-xs font-medium leading-4 tabular-nums opacity-65">
-            <span>{formatAudioTime(currentTime || duration)}</span>
+            <span className="inline-flex items-center gap-1.5">
+              {formatAudioTime(currentTime || duration)}
+              {isUnplayedByRecipient ? (
+                <span
+                  aria-label="Голосовое не прослушано"
+                  className="h-1.5 w-1.5 rounded-full bg-[#f4f4f5]"
+                />
+              ) : null}
+            </span>
             <span className="inline-flex items-center gap-1">
               {editedAt ? <span>{t("edited")}</span> : null}
               {formatMessageTime(sentAt)}

@@ -68,7 +68,7 @@ export type PinMessagePayload = {
 
 export type ReceiptMessagePayload = {
   messageId: number;
-  status: "delivered" | "read";
+  status: "delivered" | "played" | "read";
 };
 
 export type TypingMessagePayload = {

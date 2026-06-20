@@ -108,7 +108,6 @@ import type {
   PinMessagePayload,
   PinnedMessageIdsByChat,
   ProfileRow,
-  ReceiptMessagePayload,
   ReplyMessagePayload,
 } from "@/shared/types";
 import { isSessionDescriptionPayload } from "@/shared/utils/callSignals";
@@ -139,6 +138,7 @@ import {
   createBlockMessageText,
   createFileMessageText,
   createPinMessageText,
+  createReceiptMessageText,
   createReplyMessageText,
   createTypingMessageText,
   getBlockMessagePayload,
@@ -999,12 +999,16 @@ export default function Home() {
     return new Set(sharedPinnedMessageIds);
   }, [sharedPinnedMessageIds]);
   const messageReceiptStatuses = useMemo(() => {
-    const statuses = new Map<number, ReceiptMessagePayload["status"]>();
+    const statuses = new Map<number, "delivered" | "read">();
 
     for (const message of messages) {
       const receiptPayload = getReceiptMessagePayload(message.text);
 
-      if (!receiptPayload || message.user_id === user?.id) {
+      if (
+        !receiptPayload ||
+        receiptPayload.status === "played" ||
+        message.user_id === user?.id
+      ) {
         continue;
       }
 
@@ -1019,10 +1023,11 @@ export default function Home() {
   }, [messages, user?.id]);
   const sentReceiptMessageIdSets = useMemo(() => {
     const deliveredMessageIds = new Set<number>();
+    const playedMessageIds = new Set<number>();
     const readMessageIds = new Set<number>();
 
     if (!user) {
-      return { deliveredMessageIds, readMessageIds };
+      return { deliveredMessageIds, playedMessageIds, readMessageIds };
     }
 
     for (const message of messages) {
@@ -1036,12 +1041,36 @@ export default function Home() {
         deliveredMessageIds.add(receiptPayload.messageId);
       }
 
+      if (receiptPayload.status === "played") {
+        playedMessageIds.add(receiptPayload.messageId);
+      }
+
       if (receiptPayload.status === "read") {
         readMessageIds.add(receiptPayload.messageId);
       }
     }
 
-    return { deliveredMessageIds, readMessageIds };
+    return { deliveredMessageIds, playedMessageIds, readMessageIds };
+  }, [messages, user]);
+  const playedVoiceMessageIds = useMemo(() => {
+    if (!user) {
+      return new Set<number>();
+    }
+
+    const playedMessageIds = new Set<number>();
+
+    for (const message of messages) {
+      const receiptPayload = getReceiptMessagePayload(message.text);
+
+      if (
+        receiptPayload?.status === "played" &&
+        message.user_id !== user.id
+      ) {
+        playedMessageIds.add(receiptPayload.messageId);
+      }
+    }
+
+    return playedMessageIds;
   }, [messages, user]);
   const incomingUnreadMessageIds = useMemo(() => {
     if (!user) {
@@ -1684,6 +1713,22 @@ export default function Home() {
     userId: user?.id,
     visibleMessages: activeDialogMessages,
   });
+
+  function markVoiceMessagePlayed(message: MessageRow) {
+    if (
+      !message.user_id ||
+      message.id <= 0 ||
+      message.user_id === user?.id ||
+      sentReceiptMessageIdSets.playedMessageIds.has(message.id)
+    ) {
+      return;
+    }
+
+    void sendServiceMessage(
+      createReceiptMessageText(message.id, "played"),
+      message.user_id,
+    );
+  }
 
 
 
@@ -4710,6 +4755,7 @@ export default function Home() {
           messageText={messageText}
           messagesListRef={messagesListRef}
           openMessageContextMenu={openMessageContextMenu}
+          playedVoiceMessageIds={playedVoiceMessageIds}
           profilesByUserId={profilesByUserId}
           replyTarget={replyTarget}
           scrollToNextPinnedMessage={scrollToNextPinnedMessage}
@@ -4733,6 +4779,7 @@ export default function Home() {
           stickerButtonRef={stickerButtonRef}
           toggleStickerPicker={toggleStickerPicker}
           toggleVoiceRecording={toggleVoiceRecording}
+          markVoiceMessagePlayed={markVoiceMessagePlayed}
           user={user}
           visibleDialogMessages={visibleDialogMessages}
           visibleDialogMessagesCount={visibleDialogMessagesCount}

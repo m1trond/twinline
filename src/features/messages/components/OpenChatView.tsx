@@ -64,6 +64,7 @@ type OpenChatViewProps = {
   messageText: string;
   messagesListRef: RefObject<HTMLDivElement | null>;
   openMessageContextMenu: (event: MouseEvent<HTMLElement>, message: MessageRow) => void;
+  playedVoiceMessageIds: Set<number>;
   profilesByUserId: Map<string, ProfileRow>;
   replyTarget: MessageRow | null;
   scrollToNextPinnedMessage: () => void;
@@ -87,6 +88,7 @@ type OpenChatViewProps = {
   stickerButtonRef: RefObject<HTMLButtonElement | null>;
   toggleStickerPicker: () => void;
   toggleVoiceRecording: () => void;
+  markVoiceMessagePlayed: (message: MessageRow) => void;
   user: User;
   visibleDialogMessages: MessageRow[];
   visibleDialogMessagesCount: number;
@@ -128,6 +130,7 @@ export function OpenChatView({
   messageText,
   messagesListRef,
   openMessageContextMenu,
+  playedVoiceMessageIds,
   profilesByUserId,
   replyTarget,
   scrollToNextPinnedMessage,
@@ -151,6 +154,7 @@ export function OpenChatView({
   stickerButtonRef,
   toggleStickerPicker,
   toggleVoiceRecording,
+  markVoiceMessagePlayed,
   user,
   visibleDialogMessages,
   visibleDialogMessagesCount,
@@ -688,6 +692,12 @@ export function OpenChatView({
                           <VoiceMessage
                             editedAt={message.edited_at ?? null}
                             isMine={isMine}
+                            isUnplayedByRecipient={
+                              isMine &&
+                              message.id > 0 &&
+                              !playedVoiceMessageIds.has(message.id)
+                            }
+                            onPlaybackStart={() => markVoiceMessagePlayed(message)}
                             receiptStatus={receiptStatus}
                             sentAt={message.created_at}
                             src={audioUrl}

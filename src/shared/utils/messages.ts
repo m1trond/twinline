@@ -277,7 +277,11 @@ export function getReceiptMessagePayload(text: string): ReceiptMessagePayload | 
     if (
       parsedPayload &&
       Number.isInteger(parsedPayload.messageId) &&
-      (parsedPayload.status === "delivered" || parsedPayload.status === "read")
+      (
+        parsedPayload.status === "delivered" ||
+        parsedPayload.status === "played" ||
+        parsedPayload.status === "read"
+      )
     ) {
       return parsedPayload;
     }

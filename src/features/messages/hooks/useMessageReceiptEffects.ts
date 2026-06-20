@@ -8,6 +8,7 @@ type UseMessageReceiptEffectsParams = {
   sendServiceMessage: (text: string, recipientId?: string | null) => void | Promise<void>;
   sentReceiptMessageIdSets: {
     deliveredMessageIds: Set<number>;
+    playedMessageIds: Set<number>;
     readMessageIds: Set<number>;
   };
   userId: string | null | undefined;
