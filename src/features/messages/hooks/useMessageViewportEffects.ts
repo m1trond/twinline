@@ -154,17 +154,30 @@ export function useMessageViewportEffects({
     const previousOwnMessageKey = lastOwnDialogMessageKeyRef.current;
     lastOwnDialogMessageKeyRef.current = lastOwnDialogMessageKey;
 
-    if (previousOwnMessageKey === "" || previousOwnMessageKey === lastOwnDialogMessageKey) {
+    if (previousOwnMessageKey === lastOwnDialogMessageKey) {
       return;
     }
 
     scrollMessagesListToBottom(messagesListRef);
-    const frameId = window.requestAnimationFrame(() => {
-      scrollMessagesListToBottom(messagesListRef);
-    });
+    const frameIds: number[] = [];
+
+    frameIds.push(
+      window.requestAnimationFrame(() => {
+        scrollMessagesListToBottom(messagesListRef);
+      }),
+    );
+    frameIds.push(
+      window.requestAnimationFrame(() => {
+        frameIds.push(
+          window.requestAnimationFrame(() => {
+            scrollMessagesListToBottom(messagesListRef);
+          }),
+        );
+      }),
+    );
 
     return () => {
-      window.cancelAnimationFrame(frameId);
+      frameIds.forEach((frameId) => window.cancelAnimationFrame(frameId));
     };
   }, [activeView, lastOwnDialogMessageKey, messagesListRef, selectedChatUserId]);
 

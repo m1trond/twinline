@@ -985,9 +985,41 @@ export default function Home() {
     },
     [activeUserName, broadcastMessage, selectedChatUserId, setMessages, user],
   );
+  const scrollOutgoingMessageToBottom = useCallback(
+    (message: MessageRow) => {
+      if (
+        activeViewRef.current !== "messages" ||
+        selectedChatUserIdRef.current !== message.recipient_id ||
+        message.user_id !== user?.id
+      ) {
+        return;
+      }
+
+      function scroll() {
+        const messagesList = messagesListRef.current;
+
+        if (!messagesList) {
+          return;
+        }
+
+        messagesList.scrollTop = Math.max(
+          0,
+          messagesList.scrollHeight - messagesList.clientHeight,
+        );
+      }
+
+      scroll();
+      window.requestAnimationFrame(scroll);
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(scroll);
+      });
+    },
+    [user?.id],
+  );
   const sendDirectMessage = useDirectMessageSender({
     activeUserName,
     broadcastMessage,
+    onOptimisticMessageCommit: scrollOutgoingMessageToBottom,
     selectedChatUserId,
     setErrorMessage,
     setMessages,

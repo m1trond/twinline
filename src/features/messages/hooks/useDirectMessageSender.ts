@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import type { Dispatch, SetStateAction } from "react";
+import { flushSync } from "react-dom";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { messageColumns } from "@/shared/constants";
@@ -18,6 +19,7 @@ type SendDirectMessageOptions = {
 type UseDirectMessageSenderParams = {
   activeUserName: string;
   broadcastMessage: (message: MessageRow) => void;
+  onOptimisticMessageCommit?: (message: MessageRow) => void;
   selectedChatUserId: string | null;
   setErrorMessage: (message: string) => void;
   setMessages: Dispatch<SetStateAction<MessageRow[]>>;
@@ -27,6 +29,7 @@ type UseDirectMessageSenderParams = {
 export function useDirectMessageSender({
   activeUserName,
   broadcastMessage,
+  onOptimisticMessageCommit,
   selectedChatUserId,
   setErrorMessage,
   setMessages,
@@ -52,9 +55,12 @@ export function useDirectMessageSender({
         user_id: user.id,
       };
 
-      setMessages((currentMessages) =>
-        mergeMessages(currentMessages, [optimisticMessage]),
-      );
+      flushSync(() => {
+        setMessages((currentMessages) =>
+          mergeMessages(currentMessages, [optimisticMessage]),
+        );
+      });
+      onOptimisticMessageCommit?.(optimisticMessage);
 
       const { data, error } = await supabase
         .from("messages")
@@ -92,6 +98,7 @@ export function useDirectMessageSender({
     [
       activeUserName,
       broadcastMessage,
+      onOptimisticMessageCommit,
       selectedChatUserId,
       setErrorMessage,
       setMessages,
