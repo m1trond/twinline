@@ -208,9 +208,7 @@ export function ChatListView({
                         profileUnreadCount > 0 ? "font-medium text-[#f4f4f5]" : "text-[#a1a1aa]"
                       }`}
                     >
-                    {profileUnreadCount > 0
-                        ? `${t("unreadFrom")} ${profile.display_name}: ${previewText}`
-                        : previewText}
+                      {previewText}
                     </p>
                     {profileUnreadCount > 0 ? (
                       <span className="grid h-6 min-w-6 shrink-0 place-items-center rounded-full bg-[#f4f4f5] px-2 text-xs font-medium text-[#050505]">
