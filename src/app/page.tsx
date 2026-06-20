@@ -940,18 +940,43 @@ export default function Home() {
         return;
       }
 
-      const { data } = await supabase.from("messages").insert({
+      const now = Date.now();
+      const optimisticMessage: MessageRow = {
+        author: activeUserName,
+        client_key: `local-service-${now}-${crypto.randomUUID()}`,
+        created_at: new Date(now).toISOString(),
+        id: -now,
+        recipient_id: recipientId,
+        text,
+        user_id: user.id,
+      };
+
+      setMessages((currentMessages) =>
+        mergeMessages(currentMessages, [optimisticMessage]),
+      );
+
+      const { data, error } = await supabase.from("messages").insert({
         author: activeUserName,
         recipient_id: recipientId,
         text,
         user_id: user.id,
       }).select(messageColumns).single();
 
+      if (error) {
+        setMessages((currentMessages) =>
+          currentMessages.filter((message) => message.id !== optimisticMessage.id),
+        );
+        return;
+      }
+
       if (data) {
+        setMessages((currentMessages) =>
+          settleOptimisticMessage(currentMessages, optimisticMessage, data),
+        );
         broadcastMessage(data);
       }
     },
-    [activeUserName, broadcastMessage, selectedChatUserId, user],
+    [activeUserName, broadcastMessage, selectedChatUserId, setMessages, user],
   );
   const sendTypingState = useCallback(
     async (action: "start" | "stop") => {
@@ -1727,14 +1752,6 @@ export default function Home() {
     }
 
     const playedReceiptText = createReceiptMessageText(message.id, "played");
-    const optimisticReceipt = createOptimisticMessage({
-      recipientId: message.user_id,
-      text: playedReceiptText,
-    });
-
-    setMessages((currentMessages) =>
-      mergeMessages(currentMessages, [optimisticReceipt]),
-    );
     void sendServiceMessage(playedReceiptText, message.user_id);
   }
 
