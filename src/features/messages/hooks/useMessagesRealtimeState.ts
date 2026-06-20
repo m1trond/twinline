@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { MutableRefObject } from "react";
-import type { User } from "@supabase/supabase-js";
+import type { RealtimeChannel, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import {
   fetchDialogMessages,
@@ -170,6 +170,7 @@ export function useMessagesRealtimeState({
   const hadSignedInUserRef = useRef(false);
   const messagesRef = useRef<MessageRow[]>(messages);
   const latestMessageCreatedAtRef = useRef<string | null>(null);
+  const messagesChannelRef = useRef<RealtimeChannel | null>(null);
   const notifiedMessageIdsRef = useRef<Set<number>>(new Set());
 
   useEffect(() => {
@@ -496,7 +497,38 @@ export function useMessagesRealtimeState({
     }, 60_000);
 
     const channel = supabase
-      .channel("messages-channel")
+      .channel("messages-channel", {
+        config: {
+          broadcast: {
+            ack: false,
+            self: false,
+          },
+        },
+      })
+      .on(
+        "broadcast",
+        { event: "message-upsert" },
+        (event) => {
+          const message = (event.payload as { message?: unknown } | null)?.message;
+
+          if (!isStoredMessageRow(message)) {
+            return;
+          }
+
+          if (isDeletingChatRef.current) {
+            return;
+          }
+
+          if (!isDirectMessageForUser(message, signedInUser.id)) {
+            return;
+          }
+
+          setMessages((currentMessages) =>
+            mergeMessages(currentMessages, [message]),
+          );
+          handleIncomingNotifications([message]);
+        },
+      )
       .on(
         "postgres_changes",
         {
@@ -555,6 +587,8 @@ export function useMessagesRealtimeState({
       )
       .subscribe();
 
+    messagesChannelRef.current = channel;
+
     return () => {
       isMounted = false;
       for (const timeoutId of startupSyncTimeouts) {
@@ -562,6 +596,9 @@ export function useMessagesRealtimeState({
       }
       window.clearInterval(newMessagesInterval);
       window.clearInterval(fullSyncInterval);
+      if (messagesChannelRef.current === channel) {
+        messagesChannelRef.current = null;
+      }
       supabase.removeChannel(channel);
     };
   }, [
@@ -583,7 +620,16 @@ export function useMessagesRealtimeState({
     latestMessageCreatedAtRef.current = null;
   }
 
+  const broadcastMessage = useCallback((message: MessageRow) => {
+    void messagesChannelRef.current?.send({
+      event: "message-upsert",
+      payload: { message },
+      type: "broadcast",
+    });
+  }, []);
+
   return {
+    broadcastMessage,
     messages,
     setMessages,
     resetMessageSyncCursor,

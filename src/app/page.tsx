@@ -531,6 +531,7 @@ export default function Home() {
     setPinnedMessageIdsByChat,
   } = useStoredMessageState(user?.id);
   const {
+    broadcastMessage,
     messages,
     setMessages,
     resetMessageSyncCursor,
@@ -939,14 +940,18 @@ export default function Home() {
         return;
       }
 
-      await supabase.from("messages").insert({
+      const { data } = await supabase.from("messages").insert({
         author: activeUserName,
         recipient_id: recipientId,
         text,
         user_id: user.id,
-      });
+      }).select(messageColumns).single();
+
+      if (data) {
+        broadcastMessage(data);
+      }
     },
-    [activeUserName, selectedChatUserId, user],
+    [activeUserName, broadcastMessage, selectedChatUserId, user],
   );
   const sendTypingState = useCallback(
     async (action: "start" | "stop") => {
@@ -2630,6 +2635,9 @@ export default function Home() {
         ? settleOptimisticMessage(currentMessages, optimisticMessage, data)
         : currentMessages,
     );
+    if (data) {
+      broadcastMessage(data);
+    }
   }
 
   async function closeCall(notifyPartner: boolean) {
@@ -2899,6 +2907,7 @@ export default function Home() {
     setMessages((currentMessages) =>
       settleOptimisticMessage(currentMessages, optimisticMessage, data),
     );
+    broadcastMessage(data);
 
     if (action === "block") {
       setIncomingCall((currentCall) =>
@@ -3467,6 +3476,7 @@ export default function Home() {
     setMessages((currentMessages) =>
       settleOptimisticMessage(currentMessages, optimisticMessage, data),
     );
+    broadcastMessage(data);
     setErrorMessage("");
   }
 
@@ -3536,6 +3546,7 @@ export default function Home() {
           : nextMessages;
       }, currentMessages),
     );
+    data?.forEach((message) => broadcastMessage(message));
     setIsPinnedMessagesViewOpen(false);
     setErrorMessage("");
   }
@@ -4047,6 +4058,7 @@ export default function Home() {
             message.id === data.id ? data : message,
           ),
         );
+        broadcastMessage(data);
         setErrorMessage("");
       }
 
@@ -4092,6 +4104,9 @@ export default function Home() {
           ? settleOptimisticMessage(currentMessages, optimisticMessage, data)
           : currentMessages,
       );
+      if (data) {
+        broadcastMessage(data);
+      }
       setErrorMessage("");
     }
   }
@@ -4150,6 +4165,9 @@ export default function Home() {
         ? settleOptimisticMessage(currentMessages, optimisticMessage, data)
         : currentMessages,
     );
+    if (data) {
+      broadcastMessage(data);
+    }
     setErrorMessage("");
   }
 
@@ -4249,6 +4267,9 @@ export default function Home() {
           ? settleOptimisticMessage(currentMessages, optimisticMessage, data)
           : currentMessages,
       );
+      if (data) {
+        broadcastMessage(data);
+      }
     }
   }
 
@@ -4331,6 +4352,9 @@ export default function Home() {
           ? settleOptimisticMessage(currentMessages, optimisticMessage, data)
           : currentMessages,
       );
+      if (data) {
+        broadcastMessage(data);
+      }
     }
   }
 
