@@ -1734,6 +1734,7 @@ export default function Home() {
   });
   useMessageReceiptEffects({
     activeView,
+    messagesListRef,
     selectedChatUserId,
     sendServiceMessage,
     sentReceiptMessageIdSets,
