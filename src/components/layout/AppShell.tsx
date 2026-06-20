@@ -19,7 +19,6 @@ type AppShellProps = {
   setActiveView: Dispatch<SetStateAction<ActiveView>>;
   setChatSearchQuery: Dispatch<SetStateAction<string>>;
   setSelectedChatUserId: Dispatch<SetStateAction<string | null>>;
-  setUnreadMessageCount: Dispatch<SetStateAction<number>>;
   setViewedProfile: Dispatch<SetStateAction<ViewedProfileState | null>>;
   totalUnreadMessageCount: number;
 };
@@ -68,7 +67,6 @@ export function AppShell({
   setActiveView,
   setChatSearchQuery,
   setSelectedChatUserId,
-  setUnreadMessageCount,
   setViewedProfile,
   totalUnreadMessageCount,
 }: AppShellProps) {
@@ -324,7 +322,6 @@ export function AppShell({
                                       userId: profile.user_id,
                                     });
                                     setChatSearchQuery("");
-                                    setUnreadMessageCount(0);
                                     setIsCollapsedSearchOpen(false);
                                   }}
                                   type="button"
@@ -414,7 +411,6 @@ export function AppShell({
                               userId: profile.user_id,
                             });
                             setChatSearchQuery("");
-                            setUnreadMessageCount(0);
                           }}
                           type="button"
                         >

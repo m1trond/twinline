@@ -332,7 +332,6 @@ export default function Home() {
   const {
     highlightedMessageId,
     setHighlightedMessageId,
-    setUnreadMessageCount,
     replyTarget,
     setReplyTarget,
     editingMessage,
@@ -540,7 +539,6 @@ export default function Home() {
     setErrorMessage,
     setIsLoadingMessages,
     setSelectedChatUserId,
-    setUnreadMessageCount,
     user,
   });
   const {
@@ -1807,7 +1805,7 @@ export default function Home() {
   useEffect(() => {
     activeViewRef.current = activeView;
     selectedChatUserIdRef.current = selectedChatUserId;
-  }, [activeView, selectedChatUserId, setUnreadMessageCount]);
+  }, [activeView, selectedChatUserId]);
 
   useEffect(() => {
     originalPageTitleRef.current = document.title || "Hush";
@@ -1829,7 +1827,6 @@ export default function Home() {
         setSelectedChatUserId(userId);
       }
 
-      setUnreadMessageCount(0);
     }
 
     function handleServiceWorkerMessage(event: MessageEvent) {
@@ -1871,7 +1868,7 @@ export default function Home() {
         );
       }
     };
-  }, [setActiveView, setSelectedChatUserId, setUnreadMessageCount, user?.id]);
+  }, [setActiveView, setSelectedChatUserId, user?.id]);
 
   useEffect(() => {
     if (totalUnreadMessageCount > 0) {
@@ -1881,25 +1878,6 @@ export default function Home() {
 
     document.title = originalPageTitleRef.current;
   }, [totalUnreadMessageCount]);
-
-  useEffect(() => {
-    function resetUnreadWhenDialogVisible() {
-      if (
-        document.visibilityState === "visible" &&
-        activeViewRef.current === "messages" &&
-        selectedChatUserIdRef.current !== null
-      ) {
-        setUnreadMessageCount(0);
-      }
-    }
-
-    resetUnreadWhenDialogVisible();
-    document.addEventListener("visibilitychange", resetUnreadWhenDialogVisible);
-
-    return () => {
-      document.removeEventListener("visibilitychange", resetUnreadWhenDialogVisible);
-    };
-  }, [activeView, selectedChatUserId, setUnreadMessageCount]);
 
 
 
@@ -4150,7 +4128,6 @@ export default function Home() {
       setActiveView={setActiveViewFromShell}
       setChatSearchQuery={setChatSearchQuery}
       setSelectedChatUserId={setSelectedChatUserId}
-      setUnreadMessageCount={setUnreadMessageCount}
       setViewedProfile={setViewedProfile}
       totalUnreadMessageCount={totalUnreadMessageCount}
     >
@@ -4272,7 +4249,6 @@ export default function Home() {
           setSelectedChatFolderId={setSelectedChatFolderId}
           setSelectedChatUserId={setSelectedChatUserId}
           setViewedProfile={setViewedProfile}
-          setUnreadMessageCount={setUnreadMessageCount}
           unreadMessagesByUserId={unreadMessagesByUserId}
         />
       ) : (
@@ -4305,6 +4281,7 @@ export default function Home() {
           isSelectedChatBlockedByMe={isSelectedChatBlockedByMe}
           isSelectedChatBlockingMe={isSelectedChatBlockingMe}
           isUploadingAttachment={isUploadingAttachment}
+          key={`chat-${selectedChatUserId}`}
           messageInputRef={messageInputRef}
           messageReceiptStatuses={messageReceiptStatuses}
           messageText={messageText}

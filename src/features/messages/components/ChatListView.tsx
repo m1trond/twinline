@@ -26,7 +26,6 @@ type ChatListViewProps = {
   setSelectedChatFolderId: (folderId: string | null) => void;
   setSelectedChatUserId: (userId: string) => void;
   setViewedProfile: (profile: ViewedProfileState | null) => void;
-  setUnreadMessageCount: (count: number) => void;
   unreadMessagesByUserId: Map<string, number>;
 };
 
@@ -44,7 +43,6 @@ export function ChatListView({
   setSelectedChatFolderId,
   setSelectedChatUserId,
   setViewedProfile,
-  setUnreadMessageCount,
   unreadMessagesByUserId,
 }: ChatListViewProps) {
   const { t } = useI18n();
@@ -148,7 +146,6 @@ export function ChatListView({
                 key={profile.user_id}
                 onClick={() => {
                   setSelectedChatUserId(profile.user_id);
-                  setUnreadMessageCount(0);
                 }}
                 onContextMenu={(event) => openChatContextMenu(event, profile)}
                 type="button"

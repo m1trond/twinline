@@ -3,7 +3,6 @@ import type { MessageRow } from "@/shared/types";
 
 export function useMessageSelectionState() {
   const [highlightedMessageId, setHighlightedMessageId] = useState<number | null>(null);
-  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [replyTarget, setReplyTarget] = useState<MessageRow | null>(null);
   const [editingMessage, setEditingMessage] = useState<MessageRow | null>(null);
   const [isPinnedMessagesViewOpen, setIsPinnedMessagesViewOpen] = useState(false);
@@ -21,8 +20,6 @@ export function useMessageSelectionState() {
   return {
     highlightedMessageId,
     setHighlightedMessageId,
-    unreadMessageCount,
-    setUnreadMessageCount,
     replyTarget,
     setReplyTarget,
     editingMessage,

@@ -31,9 +31,6 @@ type UseMessagesRealtimeStateParams = {
   setErrorMessage: (message: string) => void;
   setIsLoadingMessages: (isLoading: boolean) => void;
   setSelectedChatUserId: (userId: string | null) => void;
-  setUnreadMessageCount: (
-    value: number | ((currentCount: number) => number),
-  ) => void;
   user: User | null;
 };
 
@@ -163,7 +160,6 @@ export function useMessagesRealtimeState({
   setErrorMessage,
   setIsLoadingMessages,
   setSelectedChatUserId,
-  setUnreadMessageCount,
   user,
 }: UseMessagesRealtimeStateParams) {
   const [messages, setMessages] = useState<MessageRow[]>(readInitialStoredMessages);
@@ -347,11 +343,7 @@ export function useMessagesRealtimeState({
         const isDialogVisible =
           document.visibilityState === "visible" &&
           activeViewRef.current === "messages" &&
-          selectedChatUserIdRef.current !== null;
-
-        if (!isDialogVisible) {
-          setUnreadMessageCount((currentCount) => currentCount + 1);
-        }
+          selectedChatUserIdRef.current === newMessage.user_id;
 
         if (
           !isDialogVisible &&
@@ -391,7 +383,6 @@ export function useMessagesRealtimeState({
                 setSelectedChatUserId(newMessage.user_id);
               }
 
-              setUnreadMessageCount(0);
               notification.close();
             };
           });
@@ -612,7 +603,6 @@ export function useMessagesRealtimeState({
     setErrorMessage,
     setIsLoadingMessages,
     setSelectedChatUserId,
-    setUnreadMessageCount,
     user,
   ]);
 
