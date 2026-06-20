@@ -61,13 +61,13 @@ import { useChatFoldersState } from "@/features/messages/hooks/useChatFoldersSta
 import { useFavoritesState } from "@/features/messages/hooks/useFavoritesState";
 import { useForwardMessagesState } from "@/features/messages/hooks/useForwardMessagesState";
 import { useMessageComposerState } from "@/features/messages/hooks/useMessageComposerState";
+import { useMessageDerivedState } from "@/features/messages/hooks/useMessageDerivedState";
 import { useMessageReceiptEffects } from "@/features/messages/hooks/useMessageReceiptEffects";
 import { useMessagesRealtimeState } from "@/features/messages/hooks/useMessagesRealtimeState";
 import { useMessageSelectionState } from "@/features/messages/hooks/useMessageSelectionState";
 import { useMessageStateRealtime } from "@/features/messages/hooks/useMessageStateRealtime";
 import { useMessageViewportEffects } from "@/features/messages/hooks/useMessageViewportEffects";
 import { useStoredMessageState } from "@/features/messages/hooks/useStoredMessageState";
-import { useTypingClock } from "@/features/messages/hooks/useTypingClock";
 import { useNavigationState } from "@/features/navigation/useNavigationState";
 import { MusicView } from "@/features/music/components/MusicView";
 import { AvatarDeleteDialog } from "@/features/profile/components/AvatarDeleteDialog";
@@ -115,7 +115,6 @@ import type {
   MessageRow,
   MessageTypingStateRow,
   MutedProfileUntil,
-  PinMessagePayload,
   PinnedMessageIdsByChat,
   ProfileRow,
   ReplyMessagePayload,
@@ -154,10 +153,7 @@ import {
   getBlockMessagePayload,
   getMessageAttachmentCaption,
   getMessageAudioUrl,
-  getPinMessagePayload,
   getReadableMessageText,
-  getReceiptMessagePayload,
-  getTypingMessagePayload,
   isCaptionEditableMessage,
   isDirectMessageForUser,
   isMessageBetweenUsers,
@@ -1157,273 +1153,24 @@ export default function Home() {
     });
   }
 
-  const sharedPinnedMessageIds = useMemo(() => {
-    const legacyPinnedIds = new Map<number, PinMessagePayload["action"]>();
-    const tablePinnedIds = new Map<number, boolean>();
-
-    for (const message of messages) {
-      const pinPayload = getPinMessagePayload(message.text);
-
-      if (pinPayload) {
-        legacyPinnedIds.set(pinPayload.messageId, pinPayload.action);
-      }
-    }
-
-    for (const pin of messagePins) {
-      tablePinnedIds.set(pin.message_id, pin.is_pinned);
-    }
-
-    for (const [messageId, action] of legacyPinnedIds) {
-      if (!tablePinnedIds.has(messageId)) {
-        tablePinnedIds.set(messageId, action === "pin");
-      }
-    }
-
-    return new Set(
-      Array.from(tablePinnedIds.entries())
-        .filter(([, isPinned]) => isPinned)
-        .map(([messageId]) => messageId),
-    );
-  }, [messagePins, messages]);
-  const sharedPinnedMessageIdSet = useMemo(() => {
-    return new Set(sharedPinnedMessageIds);
-  }, [sharedPinnedMessageIds]);
-  const messageReceiptStatuses = useMemo(() => {
-    const statuses = new Map<number, "delivered" | "read">();
-
-    for (const receipt of messageReceipts) {
-      if (
-        receipt.recipient_id !== user?.id ||
-        receipt.status === "played"
-      ) {
-        continue;
-      }
-
-      const currentStatus = statuses.get(receipt.message_id);
-
-      if (receipt.status === "read" || currentStatus !== "read") {
-        statuses.set(receipt.message_id, receipt.status);
-      }
-    }
-
-    for (const message of messages) {
-      const receiptPayload = getReceiptMessagePayload(message.text);
-
-      if (
-        !receiptPayload ||
-        receiptPayload.status === "played" ||
-        message.user_id === user?.id
-      ) {
-        continue;
-      }
-
-      const currentStatus = statuses.get(receiptPayload.messageId);
-
-      if (receiptPayload.status === "read" || currentStatus !== "read") {
-        statuses.set(receiptPayload.messageId, receiptPayload.status);
-      }
-    }
-
-    return statuses;
-  }, [messageReceipts, messages, user?.id]);
-  const sentReceiptMessageIdSets = useMemo(() => {
-    const deliveredMessageIds = new Set<number>();
-    const playedMessageIds = new Set<number>();
-    const readMessageIds = new Set<number>();
-
-    if (!user) {
-      return { deliveredMessageIds, playedMessageIds, readMessageIds };
-    }
-
-    for (const receipt of messageReceipts) {
-      if (receipt.sender_id !== user.id) {
-        continue;
-      }
-
-      if (receipt.status === "delivered" || receipt.status === "read") {
-        deliveredMessageIds.add(receipt.message_id);
-      }
-
-      if (receipt.status === "played") {
-        playedMessageIds.add(receipt.message_id);
-      }
-
-      if (receipt.status === "read") {
-        readMessageIds.add(receipt.message_id);
-      }
-    }
-
-    for (const message of messages) {
-      const receiptPayload = getReceiptMessagePayload(message.text);
-
-      if (!receiptPayload || message.user_id !== user.id) {
-        continue;
-      }
-
-      if (receiptPayload.status === "delivered" || receiptPayload.status === "read") {
-        deliveredMessageIds.add(receiptPayload.messageId);
-      }
-
-      if (receiptPayload.status === "played") {
-        playedMessageIds.add(receiptPayload.messageId);
-      }
-
-      if (receiptPayload.status === "read") {
-        readMessageIds.add(receiptPayload.messageId);
-      }
-    }
-
-    return { deliveredMessageIds, playedMessageIds, readMessageIds };
-  }, [messageReceipts, messages, user]);
-  const playedVoiceMessageIds = useMemo(() => {
-    if (!user) {
-      return new Set<number>();
-    }
-
-    const playedMessageIds = new Set<number>();
-
-    for (const receipt of messageReceipts) {
-      if (receipt.status === "played") {
-        playedMessageIds.add(receipt.message_id);
-      }
-    }
-
-    for (const message of messages) {
-      const receiptPayload = getReceiptMessagePayload(message.text);
-
-      if (receiptPayload?.status === "played") {
-        playedMessageIds.add(receiptPayload.messageId);
-      }
-    }
-
-    return playedMessageIds;
-  }, [messageReceipts, messages, user]);
-  const incomingUnreadMessageIds = useMemo(() => {
-    if (!user) {
-      return new Set<number>();
-    }
-
-    const readMessageIds = new Set<number>();
-
-    for (const receipt of messageReceipts) {
-      if (receipt.sender_id === user.id && receipt.status === "read") {
-        readMessageIds.add(receipt.message_id);
-      }
-    }
-
-    for (const message of messages) {
-      const receiptPayload = getReceiptMessagePayload(message.text);
-
-      if (
-        message.user_id === user.id &&
-        receiptPayload?.status === "read"
-      ) {
-        readMessageIds.add(receiptPayload.messageId);
-      }
-    }
-
-    return new Set(
-      messages
-        .filter((message) => {
-          return (
-            message.id > 0 &&
-            message.user_id &&
-            isDirectMessageForUser(message, user.id) &&
-            message.user_id !== user.id &&
-            !hiddenMessageIdSet.has(message.id) &&
-            !isServiceMessage(message.text) &&
-            !readMessageIds.has(message.id)
-          );
-        })
-        .map((message) => message.id),
-    );
-  }, [hiddenMessageIdSet, messageReceipts, messages, user]);
-  const unreadMessageCountFromReceipts = incomingUnreadMessageIds.size;
-  const totalUnreadMessageCount = unreadMessageCountFromReceipts;
-  const friendTypingUntilFromMessages = useMemo(() => {
-    if (!user || !selectedChatUserId) {
-      return 0;
-    }
-
-    const latestFriendRealMessageCreatedAt = messages.reduce((latestCreatedAt, message) => {
-      if (
-        message.user_id !== selectedChatUserId ||
-        message.recipient_id !== user.id ||
-        isServiceMessage(message.text)
-      ) {
-        return latestCreatedAt;
-      }
-
-      return Math.max(latestCreatedAt, new Date(message.created_at).getTime());
-    }, 0);
-    const tableTypingState = messageTypingStates
-      .filter((typingState) => {
-        return (
-          typingState.sender_id === selectedChatUserId &&
-          typingState.recipient_id === user.id
-        );
-      })
-      .sort(
-        (firstState, secondState) =>
-          new Date(secondState.event_at).getTime() -
-          new Date(firstState.event_at).getTime(),
-      )[0];
-
-    if (tableTypingState) {
-      const typingEventAt = new Date(tableTypingState.event_at).getTime();
-      const typingExpiresAt = new Date(tableTypingState.expires_at).getTime();
-
-      if (
-        tableTypingState.action === "start" &&
-        typingExpiresAt > Date.now() &&
-        typingEventAt > latestFriendRealMessageCreatedAt
-      ) {
-        return typingExpiresAt;
-      }
-    }
-
-    let latestFriendTypingCreatedAt = 0;
-    let latestFriendTypingExpiresAt = 0;
-
-    for (const message of messages) {
-      if (
-        message.user_id !== selectedChatUserId ||
-        message.recipient_id !== user.id
-      ) {
-        continue;
-      }
-
-      const createdAt = new Date(message.created_at).getTime();
-      const typingPayload = getTypingMessagePayload(message.text);
-
-      if (typingPayload) {
-        if (createdAt >= latestFriendTypingCreatedAt) {
-          latestFriendTypingCreatedAt = createdAt;
-          latestFriendTypingExpiresAt =
-            typingPayload.action === "stop"
-              ? 0
-              : createdAt + 4500;
-        }
-
-        continue;
-      }
-
-      if (!isServiceMessage(message.text)) {
-        continue;
-      }
-    }
-
-    if (
-      !latestFriendTypingExpiresAt ||
-      latestFriendTypingCreatedAt <= latestFriendRealMessageCreatedAt
-    ) {
-      return 0;
-    }
-
-    return latestFriendTypingExpiresAt;
-  }, [messageTypingStates, messages, selectedChatUserId, user]);
-  const typingNow = useTypingClock(friendTypingUntilFromMessages);
-  const isFriendTyping = friendTypingUntilFromMessages > typingNow;
+  const {
+    incomingUnreadMessageIds,
+    isFriendTyping,
+    messageReceiptStatuses,
+    playedVoiceMessageIds,
+    sentReceiptMessageIdSets,
+    sharedPinnedMessageIds,
+    sharedPinnedMessageIdSet,
+    totalUnreadMessageCount,
+  } = useMessageDerivedState({
+    hiddenMessageIdSet,
+    messagePins,
+    messageReceipts,
+    messages,
+    messageTypingStates,
+    selectedChatUserId,
+    userId: user?.id,
+  });
   const blockState = useMemo(() => {
     const blockedByMeIds = new Set<string>();
     const blockedMeIds = new Set<string>();
@@ -3710,7 +3457,7 @@ export default function Home() {
       return;
     }
 
-    const action: PinMessagePayload["action"] = isSharedPinned ? "unpin" : "pin";
+    const action: "pin" | "unpin" = isSharedPinned ? "unpin" : "pin";
     const optimisticPin: MessagePinRow = {
       created_at: new Date().toISOString(),
       is_pinned: action === "pin",
