@@ -62,6 +62,7 @@ import { useFavoritesState } from "@/features/messages/hooks/useFavoritesState";
 import { useForwardMessagesState } from "@/features/messages/hooks/useForwardMessagesState";
 import { useMessageComposerState } from "@/features/messages/hooks/useMessageComposerState";
 import { useMessageDerivedState } from "@/features/messages/hooks/useMessageDerivedState";
+import { useMessagePinActions } from "@/features/messages/hooks/useMessagePinActions";
 import { useMessageReceiptEffects } from "@/features/messages/hooks/useMessageReceiptEffects";
 import { useMessagesRealtimeState } from "@/features/messages/hooks/useMessagesRealtimeState";
 import { useMessageSelectionState } from "@/features/messages/hooks/useMessageSelectionState";
@@ -101,14 +102,12 @@ import {
 } from "@/shared/constants";
 import {
   fetchUsernameOwner,
-  upsertMessagePin,
 } from "@/features/messages/queries";
 import type {
   ActiveView,
   CallSignalType,
   CallStatus,
   FavoriteItem,
-  MessagePinRow,
   MessageRow,
   MutedProfileUntil,
   PinnedMessageIdsByChat,
@@ -142,7 +141,6 @@ import {
 import {
   createBlockMessageText,
   createFileMessageText,
-  createPinMessageText,
   createReplyMessageText,
   getBlockMessagePayload,
   getMessageAttachmentCaption,
@@ -228,20 +226,6 @@ function parseSyncedSettings(value: unknown): SyncedSettings {
     isProfileSearchable:
       typeof settings.isProfileSearchable === "boolean" ? settings.isProfileSearchable : undefined,
   };
-}
-
-function mergeMessagePins(currentRows: MessagePinRow[], incomingRows: MessagePinRow[]) {
-  const rowsByKey = new Map<string, MessagePinRow>();
-
-  for (const row of currentRows) {
-    rowsByKey.set(`${row.message_id}:${row.pinner_id}:${row.recipient_id}`, row);
-  }
-
-  for (const row of incomingRows) {
-    rowsByKey.set(`${row.message_id}:${row.pinner_id}:${row.recipient_id}`, row);
-  }
-
-  return Array.from(rowsByKey.values());
 }
 
 export default function Home() {
@@ -1179,6 +1163,33 @@ export default function Home() {
   const activePinnedMessages = useMemo(() => {
     return activeDialogMessages.filter((message) => activePinnedMessageIdSet.has(message.id));
   }, [activeDialogMessages, activePinnedMessageIdSet]);
+  const {
+    confirmPinnedMessage,
+    confirmUnpinPinnedMessage,
+    removeLocalPinnedMessageId,
+    requestPinnedMessage,
+    requestUnpinPinnedMessage,
+    unpinAllActivePinnedMessages,
+  } = useMessagePinActions({
+    activePinnedMessageIdSet,
+    activePinnedMessages,
+    broadcastPin,
+    messagePinTarget,
+    pinnedMessageIdsByChat,
+    savePinnedMessageIdsByChat,
+    selectedChatUserId,
+    sendLegacyServiceMessage: sendServiceMessage,
+    setErrorMessage,
+    setIsPinnedMessagesViewOpen,
+    setIsUnpinAllDialogOpen,
+    setMessageContextMenu,
+    setMessagePins,
+    setMessagePinTarget,
+    setShouldPinForBoth,
+    sharedPinnedMessageIds,
+    shouldPinForBoth,
+    user,
+  });
 
   const visibleDialogMessages = isPinnedMessagesViewOpen
     ? activePinnedMessages
@@ -3221,201 +3232,6 @@ export default function Home() {
     setMessageContextMenu(null);
     setErrorMessage("");
     focusMessageInput();
-  }
-
-  function requestPinnedMessage(message: MessageRow) {
-    setMessagePinTarget(message);
-    setShouldPinForBoth(false);
-    setMessageContextMenu(null);
-    setErrorMessage("");
-  }
-
-  function removeLocalPinnedMessageId(messageId: number, chatUserId = selectedChatUserId) {
-    if (!user || !chatUserId) {
-      return;
-    }
-
-    const currentPinnedIds = pinnedMessageIdsByChat[chatUserId] ?? [];
-
-    if (!currentPinnedIds.includes(messageId)) {
-      return;
-    }
-
-    const nextPinnedMessageIdsByChat = {
-      ...pinnedMessageIdsByChat,
-      [chatUserId]: currentPinnedIds.filter((pinnedMessageId) => pinnedMessageId !== messageId),
-    };
-
-    savePinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
-  }
-
-  function requestUnpinPinnedMessage(message: MessageRow) {
-    setMessagePinTarget(message);
-    setShouldPinForBoth(sharedPinnedMessageIds.has(message.id));
-    setMessageContextMenu(null);
-    setErrorMessage("");
-  }
-
-  async function confirmUnpinPinnedMessage() {
-    if (!messagePinTarget) {
-      return;
-    }
-
-    const wasSharedPinned = sharedPinnedMessageIds.has(messagePinTarget.id);
-    const wasLocalPinned =
-      selectedChatUserId !== null &&
-      (pinnedMessageIdsByChat[selectedChatUserId] ?? []).includes(messagePinTarget.id);
-
-    if (wasLocalPinned && user && selectedChatUserId) {
-      const nextPinnedMessageIdsByChat = {
-        ...pinnedMessageIdsByChat,
-        [selectedChatUserId]: (pinnedMessageIdsByChat[selectedChatUserId] ?? []).filter(
-          (messageId) => messageId !== messagePinTarget.id,
-        ),
-      };
-
-      savePinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
-    }
-
-    if (wasSharedPinned) {
-      setShouldPinForBoth(true);
-      await confirmPinnedMessage();
-      return;
-    }
-
-    setMessagePinTarget(null);
-    setErrorMessage("");
-  }
-
-  async function confirmPinnedMessage() {
-    if (!messagePinTarget) {
-      return;
-    }
-
-    const isSharedPinned = sharedPinnedMessageIds.has(messagePinTarget.id);
-    const isPinned = activePinnedMessageIdSet.has(messagePinTarget.id);
-
-    if (!shouldPinForBoth) {
-      if (!user || !selectedChatUserId) {
-        setErrorMessage("Сначала открой нужный чат.");
-        return;
-      }
-
-      const currentPinnedIds = pinnedMessageIdsByChat[selectedChatUserId] ?? [];
-      const nextPinnedIds = isPinned
-        ? currentPinnedIds.filter((messageId) => messageId !== messagePinTarget.id)
-        : [...currentPinnedIds, messagePinTarget.id];
-      const nextPinnedMessageIdsByChat = {
-        ...pinnedMessageIdsByChat,
-        [selectedChatUserId]: Array.from(new Set(nextPinnedIds)),
-      };
-
-      savePinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
-      setMessagePinTarget(null);
-      setErrorMessage("");
-      return;
-    }
-
-    if (!user) {
-      setErrorMessage("Сначала войди в аккаунт.");
-      return;
-    }
-
-    if (!selectedChatUserId) {
-      setErrorMessage("Сначала открой нужный чат.");
-      return;
-    }
-
-    const action: "pin" | "unpin" = isSharedPinned ? "unpin" : "pin";
-    const optimisticPin: MessagePinRow = {
-      created_at: new Date().toISOString(),
-      is_pinned: action === "pin",
-      message_id: messagePinTarget.id,
-      pinner_id: user.id,
-      recipient_id: selectedChatUserId,
-      updated_at: new Date().toISOString(),
-    };
-
-    setMessagePinTarget(null);
-    setMessagePins((currentRows) => mergeMessagePins(currentRows, [optimisticPin]));
-    broadcastPin(optimisticPin);
-
-    const { data, error } = await upsertMessagePin(
-      messagePinTarget.id,
-      user.id,
-      selectedChatUserId,
-      action === "pin",
-    );
-
-    if (error || !data) {
-      const fallbackText = createPinMessageText(messagePinTarget.id, action);
-      void sendServiceMessage(fallbackText, selectedChatUserId);
-      setErrorMessage("Не получилось сохранить закрепление в новой таблице. Использовал совместимый режим.");
-      return;
-    }
-
-    setMessagePins((currentRows) => mergeMessagePins(currentRows, [data]));
-    broadcastPin(data);
-    setErrorMessage("");
-  }
-
-  async function unpinAllActivePinnedMessages() {
-    if (!user || !selectedChatUserId || activePinnedMessages.length === 0) {
-      return;
-    }
-
-    setIsUnpinAllDialogOpen(false);
-
-    const previousPinnedMessageIdsByChat = pinnedMessageIdsByChat;
-    const sharedPinnedIds = activePinnedMessages
-      .filter((message) => sharedPinnedMessageIds.has(message.id))
-      .map((message) => message.id);
-    const nextPinnedMessageIdsByChat = {
-      ...pinnedMessageIdsByChat,
-      [selectedChatUserId]: [],
-    };
-
-    savePinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
-
-    if (sharedPinnedIds.length === 0) {
-      setIsPinnedMessagesViewOpen(false);
-      setErrorMessage("");
-      return;
-    }
-
-    const optimisticPins = sharedPinnedIds.map((messageId) => ({
-      created_at: new Date().toISOString(),
-      is_pinned: false,
-      message_id: messageId,
-      pinner_id: user.id,
-      recipient_id: selectedChatUserId,
-      updated_at: new Date().toISOString(),
-    }));
-
-    setMessagePins((currentRows) => mergeMessagePins(currentRows, optimisticPins));
-    optimisticPins.forEach((pin) => broadcastPin(pin));
-
-    const pinResponses = await Promise.all(
-      sharedPinnedIds.map((messageId) =>
-        upsertMessagePin(messageId, user.id, selectedChatUserId, false),
-      ),
-    );
-    const failedResponse = pinResponses.find((response) => response.error || !response.data);
-
-    if (failedResponse) {
-      savePinnedMessageIdsByChat(previousPinnedMessageIdsByChat);
-      setErrorMessage("Не получилось открепить общие закрепы.");
-      return;
-    }
-
-    const savedPins = pinResponses
-      .map((response) => response.data)
-      .filter((pin): pin is MessagePinRow => Boolean(pin));
-
-    setMessagePins((currentRows) => mergeMessagePins(currentRows, savedPins));
-    savedPins.forEach((pin) => broadcastPin(pin));
-    setIsPinnedMessagesViewOpen(false);
-    setErrorMessage("");
   }
 
   function toggleSelectedMessage(message: MessageRow) {
