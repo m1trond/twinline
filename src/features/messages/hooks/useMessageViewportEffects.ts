@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import type { RefObject } from "react";
 import type { ActiveView } from "@/shared/types";
 
@@ -16,27 +16,31 @@ type MessageViewportEffectsParams = {
   selectedChatUserId: string | null;
 };
 
+type ScrollIntent = "open-chat" | "own-message" | "favorites";
+
+function getMaxScrollTop(messagesList: HTMLDivElement) {
+  return Math.max(0, messagesList.scrollHeight - messagesList.clientHeight);
+}
+
+function isNearBottom(messagesList: HTMLDivElement) {
+  return getMaxScrollTop(messagesList) - messagesList.scrollTop <= 12;
+}
+
 function scrollMessagesListToBottom(
   messagesListRef: RefObject<HTMLDivElement | null>,
-  bottomAnchorRef?: RefObject<HTMLDivElement | null>,
+  bottomAnchorRef: RefObject<HTMLDivElement | null>,
 ) {
-  const bottomAnchor = bottomAnchorRef?.current;
-
-  if (bottomAnchor) {
-    bottomAnchor.scrollIntoView({ block: "end", behavior: "auto" });
-    return;
-  }
-
   const messagesList = messagesListRef.current;
 
   if (!messagesList) {
-    return;
+    return false;
   }
 
-  messagesList.scrollTop = Math.max(
-    0,
-    messagesList.scrollHeight - messagesList.clientHeight,
-  );
+  messagesList.scrollTop = getMaxScrollTop(messagesList);
+  bottomAnchorRef.current?.scrollIntoView({ block: "end", behavior: "auto" });
+  messagesList.scrollTop = getMaxScrollTop(messagesList);
+
+  return isNearBottom(messagesList);
 }
 
 export function useMessageViewportEffects({
@@ -52,26 +56,82 @@ export function useMessageViewportEffects({
   messagesListRef,
   selectedChatUserId,
 }: MessageViewportEffectsParams) {
+  const frameIdsRef = useRef<number[]>([]);
   const lastOpenedChatUserIdRef = useRef<string | null>(null);
   const lastOwnDialogMessageKeyRef = useRef("");
-  const openedChatStopTimeoutRef = useRef<number | null>(null);
-  const shouldOpenChatAtBottomRef = useRef(false);
+  const releaseIntentTimeoutRef = useRef<number | null>(null);
+  const scrollIntentRef = useRef<ScrollIntent | null>(null);
 
-  function clearOpenedChatStopTimeout() {
-    if (openedChatStopTimeoutRef.current === null) {
+  const cancelScheduledScroll = useCallback(() => {
+    for (const frameId of frameIdsRef.current) {
+      window.cancelAnimationFrame(frameId);
+    }
+
+    frameIdsRef.current = [];
+  }, []);
+
+  const clearReleaseIntentTimeout = useCallback(() => {
+    if (releaseIntentTimeoutRef.current === null) {
       return;
     }
 
-    window.clearTimeout(openedChatStopTimeoutRef.current);
-    openedChatStopTimeoutRef.current = null;
-  }
+    window.clearTimeout(releaseIntentTimeoutRef.current);
+    releaseIntentTimeoutRef.current = null;
+  }, []);
+
+  const clearScrollIntent = useCallback(() => {
+    cancelScheduledScroll();
+    clearReleaseIntentTimeout();
+    scrollIntentRef.current = null;
+  }, [cancelScheduledScroll, clearReleaseIntentTimeout]);
+
+  const scheduleBottomScroll = useCallback((intent: ScrollIntent, options?: { holdMs?: number; passes?: number }) => {
+    cancelScheduledScroll();
+    clearReleaseIntentTimeout();
+    scrollIntentRef.current = intent;
+
+    const passes = options?.passes ?? 5;
+
+    function run(passIndex: number) {
+      if (scrollIntentRef.current !== intent) {
+        return;
+      }
+
+      scrollMessagesListToBottom(messagesListRef, bottomAnchorRef);
+
+      if (passIndex >= passes) {
+        if (options?.holdMs) {
+          releaseIntentTimeoutRef.current = window.setTimeout(() => {
+            if (scrollIntentRef.current === intent) {
+              scrollIntentRef.current = null;
+            }
+
+            releaseIntentTimeoutRef.current = null;
+          }, options.holdMs);
+        } else {
+          scrollIntentRef.current = null;
+        }
+
+        return;
+      }
+
+      const frameId = window.requestAnimationFrame(() => run(passIndex + 1));
+      frameIdsRef.current.push(frameId);
+    }
+
+    run(0);
+  }, [
+    bottomAnchorRef,
+    cancelScheduledScroll,
+    clearReleaseIntentTimeout,
+    messagesListRef,
+  ]);
 
   useLayoutEffect(() => {
     if (activeView !== "messages" || selectedChatUserId === null) {
       lastOpenedChatUserIdRef.current = null;
       lastOwnDialogMessageKeyRef.current = "";
-      shouldOpenChatAtBottomRef.current = false;
-      clearOpenedChatStopTimeout();
+      clearScrollIntent();
       return;
     }
 
@@ -81,121 +141,35 @@ export function useMessageViewportEffects({
 
     lastOpenedChatUserIdRef.current = selectedChatUserId;
     lastOwnDialogMessageKeyRef.current = lastOwnDialogMessageKey;
-    shouldOpenChatAtBottomRef.current = true;
-    clearOpenedChatStopTimeout();
-    scrollMessagesListToBottom(messagesListRef, bottomAnchorRef);
-  }, [activeView, bottomAnchorRef, lastOwnDialogMessageKey, messagesListRef, selectedChatUserId]);
-
-  useLayoutEffect(() => {
-    if (activeView !== "messages" || selectedChatUserId === null) {
-      return;
-    }
-
-    const messagesList = messagesListRef.current;
-
-    if (!messagesList) {
-      return;
-    }
-
-    const stopKeepingOpenedChatAtBottom = () => {
-      shouldOpenChatAtBottomRef.current = false;
-      clearOpenedChatStopTimeout();
-    };
-
-    messagesList.addEventListener("wheel", stopKeepingOpenedChatAtBottom, { passive: true });
-    messagesList.addEventListener("touchmove", stopKeepingOpenedChatAtBottom, { passive: true });
-    messagesList.addEventListener("pointerdown", stopKeepingOpenedChatAtBottom);
-    messagesList.addEventListener("keydown", stopKeepingOpenedChatAtBottom);
-
-    return () => {
-      messagesList.removeEventListener("wheel", stopKeepingOpenedChatAtBottom);
-      messagesList.removeEventListener("touchmove", stopKeepingOpenedChatAtBottom);
-      messagesList.removeEventListener("pointerdown", stopKeepingOpenedChatAtBottom);
-      messagesList.removeEventListener("keydown", stopKeepingOpenedChatAtBottom);
-    };
-  }, [activeView, messagesListRef, selectedChatUserId]);
-
-  useLayoutEffect(() => {
-    if (activeView !== "messages" || selectedChatUserId === null) {
-      return;
-    }
-
-    const messagesList = messagesListRef.current;
-
-    if (!messagesList || typeof ResizeObserver === "undefined") {
-      return;
-    }
-
-    const observer = new ResizeObserver(() => {
-      if (shouldOpenChatAtBottomRef.current) {
-        scrollMessagesListToBottom(messagesListRef, bottomAnchorRef);
-      }
-    });
-
-    observer.observe(messagesList);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [activeView, bottomAnchorRef, messagesListRef, selectedChatUserId]);
+    scrollIntentRef.current = "open-chat";
+    scheduleBottomScroll("open-chat", { holdMs: 700, passes: 8 });
+  }, [
+    activeView,
+    clearScrollIntent,
+    lastOwnDialogMessageKey,
+    scheduleBottomScroll,
+    selectedChatUserId,
+  ]);
 
   useLayoutEffect(() => {
     if (
       activeView !== "messages" ||
       selectedChatUserId === null ||
       isLoadingMessages ||
-      !shouldOpenChatAtBottomRef.current
+      scrollIntentRef.current !== "open-chat"
     ) {
       return;
     }
 
-    const frameIds: number[] = [];
-
-    function scroll() {
-      if (shouldOpenChatAtBottomRef.current) {
-        scrollMessagesListToBottom(messagesListRef, bottomAnchorRef);
-      }
-    }
-
-    clearOpenedChatStopTimeout();
-    scroll();
-    frameIds.push(window.requestAnimationFrame(scroll));
-    frameIds.push(
-      window.requestAnimationFrame(() => {
-        frameIds.push(
-          window.requestAnimationFrame(() => {
-            scroll();
-            clearOpenedChatStopTimeout();
-            openedChatStopTimeoutRef.current = window.setTimeout(() => {
-              shouldOpenChatAtBottomRef.current = false;
-              openedChatStopTimeoutRef.current = null;
-            }, 900);
-          }),
-        );
-      }),
-    );
-
-    return () => {
-      frameIds.forEach((frameId) => window.cancelAnimationFrame(frameId));
-    };
+    scheduleBottomScroll("open-chat", { holdMs: 700, passes: 8 });
   }, [
     activeDialogMessagesCount,
     activeDialogMessagesKey,
     activeView,
-    bottomAnchorRef,
     isLoadingMessages,
-    messagesListRef,
+    scheduleBottomScroll,
     selectedChatUserId,
   ]);
-
-  useLayoutEffect(() => {
-    if (activeView !== "messages" || selectedChatUserId === null) {
-      lastOpenedChatUserIdRef.current = null;
-      lastOwnDialogMessageKeyRef.current = "";
-      shouldOpenChatAtBottomRef.current = false;
-      clearOpenedChatStopTimeout();
-    }
-  }, [activeView, selectedChatUserId]);
 
   useLayoutEffect(() => {
     if (
@@ -213,48 +187,78 @@ export function useMessageViewportEffects({
       return;
     }
 
-    scrollMessagesListToBottom(messagesListRef, bottomAnchorRef);
-    const frameIds: number[] = [];
-
-    frameIds.push(
-      window.requestAnimationFrame(() => {
-        scrollMessagesListToBottom(messagesListRef, bottomAnchorRef);
-      }),
-    );
-    frameIds.push(
-      window.requestAnimationFrame(() => {
-        frameIds.push(
-          window.requestAnimationFrame(() => {
-            scrollMessagesListToBottom(messagesListRef, bottomAnchorRef);
-          }),
-        );
-      }),
-    );
-
-    return () => {
-      frameIds.forEach((frameId) => window.cancelAnimationFrame(frameId));
-    };
-  }, [activeView, bottomAnchorRef, lastOwnDialogMessageKey, messagesListRef, selectedChatUserId]);
+    scheduleBottomScroll("own-message", { passes: 6 });
+  }, [activeView, lastOwnDialogMessageKey, scheduleBottomScroll, selectedChatUserId]);
 
   useLayoutEffect(() => {
     if (activeView !== "favorites") {
       return;
     }
 
-    scrollMessagesListToBottom(messagesListRef, bottomAnchorRef);
-  }, [activeView, bottomAnchorRef, favoriteItemsCount, favoriteItemsKey, messagesListRef]);
+    scheduleBottomScroll("favorites", { passes: 4 });
+  }, [activeView, favoriteItemsCount, favoriteItemsKey, scheduleBottomScroll]);
+
+  useLayoutEffect(() => {
+    if (activeView !== "messages" || selectedChatUserId === null) {
+      return;
+    }
+
+    const messagesList = messagesListRef.current;
+
+    if (!messagesList) {
+      return;
+    }
+
+    function cancelOpenScrollIntent() {
+      if (scrollIntentRef.current === "open-chat") {
+        clearScrollIntent();
+      }
+    }
+
+    messagesList.addEventListener("wheel", cancelOpenScrollIntent, { passive: true });
+    messagesList.addEventListener("touchmove", cancelOpenScrollIntent, { passive: true });
+    messagesList.addEventListener("pointerdown", cancelOpenScrollIntent);
+    messagesList.addEventListener("keydown", cancelOpenScrollIntent);
+
+    return () => {
+      messagesList.removeEventListener("wheel", cancelOpenScrollIntent);
+      messagesList.removeEventListener("touchmove", cancelOpenScrollIntent);
+      messagesList.removeEventListener("pointerdown", cancelOpenScrollIntent);
+      messagesList.removeEventListener("keydown", cancelOpenScrollIntent);
+    };
+  }, [activeView, clearScrollIntent, messagesListRef, selectedChatUserId]);
+
+  useLayoutEffect(() => {
+    const messagesList = messagesListRef.current;
+
+    if (!messagesList || typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      if (scrollIntentRef.current === "open-chat") {
+        scheduleBottomScroll("open-chat", { holdMs: 700, passes: 4 });
+      }
+    });
+
+    observer.observe(messagesList);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [messagesListRef, scheduleBottomScroll]);
 
   useEffect(() => {
     const timeoutRef = highlightedMessageTimeoutRef;
 
     return () => {
+      clearScrollIntent();
+
       const highlightedMessageTimeoutId = timeoutRef.current;
 
       if (highlightedMessageTimeoutId !== null) {
         window.clearTimeout(highlightedMessageTimeoutId);
       }
-
-      clearOpenedChatStopTimeout();
     };
-  }, [highlightedMessageTimeoutRef]);
+  }, [clearScrollIntent, highlightedMessageTimeoutRef]);
 }
