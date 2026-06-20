@@ -12,6 +12,10 @@ type UseMessageReceiptEffectsParams = {
     message: MessageRow,
     status: MessageReceiptStatus,
   ) => void | Promise<void>;
+  sendMessageReceipts: (
+    messages: MessageRow[],
+    status: MessageReceiptStatus,
+  ) => void | Promise<void>;
   sentReceiptMessageIdSets: {
     deliveredMessageIds: Set<number>;
     playedMessageIds: Set<number>;
@@ -27,6 +31,7 @@ export function useMessageReceiptEffects({
   messagesListRef,
   selectedChatUserId,
   sendMessageReceipt,
+  sendMessageReceipts,
   sentReceiptMessageIdSets,
   userId,
   visibleMessages,
@@ -83,6 +88,8 @@ export function useMessageReceiptEffects({
     );
 
     function markMessagesAsRead(messagesToRead: MessageRow[]) {
+      const unreadMessages = [];
+
       for (const message of messagesToRead) {
         if (
           sentReceiptMessageIdSets.readMessageIds.has(message.id) ||
@@ -92,7 +99,11 @@ export function useMessageReceiptEffects({
         }
 
         sentReadReceiptIdsRef.current.add(message.id);
-        void sendMessageReceipt(message, "read");
+        unreadMessages.push(message);
+      }
+
+      if (unreadMessages.length > 0) {
+        void sendMessageReceipts(unreadMessages, "read");
       }
     }
 
@@ -179,6 +190,7 @@ export function useMessageReceiptEffects({
     messagesListRef,
     selectedChatUserId,
     sendMessageReceipt,
+    sendMessageReceipts,
     sentReceiptMessageIdSets,
     userId,
     visibleMessages,

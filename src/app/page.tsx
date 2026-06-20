@@ -1043,7 +1043,7 @@ export default function Home() {
     setIsUploadingAttachment,
     userId: user?.id,
   });
-  const { sendMessageReceipt, sendTypingState } = useMessageStateActions({
+  const { sendMessageReceipt, sendMessageReceipts, sendTypingState } = useMessageStateActions({
     activeUserName,
     broadcastReceipt,
     broadcastTypingState,
@@ -1728,6 +1728,7 @@ export default function Home() {
     messagesListRef,
     selectedChatUserId,
     sendMessageReceipt,
+    sendMessageReceipts,
     sentReceiptMessageIdSets,
     userId: user?.id,
     visibleMessages: activeDialogMessages,

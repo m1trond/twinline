@@ -72,49 +72,80 @@ export function useMessageStateActions({
   setMessageTypingStates,
   user,
 }: UseMessageStateActionsParams) {
-  const sendMessageReceipt = useCallback(
-    async (message: MessageRow, status: MessageReceiptStatus) => {
-      if (!user || !message.user_id || message.id <= 0 || message.user_id === user.id) {
+  const sendMessageReceipts = useCallback(
+    async (messages: MessageRow[], status: MessageReceiptStatus) => {
+      if (!user) {
         return;
       }
 
-      const optimisticReceipt: MessageReceiptRow = {
-        created_at: new Date().toISOString(),
-        id: -Date.now(),
-        message_id: message.id,
-        recipient_id: message.user_id,
-        sender_id: user.id,
-        status,
-      };
-
-      setMessageReceipts((currentRows) =>
-        mergeMessageReceipts(currentRows, [optimisticReceipt]),
-      );
-
-      const { data, error } = await upsertMessageReceipt(
-        message.id,
-        user.id,
-        message.user_id,
-        status,
-      );
-
-      if (error || !data) {
-        void sendLegacyServiceMessage(
-          createReceiptMessageText(message.id, status),
-          message.user_id,
+      const receiptMessages = messages.filter((message) => {
+        return (
+          message.user_id &&
+          message.id > 0 &&
+          message.user_id !== user.id
         );
+      });
+
+      if (receiptMessages.length === 0) {
         return;
       }
 
-      setMessageReceipts((currentRows) =>
-        mergeMessageReceipts(
-          currentRows.filter((receipt) => receipt.id !== optimisticReceipt.id),
-          [data],
-        ),
+      const createdAt = new Date().toISOString();
+      const createdAtTime = Date.now();
+      const optimisticReceipts = receiptMessages.map<MessageReceiptRow>(
+        (message, index) => ({
+          created_at: createdAt,
+          id: -(createdAtTime + index),
+          message_id: message.id,
+          recipient_id: message.user_id ?? "",
+          sender_id: user.id,
+          status,
+        }),
       );
-      broadcastReceipt(data);
+
+      setMessageReceipts((currentRows) =>
+        mergeMessageReceipts(currentRows, optimisticReceipts),
+      );
+
+      await Promise.all(
+        receiptMessages.map(async (message, index) => {
+          if (!message.user_id) {
+            return;
+          }
+
+          const optimisticReceipt = optimisticReceipts[index];
+          const { data, error } = await upsertMessageReceipt(
+            message.id,
+            user.id,
+            message.user_id,
+            status,
+          );
+
+          if (error || !data) {
+            void sendLegacyServiceMessage(
+              createReceiptMessageText(message.id, status),
+              message.user_id,
+            );
+            return;
+          }
+
+          setMessageReceipts((currentRows) =>
+            mergeMessageReceipts(
+              currentRows.filter((receipt) => receipt.id !== optimisticReceipt.id),
+              [data],
+            ),
+          );
+          broadcastReceipt(data);
+        }),
+      );
     },
     [broadcastReceipt, sendLegacyServiceMessage, setMessageReceipts, user],
+  );
+  const sendMessageReceipt = useCallback(
+    async (message: MessageRow, status: MessageReceiptStatus) => {
+      await sendMessageReceipts([message], status);
+    },
+    [sendMessageReceipts],
   );
 
   const sendTypingState = useCallback(
@@ -178,6 +209,7 @@ export function useMessageStateActions({
 
   return {
     sendMessageReceipt,
+    sendMessageReceipts,
     sendTypingState,
   };
 }
