@@ -1,13 +1,16 @@
 import { useEffect, useRef } from "react";
 import type { RefObject } from "react";
-import type { ActiveView, MessageRow } from "@/shared/types";
-import { createReceiptMessageText, isServiceMessage } from "@/shared/utils/messages";
+import type { ActiveView, MessageReceiptStatus, MessageRow } from "@/shared/types";
+import { isServiceMessage } from "@/shared/utils/messages";
 
 type UseMessageReceiptEffectsParams = {
   activeView: ActiveView;
   messagesListRef: RefObject<HTMLDivElement | null>;
   selectedChatUserId: string | null;
-  sendServiceMessage: (text: string, recipientId?: string | null) => void | Promise<void>;
+  sendMessageReceipt: (
+    message: MessageRow,
+    status: MessageReceiptStatus,
+  ) => void | Promise<void>;
   sentReceiptMessageIdSets: {
     deliveredMessageIds: Set<number>;
     playedMessageIds: Set<number>;
@@ -21,7 +24,7 @@ export function useMessageReceiptEffects({
   activeView,
   messagesListRef,
   selectedChatUserId,
-  sendServiceMessage,
+  sendMessageReceipt,
   sentReceiptMessageIdSets,
   userId,
   visibleMessages,
@@ -53,10 +56,7 @@ export function useMessageReceiptEffects({
         !sentDeliveryReceiptIdsRef.current.has(message.id)
       ) {
         sentDeliveryReceiptIdsRef.current.add(message.id);
-        void sendServiceMessage(
-          createReceiptMessageText(message.id, "delivered"),
-          message.user_id,
-        );
+        void sendMessageReceipt(message, "delivered");
       }
     }
 
@@ -116,7 +116,7 @@ export function useMessageReceiptEffects({
         }
 
         sentReadReceiptIdsRef.current.add(messageId);
-        void sendServiceMessage(createReceiptMessageText(messageId, "read"), message.user_id);
+        void sendMessageReceipt(message, "read");
       }
     }
 
@@ -152,7 +152,7 @@ export function useMessageReceiptEffects({
     activeView,
     messagesListRef,
     selectedChatUserId,
-    sendServiceMessage,
+    sendMessageReceipt,
     sentReceiptMessageIdSets,
     userId,
     visibleMessages,

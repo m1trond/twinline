@@ -9,6 +9,36 @@ export type MessageRow = {
   user_id: string | null;
 };
 
+export type MessageReceiptStatus = "delivered" | "played" | "read";
+
+export type MessageReceiptRow = {
+  id: number;
+  message_id: number;
+  sender_id: string;
+  recipient_id: string;
+  status: MessageReceiptStatus;
+  created_at: string;
+};
+
+export type MessageTypingAction = "start" | "stop";
+
+export type MessageTypingStateRow = {
+  action: MessageTypingAction;
+  event_at: string;
+  expires_at: string;
+  recipient_id: string;
+  sender_id: string;
+};
+
+export type MessagePinRow = {
+  created_at: string;
+  is_pinned: boolean;
+  message_id: number;
+  pinner_id: string;
+  recipient_id: string;
+  updated_at: string;
+};
+
 export type FavoriteItem = MessageRow & {
   saved_at: string;
 };
@@ -68,7 +98,7 @@ export type PinMessagePayload = {
 
 export type ReceiptMessagePayload = {
   messageId: number;
-  status: "delivered" | "played" | "read";
+  status: MessageReceiptStatus;
 };
 
 export type TypingMessagePayload = {

@@ -64,6 +64,7 @@ import { useMessageComposerState } from "@/features/messages/hooks/useMessageCom
 import { useMessageReceiptEffects } from "@/features/messages/hooks/useMessageReceiptEffects";
 import { useMessagesRealtimeState } from "@/features/messages/hooks/useMessagesRealtimeState";
 import { useMessageSelectionState } from "@/features/messages/hooks/useMessageSelectionState";
+import { useMessageStateRealtime } from "@/features/messages/hooks/useMessageStateRealtime";
 import { useMessageViewportEffects } from "@/features/messages/hooks/useMessageViewportEffects";
 import { useStoredMessageState } from "@/features/messages/hooks/useStoredMessageState";
 import { useTypingClock } from "@/features/messages/hooks/useTypingClock";
@@ -97,13 +98,22 @@ import {
   stickerMessagePrefix,
   videoMessagePrefix,
 } from "@/shared/constants";
-import { fetchUsernameOwner } from "@/features/messages/queries";
+import {
+  fetchUsernameOwner,
+  upsertMessagePin,
+  upsertMessageReceipt,
+  upsertMessageTypingState,
+} from "@/features/messages/queries";
 import type {
   ActiveView,
   CallSignalType,
   CallStatus,
   FavoriteItem,
+  MessagePinRow,
+  MessageReceiptRow,
+  MessageReceiptStatus,
   MessageRow,
+  MessageTypingStateRow,
   MutedProfileUntil,
   PinMessagePayload,
   PinnedMessageIdsByChat,
@@ -228,6 +238,54 @@ function parseSyncedSettings(value: unknown): SyncedSettings {
     isProfileSearchable:
       typeof settings.isProfileSearchable === "boolean" ? settings.isProfileSearchable : undefined,
   };
+}
+
+function mergeMessageReceipts(
+  currentRows: MessageReceiptRow[],
+  incomingRows: MessageReceiptRow[],
+) {
+  const rowsByKey = new Map<string, MessageReceiptRow>();
+
+  for (const row of currentRows) {
+    rowsByKey.set(`${row.message_id}:${row.sender_id}:${row.status}`, row);
+  }
+
+  for (const row of incomingRows) {
+    rowsByKey.set(`${row.message_id}:${row.sender_id}:${row.status}`, row);
+  }
+
+  return Array.from(rowsByKey.values());
+}
+
+function mergeMessageTypingStates(
+  currentRows: MessageTypingStateRow[],
+  incomingRows: MessageTypingStateRow[],
+) {
+  const rowsByKey = new Map<string, MessageTypingStateRow>();
+
+  for (const row of currentRows) {
+    rowsByKey.set(`${row.sender_id}:${row.recipient_id}`, row);
+  }
+
+  for (const row of incomingRows) {
+    rowsByKey.set(`${row.sender_id}:${row.recipient_id}`, row);
+  }
+
+  return Array.from(rowsByKey.values());
+}
+
+function mergeMessagePins(currentRows: MessagePinRow[], incomingRows: MessagePinRow[]) {
+  const rowsByKey = new Map<string, MessagePinRow>();
+
+  for (const row of currentRows) {
+    rowsByKey.set(`${row.message_id}:${row.pinner_id}:${row.recipient_id}`, row);
+  }
+
+  for (const row of incomingRows) {
+    rowsByKey.set(`${row.message_id}:${row.pinner_id}:${row.recipient_id}`, row);
+  }
+
+  return Array.from(rowsByKey.values());
 }
 
 export default function Home() {
@@ -550,6 +608,17 @@ export default function Home() {
     setUnreadMessageCount,
     user,
   });
+  const {
+    broadcastPin,
+    broadcastReceipt,
+    broadcastTypingState,
+    messagePins,
+    messageReceipts,
+    messageTypingStates,
+    setMessagePins,
+    setMessageReceipts,
+    setMessageTypingStates,
+  } = useMessageStateRealtime(user);
   const {
     profiles,
     setProfiles,
@@ -978,6 +1047,50 @@ export default function Home() {
     },
     [activeUserName, broadcastMessage, selectedChatUserId, setMessages, user],
   );
+  const sendMessageReceipt = useCallback(
+    async (message: MessageRow, status: MessageReceiptStatus) => {
+      if (!user || !message.user_id || message.id <= 0 || message.user_id === user.id) {
+        return;
+      }
+
+      const optimisticReceipt: MessageReceiptRow = {
+        created_at: new Date().toISOString(),
+        id: -Date.now(),
+        message_id: message.id,
+        recipient_id: message.user_id,
+        sender_id: user.id,
+        status,
+      };
+
+      setMessageReceipts((currentRows) =>
+        mergeMessageReceipts(currentRows, [optimisticReceipt]),
+      );
+
+      const { data, error } = await upsertMessageReceipt(
+        message.id,
+        user.id,
+        message.user_id,
+        status,
+      );
+
+      if (error || !data) {
+        void sendServiceMessage(
+          createReceiptMessageText(message.id, status),
+          message.user_id,
+        );
+        return;
+      }
+
+      setMessageReceipts((currentRows) =>
+        mergeMessageReceipts(
+          currentRows.filter((receipt) => receipt.id !== optimisticReceipt.id),
+          [data],
+        ),
+      );
+      broadcastReceipt(data);
+    },
+    [broadcastReceipt, sendServiceMessage, setMessageReceipts, user],
+  );
   const sendTypingState = useCallback(
     async (action: "start" | "stop") => {
       if (!user || !selectedChatUserId) {
@@ -986,18 +1099,54 @@ export default function Home() {
 
       const eventAt = new Date().toISOString();
 
-      const { error } = await supabase.from("messages").insert({
-        author: activeUserName,
+      const optimisticTypingState: MessageTypingStateRow = {
+        action,
+        event_at: eventAt,
+        expires_at: new Date(
+          action === "start" ? Date.now() + 4500 : Date.now(),
+        ).toISOString(),
         recipient_id: selectedChatUserId,
-        text: createTypingMessageText(action, eventAt),
-        user_id: user.id,
-      });
+        sender_id: user.id,
+      };
 
-      if (error) {
-        console.error("Hush typing state failed:", error.message);
+      setMessageTypingStates((currentRows) =>
+        mergeMessageTypingStates(currentRows, [optimisticTypingState]),
+      );
+      broadcastTypingState(optimisticTypingState);
+
+      const { data, error } = await upsertMessageTypingState(
+        user.id,
+        selectedChatUserId,
+        action,
+        eventAt,
+      );
+
+      if (error || !data) {
+        const fallbackResponse = await supabase.from("messages").insert({
+          author: activeUserName,
+          recipient_id: selectedChatUserId,
+          text: createTypingMessageText(action, eventAt),
+          user_id: user.id,
+        });
+
+        if (fallbackResponse.error) {
+          console.error("Hush typing state failed:", fallbackResponse.error.message);
+        }
+        return;
       }
+
+      setMessageTypingStates((currentRows) =>
+        mergeMessageTypingStates(currentRows, [data]),
+      );
+      broadcastTypingState(data);
     },
-    [activeUserName, selectedChatUserId, user],
+    [
+      activeUserName,
+      broadcastTypingState,
+      selectedChatUserId,
+      setMessageTypingStates,
+      user,
+    ],
   );
 
   function focusMessageInput() {
@@ -1009,27 +1158,53 @@ export default function Home() {
   }
 
   const sharedPinnedMessageIds = useMemo(() => {
-    const pinnedIds = new Map<number, PinMessagePayload["action"]>();
+    const legacyPinnedIds = new Map<number, PinMessagePayload["action"]>();
+    const tablePinnedIds = new Map<number, boolean>();
 
     for (const message of messages) {
       const pinPayload = getPinMessagePayload(message.text);
 
       if (pinPayload) {
-        pinnedIds.set(pinPayload.messageId, pinPayload.action);
+        legacyPinnedIds.set(pinPayload.messageId, pinPayload.action);
+      }
+    }
+
+    for (const pin of messagePins) {
+      tablePinnedIds.set(pin.message_id, pin.is_pinned);
+    }
+
+    for (const [messageId, action] of legacyPinnedIds) {
+      if (!tablePinnedIds.has(messageId)) {
+        tablePinnedIds.set(messageId, action === "pin");
       }
     }
 
     return new Set(
-      Array.from(pinnedIds.entries())
-        .filter(([, action]) => action === "pin")
+      Array.from(tablePinnedIds.entries())
+        .filter(([, isPinned]) => isPinned)
         .map(([messageId]) => messageId),
     );
-  }, [messages]);
+  }, [messagePins, messages]);
   const sharedPinnedMessageIdSet = useMemo(() => {
     return new Set(sharedPinnedMessageIds);
   }, [sharedPinnedMessageIds]);
   const messageReceiptStatuses = useMemo(() => {
     const statuses = new Map<number, "delivered" | "read">();
+
+    for (const receipt of messageReceipts) {
+      if (
+        receipt.recipient_id !== user?.id ||
+        receipt.status === "played"
+      ) {
+        continue;
+      }
+
+      const currentStatus = statuses.get(receipt.message_id);
+
+      if (receipt.status === "read" || currentStatus !== "read") {
+        statuses.set(receipt.message_id, receipt.status);
+      }
+    }
 
     for (const message of messages) {
       const receiptPayload = getReceiptMessagePayload(message.text);
@@ -1050,7 +1225,7 @@ export default function Home() {
     }
 
     return statuses;
-  }, [messages, user?.id]);
+  }, [messageReceipts, messages, user?.id]);
   const sentReceiptMessageIdSets = useMemo(() => {
     const deliveredMessageIds = new Set<number>();
     const playedMessageIds = new Set<number>();
@@ -1058,6 +1233,24 @@ export default function Home() {
 
     if (!user) {
       return { deliveredMessageIds, playedMessageIds, readMessageIds };
+    }
+
+    for (const receipt of messageReceipts) {
+      if (receipt.sender_id !== user.id) {
+        continue;
+      }
+
+      if (receipt.status === "delivered" || receipt.status === "read") {
+        deliveredMessageIds.add(receipt.message_id);
+      }
+
+      if (receipt.status === "played") {
+        playedMessageIds.add(receipt.message_id);
+      }
+
+      if (receipt.status === "read") {
+        readMessageIds.add(receipt.message_id);
+      }
     }
 
     for (const message of messages) {
@@ -1081,13 +1274,19 @@ export default function Home() {
     }
 
     return { deliveredMessageIds, playedMessageIds, readMessageIds };
-  }, [messages, user]);
+  }, [messageReceipts, messages, user]);
   const playedVoiceMessageIds = useMemo(() => {
     if (!user) {
       return new Set<number>();
     }
 
     const playedMessageIds = new Set<number>();
+
+    for (const receipt of messageReceipts) {
+      if (receipt.status === "played") {
+        playedMessageIds.add(receipt.message_id);
+      }
+    }
 
     for (const message of messages) {
       const receiptPayload = getReceiptMessagePayload(message.text);
@@ -1098,13 +1297,19 @@ export default function Home() {
     }
 
     return playedMessageIds;
-  }, [messages, user]);
+  }, [messageReceipts, messages, user]);
   const incomingUnreadMessageIds = useMemo(() => {
     if (!user) {
       return new Set<number>();
     }
 
     const readMessageIds = new Set<number>();
+
+    for (const receipt of messageReceipts) {
+      if (receipt.sender_id === user.id && receipt.status === "read") {
+        readMessageIds.add(receipt.message_id);
+      }
+    }
 
     for (const message of messages) {
       const receiptPayload = getReceiptMessagePayload(message.text);
@@ -1132,7 +1337,7 @@ export default function Home() {
         })
         .map((message) => message.id),
     );
-  }, [hiddenMessageIdSet, messages, user]);
+  }, [hiddenMessageIdSet, messageReceipts, messages, user]);
   const unreadMessageCountFromReceipts = incomingUnreadMessageIds.size;
   const totalUnreadMessageCount = unreadMessageCountFromReceipts;
   const friendTypingUntilFromMessages = useMemo(() => {
@@ -1140,9 +1345,45 @@ export default function Home() {
       return 0;
     }
 
+    const latestFriendRealMessageCreatedAt = messages.reduce((latestCreatedAt, message) => {
+      if (
+        message.user_id !== selectedChatUserId ||
+        message.recipient_id !== user.id ||
+        isServiceMessage(message.text)
+      ) {
+        return latestCreatedAt;
+      }
+
+      return Math.max(latestCreatedAt, new Date(message.created_at).getTime());
+    }, 0);
+    const tableTypingState = messageTypingStates
+      .filter((typingState) => {
+        return (
+          typingState.sender_id === selectedChatUserId &&
+          typingState.recipient_id === user.id
+        );
+      })
+      .sort(
+        (firstState, secondState) =>
+          new Date(secondState.event_at).getTime() -
+          new Date(firstState.event_at).getTime(),
+      )[0];
+
+    if (tableTypingState) {
+      const typingEventAt = new Date(tableTypingState.event_at).getTime();
+      const typingExpiresAt = new Date(tableTypingState.expires_at).getTime();
+
+      if (
+        tableTypingState.action === "start" &&
+        typingExpiresAt > Date.now() &&
+        typingEventAt > latestFriendRealMessageCreatedAt
+      ) {
+        return typingExpiresAt;
+      }
+    }
+
     let latestFriendTypingCreatedAt = 0;
     let latestFriendTypingExpiresAt = 0;
-    let latestFriendRealMessageCreatedAt = 0;
 
     for (const message of messages) {
       if (
@@ -1168,10 +1409,7 @@ export default function Home() {
       }
 
       if (!isServiceMessage(message.text)) {
-        latestFriendRealMessageCreatedAt = Math.max(
-          latestFriendRealMessageCreatedAt,
-          createdAt,
-        );
+        continue;
       }
     }
 
@@ -1183,7 +1421,7 @@ export default function Home() {
     }
 
     return latestFriendTypingExpiresAt;
-  }, [messages, selectedChatUserId, user]);
+  }, [messageTypingStates, messages, selectedChatUserId, user]);
   const typingNow = useTypingClock(friendTypingUntilFromMessages);
   const isFriendTyping = friendTypingUntilFromMessages > typingNow;
   const blockState = useMemo(() => {
@@ -1737,7 +1975,7 @@ export default function Home() {
     activeView,
     messagesListRef,
     selectedChatUserId,
-    sendServiceMessage,
+    sendMessageReceipt,
     sentReceiptMessageIdSets,
     userId: user?.id,
     visibleMessages: activeDialogMessages,
@@ -1753,8 +1991,7 @@ export default function Home() {
       return;
     }
 
-    const playedReceiptText = createReceiptMessageText(message.id, "played");
-    void sendServiceMessage(playedReceiptText, message.user_id);
+    void sendMessageReceipt(message, "played");
   }
 
 
@@ -3463,39 +3700,35 @@ export default function Home() {
     }
 
     const action: PinMessagePayload["action"] = isSharedPinned ? "unpin" : "pin";
-    const optimisticMessage = createOptimisticMessage({
-      recipientId: selectedChatUserId,
-      text: createPinMessageText(messagePinTarget.id, action),
-    });
+    const optimisticPin: MessagePinRow = {
+      created_at: new Date().toISOString(),
+      is_pinned: action === "pin",
+      message_id: messagePinTarget.id,
+      pinner_id: user.id,
+      recipient_id: selectedChatUserId,
+      updated_at: new Date().toISOString(),
+    };
 
     setMessagePinTarget(null);
-    setMessages((currentMessages) =>
-      mergeMessages(currentMessages, [optimisticMessage]),
+    setMessagePins((currentRows) => mergeMessagePins(currentRows, [optimisticPin]));
+    broadcastPin(optimisticPin);
+
+    const { data, error } = await upsertMessagePin(
+      messagePinTarget.id,
+      user.id,
+      selectedChatUserId,
+      action === "pin",
     );
 
-    const { data, error } = await supabase
-      .from("messages")
-      .insert({
-        author: activeUserName,
-        recipient_id: selectedChatUserId,
-        text: optimisticMessage.text,
-        user_id: user.id,
-      })
-      .select(messageColumns)
-      .single();
-
     if (error || !data) {
-      setMessages((currentMessages) =>
-        currentMessages.filter((message) => message.id !== optimisticMessage.id),
-      );
-      setErrorMessage("Не получилось сохранить закрепление для двоих.");
+      const fallbackText = createPinMessageText(messagePinTarget.id, action);
+      void sendServiceMessage(fallbackText, selectedChatUserId);
+      setErrorMessage("Не получилось сохранить закрепление в новой таблице. Использовал совместимый режим.");
       return;
     }
 
-    setMessages((currentMessages) =>
-      settleOptimisticMessage(currentMessages, optimisticMessage, data),
-    );
-    broadcastMessage(data);
+    setMessagePins((currentRows) => mergeMessagePins(currentRows, [data]));
+    broadcastPin(data);
     setErrorMessage("");
   }
 
@@ -3523,49 +3756,37 @@ export default function Home() {
       return;
     }
 
-    const optimisticMessages = sharedPinnedIds.map((messageId, index) =>
-      createOptimisticMessage({
-        offset: index,
-        recipientId: selectedChatUserId,
-        text: createPinMessageText(messageId, "unpin"),
-      }),
+    const optimisticPins = sharedPinnedIds.map((messageId) => ({
+      created_at: new Date().toISOString(),
+      is_pinned: false,
+      message_id: messageId,
+      pinner_id: user.id,
+      recipient_id: selectedChatUserId,
+      updated_at: new Date().toISOString(),
+    }));
+
+    setMessagePins((currentRows) => mergeMessagePins(currentRows, optimisticPins));
+    optimisticPins.forEach((pin) => broadcastPin(pin));
+
+    const pinResponses = await Promise.all(
+      sharedPinnedIds.map((messageId) =>
+        upsertMessagePin(messageId, user.id, selectedChatUserId, false),
+      ),
     );
+    const failedResponse = pinResponses.find((response) => response.error || !response.data);
 
-    setMessages((currentMessages) => mergeMessages(currentMessages, optimisticMessages));
-
-    const { data, error } = await supabase
-      .from("messages")
-      .insert(
-        optimisticMessages.map((message) => ({
-          author: activeUserName,
-          recipient_id: selectedChatUserId,
-          text: message.text,
-          user_id: user.id,
-        })),
-      )
-      .select(messageColumns);
-
-    if (error) {
+    if (failedResponse) {
       savePinnedMessageIdsByChat(previousPinnedMessageIdsByChat);
-      setMessages((currentMessages) =>
-        currentMessages.filter(
-          (message) => !optimisticMessages.some((optimisticMessage) => optimisticMessage.id === message.id),
-        ),
-      );
       setErrorMessage("Не получилось открепить общие закрепы.");
       return;
     }
 
-    setMessages((currentMessages) =>
-      optimisticMessages.reduce((nextMessages, optimisticMessage, index) => {
-        const savedMessage = data?.[index];
+    const savedPins = pinResponses
+      .map((response) => response.data)
+      .filter((pin): pin is MessagePinRow => Boolean(pin));
 
-        return savedMessage
-          ? settleOptimisticMessage(nextMessages, optimisticMessage, savedMessage)
-          : nextMessages;
-      }, currentMessages),
-    );
-    data?.forEach((message) => broadcastMessage(message));
+    setMessagePins((currentRows) => mergeMessagePins(currentRows, savedPins));
+    savedPins.forEach((pin) => broadcastPin(pin));
     setIsPinnedMessagesViewOpen(false);
     setErrorMessage("");
   }
