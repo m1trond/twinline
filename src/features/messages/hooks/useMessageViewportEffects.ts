@@ -10,6 +10,7 @@ type MessageViewportEffectsParams = {
   favoriteItemsKey: string;
   highlightedMessageTimeoutRef: RefObject<number | null>;
   isLoadingMessages: boolean;
+  lastOwnDialogMessageKey: string;
   messagesListRef: RefObject<HTMLDivElement | null>;
   selectedChatUserId: string | null;
 };
@@ -37,10 +38,12 @@ export function useMessageViewportEffects({
   favoriteItemsKey,
   highlightedMessageTimeoutRef,
   isLoadingMessages,
+  lastOwnDialogMessageKey,
   messagesListRef,
   selectedChatUserId,
 }: MessageViewportEffectsParams) {
   const lastOpenedChatUserIdRef = useRef<string | null>(null);
+  const lastOwnDialogMessageKeyRef = useRef("");
 
   useLayoutEffect(() => {
     if (activeView !== "messages" || selectedChatUserId === null) {
@@ -108,8 +111,35 @@ export function useMessageViewportEffects({
   useLayoutEffect(() => {
     if (activeView !== "messages" || selectedChatUserId === null) {
       lastOpenedChatUserIdRef.current = null;
+      lastOwnDialogMessageKeyRef.current = "";
     }
   }, [activeView, selectedChatUserId]);
+
+  useLayoutEffect(() => {
+    if (
+      activeView !== "messages" ||
+      selectedChatUserId === null ||
+      lastOwnDialogMessageKey === ""
+    ) {
+      return;
+    }
+
+    const previousOwnMessageKey = lastOwnDialogMessageKeyRef.current;
+    lastOwnDialogMessageKeyRef.current = lastOwnDialogMessageKey;
+
+    if (previousOwnMessageKey === "" || previousOwnMessageKey === lastOwnDialogMessageKey) {
+      return;
+    }
+
+    scrollMessagesListToBottom(messagesListRef);
+    const frameId = window.requestAnimationFrame(() => {
+      scrollMessagesListToBottom(messagesListRef);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [activeView, lastOwnDialogMessageKey, messagesListRef, selectedChatUserId]);
 
   useLayoutEffect(() => {
     if (activeView !== "favorites") {

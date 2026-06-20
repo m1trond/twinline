@@ -1577,6 +1577,16 @@ export default function Home() {
         visibleDialogLastMessage.text.length,
       ].join(":")
     : "";
+  const lastOwnDialogMessage = user
+    ? activeDialogMessages.findLast((message) => message.user_id === user.id)
+    : null;
+  const lastOwnDialogMessageKey = lastOwnDialogMessage
+    ? [
+        selectedChatUserId,
+        lastOwnDialogMessage.client_key ?? lastOwnDialogMessage.id,
+        lastOwnDialogMessage.created_at,
+      ].join(":")
+    : "";
   const favoriteLastItem = favoriteItems.at(-1);
   const favoriteItemsKey = favoriteLastItem
     ? [
@@ -1943,6 +1953,7 @@ export default function Home() {
     favoriteItemsKey,
     highlightedMessageTimeoutRef,
     isLoadingMessages,
+    lastOwnDialogMessageKey,
     messagesListRef,
     selectedChatUserId,
   });
