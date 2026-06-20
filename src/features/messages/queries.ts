@@ -78,7 +78,8 @@ export async function fetchMessageReceipts(userId: string) {
     .from("message_receipts")
     .select(messageReceiptColumns)
     .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false })
+    .limit(10000);
 }
 
 export async function upsertMessageReceipt(
@@ -110,11 +111,34 @@ export async function upsertMessageReceipts(
     status: MessageReceiptStatus;
   }>,
 ) {
-  return supabase
-    .from("message_receipts")
-    .upsert(receipts, { onConflict: "message_id,sender_id,status" })
-    .select(messageReceiptColumns)
-    .returns<MessageReceiptRow[]>();
+  const savedReceipts: MessageReceiptRow[] = [];
+
+  for (let receiptIndex = 0; receiptIndex < receipts.length; receiptIndex += 500) {
+    const response = await supabase
+      .from("message_receipts")
+      .upsert(receipts.slice(receiptIndex, receiptIndex + 500), {
+        onConflict: "message_id,sender_id,status",
+      })
+      .select(messageReceiptColumns)
+      .returns<MessageReceiptRow[]>();
+
+    if (response.error) {
+      return {
+        ...response,
+        data: savedReceipts.length > 0 ? savedReceipts : null,
+      };
+    }
+
+    savedReceipts.push(...(response.data ?? []));
+  }
+
+  return {
+    count: null,
+    data: savedReceipts,
+    error: null,
+    status: 200,
+    statusText: "OK",
+  };
 }
 
 export async function fetchMessageTypingStates(userId: string) {

@@ -285,7 +285,7 @@ export function OpenChatView({
                     <div className="min-w-0">
                       <button
                         aria-label={language === "en" ? "Open profile" : "Открыть профиль"}
-                        className="block max-w-full cursor-pointer truncate text-left text-sm font-medium leading-tight text-[#f4f4f5] transition hover:text-white"
+                        className="block max-w-full cursor-pointer truncate rounded-none text-left text-sm font-medium leading-tight text-[#f4f4f5] outline-none transition hover:text-white focus:outline-none focus-visible:outline-none"
                         onClick={() => {
                           setViewedProfile(
                             friendProfile ?? {
