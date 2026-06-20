@@ -20,6 +20,7 @@ type ChatListViewProps = {
   ) => void;
   openChatContextMenu: (event: MouseEvent<HTMLElement>, profile: ProfileRow) => void;
   openCreateChatFolderDialog: () => void;
+  pinnedChatProfileIds: string[];
   reorderChatFolders: (draggedFolderId: string, targetFolderId: string) => void;
   selectedChatFolderId: string | null;
   setSelectedChatFolderId: (folderId: string | null) => void;
@@ -37,6 +38,7 @@ export function ChatListView({
   openFolderContextMenu,
   openChatContextMenu,
   openCreateChatFolderDialog,
+  pinnedChatProfileIds,
   reorderChatFolders,
   selectedChatFolderId,
   setSelectedChatFolderId,
@@ -47,6 +49,7 @@ export function ChatListView({
 }: ChatListViewProps) {
   const { t } = useI18n();
   const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
+  const pinnedChatProfileIdSet = new Set(pinnedChatProfileIds);
 
   function dropFolder(event: DragEvent<HTMLButtonElement>, targetFolderId: string) {
     event.preventDefault();
@@ -130,6 +133,7 @@ export function ChatListView({
           {chatProfiles.map((profile) => {
             const latestProfileMessage = latestVisibleMessageByProfileId.get(profile.user_id);
             const profileUnreadCount = unreadMessagesByUserId.get(profile.user_id) ?? 0;
+            const isPinnedChat = pinnedChatProfileIdSet.has(profile.user_id);
             const previewText = latestProfileMessage
               ? getChatPreviewText(latestProfileMessage.text)
               : t("openChat");
@@ -193,9 +197,12 @@ export function ChatListView({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="truncate text-sm font-medium text-[#f4f4f5] sm:text-sm">
-                      {profile.display_name}
-                    </p>
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      {isPinnedChat ? <PinIcon /> : null}
+                      <p className="truncate text-sm font-medium text-[#f4f4f5] sm:text-sm">
+                        {profile.display_name}
+                      </p>
+                    </div>
                     {latestProfileMessage ? (
                       <span className="shrink-0 text-xs font-medium text-[#a1a1aa] sm:text-xs">
                         {formatMessageTime(latestProfileMessage.created_at)}
@@ -223,6 +230,32 @@ export function ChatListView({
         </div>
       </div>
     </div>
+  );
+}
+
+function PinIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-4 w-4 shrink-0 text-[#d4d4d8]"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M12 17v5"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+      <path
+        d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
   );
 }
 

@@ -485,6 +485,7 @@ export default function Home() {
     openCreateEmptyChatFolderDialog,
     openFolderContextMenu,
     openRenameFolderDialog,
+    pinnedChatProfileIds,
     readLocalChatFoldersSyncPayload,
     reorderChatFolders,
     requestDeleteChatFolder,
@@ -497,6 +498,7 @@ export default function Home() {
     setSelectedChatFolderId,
     submitFolderDialog,
     toggleChatFolderFromMenu,
+    togglePinnedChatProfile,
     unarchiveChatProfile,
     updateChatFolderColor,
   } = useChatFoldersState({
@@ -674,6 +676,7 @@ export default function Home() {
           hiddenMessageIds,
           interfaceLanguage,
           mutedProfiles,
+          pinnedChatProfileIds: [],
           pinnedMessageIdsByChat,
           settings: {
             areSoftEffectsEnabled,
@@ -735,6 +738,7 @@ export default function Home() {
         chatFolderAssignments: localChatFoldersPayload.chatFolderAssignments,
         chatFolders: localChatFoldersPayload.chatFolders,
         chatFoldersUpdatedAt: localChatFoldersPayload.chatFoldersUpdatedAt,
+        pinnedChatProfileIds: localChatFoldersPayload.pinnedChatProfileIds,
       };
     }
 
@@ -792,6 +796,7 @@ export default function Home() {
             "hiddenMessageIds",
             "interfaceLanguage",
             "mutedProfiles",
+            "pinnedChatProfileIds",
             "pinnedMessageIdsByChat",
             "settings",
           ]) {
@@ -1321,23 +1326,59 @@ export default function Home() {
       );
   }, [dialogProfileIds, latestVisibleMessageByProfileId, profilesByUserId, user]);
   const visibleChatProfiles = useMemo(() => {
+    const pinnedOrderByProfileId = new Map(
+      pinnedChatProfileIds.map((profileId, profileIndex) => [profileId, profileIndex]),
+    );
+    const sortPinnedProfilesFirst = (profiles: ProfileRow[]) => {
+      return [...profiles].sort((firstProfile, secondProfile) => {
+        const firstPinnedIndex = pinnedOrderByProfileId.get(firstProfile.user_id);
+        const secondPinnedIndex = pinnedOrderByProfileId.get(secondProfile.user_id);
+
+        if (firstPinnedIndex !== undefined && secondPinnedIndex !== undefined) {
+          return firstPinnedIndex - secondPinnedIndex;
+        }
+
+        if (firstPinnedIndex !== undefined) {
+          return -1;
+        }
+
+        if (secondPinnedIndex !== undefined) {
+          return 1;
+        }
+
+        return 0;
+      });
+    };
+
     if (selectedChatFolderId === archivedChatFolderId) {
-      return chatProfiles.filter((profile) =>
-        archivedChatProfileIds.includes(profile.user_id),
+      return sortPinnedProfilesFirst(
+        chatProfiles.filter((profile) =>
+          archivedChatProfileIds.includes(profile.user_id),
+        ),
       );
     }
 
     if (!selectedChatFolderId) {
-      return chatProfiles.filter(
-        (profile) => !archivedChatProfileIds.includes(profile.user_id),
+      return sortPinnedProfilesFirst(
+        chatProfiles.filter(
+          (profile) => !archivedChatProfileIds.includes(profile.user_id),
+        ),
       );
     }
 
-    return chatProfiles.filter((profile) =>
-      !archivedChatProfileIds.includes(profile.user_id) &&
-      (chatFolderAssignments[profile.user_id] ?? []).includes(selectedChatFolderId),
+    return sortPinnedProfilesFirst(
+      chatProfiles.filter((profile) =>
+        !archivedChatProfileIds.includes(profile.user_id) &&
+        (chatFolderAssignments[profile.user_id] ?? []).includes(selectedChatFolderId),
+      ),
     );
-  }, [archivedChatProfileIds, chatFolderAssignments, chatProfiles, selectedChatFolderId]);
+  }, [
+    archivedChatProfileIds,
+    chatFolderAssignments,
+    chatProfiles,
+    pinnedChatProfileIds,
+    selectedChatFolderId,
+  ]);
 
   const searchableProfiles = useMemo(() => {
     const query = chatSearchQuery.trim().replace(/^@+/, "").toLowerCase();
@@ -2617,6 +2658,7 @@ export default function Home() {
       hiddenMessageIds,
       interfaceLanguage,
       mutedProfiles,
+      pinnedChatProfileIds,
       pinnedMessageIdsByChat,
       settings: {
         areSoftEffectsEnabled,
@@ -2979,7 +3021,7 @@ export default function Home() {
     setIsStickerPickerOpen(false);
 
     const menuWidth = Math.min(286, window.innerWidth - 24);
-    const menuHeight = 240;
+    const menuHeight = 280;
 
     setChatContextMenu({
       left: Math.max(
@@ -4180,6 +4222,7 @@ export default function Home() {
           openFolderContextMenu={openFolderContextMenu}
           openChatContextMenu={openChatContextMenu}
           openCreateChatFolderDialog={openCreateEmptyChatFolderDialog}
+          pinnedChatProfileIds={pinnedChatProfileIds}
           reorderChatFolders={reorderChatFolders}
           selectedChatFolderId={selectedChatFolderId}
           setSelectedChatFolderId={setSelectedChatFolderId}
@@ -4301,10 +4344,12 @@ export default function Home() {
         openCreateChatFolderDialog={openCreateChatFolderDialog}
         muteProfileNotifications={muteProfileNotifications}
         mutedProfiles={mutedProfiles}
+        pinnedChatProfileIds={pinnedChatProfileIds}
         requestBlockChange={requestBlockChange}
         requestChatDeleteFromMenu={requestChatDeleteFromMenu}
         setChatContextMenu={setChatContextMenu}
         toggleChatFolderFromMenu={toggleChatFolderFromMenu}
+        togglePinnedChatProfile={togglePinnedChatProfile}
         unarchiveChatProfile={unarchiveChatProfile}
         unmuteProfileNotifications={unmuteProfileNotifications}
       />

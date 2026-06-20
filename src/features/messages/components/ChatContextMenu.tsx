@@ -20,11 +20,13 @@ type ChatContextMenuProps = {
   archivedProfileIds: string[];
   muteProfileNotifications: (profileUserId: string, durationMs: number | null) => void;
   mutedProfiles: MutedProfileUntil;
+  pinnedChatProfileIds: string[];
   requestBlockChange: (profileUserId: string, targetLabel: string) => void;
   requestChatDeleteFromMenu: (profile: ProfileRow) => void;
   setChatContextMenu: (menu: ChatContextMenuState | null) => void;
   unmuteProfileNotifications: (profileUserId: string) => void;
   unarchiveChatProfile: (profile: ProfileRow) => void;
+  togglePinnedChatProfile: (profile: ProfileRow) => void;
 };
 
 const muteOptions = [
@@ -45,11 +47,13 @@ export function ChatContextMenu({
   archivedProfileIds,
   muteProfileNotifications,
   mutedProfiles,
+  pinnedChatProfileIds,
   requestBlockChange,
   requestChatDeleteFromMenu,
   setChatContextMenu,
   unmuteProfileNotifications,
   unarchiveChatProfile,
+  togglePinnedChatProfile,
 }: ChatContextMenuProps) {
   const { language, t } = useI18n();
 
@@ -60,6 +64,7 @@ export function ChatContextMenu({
   const { profile } = contextMenu;
   const isMuted = isProfileMuted(mutedProfiles, profile.user_id);
   const isArchived = archivedProfileIds.includes(profile.user_id);
+  const isPinned = pinnedChatProfileIds.includes(profile.user_id);
   const assignedFolderIds = new Set(chatFolderAssignments[profile.user_id] ?? []);
 
   return (
@@ -83,6 +88,14 @@ export function ChatContextMenu({
         <p className="truncate px-3.5 py-1.5 text-xs font-medium uppercase tracking-[0.14em] text-[#a1a1aa]">
           {t("chatWith")} {profile.display_name}
         </p>
+        <MenuButton
+          icon={<PinIcon />}
+          onClick={() => togglePinnedChatProfile(profile)}
+        >
+          {isPinned
+            ? language === "en" ? "Unpin" : "Открепить"
+            : language === "en" ? "Pin" : "Закрепить"}
+        </MenuButton>
         <MenuButton
           icon={<ArchiveIcon />}
           onClick={() => {
@@ -251,6 +264,10 @@ function SubMenuButton({
 
 function CheckIcon() {
   return <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>;
+}
+
+function PinIcon() {
+  return <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24"><path d="M12 17v5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>;
 }
 
 function ArchiveIcon() {

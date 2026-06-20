@@ -63,6 +63,7 @@ type ChatFoldersSyncPayload = Pick<
   | "chatFolderAssignments"
   | "chatFolders"
   | "chatFoldersUpdatedAt"
+  | "pinnedChatProfileIds"
 >;
 
 type ChatFoldersStateParams = {
@@ -84,6 +85,7 @@ export function useChatFoldersState({
   const [chatFolderAssignments, setChatFolderAssignments] = useState<Record<string, string[]>>({});
   const [allChatFolderName, setAllChatFolderName] = useState("");
   const [archivedChatProfileIds, setArchivedChatProfileIds] = useState<string[]>([]);
+  const [pinnedChatProfileIds, setPinnedChatProfileIds] = useState<string[]>([]);
   const [folderContextMenu, setFolderContextMenu] = useState<FolderContextMenuState | null>(null);
   const [folderDialog, setFolderDialog] = useState<FolderDialogState | null>(null);
   const [folderDeleteTarget, setFolderDeleteTarget] = useState<ChatFolder | null>(null);
@@ -126,6 +128,7 @@ export function useChatFoldersState({
     setChatFolderAssignments({});
     setAllChatFolderName("");
     setArchivedChatProfileIds([]);
+    setPinnedChatProfileIds([]);
     setSelectedChatFolderId(null);
   }
 
@@ -147,11 +150,13 @@ export function useChatFoldersState({
     const nextArchivedChatProfileIds = parseStringArray(payload.archivedChatProfileIds);
     const nextChatFolderAssignments = parseFolderAssignments(payload.chatFolderAssignments);
     const nextChatFolders = parseChatFolders(payload.chatFolders);
+    const nextPinnedChatProfileIds = parseStringArray(payload.pinnedChatProfileIds);
 
     setAllChatFolderName(nextAllChatFolderName);
     setChatFolders(nextChatFolders);
     setChatFolderAssignments(nextChatFolderAssignments);
     setArchivedChatProfileIds(nextArchivedChatProfileIds);
+    setPinnedChatProfileIds(nextPinnedChatProfileIds);
     window.localStorage.setItem(`hush-chat-all-folder-name-${syncUserId}`, nextAllChatFolderName);
     window.localStorage.setItem(`hush-chat-folders-${syncUserId}`, JSON.stringify(nextChatFolders));
     window.localStorage.setItem(
@@ -161,6 +166,10 @@ export function useChatFoldersState({
     window.localStorage.setItem(
       `hush-chat-archived-profiles-${syncUserId}`,
       JSON.stringify(nextArchivedChatProfileIds),
+    );
+    window.localStorage.setItem(
+      `hush-chat-pinned-profiles-${syncUserId}`,
+      JSON.stringify(nextPinnedChatProfileIds),
     );
     writeChatFoldersUpdatedAt(syncUserId, nextChatFoldersUpdatedAt);
   }
@@ -172,10 +181,16 @@ export function useChatFoldersState({
     const storedArchivedChatProfileIds = window.localStorage.getItem(
       `hush-chat-archived-profiles-${syncUserId}`,
     );
+    const storedPinnedChatProfileIds = window.localStorage.getItem(
+      `hush-chat-pinned-profiles-${syncUserId}`,
+    );
     const parsedFolders = storedFolders ? JSON.parse(storedFolders) : [];
     const parsedAssignments = storedAssignments ? JSON.parse(storedAssignments) : {};
     const parsedArchivedChatProfileIds = storedArchivedChatProfileIds
       ? JSON.parse(storedArchivedChatProfileIds)
+      : [];
+    const parsedPinnedChatProfileIds = storedPinnedChatProfileIds
+      ? JSON.parse(storedPinnedChatProfileIds)
       : [];
 
     return {
@@ -184,6 +199,7 @@ export function useChatFoldersState({
       chatFolderAssignments: parseFolderAssignments(parsedAssignments),
       chatFolders: parseChatFolders(parsedFolders),
       chatFoldersUpdatedAt: readChatFoldersUpdatedAt(syncUserId),
+      pinnedChatProfileIds: parseStringArray(parsedPinnedChatProfileIds),
     };
   }
 
@@ -265,6 +281,41 @@ export function useChatFoldersState({
       archivedChatProfileIds: normalizedProfileIds,
       chatFoldersUpdatedAt: updatedAt,
     });
+  }
+
+  function savePinnedChatProfileIds(nextProfileIds: string[]) {
+    if (!user) {
+      return;
+    }
+
+    const normalizedProfileIds = Array.from(new Set(nextProfileIds));
+    const updatedAt = new Date().toISOString();
+
+    setPinnedChatProfileIds(normalizedProfileIds);
+    window.localStorage.setItem(
+      `hush-chat-pinned-profiles-${user.id}`,
+      JSON.stringify(normalizedProfileIds),
+    );
+    writeChatFoldersUpdatedAt(user.id, updatedAt);
+    saveUserSyncPatch({
+      chatFoldersUpdatedAt: updatedAt,
+      pinnedChatProfileIds: normalizedProfileIds,
+    });
+  }
+
+  function togglePinnedChatProfile(profile: ProfileRow) {
+    const isPinned = pinnedChatProfileIds.includes(profile.user_id);
+    const nextPinnedProfileIds = isPinned
+      ? pinnedChatProfileIds.filter((profileId) => profileId !== profile.user_id)
+      : [profile.user_id, ...pinnedChatProfileIds];
+
+    savePinnedChatProfileIds(nextPinnedProfileIds);
+    setChatContextMenu(null);
+    setErrorMessage(
+      isPinned
+        ? `Чат с ${profile.display_name} откреплен.`
+        : `Чат с ${profile.display_name} закреплен.`,
+    );
   }
 
   function saveAllChatFolderName(nextName: string) {
@@ -498,6 +549,7 @@ export function useChatFoldersState({
     openCreateEmptyChatFolderDialog,
     openFolderContextMenu,
     openRenameFolderDialog,
+    pinnedChatProfileIds,
     readLocalChatFoldersSyncPayload,
     reorderChatFolders,
     requestDeleteChatFolder,
@@ -510,6 +562,7 @@ export function useChatFoldersState({
     setSelectedChatFolderId,
     submitFolderDialog,
     toggleChatFolderFromMenu,
+    togglePinnedChatProfile,
     unarchiveChatProfile,
     updateChatFolderColor,
   };
