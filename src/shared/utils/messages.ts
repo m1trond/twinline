@@ -584,17 +584,21 @@ export function mergeMessages(currentMessages: MessageRow[], nextMessages: Messa
         ? {
             ...message,
             client_key: existingMessage.client_key,
-            created_at: existingMessage.created_at,
           }
         : message,
     );
   }
 
   return Array.from(messagesById.values()).sort((firstMessage, secondMessage) => {
-    return (
+    const createdAtDiff =
       new Date(firstMessage.created_at).getTime() -
-      new Date(secondMessage.created_at).getTime()
-    );
+      new Date(secondMessage.created_at).getTime();
+
+    if (createdAtDiff !== 0) {
+      return createdAtDiff;
+    }
+
+    return firstMessage.id - secondMessage.id;
   });
 }
 
@@ -607,7 +611,6 @@ export function settleOptimisticMessage(
     ...savedMessage,
     client_key:
       optimisticMessage.client_key ?? `optimistic-message-${optimisticMessage.id}`,
-    created_at: optimisticMessage.created_at,
   };
 
   return mergeMessages(

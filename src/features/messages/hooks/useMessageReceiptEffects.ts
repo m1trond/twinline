@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { RefObject } from "react";
 import type { ActiveView, MessageRow } from "@/shared/types";
-import { createReceiptMessageText } from "@/shared/utils/messages";
+import { createReceiptMessageText, isServiceMessage } from "@/shared/utils/messages";
 
 type UseMessageReceiptEffectsParams = {
   activeView: ActiveView;
@@ -35,7 +35,12 @@ export function useMessageReceiptEffects({
     }
 
     const friendMessages = visibleMessages.filter((message) => {
-      return message.id > 0 && message.user_id && message.user_id !== userId;
+      return (
+        message.id > 0 &&
+        message.user_id &&
+        message.user_id !== userId &&
+        !isServiceMessage(message.text)
+      );
     });
 
     for (const message of friendMessages) {

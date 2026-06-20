@@ -13,6 +13,7 @@ import {
 type ForwardMessagesStateParams = {
   activeUserName: string;
   blockedByMeProfileIds: string[];
+  broadcastMessage: (message: MessageRow) => void;
   currentProfile: ProfileRow | null | undefined;
   favoriteItems: FavoriteItem[];
   profilesByUserId: Map<string, ProfileRow>;
@@ -30,6 +31,7 @@ type ForwardMessagesStateParams = {
 export function useForwardMessagesState({
   activeUserName,
   blockedByMeProfileIds,
+  broadcastMessage,
   currentProfile,
   favoriteItems,
   profilesByUserId,
@@ -141,6 +143,7 @@ export function useForwardMessagesState({
           : nextMessages;
       }, currentMessages),
     );
+    data?.forEach((message) => broadcastMessage(message));
     setErrorMessage("Сообщения пересланы.");
   }
 

@@ -1296,6 +1296,7 @@ export default function Home() {
   } = useForwardMessagesState({
     activeUserName,
     blockedByMeProfileIds,
+    broadcastMessage,
     currentProfile,
     favoriteItems,
     profilesByUserId,

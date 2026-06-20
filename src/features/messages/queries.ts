@@ -10,10 +10,15 @@ import type { MessageRow } from "@/shared/types";
 function sortMessagesAscending(messages: MessageRow[] | null) {
   return messages
     ? [...messages].sort((firstMessage, secondMessage) => {
-        return (
+        const createdAtDiff =
           new Date(firstMessage.created_at).getTime() -
-          new Date(secondMessage.created_at).getTime()
-        );
+          new Date(secondMessage.created_at).getTime();
+
+        if (createdAtDiff !== 0) {
+          return createdAtDiff;
+        }
+
+        return firstMessage.id - secondMessage.id;
       })
     : messages;
 }
