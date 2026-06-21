@@ -30,6 +30,7 @@ import { useAuthSessionState } from "@/features/auth/useAuthSessionState";
 import { AccessView } from "@/features/access/components/AccessView";
 import { useAccessAdminState } from "@/features/access/useAccessAdminState";
 import { CallPanel } from "@/features/calls/components/CallPanel";
+import { useCallCleanup } from "@/features/calls/useCallCleanup";
 import { useCallPanelDrag } from "@/features/calls/useCallPanelDrag";
 import { useCallPanelEffects } from "@/features/calls/useCallPanelEffects";
 import { useCallSignals } from "@/features/calls/useCallSignals";
@@ -1287,6 +1288,24 @@ export default function Home() {
     isCallPanelCollapsed,
     setCallPanelPosition,
   });
+  const { closeCall } = useCallCleanup({
+    callPartnerIdRef,
+    callStartedAtRef,
+    callStatusRef,
+    localCallStreamRef,
+    pendingIceCandidatesRef,
+    peerConnectionRef,
+    remoteAudioRef,
+    remoteCallStreamRef,
+    saveCallSummaryMessage,
+    sendCallSignal,
+    setCallDuration,
+    setCallPanelProfileSnapshot,
+    setCallStartedAt,
+    setCallStatus,
+    setIncomingCall,
+    setIsCallMicMuted,
+  });
   useCallSignals({
     blockedProfileIdsRef,
     callPartnerIdRef,
@@ -2190,40 +2209,6 @@ export default function Home() {
     if (data) {
       broadcastMessage(data);
     }
-  }
-
-  async function closeCall(notifyPartner: boolean) {
-    const partnerId = callPartnerIdRef.current;
-
-    if (notifyPartner && callStatusRef.current === "connected") {
-      await saveCallSummaryMessage();
-    }
-
-    if (notifyPartner && partnerId) {
-      await sendCallSignal(partnerId, "end", { reason: "ended" });
-    }
-
-    peerConnectionRef.current?.close();
-    peerConnectionRef.current = null;
-    callPartnerIdRef.current = null;
-    pendingIceCandidatesRef.current = [];
-    localCallStreamRef.current?.getTracks().forEach((track) => track.stop());
-    localCallStreamRef.current = null;
-
-    if (remoteAudioRef.current) {
-      remoteAudioRef.current.pause();
-      remoteAudioRef.current.srcObject = null;
-    }
-
-    remoteCallStreamRef.current = null;
-    setIncomingCall(null);
-    setIsCallMicMuted(false);
-    setCallStartedAt(null);
-    callStartedAtRef.current = null;
-    setCallDuration(0);
-    callStatusRef.current = "idle";
-    setCallStatus("idle");
-    setCallPanelProfileSnapshot(null);
   }
 
   async function toggleNotifications() {
