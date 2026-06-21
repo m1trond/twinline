@@ -5,6 +5,7 @@ import {
   type FolderContextMenuState,
   type FolderDialogState,
 } from "@/features/messages/components/FolderMenus";
+import { parseStringArray } from "@/features/sync/payload";
 import type { UserSyncPayload } from "@/features/sync/queries";
 import { translations, type InterfaceLanguage } from "@/shared/i18n";
 import { archivedChatFolderId } from "@/shared/constants";
@@ -26,12 +27,6 @@ function parseChatFolders(value: unknown): ChatFolder[] {
           ...folder,
           color: typeof folder.color === "string" ? folder.color : undefined,
         }))
-    : [];
-}
-
-function parseStringArray(value: unknown) {
-  return Array.isArray(value)
-    ? Array.from(new Set(value.filter((item): item is string => typeof item === "string")))
     : [];
 }
 

@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { MutedProfileUntil } from "@/shared/types";
 import {
+  pruneMutedProfiles,
   readStoredBoolean,
   readStoredMutedProfiles,
   readStoredStringList,
+  writeStoredMutedProfiles,
 } from "@/shared/utils/storage";
 
 export function usePrivacySettingsState() {
@@ -40,6 +42,25 @@ export function usePrivacySettingsState() {
   const [localBlockedProfileIds, setLocalBlockedProfileIds] = useState<string[]>(() =>
     readStoredStringList("hush-blocked-profiles", "twinline-blocked-profiles"),
   );
+
+  useEffect(() => {
+    const mutedProfilesCleanupInterval = window.setInterval(() => {
+      setMutedProfiles((currentMutedProfiles) => {
+        const nextMutedProfiles = pruneMutedProfiles(currentMutedProfiles);
+
+        if (Object.keys(nextMutedProfiles).length === Object.keys(currentMutedProfiles).length) {
+          return currentMutedProfiles;
+        }
+
+        writeStoredMutedProfiles(nextMutedProfiles);
+        return nextMutedProfiles;
+      });
+    }, 60_000);
+
+    return () => {
+      window.clearInterval(mutedProfilesCleanupInterval);
+    };
+  }, []);
 
   return {
     areNotificationsEnabled,

@@ -5,7 +5,6 @@ import {
   FormEvent,
   MouseEvent,
   PointerEvent,
-  SetStateAction,
   useCallback,
   useEffect,
   useMemo,
@@ -80,16 +79,13 @@ import { ProfileView } from "@/features/profile/components/ProfileView";
 import { ViewedProfileModal } from "@/features/profile/components/ViewedProfileModal";
 import { useAvatarActions } from "@/features/profile/useAvatarActions";
 import { useEmailVerificationState } from "@/features/profile/useEmailVerificationState";
+import { useProfileBlockState } from "@/features/profile/useProfileBlockState";
 import { useProfileEditorState } from "@/features/profile/useProfileEditorState";
 import { useProfilesState } from "@/features/profile/useProfilesState";
 import { SettingsView } from "@/features/settings/components/SettingsView";
 import { usePrivacySettingsState } from "@/features/settings/usePrivacySettingsState";
-import {
-  fetchUserSyncState,
-  upsertUserSyncState,
-  type UserSyncPayload,
-} from "@/features/sync/queries";
-import type { RealtimeChannel } from "@supabase/supabase-js";
+import type { UserSyncPayload } from "@/features/sync/queries";
+import { useUserSyncState } from "@/features/sync/useUserSyncState";
 import {
   archivedChatFolderId,
   callMessagePrefix,
@@ -108,7 +104,6 @@ import type {
   FavoriteItem,
   MessageRow,
   MutedProfileUntil,
-  PinnedMessageIdsByChat,
   ProfileRow,
   ReplyMessagePayload,
 } from "@/shared/types";
@@ -126,16 +121,7 @@ import {
   normalizeUsername,
 } from "@/shared/utils/profile";
 import {
-  pruneMutedProfiles,
-  writeStoredBoolean,
-  writeStoredMutedProfiles,
-  writeStoredPinnedMessageIds,
-  writeStoredStringList,
-} from "@/shared/utils/storage";
-import {
-  createBlockMessageText,
   createReplyMessageText,
-  getBlockMessagePayload,
   getMessageAttachmentCaption,
   getMessageAudioUrl,
   getReadableMessageText,
@@ -153,73 +139,6 @@ import {
   getCenteredCallPanelPosition,
 } from "@/shared/utils/viewport";
 import { registerHushServiceWorker } from "@/shared/utils/notifications";
-
-type SyncedSettings = {
-  areSoftEffectsEnabled?: boolean;
-  isLightThemeEnabled?: boolean;
-  isOnlineStatusVisible?: boolean;
-  isProfileSearchable?: boolean;
-};
-
-function parseStringArray(value: unknown) {
-  return Array.isArray(value)
-    ? Array.from(new Set(value.filter((item): item is string => typeof item === "string")))
-    : [];
-}
-
-function parseNumberArray(value: unknown) {
-  return Array.isArray(value)
-    ? Array.from(new Set(value.filter((item): item is number => Number.isInteger(item))))
-    : [];
-}
-
-function parsePinnedMessageIdsByChat(value: unknown): PinnedMessageIdsByChat {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return {};
-  }
-
-  return Object.fromEntries(
-    Object.entries(value)
-      .filter((entry): entry is [string, unknown] => typeof entry[0] === "string")
-      .map(([chatUserId, ids]) => [chatUserId, parseNumberArray(ids)])
-      .filter(([, ids]) => ids.length > 0),
-  );
-}
-
-function parseMutedProfiles(value: unknown): MutedProfileUntil {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return {};
-  }
-
-  return pruneMutedProfiles(
-    Object.fromEntries(
-      Object.entries(value).filter((entry): entry is [string, number | null] => {
-        const [profileId, muteUntil] = entry;
-
-        return typeof profileId === "string" && (muteUntil === null || typeof muteUntil === "number");
-      }),
-    ),
-  );
-}
-
-function parseSyncedSettings(value: unknown): SyncedSettings {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return {};
-  }
-
-  const settings = value as SyncedSettings;
-
-  return {
-    areSoftEffectsEnabled:
-      typeof settings.areSoftEffectsEnabled === "boolean" ? settings.areSoftEffectsEnabled : undefined,
-    isLightThemeEnabled:
-      typeof settings.isLightThemeEnabled === "boolean" ? settings.isLightThemeEnabled : undefined,
-    isOnlineStatusVisible:
-      typeof settings.isOnlineStatusVisible === "boolean" ? settings.isOnlineStatusVisible : undefined,
-    isProfileSearchable:
-      typeof settings.isProfileSearchable === "boolean" ? settings.isProfileSearchable : undefined,
-  };
-}
 
 export default function Home() {
   const [interfaceLanguage, setInterfaceLanguage] = useState<InterfaceLanguage>(() => {
@@ -402,10 +321,7 @@ export default function Home() {
   const callStatusRef = useRef<CallStatus>("idle");
   const callPartnerIdRef = useRef<string | null>(null);
   const localCallStreamRef = useRef<MediaStream | null>(null);
-  const userSyncPayloadRef = useRef<UserSyncPayload>({});
-  const userSyncChannelRef = useRef<RealtimeChannel | null>(null);
-  const userSyncClientIdRef = useRef<string | null>(null);
-  const isApplyingRemoteSyncRef = useRef(false);
+  const saveUserSyncPatchRef = useRef<(patch: UserSyncPayload) => void>(() => {});
   const callStartedAtRef = useRef<number | null>(null);
   const hasSavedCallSummaryRef = useRef(false);
   const isSavingProfileBioRef = useRef(false);
@@ -469,6 +385,9 @@ export default function Home() {
     setActiveView,
     setSelectedChatUserId,
   });
+  const saveUserSyncPatch = useCallback((patch: UserSyncPayload) => {
+    saveUserSyncPatchRef.current(patch);
+  }, []);
   const {
     allChatFolderName,
     applyChatFoldersSyncPayload,
@@ -578,361 +497,50 @@ export default function Home() {
     user,
   });
 
-  useEffect(() => {
-    if (!user) {
-      const frameId = window.requestAnimationFrame(() => {
-        resetChatFoldersState();
-      });
-
-      return () => window.cancelAnimationFrame(frameId);
-    }
-
-    let isMounted = true;
-    const syncUserId = user.id;
-
-    function applySyncPayload(payload: UserSyncPayload) {
-      const syncedSettings = parseSyncedSettings(payload.settings);
-      const nextAvatarHistory = parseStringArray(payload.avatarHistory);
-      const nextHiddenMessageIds = parseNumberArray(payload.hiddenMessageIds);
-      const nextInterfaceLanguage = isInterfaceLanguage(payload.interfaceLanguage)
-        ? payload.interfaceLanguage
-        : null;
-      const nextMutedProfiles = parseMutedProfiles(payload.mutedProfiles);
-      const nextPinnedMessageIdsByChat = parsePinnedMessageIdsByChat(payload.pinnedMessageIdsByChat);
-      const nextBlockedProfileIds = parseStringArray(payload.blockedProfileIds);
-
-      isApplyingRemoteSyncRef.current = true;
-      userSyncPayloadRef.current = payload;
-
-      applyChatFoldersSyncPayload(payload, syncUserId);
-      applyFavoritesSyncPayload(payload, syncUserId);
-      setAvatarHistory(nextAvatarHistory);
-      setHiddenMessageIds(nextHiddenMessageIds);
-      setMutedProfiles(nextMutedProfiles);
-      setPinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
-      setLocalBlockedProfileIds(nextBlockedProfileIds);
-      window.localStorage.setItem(`hush-avatar-history-${syncUserId}`, JSON.stringify(nextAvatarHistory));
-      window.localStorage.setItem(`hush-hidden-messages-${syncUserId}`, JSON.stringify(nextHiddenMessageIds));
-      writeStoredMutedProfiles(nextMutedProfiles);
-      writeStoredPinnedMessageIds(syncUserId, nextPinnedMessageIdsByChat);
-      writeStoredStringList("hush-blocked-profiles", nextBlockedProfileIds);
-
-      if (nextInterfaceLanguage) {
-        setInterfaceLanguage(nextInterfaceLanguage);
-        window.localStorage.setItem(interfaceLanguageStorageKey, nextInterfaceLanguage);
-      }
-
-      if (typeof syncedSettings.isOnlineStatusVisible === "boolean") {
-        setIsOnlineStatusVisible(syncedSettings.isOnlineStatusVisible);
-        writeStoredBoolean("hush-settings-online-status-visible", syncedSettings.isOnlineStatusVisible);
-      }
-
-      if (typeof syncedSettings.isProfileSearchable === "boolean") {
-        setIsProfileSearchable(syncedSettings.isProfileSearchable);
-        writeStoredBoolean("hush-settings-profile-searchable", syncedSettings.isProfileSearchable);
-      }
-
-      if (typeof syncedSettings.areSoftEffectsEnabled === "boolean") {
-        setAreSoftEffectsEnabled(syncedSettings.areSoftEffectsEnabled);
-        writeStoredBoolean("hush-settings-soft-effects", syncedSettings.areSoftEffectsEnabled);
-      }
-
-      if (typeof syncedSettings.isLightThemeEnabled === "boolean") {
-        setIsLightThemeEnabled(syncedSettings.isLightThemeEnabled);
-        writeStoredBoolean("hush-settings-light-theme", syncedSettings.isLightThemeEnabled);
-      }
-
-      window.requestAnimationFrame(() => {
-        isApplyingRemoteSyncRef.current = false;
-      });
-    }
-
-    function readLocalSyncPayload(): UserSyncPayload {
-      try {
-        return {
-          avatarHistory,
-          blockedProfileIds: localBlockedProfileIds,
-          hiddenMessageIds,
-          interfaceLanguage,
-          ...readLocalFavoritesSyncPayload(syncUserId),
-          ...readLocalChatFoldersSyncPayload(syncUserId),
-          mutedProfiles,
-          pinnedMessageIdsByChat,
-          settings: {
-            areSoftEffectsEnabled,
-            isLightThemeEnabled,
-            isOnlineStatusVisible,
-            isProfileSearchable,
-          },
-        };
-      } catch {
-        return {
-          allChatFolderName: translations[interfaceLanguage].allChats,
-          archivedChatProfileIds: [],
-          avatarHistory,
-          blockedProfileIds: localBlockedProfileIds,
-          chatFolderAssignments: {},
-          chatFolders: [],
-          chatFoldersUpdatedAt: "1970-01-01T00:00:00.000Z",
-          favoriteItems: [],
-          favoriteItemsUpdatedAt: "1970-01-01T00:00:00.000Z",
-          hiddenMessageIds,
-          interfaceLanguage,
-          mutedProfiles,
-          pinnedChatProfileIds: [],
-          pinnedMessageIdsByChat,
-          settings: {
-            areSoftEffectsEnabled,
-            isLightThemeEnabled,
-            isOnlineStatusVisible,
-            isProfileSearchable,
-          },
-        };
-      }
-    }
-
-    function getSyncPayloadStringValue(payload: UserSyncPayload, key: string) {
-      const value = payload[key];
-
-      return typeof value === "string" ? value : "1970-01-01T00:00:00.000Z";
-    }
-
-    function mergeNewerLocalFavorites(remotePayload: UserSyncPayload) {
-      const localFavoritesPayload = readLocalFavoritesSyncPayload(syncUserId);
-      const localFavoritesUpdatedAt = getSyncPayloadStringValue(
-        localFavoritesPayload,
-        "favoriteItemsUpdatedAt",
-      );
-      const remoteFavoritesUpdatedAt = getSyncPayloadStringValue(
-        remotePayload,
-        "favoriteItemsUpdatedAt",
-      );
-
-      if (localFavoritesUpdatedAt <= remoteFavoritesUpdatedAt) {
-        return remotePayload;
-      }
-
-      return {
-        ...remotePayload,
-        favoriteItems: localFavoritesPayload.favoriteItems,
-        favoriteItemsUpdatedAt: localFavoritesPayload.favoriteItemsUpdatedAt,
-      };
-    }
-
-    function mergeNewerLocalChatFolders(remotePayload: UserSyncPayload) {
-      const localChatFoldersPayload = readLocalChatFoldersSyncPayload(syncUserId);
-      const localChatFoldersUpdatedAt = getSyncPayloadStringValue(
-        localChatFoldersPayload,
-        "chatFoldersUpdatedAt",
-      );
-      const remoteChatFoldersUpdatedAt = getSyncPayloadStringValue(
-        remotePayload,
-        "chatFoldersUpdatedAt",
-      );
-
-      if (localChatFoldersUpdatedAt <= remoteChatFoldersUpdatedAt) {
-        return remotePayload;
-      }
-
-      return {
-        ...remotePayload,
-        allChatFolderName: localChatFoldersPayload.allChatFolderName,
-        archivedChatProfileIds: localChatFoldersPayload.archivedChatProfileIds,
-        chatFolderAssignments: localChatFoldersPayload.chatFolderAssignments,
-        chatFolders: localChatFoldersPayload.chatFolders,
-        chatFoldersUpdatedAt: localChatFoldersPayload.chatFoldersUpdatedAt,
-        pinnedChatProfileIds: localChatFoldersPayload.pinnedChatProfileIds,
-      };
-    }
-
-    function areSyncPayloadsEqual(
-      firstPayload: UserSyncPayload,
-      secondPayload: UserSyncPayload,
-    ) {
-      try {
-        return JSON.stringify(firstPayload) === JSON.stringify(secondPayload);
-      } catch {
-        return false;
-      }
-    }
-
-    function applyRemoteSyncPayload(remotePayload: UserSyncPayload) {
-      const nextPayload = mergeNewerLocalFavorites(
-        mergeNewerLocalChatFolders(remotePayload),
-      );
-
-      if (areSyncPayloadsEqual(userSyncPayloadRef.current, nextPayload)) {
-        return;
-      }
-
-      applySyncPayload(nextPayload);
-
-      if (nextPayload !== remotePayload) {
-        userSyncPayloadRef.current = nextPayload;
-        broadcastUserSyncPayload(nextPayload);
-        void upsertUserSyncState(syncUserId, nextPayload);
-      }
-    }
-
-    const frameId = window.requestAnimationFrame(() => {
-      const localPayload = readLocalSyncPayload();
-
-      void fetchUserSyncState().then(({ data, error }) => {
-        if (!isMounted) {
-          return;
-        }
-
-        if (!error && data?.payload && typeof data.payload === "object") {
-          const remotePayload = data.payload as UserSyncPayload;
-          const localBackfillPayload: UserSyncPayload = {};
-
-          for (const key of [
-            "allChatFolderName",
-            "archivedChatProfileIds",
-            "avatarHistory",
-            "blockedProfileIds",
-            "chatFolderAssignments",
-            "chatFolders",
-            "chatFoldersUpdatedAt",
-            "favoriteItems",
-            "favoriteItemsUpdatedAt",
-            "hiddenMessageIds",
-            "interfaceLanguage",
-            "mutedProfiles",
-            "pinnedChatProfileIds",
-            "pinnedMessageIdsByChat",
-            "settings",
-          ]) {
-            if (!(key in remotePayload) && key in localPayload) {
-              localBackfillPayload[key] = localPayload[key];
-            }
-          }
-
-          const nextPayload =
-            Object.keys(localBackfillPayload).length > 0
-              ? { ...remotePayload, ...localBackfillPayload }
-              : remotePayload;
-
-        applyRemoteSyncPayload(nextPayload);
-
-          if (nextPayload !== remotePayload) {
-            userSyncPayloadRef.current = nextPayload;
-            broadcastUserSyncPayload(nextPayload);
-            void upsertUserSyncState(syncUserId, nextPayload);
-          }
-
-          return;
-        }
-
-        if (error) {
-          return;
-        }
-
-        applySyncPayload(localPayload);
-        userSyncPayloadRef.current = localPayload;
-        broadcastUserSyncPayload(localPayload);
-        void upsertUserSyncState(syncUserId, localPayload);
-      });
-    });
-
-    const syncChannel = supabase
-      .channel(`user-sync-state-${syncUserId}`, {
-        config: {
-          broadcast: {
-            ack: true,
-            self: false,
-          },
-        },
-      })
-      .on(
-        "broadcast",
-        { event: "sync-payload" },
-        (event) => {
-          const broadcastPayload = event.payload;
-
-          if (!broadcastPayload || typeof broadcastPayload !== "object") {
-            return;
-          }
-
-          const {
-            originId,
-            payload: nextPayload,
-          } = broadcastPayload as {
-            originId?: unknown;
-            payload?: unknown;
-          };
-
-          if (originId === userSyncClientIdRef.current) {
-            return;
-          }
-
-          if (nextPayload && typeof nextPayload === "object") {
-            applyRemoteSyncPayload(nextPayload as UserSyncPayload);
-          }
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "user_sync_states",
-          filter: `user_id=eq.${syncUserId}`,
-        },
-        (payload) => {
-          if (!isMounted || !payload.new || !("payload" in payload.new)) {
-            return;
-          }
-
-          const nextPayload = payload.new.payload;
-
-          if (nextPayload && typeof nextPayload === "object") {
-            applyRemoteSyncPayload(nextPayload as UserSyncPayload);
-          }
-        },
-      )
-      .subscribe();
-
-    userSyncChannelRef.current = syncChannel;
-
-    function fetchRemoteSyncState() {
-      if (document.visibilityState !== "visible") {
-        return;
-      }
-
-      void fetchUserSyncState().then(({ data, error }) => {
-        if (
-          !isMounted ||
-          error ||
-          !data?.payload ||
-          typeof data.payload !== "object"
-        ) {
-          return;
-        }
-
-        applyRemoteSyncPayload(data.payload as UserSyncPayload);
-      });
-    }
-
-    const syncFallbackInterval = window.setInterval(fetchRemoteSyncState, 5_000);
-
-    window.addEventListener("focus", fetchRemoteSyncState);
-    document.addEventListener("visibilitychange", fetchRemoteSyncState);
-
-    return () => {
-      isMounted = false;
-      window.cancelAnimationFrame(frameId);
-      window.clearInterval(syncFallbackInterval);
-      window.removeEventListener("focus", fetchRemoteSyncState);
-      document.removeEventListener("visibilitychange", fetchRemoteSyncState);
-      if (userSyncChannelRef.current === syncChannel) {
-        userSyncChannelRef.current = null;
-      }
-      void supabase.removeChannel(syncChannel);
-    };
-    // Remote sync is loaded only when the account changes. Setting/folder writes go through saveUserSyncPatch.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [interfaceLanguage, user]);
+  const {
+    muteProfileNotifications,
+    saveHiddenMessageIds,
+    savePinnedMessageIdsByChat,
+    setSyncedInterfaceLanguage,
+    toggleStoredBooleanSetting,
+    unmuteProfileNotifications,
+  } = useUserSyncState({
+    allChatFolderName,
+    applyChatFoldersSyncPayload,
+    applyFavoritesSyncPayload,
+    archivedChatProfileIds,
+    areSoftEffectsEnabled,
+    avatarHistory,
+    chatFolderAssignments,
+    chatFolders,
+    favoriteItems,
+    hiddenMessageIds,
+    interfaceLanguage,
+    isLightThemeEnabled,
+    isOnlineStatusVisible,
+    isProfileSearchable,
+    localBlockedProfileIds,
+    mutedProfiles,
+    pinnedChatProfileIds,
+    pinnedMessageIdsByChat,
+    readLocalChatFoldersSyncPayload,
+    readLocalFavoritesSyncPayload,
+    resetChatFoldersState,
+    saveUserSyncPatchRef,
+    setAreSoftEffectsEnabled,
+    setAvatarHistory,
+    setErrorMessage,
+    setHiddenMessageIds,
+    setInterfaceLanguage,
+    setIsLightThemeEnabled,
+    setIsOnlineStatusVisible,
+    setIsProfileSearchable,
+    setLocalBlockedProfileIds,
+    setMutedProfiles,
+    setPinnedMessageIdsByChat,
+    setProfileNotificationMenuUserId,
+    user,
+  });
 
   const selectedMessageIdSet = useMemo(() => {
     return new Set(selectedMessageIds);
@@ -1083,74 +691,32 @@ export default function Home() {
     selectedChatUserId,
     userId: user?.id,
   });
-  const blockState = useMemo(() => {
-    const blockedByMeIds = new Set<string>();
-    const blockedMeIds = new Set<string>();
-
-    for (const message of messages) {
-      const blockPayload = getBlockMessagePayload(message.text);
-
-      if (!blockPayload || !message.user_id || !user?.id) {
-        continue;
-      }
-
-      if (!isDirectMessageForUser(message, user.id)) {
-        continue;
-      }
-
-      if (message.user_id === user.id) {
-        if (blockPayload.action === "block") {
-          blockedByMeIds.add(blockPayload.blockedId);
-        } else {
-          blockedByMeIds.delete(blockPayload.blockedId);
-        }
-      }
-
-      if (blockPayload.blockedId === user.id) {
-        if (blockPayload.action === "block") {
-          blockedMeIds.add(message.user_id);
-        } else {
-          blockedMeIds.delete(message.user_id);
-        }
-      }
-    }
-
-    return {
-      blockedByMeIds: Array.from(blockedByMeIds),
-      blockedMeIds: Array.from(blockedMeIds),
-    };
-  }, [messages, user?.id]);
-  const blockedProfileIds = useMemo(
-    () =>
-      Array.from(
-        new Set([
-          ...localBlockedProfileIds,
-          ...blockState.blockedByMeIds,
-          ...blockState.blockedMeIds,
-        ]),
-      ),
-    [blockState.blockedByMeIds, blockState.blockedMeIds, localBlockedProfileIds],
-  );
-  const blockedByMeProfileIds = useMemo(
-    () => Array.from(new Set([...localBlockedProfileIds, ...blockState.blockedByMeIds])),
-    [blockState.blockedByMeIds, localBlockedProfileIds],
-  );
-  const blockedByMeProfiles = useMemo(() => {
-    return blockedByMeProfileIds
-      .map((profileId) => {
-        const profile = profilesByUserId.get(profileId);
-
-        return {
-          avatarUrl: profile?.avatar_url ?? null,
-          name: profile?.display_name ?? "Пользователь",
-          username: profile?.username ?? null,
-          userId: profileId,
-        };
-      })
-      .sort((firstProfile, secondProfile) =>
-        firstProfile.name.localeCompare(secondProfile.name, "ru"),
-      );
-  }, [blockedByMeProfileIds, profilesByUserId]);
+  const {
+    blockedByMeProfileIds,
+    blockedByMeProfiles,
+    blockedMeProfileIds,
+    blockedProfileIds,
+    confirmBlockChange,
+    requestBlockChange,
+  } = useProfileBlockState({
+    activeUserName,
+    blockConfirmation,
+    broadcastMessage,
+    localBlockedProfileIds,
+    messages,
+    profilesByUserId,
+    saveUserSyncPatch,
+    setBlockConfirmation,
+    setEditingMessage,
+    setErrorMessage,
+    setIncomingCall,
+    setLocalBlockedProfileIds,
+    setMessageText,
+    setMessages,
+    setProfileNotificationMenuUserId,
+    setReplyTarget,
+    user,
+  });
   const visibleMessages = useMemo(() => {
     return messages.filter((message) => {
       return (
@@ -1555,7 +1121,7 @@ export default function Home() {
   const isSelectedChatBlockedByMe =
     selectedChatUserId !== null && blockedByMeProfileIds.includes(selectedChatUserId);
   const isSelectedChatBlockingMe =
-    selectedChatUserId !== null && blockState.blockedMeIds.includes(selectedChatUserId);
+    selectedChatUserId !== null && blockedMeProfileIds.includes(selectedChatUserId);
   const isSelectedChatBlocked = isSelectedChatBlockedByMe || isSelectedChatBlockingMe;
   const chatDeleteTargetProfile = useMemo(() => {
     const targetUserId = chatDeleteTargetUserId ?? selectedChatUserId;
@@ -1802,25 +1368,6 @@ export default function Home() {
   useEffect(() => {
     mutedProfilesRef.current = mutedProfiles;
   }, [mutedProfiles]);
-
-  useEffect(() => {
-    const mutedProfilesCleanupInterval = window.setInterval(() => {
-      setMutedProfiles((currentMutedProfiles) => {
-        const nextMutedProfiles = pruneMutedProfiles(currentMutedProfiles);
-
-        if (Object.keys(nextMutedProfiles).length === Object.keys(currentMutedProfiles).length) {
-          return currentMutedProfiles;
-        }
-
-        writeStoredMutedProfiles(nextMutedProfiles);
-        return nextMutedProfiles;
-      });
-    }, 60_000);
-
-    return () => {
-      window.clearInterval(mutedProfilesCleanupInterval);
-    };
-  }, [setMutedProfiles]);
 
   useEffect(() => {
     blockedProfileIdsRef.current = new Set(blockedProfileIds);
@@ -2482,7 +2029,7 @@ export default function Home() {
       return;
     }
 
-    if (blockState.blockedMeIds.includes(targetUserId)) {
+    if (blockedMeProfileIds.includes(targetUserId)) {
       setErrorMessage("Ты не можешь позвонить: пользователь тебя заблокировал.");
       return;
     }
@@ -2665,94 +2212,6 @@ export default function Home() {
     setCallPanelProfileSnapshot(null);
   }
 
-  function getUserSyncClientId() {
-    if (!userSyncClientIdRef.current) {
-      userSyncClientIdRef.current =
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `sync-client-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    }
-
-    return userSyncClientIdRef.current;
-  }
-
-  function broadcastUserSyncPayload(payload: UserSyncPayload) {
-    void userSyncChannelRef.current?.send({
-      event: "sync-payload",
-      payload: {
-        originId: getUserSyncClientId(),
-        payload,
-      },
-      type: "broadcast",
-    });
-  }
-
-  function saveUserSyncPatch(patch: UserSyncPayload) {
-    if (!user || isApplyingRemoteSyncRef.current) {
-      return;
-    }
-
-    const nextPayload: UserSyncPayload = {
-      ...userSyncPayloadRef.current,
-      allChatFolderName,
-      archivedChatProfileIds,
-      avatarHistory,
-      blockedProfileIds: localBlockedProfileIds,
-      chatFolderAssignments,
-      chatFolders,
-      favoriteItems,
-      hiddenMessageIds,
-      interfaceLanguage,
-      mutedProfiles,
-      pinnedChatProfileIds,
-      pinnedMessageIdsByChat,
-      settings: {
-        areSoftEffectsEnabled,
-        isLightThemeEnabled,
-        isOnlineStatusVisible,
-        isProfileSearchable,
-      },
-      ...patch,
-    };
-
-    userSyncPayloadRef.current = nextPayload;
-    broadcastUserSyncPayload(nextPayload);
-    void upsertUserSyncState(user.id, nextPayload);
-  }
-
-  function setSyncedInterfaceLanguage(nextLanguageValue: SetStateAction<InterfaceLanguage>) {
-    const nextLanguage =
-      typeof nextLanguageValue === "function"
-        ? nextLanguageValue(interfaceLanguage)
-        : nextLanguageValue;
-
-    setInterfaceLanguage(nextLanguage);
-    window.localStorage.setItem(interfaceLanguageStorageKey, nextLanguage);
-    saveUserSyncPatch({ interfaceLanguage: nextLanguage });
-  }
-
-  function saveHiddenMessageIds(nextIds: number[]) {
-    if (!user) {
-      return;
-    }
-
-    const normalizedIds = parseNumberArray(nextIds);
-
-    setHiddenMessageIds(normalizedIds);
-    window.localStorage.setItem(`hush-hidden-messages-${user.id}`, JSON.stringify(normalizedIds));
-    saveUserSyncPatch({ hiddenMessageIds: normalizedIds });
-  }
-
-  function savePinnedMessageIdsByChat(nextPinnedMessageIdsByChat: PinnedMessageIdsByChat) {
-    if (!user) {
-      return;
-    }
-
-    setPinnedMessageIdsByChat(nextPinnedMessageIdsByChat);
-    writeStoredPinnedMessageIds(user.id, nextPinnedMessageIdsByChat);
-    saveUserSyncPatch({ pinnedMessageIdsByChat: nextPinnedMessageIdsByChat });
-  }
-
   async function toggleNotifications() {
     const nextValue = !areNotificationsEnabled;
 
@@ -2777,139 +2236,6 @@ export default function Home() {
       "hush-notifications",
       nextValue ? "enabled" : "disabled",
     );
-    setErrorMessage("");
-  }
-
-  function toggleStoredBooleanSetting(
-    key: string,
-    setter: (value: boolean) => void,
-    currentValue: boolean,
-  ) {
-    const nextValue = !currentValue;
-
-    setter(nextValue);
-    writeStoredBoolean(key, nextValue);
-    saveUserSyncPatch({
-      settings: {
-        areSoftEffectsEnabled: key === "hush-settings-soft-effects" ? nextValue : areSoftEffectsEnabled,
-        isLightThemeEnabled: key === "hush-settings-light-theme" ? nextValue : isLightThemeEnabled,
-        isOnlineStatusVisible:
-          key === "hush-settings-online-status-visible" ? nextValue : isOnlineStatusVisible,
-        isProfileSearchable:
-          key === "hush-settings-profile-searchable" ? nextValue : isProfileSearchable,
-      },
-    });
-    setErrorMessage("");
-  }
-
-  function muteProfileNotifications(profileUserId: string, durationMs: number | null) {
-    if (!profileUserId) {
-      return;
-    }
-
-    const nextMutedProfiles = pruneMutedProfiles({
-      ...mutedProfiles,
-      [profileUserId]: durationMs === null ? null : Date.now() + durationMs,
-    });
-
-    setMutedProfiles(nextMutedProfiles);
-    writeStoredMutedProfiles(nextMutedProfiles);
-    saveUserSyncPatch({ mutedProfiles: nextMutedProfiles });
-    setProfileNotificationMenuUserId(null);
-    setErrorMessage("");
-  }
-
-  function unmuteProfileNotifications(profileUserId: string) {
-    const nextMutedProfiles = { ...mutedProfiles };
-
-    delete nextMutedProfiles[profileUserId];
-
-    setMutedProfiles(nextMutedProfiles);
-    writeStoredMutedProfiles(nextMutedProfiles);
-    saveUserSyncPatch({ mutedProfiles: nextMutedProfiles });
-    setProfileNotificationMenuUserId(null);
-    setErrorMessage("");
-  }
-
-  function requestBlockChange(profileUserId: string, targetLabel: string) {
-    if (!profileUserId) {
-      return;
-    }
-
-    setProfileNotificationMenuUserId(null);
-    setBlockConfirmation({
-      action: blockedByMeProfileIds.includes(profileUserId) ? "unblock" : "block",
-      targetLabel,
-      userId: profileUserId,
-    });
-  }
-
-  async function confirmBlockChange() {
-    if (!blockConfirmation) {
-      return;
-    }
-
-    if (!user) {
-      setErrorMessage("Сначала войди в аккаунт.");
-      return;
-    }
-
-    const { action, userId } = blockConfirmation;
-
-    setBlockConfirmation(null);
-    setProfileNotificationMenuUserId(null);
-
-    const nextLocalBlockedProfileIds =
-      action === "block"
-        ? Array.from(new Set([...localBlockedProfileIds, userId]))
-        : localBlockedProfileIds.filter((profileId) => profileId !== userId);
-
-    setLocalBlockedProfileIds(nextLocalBlockedProfileIds);
-    writeStoredStringList("hush-blocked-profiles", nextLocalBlockedProfileIds);
-    saveUserSyncPatch({ blockedProfileIds: nextLocalBlockedProfileIds });
-
-    const optimisticMessage = createOptimisticMessage({
-      recipientId: userId,
-      text: createBlockMessageText(userId, action),
-    });
-
-    setMessages((currentMessages) =>
-      mergeMessages(currentMessages, [optimisticMessage]),
-    );
-
-    const { data, error } = await supabase
-      .from("messages")
-      .insert({
-        author: activeUserName,
-        recipient_id: userId,
-        text: createBlockMessageText(userId, action),
-        user_id: user.id,
-      })
-      .select(messageColumns)
-      .single();
-
-    if (error || !data) {
-      setMessages((currentMessages) =>
-        currentMessages.filter((message) => message.id !== optimisticMessage.id),
-      );
-      setErrorMessage("Не получилось изменить блокировку. Попробуй ещё раз.");
-      return;
-    }
-
-    setMessages((currentMessages) =>
-      settleOptimisticMessage(currentMessages, optimisticMessage, data),
-    );
-    broadcastMessage(data);
-
-    if (action === "block") {
-      setIncomingCall((currentCall) =>
-        currentCall?.sender_id === userId ? null : currentCall,
-      );
-    }
-
-    setMessageText("");
-    setReplyTarget(null);
-    setEditingMessage(null);
     setErrorMessage("");
   }
 
