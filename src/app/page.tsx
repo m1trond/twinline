@@ -4,7 +4,6 @@ import {
   ChangeEvent,
   FormEvent,
   MouseEvent,
-  PointerEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -31,6 +30,7 @@ import { useAuthSessionState } from "@/features/auth/useAuthSessionState";
 import { AccessView } from "@/features/access/components/AccessView";
 import { useAccessAdminState } from "@/features/access/useAccessAdminState";
 import { CallPanel } from "@/features/calls/components/CallPanel";
+import { useCallPanelDrag } from "@/features/calls/useCallPanelDrag";
 import { useCallPanelEffects } from "@/features/calls/useCallPanelEffects";
 import { useCallSignals } from "@/features/calls/useCallSignals";
 import { useCallState } from "@/features/calls/useCallState";
@@ -135,10 +135,7 @@ import {
   updateEditableMessageText,
 } from "@/shared/utils/messages";
 import { useFloatingUiState } from "@/shared/hooks/useFloatingUiState";
-import {
-  clampPanelPosition,
-  getCenteredCallPanelPosition,
-} from "@/shared/utils/viewport";
+import { getCenteredCallPanelPosition } from "@/shared/utils/viewport";
 import { registerHushServiceWorker } from "@/shared/utils/notifications";
 
 export default function Home() {
@@ -365,13 +362,6 @@ export default function Home() {
   const selectedChatUserIdRef = useRef<string | null>(null);
   const originalPageTitleRef = useRef("Hush");
   const isDeletingChatRef = useRef(false);
-  const callPanelDragRef = useRef({
-    left: 0,
-    pointerId: 0,
-    startX: 0,
-    startY: 0,
-    top: 0,
-  });
   const handleAuthUserChange = useCallback(() => {
   }, []);
   const {
@@ -1287,6 +1277,15 @@ export default function Home() {
     setCallDuration,
     setCallPanelPosition,
     setIsCallPanelCollapsed,
+  });
+  const {
+    dragCallPanel,
+    startCallPanelDrag,
+    stopCallPanelDrag,
+  } = useCallPanelDrag({
+    callPanelPosition,
+    isCallPanelCollapsed,
+    setCallPanelPosition,
   });
   useCallSignals({
     blockedProfileIdsRef,
@@ -2707,42 +2706,6 @@ export default function Home() {
   function requestMessageDelete(message: MessageRow) {
     setMessageDeleteTarget(message);
     setMessageContextMenu(null);
-  }
-
-  function startCallPanelDrag(event: PointerEvent<HTMLElement>) {
-    if (event.button !== 0) {
-      return;
-    }
-
-    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-    callPanelDragRef.current = {
-      left: callPanelPosition.left,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      top: callPanelPosition.top,
-    };
-  }
-
-  function dragCallPanel(event: PointerEvent<HTMLElement>) {
-    if (callPanelDragRef.current.pointerId !== event.pointerId) {
-      return;
-    }
-
-    const nextPosition = {
-      left: callPanelDragRef.current.left + event.clientX - callPanelDragRef.current.startX,
-      top: callPanelDragRef.current.top + event.clientY - callPanelDragRef.current.startY,
-    };
-
-    setCallPanelPosition(clampPanelPosition(nextPosition, isCallPanelCollapsed));
-  }
-
-  function stopCallPanelDrag(event: PointerEvent<HTMLElement>) {
-    if (callPanelDragRef.current.pointerId !== event.pointerId) {
-      return;
-    }
-
-    callPanelDragRef.current.pointerId = 0;
   }
 
   async function updateProfileName(event: FormEvent<HTMLFormElement>) {
