@@ -30,10 +30,9 @@ import { useAuthSessionState } from "@/features/auth/useAuthSessionState";
 import { AccessView } from "@/features/access/components/AccessView";
 import { useAccessAdminState } from "@/features/access/useAccessAdminState";
 import { CallPanel } from "@/features/calls/components/CallPanel";
-import { useCallCleanup } from "@/features/calls/useCallCleanup";
+import { useCallActions } from "@/features/calls/useCallActions";
 import { useCallPanelDrag } from "@/features/calls/useCallPanelDrag";
 import { useCallPanelEffects } from "@/features/calls/useCallPanelEffects";
-import { useCallPeerConnection } from "@/features/calls/useCallPeerConnection";
 import { useCallSignals } from "@/features/calls/useCallSignals";
 import { useCallState } from "@/features/calls/useCallState";
 import { ChatContextMenu } from "@/features/messages/components/ChatContextMenu";
@@ -102,7 +101,6 @@ import {
 } from "@/features/messages/queries";
 import type {
   ActiveView,
-  CallSignalType,
   CallStatus,
   FavoriteItem,
   MessageRow,
@@ -110,9 +108,7 @@ import type {
   ProfileRow,
   ReplyMessagePayload,
 } from "@/shared/types";
-import { isSessionDescriptionPayload } from "@/shared/utils/callSignals";
 import {
-  applyCallAudioQuality,
   getVoiceRecorderOptions,
   speechAudioConstraints,
 } from "@/shared/utils/audio";
@@ -137,7 +133,6 @@ import {
   updateEditableMessageText,
 } from "@/shared/utils/messages";
 import { useFloatingUiState } from "@/shared/hooks/useFloatingUiState";
-import { getCenteredCallPanelPosition } from "@/shared/utils/viewport";
 import { registerHushServiceWorker } from "@/shared/utils/notifications";
 
 export default function Home() {
@@ -1289,41 +1284,40 @@ export default function Home() {
     isCallPanelCollapsed,
     setCallPanelPosition,
   });
-  const { closeCall } = useCallCleanup({
+  const {
+    acceptCall,
+    closeCall,
+    markCallConnected,
+    sendCallSignal,
+    startCall,
+    toggleCallMicrophone,
+  } = useCallActions({
+    blockedByMeProfileIds,
+    blockedMeProfileIds,
     callPartnerIdRef,
     callStartedAtRef,
     callStatusRef,
+    friendUserId: friendProfile?.userId ?? null,
+    getCallPanelProfileSnapshot,
+    hasSavedCallSummaryRef,
+    incomingCall,
+    isCallMicMuted,
     localCallStreamRef,
     pendingIceCandidatesRef,
     peerConnectionRef,
     remoteAudioRef,
     remoteCallStreamRef,
     saveCallSummaryMessage,
-    sendCallSignal,
     setCallDuration,
+    setCallPanelPosition,
     setCallPanelProfileSnapshot,
     setCallStartedAt,
     setCallStatus,
+    setErrorMessage,
     setIncomingCall,
     setIsCallMicMuted,
-  });
-  const {
-    createPeerConnection,
-    markCallConnected,
-  } = useCallPeerConnection({
-    callPartnerIdRef,
-    callStartedAtRef,
-    callStatusRef,
-    closeCall,
-    hasSavedCallSummaryRef,
-    peerConnectionRef,
-    remoteAudioRef,
-    remoteCallStreamRef,
-    sendCallSignal,
-    setCallDuration,
-    setCallStartedAt,
-    setCallStatus,
-    setErrorMessage,
+    setIsCallPanelCollapsed,
+    userId: user?.id,
   });
   useCallSignals({
     blockedProfileIdsRef,
@@ -1726,6 +1720,8 @@ export default function Home() {
     return () => {
       stopVoiceInputMeter();
       recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
+      // On unmount we intentionally stop the latest active call stream.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       localCallStreamRef.current?.getTracks().forEach((track) => track.stop());
       // On unmount we intentionally close the latest active connection, not the initial ref value.
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1937,160 +1933,6 @@ export default function Home() {
       setAuthUsernameError("");
     } finally {
       setIsSigningOut(false);
-    }
-  }
-
-  async function sendCallSignal(
-    receiverId: string,
-    type: CallSignalType,
-    payload: Record<string, unknown> | RTCSessionDescriptionInit | RTCIceCandidateInit | null,
-  ) {
-    if (!user) {
-      return;
-    }
-
-    await supabase.from("call_signals").insert({
-      payload,
-      receiver_id: receiverId,
-      sender_id: user.id,
-      type,
-    });
-  }
-
-  function setLocalMicrophoneMuted(isMuted: boolean) {
-    localCallStreamRef.current?.getAudioTracks().forEach((track) => {
-      track.enabled = !isMuted;
-    });
-    setIsCallMicMuted(isMuted);
-  }
-
-  function toggleCallMicrophone() {
-    setLocalMicrophoneMuted(!isCallMicMuted);
-  }
-
-  async function getLocalCallStream() {
-    if (localCallStreamRef.current) {
-      return localCallStreamRef.current;
-    }
-
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: speechAudioConstraints,
-      video: false,
-    });
-
-    localCallStreamRef.current = stream;
-
-    return stream;
-  }
-
-  async function startCall(targetUserId = friendProfile?.userId ?? null) {
-    if (!user) {
-      return;
-    }
-
-    if (!targetUserId || targetUserId === user.id) {
-      setErrorMessage("Чтобы позвонить, сначала нужен хотя бы один вход друга в чат.");
-      return;
-    }
-
-    if (blockedByMeProfileIds.includes(targetUserId)) {
-      setErrorMessage("Сначала разблокируй пользователя, чтобы позвонить ему.");
-      return;
-    }
-
-    if (blockedMeProfileIds.includes(targetUserId)) {
-      setErrorMessage("Ты не можешь позвонить: пользователь тебя заблокировал.");
-      return;
-    }
-
-    if (!navigator.mediaDevices?.getUserMedia || typeof RTCPeerConnection === "undefined") {
-      setErrorMessage("Этот браузер не поддерживает звонки.");
-      return;
-    }
-
-    try {
-      setErrorMessage("");
-      setCallPanelProfileSnapshot(getCallPanelProfileSnapshot(targetUserId));
-      callStatusRef.current = "calling";
-      setIsCallPanelCollapsed(false);
-      setCallPanelPosition(getCenteredCallPanelPosition(false));
-      setCallStatus("calling");
-      setCallDuration(0);
-      setCallStartedAt(null);
-      callStartedAtRef.current = null;
-      hasSavedCallSummaryRef.current = false;
-      setIsCallMicMuted(false);
-
-      const stream = await getLocalCallStream();
-      const peerConnection = createPeerConnection(targetUserId);
-
-      stream.getTracks().forEach((track) => {
-        const sender = peerConnection.addTrack(track, stream);
-
-        void applyCallAudioQuality(sender);
-      });
-
-      const offer = await peerConnection.createOffer();
-      await peerConnection.setLocalDescription(offer);
-      await sendCallSignal(targetUserId, "offer", offer);
-    } catch {
-      closeCall(false);
-      setErrorMessage("Не получилось начать звонок. Проверь доступ к микрофону.");
-    }
-  }
-
-  async function acceptCall() {
-    if (!incomingCall || !isSessionDescriptionPayload(incomingCall.payload)) {
-      return;
-    }
-
-    if (!navigator.mediaDevices?.getUserMedia || typeof RTCPeerConnection === "undefined") {
-      setErrorMessage("Этот браузер не поддерживает звонки.");
-      return;
-    }
-
-    try {
-      setErrorMessage("");
-      setCallPanelProfileSnapshot(getCallPanelProfileSnapshot(incomingCall.sender_id));
-      callStatusRef.current = "connecting";
-      setIsCallPanelCollapsed(false);
-      setCallPanelPosition(getCenteredCallPanelPosition(false));
-      setCallStatus("connecting");
-      setCallDuration(0);
-      setCallStartedAt(null);
-      callStartedAtRef.current = null;
-      hasSavedCallSummaryRef.current = false;
-      setIsCallMicMuted(false);
-
-      const stream = await getLocalCallStream();
-      const peerConnection = createPeerConnection(incomingCall.sender_id);
-
-      stream.getTracks().forEach((track) => {
-        const sender = peerConnection.addTrack(track, stream);
-
-        void applyCallAudioQuality(sender);
-      });
-
-      await peerConnection.setRemoteDescription(incomingCall.payload);
-      const pendingCandidates = pendingIceCandidatesRef.current;
-      pendingIceCandidatesRef.current = [];
-
-      for (const candidate of pendingCandidates) {
-        try {
-          await peerConnection.addIceCandidate(candidate);
-        } catch {
-          pendingIceCandidatesRef.current.push(candidate);
-        }
-      }
-
-      const answer = await peerConnection.createAnswer();
-      await peerConnection.setLocalDescription(answer);
-      await sendCallSignal(incomingCall.sender_id, "answer", answer);
-      setIncomingCall(null);
-      markCallConnected();
-    } catch {
-      closeCall(false);
-      setErrorMessage("Не получилось принять звонок. Проверь доступ к микрофону.");
     }
   }
 

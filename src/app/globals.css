@@ -204,14 +204,14 @@ a,
   z-index: 1;
 }
 
-.hush-shell button:not(:disabled):focus-visible,
-.hush-shell a:focus-visible,
-.hush-shell [role="button"]:focus-visible {
+.hush-shell button:not(:disabled):not([class*="outline-none"]):focus-visible,
+.hush-shell a:not([class*="outline-none"]):focus-visible,
+.hush-shell [role="button"]:not([class*="outline-none"]):focus-visible {
   outline: 2px solid rgba(244, 244, 245, 0.72);
   outline-offset: 2px;
 }
 
-.hush-shell :where(button, input, select, textarea, [role="button"]):not([class*="rounded-full"]):not(.hush-color-swatch),
+.hush-shell :where(button, input, select, textarea, [role="button"]):not([class*="rounded-full"]):not([class*="rounded-none"]):not(.hush-color-swatch),
 .hush-shell :where(
   [class*="rounded-lg"],
   [class*="rounded-xl"],
@@ -222,8 +222,8 @@ a,
   [class*="rounded-[20px]"],
   [class*="rounded-[22px]"],
   [class*="rounded-[24px]"]
-):not([class*="rounded-full"]):not(.hush-color-swatch),
-:where(.hush-view-transition, .hush-panel-transition, .hush-modal-transition, .hush-context-menu, .hush-call-panel, .hush-sticker-picker):not([class*="rounded-full"]),
+):not([class*="rounded-full"]):not([class*="rounded-none"]):not(.hush-color-swatch),
+:where(.hush-view-transition, .hush-panel-transition, .hush-modal-transition, .hush-context-menu, .hush-call-panel, .hush-sticker-picker):not([class*="rounded-full"]):not([class*="rounded-none"]),
 :where(.hush-view-transition, .hush-panel-transition, .hush-modal-transition, .hush-context-menu, .hush-call-panel, .hush-sticker-picker) :where(
   [class*="rounded-lg"],
   [class*="rounded-xl"],
@@ -234,7 +234,7 @@ a,
   [class*="rounded-[20px]"],
   [class*="rounded-[22px]"],
   [class*="rounded-[24px]"]
-):not([class*="rounded-full"]):not(.hush-color-swatch) {
+):not([class*="rounded-full"]):not([class*="rounded-none"]):not(.hush-color-swatch) {
   border-radius: var(--hush-radius) !important;
 }
 
