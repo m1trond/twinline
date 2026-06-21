@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import {
   ChangeEvent,
@@ -1266,6 +1266,7 @@ export default function Home() {
     lastOwnDialogMessageKey,
     messagesListRef,
     selectedChatUserId,
+    isPinnedMessagesViewOpen,
   });
   useCallPanelEffects({
     callStartedAt,

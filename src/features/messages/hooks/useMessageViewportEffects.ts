@@ -14,6 +14,7 @@ type MessageViewportEffectsParams = {
   lastOwnDialogMessageKey: string;
   messagesListRef: RefObject<HTMLDivElement | null>;
   selectedChatUserId: string | null;
+  isPinnedMessagesViewOpen: boolean;
 };
 
 type ScrollIntent = "open-chat" | "own-message" | "favorites";
@@ -55,12 +56,56 @@ export function useMessageViewportEffects({
   lastOwnDialogMessageKey,
   messagesListRef,
   selectedChatUserId,
+  isPinnedMessagesViewOpen,
 }: MessageViewportEffectsParams) {
   const frameIdsRef = useRef<number[]>([]);
   const lastOpenedChatUserIdRef = useRef<string | null>(null);
   const lastOwnDialogMessageKeyRef = useRef("");
   const releaseIntentTimeoutRef = useRef<number | null>(null);
   const scrollIntentRef = useRef<ScrollIntent | null>(null);
+
+  const prePinsScrollTopRef = useRef<number | null>(null);
+  const previousIsPinnedRef = useRef(isPinnedMessagesViewOpen);
+  const lastChatUserIdRef = useRef<string | null>(null);
+
+  if (lastChatUserIdRef.current !== selectedChatUserId) {
+    lastChatUserIdRef.current = selectedChatUserId;
+    prePinsScrollTopRef.current = null;
+    previousIsPinnedRef.current = isPinnedMessagesViewOpen;
+  }
+
+  useLayoutEffect(() => {
+    const messagesList = messagesListRef.current;
+    if (!messagesList) {
+      return;
+    }
+
+    const wasPinnedOpen = previousIsPinnedRef.current;
+    previousIsPinnedRef.current = isPinnedMessagesViewOpen;
+
+    if (!wasPinnedOpen && isPinnedMessagesViewOpen) {
+      prePinsScrollTopRef.current = messagesList.scrollTop;
+    } else if (wasPinnedOpen && !isPinnedMessagesViewOpen) {
+      const targetScrollTop = prePinsScrollTopRef.current;
+      if (targetScrollTop !== null) {
+        let pass = 0;
+        const passes = 6;
+        function restore() {
+          if (previousIsPinnedRef.current) {
+            return;
+          }
+          if (messagesListRef.current) {
+            messagesListRef.current.scrollTop = targetScrollTop as number;
+          }
+          pass++;
+          if (pass < passes) {
+            window.requestAnimationFrame(restore);
+          }
+        }
+        restore();
+      }
+    }
+  }, [isPinnedMessagesViewOpen, messagesListRef]);
 
   const cancelScheduledScroll = useCallback(() => {
     for (const frameId of frameIdsRef.current) {
