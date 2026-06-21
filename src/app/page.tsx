@@ -63,6 +63,7 @@ import { useForwardMessagesState } from "@/features/messages/hooks/useForwardMes
 import { useMessageAttachmentSender } from "@/features/messages/hooks/useMessageAttachmentSender";
 import { useMessageComposerState } from "@/features/messages/hooks/useMessageComposerState";
 import { useMessageDerivedState } from "@/features/messages/hooks/useMessageDerivedState";
+import { useMessageContextMenus } from "@/features/messages/hooks/useMessageContextMenus";
 import { useMessagePinActions } from "@/features/messages/hooks/useMessagePinActions";
 import { useMessageReceiptEffects } from "@/features/messages/hooks/useMessageReceiptEffects";
 import { useMessagesRealtimeState } from "@/features/messages/hooks/useMessagesRealtimeState";
@@ -716,6 +717,20 @@ export default function Home() {
     setProfileNotificationMenuUserId,
     setReplyTarget,
     user,
+  });
+  const {
+    openChatContextMenu,
+    openFavoriteContextMenu,
+    openMessageContextMenu,
+    requestChatDeleteFromMenu,
+  } = useMessageContextMenus({
+    setChatContextMenu,
+    setChatDeleteTargetUserId,
+    setFavoriteContextMenu,
+    setIsChatDeleteDialogOpen,
+    setIsStickerPickerOpen,
+    setMessageContextMenu,
+    userId: user?.id,
   });
   const visibleMessages = useMemo(() => {
     return messages.filter((message) => {
@@ -2331,87 +2346,6 @@ export default function Home() {
     }
 
     setIsStickerPickerOpen((isOpen) => !isOpen);
-  }
-
-  function openMessageContextMenu(
-    event: MouseEvent<HTMLElement>,
-    message: MessageRow,
-  ) {
-    if (!user) {
-      return;
-    }
-
-    event.preventDefault();
-    setIsStickerPickerOpen(false);
-
-    const menuWidth = Math.min(220, window.innerWidth - 24);
-    const menuHeight = 306;
-
-    setMessageContextMenu({
-      left: Math.max(
-        12,
-        Math.min(event.clientX, window.innerWidth - menuWidth - 12),
-      ),
-      message,
-      top: Math.max(
-        12,
-        Math.min(event.clientY, window.innerHeight - menuHeight - 12),
-      ),
-    });
-  }
-
-  function openFavoriteContextMenu(
-    event: MouseEvent<HTMLElement>,
-    item: FavoriteItem,
-  ) {
-    event.preventDefault();
-    setIsStickerPickerOpen(false);
-
-    const menuWidth = Math.min(220, window.innerWidth - 24);
-    const menuHeight = 306;
-
-    setFavoriteContextMenu({
-      item,
-      left: Math.max(
-        12,
-        Math.min(event.clientX, window.innerWidth - menuWidth - 12),
-      ),
-      top: Math.max(
-        12,
-        Math.min(event.clientY, window.innerHeight - menuHeight - 12),
-      ),
-    });
-  }
-
-  function openChatContextMenu(
-    event: MouseEvent<HTMLElement>,
-    profile: ProfileRow,
-  ) {
-    event.preventDefault();
-    setMessageContextMenu(null);
-    setFavoriteContextMenu(null);
-    setIsStickerPickerOpen(false);
-
-    const menuWidth = Math.min(286, window.innerWidth - 24);
-    const menuHeight = 280;
-
-    setChatContextMenu({
-      left: Math.max(
-        12,
-        Math.min(event.clientX, window.innerWidth - menuWidth - 12),
-      ),
-      profile,
-      top: Math.max(
-        12,
-        Math.min(event.clientY, window.innerHeight - menuHeight - 12),
-      ),
-    });
-  }
-
-  function requestChatDeleteFromMenu(profile: ProfileRow) {
-    setChatDeleteTargetUserId(profile.user_id);
-    setChatContextMenu(null);
-    setIsChatDeleteDialogOpen(true);
   }
 
   async function copyMessageText(message: MessageRow) {
