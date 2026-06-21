@@ -33,6 +33,7 @@ import { CallPanel } from "@/features/calls/components/CallPanel";
 import { useCallCleanup } from "@/features/calls/useCallCleanup";
 import { useCallPanelDrag } from "@/features/calls/useCallPanelDrag";
 import { useCallPanelEffects } from "@/features/calls/useCallPanelEffects";
+import { useCallPeerConnection } from "@/features/calls/useCallPeerConnection";
 import { useCallSignals } from "@/features/calls/useCallSignals";
 import { useCallState } from "@/features/calls/useCallState";
 import { ChatContextMenu } from "@/features/messages/components/ChatContextMenu";
@@ -1306,6 +1307,24 @@ export default function Home() {
     setIncomingCall,
     setIsCallMicMuted,
   });
+  const {
+    createPeerConnection,
+    markCallConnected,
+  } = useCallPeerConnection({
+    callPartnerIdRef,
+    callStartedAtRef,
+    callStatusRef,
+    closeCall,
+    hasSavedCallSummaryRef,
+    peerConnectionRef,
+    remoteAudioRef,
+    remoteCallStreamRef,
+    sendCallSignal,
+    setCallDuration,
+    setCallStartedAt,
+    setCallStatus,
+    setErrorMessage,
+  });
   useCallSignals({
     blockedProfileIdsRef,
     callPartnerIdRef,
@@ -1708,6 +1727,8 @@ export default function Home() {
       stopVoiceInputMeter();
       recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
       localCallStreamRef.current?.getTracks().forEach((track) => track.stop());
+      // On unmount we intentionally close the latest active connection, not the initial ref value.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       peerConnectionRef.current?.close();
     };
     // stopVoiceInputMeter is intentionally omitted so this teardown only runs on unmount.
@@ -1936,24 +1957,6 @@ export default function Home() {
     });
   }
 
-  async function playRemoteAudio() {
-    const audioElement = remoteAudioRef.current;
-
-    if (!audioElement) {
-      return;
-    }
-
-    audioElement.muted = false;
-    audioElement.volume = 1;
-
-    try {
-      await audioElement.play();
-      setErrorMessage("");
-    } catch {
-      setErrorMessage("Нажми «Включить звук», чтобы браузер разрешил аудио звонка.");
-    }
-  }
-
   function setLocalMicrophoneMuted(isMuted: boolean) {
     localCallStreamRef.current?.getAudioTracks().forEach((track) => {
       track.enabled = !isMuted;
@@ -1963,73 +1966,6 @@ export default function Home() {
 
   function toggleCallMicrophone() {
     setLocalMicrophoneMuted(!isCallMicMuted);
-  }
-
-  function markCallConnected() {
-    if (callStatusRef.current !== "connected") {
-      const startedAt = Date.now();
-
-      setCallDuration(0);
-      setCallStartedAt(startedAt);
-      callStartedAtRef.current = startedAt;
-      hasSavedCallSummaryRef.current = false;
-    }
-
-    callStatusRef.current = "connected";
-    setCallStatus("connected");
-  }
-
-  function createPeerConnection(receiverId: string) {
-    const peerConnection = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-    });
-
-    peerConnection.onicecandidate = (event) => {
-      if (event.candidate) {
-        sendCallSignal(receiverId, "ice", event.candidate.toJSON());
-      }
-    };
-
-    peerConnection.ontrack = (event) => {
-      const remoteStream =
-        event.streams[0] ?? remoteCallStreamRef.current ?? new MediaStream();
-
-      if (event.streams.length === 0) {
-        remoteStream.addTrack(event.track);
-      }
-
-      remoteCallStreamRef.current = remoteStream;
-
-      if (remoteAudioRef.current && remoteStream) {
-        remoteAudioRef.current.muted = false;
-        remoteAudioRef.current.volume = 1;
-        remoteAudioRef.current.srcObject = remoteStream;
-        playRemoteAudio();
-      }
-
-      event.track.onunmute = () => {
-        playRemoteAudio();
-      };
-    };
-
-    peerConnection.onconnectionstatechange = () => {
-      if (peerConnection.connectionState === "connected") {
-        markCallConnected();
-      }
-
-      if (
-        peerConnection.connectionState === "disconnected" ||
-        peerConnection.connectionState === "failed" ||
-        peerConnection.connectionState === "closed"
-      ) {
-        closeCall(false);
-      }
-    };
-
-    peerConnectionRef.current = peerConnection;
-    callPartnerIdRef.current = receiverId;
-
-    return peerConnection;
   }
 
   async function getLocalCallStream() {
