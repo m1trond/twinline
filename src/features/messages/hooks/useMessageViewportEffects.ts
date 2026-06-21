@@ -67,11 +67,13 @@ export function useMessageViewportEffects({
   const prePinsScrollTopRef = useRef<number | null>(null);
   const previousIsPinnedRef = useRef(isPinnedMessagesViewOpen);
   const lastChatUserIdRef = useRef<string | null>(null);
+  const isRestoringScrollRef = useRef(false);
 
   if (lastChatUserIdRef.current !== selectedChatUserId) {
     lastChatUserIdRef.current = selectedChatUserId;
     prePinsScrollTopRef.current = null;
     previousIsPinnedRef.current = isPinnedMessagesViewOpen;
+    isRestoringScrollRef.current = false;
   }
 
   useLayoutEffect(() => {
@@ -88,18 +90,29 @@ export function useMessageViewportEffects({
     } else if (wasPinnedOpen && !isPinnedMessagesViewOpen) {
       const targetScrollTop = prePinsScrollTopRef.current;
       if (targetScrollTop !== null) {
+        isRestoringScrollRef.current = true;
         let pass = 0;
-        const passes = 6;
+        const maxPasses = 60; // Try for up to ~1 second
+        
         function restore() {
-          if (previousIsPinnedRef.current) {
+          if (previousIsPinnedRef.current || !isRestoringScrollRef.current) {
+            isRestoringScrollRef.current = false;
             return;
           }
-          if (messagesListRef.current) {
-            messagesListRef.current.scrollTop = targetScrollTop as number;
+          const list = messagesListRef.current;
+          if (list) {
+            list.scrollTop = targetScrollTop as number;
+            // Check if we successfully reached the target scroll position
+            if (Math.abs(list.scrollTop - (targetScrollTop as number)) < 1.5) {
+              isRestoringScrollRef.current = false;
+              return;
+            }
           }
           pass++;
-          if (pass < passes) {
+          if (pass < maxPasses) {
             window.requestAnimationFrame(restore);
+          } else {
+            isRestoringScrollRef.current = false;
           }
         }
         restore();
@@ -258,6 +271,7 @@ export function useMessageViewportEffects({
       if (scrollIntentRef.current === "open-chat") {
         clearScrollIntent();
       }
+      isRestoringScrollRef.current = false;
     }
 
     messagesList.addEventListener("wheel", cancelOpenScrollIntent, { passive: true });
