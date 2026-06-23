@@ -144,7 +144,7 @@ export function SettingsView({
     {
       id: "privacy",
       label: t("privacy"),
-      icon: <IncognitoIcon />,
+      icon: <ShieldCheckIcon />,
       description: isRu ? "Конфиденциальность и ключи" : "Privacy settings & security keys",
     },
     {
@@ -183,7 +183,7 @@ export function SettingsView({
                 value={`${activeUserName}${currentProfile?.username ? ` · @${currentProfile.username}` : ""}`}
               />
               <button
-                className="mt-1 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-red-400/40 bg-red-500/15 px-3 text-xs sm:text-sm font-medium text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60 self-start"
+                className="mt-1 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-red-400/40 bg-red-500/15 px-3 text-xs font-medium text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60 self-start"
                 disabled={isSigningOut}
                 onClick={() => setIsSignOutDialogOpen(true)}
                 type="button"
@@ -201,13 +201,13 @@ export function SettingsView({
             >
               <div className="flex items-center justify-between gap-3 rounded-lg border border-red-500/15 bg-red-500/5 px-2.5 py-2">
                 <div className="min-w-0">
-                  <p className="text-sm sm:text-[15px] font-medium leading-5 text-red-200">{isRu ? "Удаление аккаунта" : "Delete account"}</p>
-                  <p className="text-xs sm:text-sm leading-normal text-red-200/60">
+                  <p className="text-sm font-medium leading-5 text-red-200">{isRu ? "Удаление аккаунта" : "Delete account"}</p>
+                  <p className="text-xs leading-normal text-red-200/60">
                     {isRu ? "Безвозвратное удаление всей истории." : "Permanently delete profile and all chat history."}
                   </p>
                 </div>
                 <button
-                  className="shrink-0 rounded-lg border border-red-500/35 bg-red-500/10 px-2.5 py-1 text-xs sm:text-sm font-medium text-red-200 transition hover:bg-red-500/20"
+                  className="shrink-0 rounded-lg border border-red-500/35 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-200 transition hover:bg-red-500/20"
                   onClick={() => alert(isRu ? "Это демо-версия настроек. Удаление аккаунта недоступно." : "This is a demo setup. Account deletion is disabled.")}
                   type="button"
                 >
@@ -223,7 +223,7 @@ export function SettingsView({
           <div className="grid gap-3">
             <SettingsCard
               description={t("privacyDescription")}
-              icon={<IncognitoIcon />}
+              icon={<ShieldCheckIcon />}
               title={t("privacy")}
             >
               {privacySettings.map((setting) => (
@@ -247,7 +247,7 @@ export function SettingsView({
               tone={blockedByMeProfiles.length > 0 ? "danger" : "default"}
             >
               {blockedByMeProfiles.length === 0 ? (
-                <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2 text-xs sm:text-sm text-[#a1a1aa]">
+                <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2 text-xs text-[#a1a1aa]">
                   {t("blackListEmpty")}
                 </div>
               ) : null}
@@ -258,7 +258,7 @@ export function SettingsView({
                   key={profile.userId}
                 >
                   <div className="flex min-w-0 items-center gap-2.5">
-                    <div className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs sm:text-sm font-medium text-[#050505]">
+                    <div className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505]">
                       {profile.avatarUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -271,16 +271,16 @@ export function SettingsView({
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-sm sm:text-[15px] font-medium text-[#f4f4f5]">
+                      <p className="truncate text-sm font-medium text-[#f4f4f5]">
                         {profile.name}
                       </p>
-                      <p className="truncate text-xs sm:text-sm text-[#a1a1aa]">
+                      <p className="truncate text-xs text-[#a1a1aa]">
                         {profile.username ? `@${profile.username}` : t("nicknameNotSet")}
                       </p>
                     </div>
                   </div>
                   <button
-                    className="shrink-0 rounded-lg border border-[#3f3f46]/40 px-2.5 py-1.5 text-xs sm:text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
+                    className="shrink-0 rounded-lg border border-[#3f3f46]/40 px-2.5 py-1.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
                     onClick={() => requestBlockChange(profile.userId, profile.name)}
                     type="button"
                   >
@@ -295,19 +295,19 @@ export function SettingsView({
               icon={<KeyIcon />}
               title={isRu ? "Сквозное шифрование" : "End-to-End Encryption"}
             >
-              <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 p-2.5 font-mono text-xs break-all leading-normal text-[#a1a1aa] text-center select-all">
+              <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 p-2.5 font-mono text-[11px] break-all leading-normal text-[#a1a1aa] text-center select-all">
                 {fingerprint}
               </div>
               <div className="grid grid-cols-2 gap-2 mt-1">
                 <button
-                  className="inline-flex min-h-8 items-center justify-center rounded-lg border border-[#3f3f46]/45 bg-[#f4f4f5]/10 px-2.5 text-xs sm:text-sm font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/14"
+                  className="inline-flex min-h-8 items-center justify-center rounded-lg border border-[#3f3f46]/45 bg-[#f4f4f5]/10 px-2.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/14"
                   onClick={() => alert(isRu ? "Ваши ключи успешно экспортированы." : "Your keys have been exported successfully.")}
                   type="button"
                 >
                   {isRu ? "Экспорт ключей" : "Export keys"}
                 </button>
                 <button
-                  className="inline-flex min-h-8 items-center justify-center rounded-lg border border-red-500/35 bg-red-500/10 px-2.5 text-xs sm:text-sm font-medium text-red-200 transition hover:bg-red-500/20"
+                  className="inline-flex min-h-8 items-center justify-center rounded-lg border border-red-500/35 bg-red-500/10 px-2.5 text-xs font-medium text-red-200 transition hover:bg-red-500/20"
                   onClick={() => alert(isRu ? "Демо-ключи шифрования успешно перегенерированы." : "Demo encryption keys regenerated successfully.")}
                   type="button"
                 >
@@ -382,24 +382,24 @@ export function SettingsView({
                     <DatabaseIcon />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-sm sm:text-[15px] font-medium leading-5">{isRu ? "Локальный кэш" : "Local cache"}</p>
-                    <p className="text-xs sm:text-sm leading-normal text-[#71717a]">
+                    <p className="text-sm font-medium leading-5">{isRu ? "Локальный кэш" : "Local cache"}</p>
+                    <p className="text-xs text-[#a1a1aa] mt-0.5">
                       {isRu ? "Сохраненные медиафайлы и сообщения." : "Cached media and messages in the browser."}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs sm:text-sm font-mono text-[#a1a1aa]">{cacheSize}</span>
+                  <span className="text-xs font-mono text-[#a1a1aa]">{cacheSize}</span>
                   {cacheSize !== (isRu ? "0.0 КБ" : "0.0 KB") ? (
                     <button
-                      className="rounded-lg border border-[#3f3f46]/40 px-2.5 py-1.5 text-xs sm:text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
+                      className="rounded-lg border border-[#3f3f46]/40 px-2.5 py-1 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
                       onClick={() => setCacheSize(isRu ? "0.0 КБ" : "0.0 KB")}
                       type="button"
                     >
                       {isRu ? "Очистить" : "Clear"}
                     </button>
                   ) : (
-                    <span className="text-xs sm:text-sm text-green-400 font-medium px-1">{isRu ? "Очищено" : "Cleared"}</span>
+                    <span className="text-xs text-green-400 font-medium px-1">{isRu ? "Очищено" : "Cleared"}</span>
                   )}
                 </div>
               </div>
@@ -422,18 +422,18 @@ export function SettingsView({
                 {sessions.map((session) => (
                   <div key={session.id} className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm sm:text-[15px] font-medium text-[#f4f4f5] truncate">{session.device}</p>
+                      <p className="text-sm font-medium text-[#f4f4f5] truncate">{session.device}</p>
                       <div className="flex items-center gap-1.5">
                         <span className={`h-1.5 w-1.5 rounded-full ${session.current ? "bg-green-400" : "bg-[#a1a1aa]"}`} />
-                        <span className="text-[10px] sm:text-xs text-[#a1a1aa] font-medium">{session.lastActive}</span>
+                        <span className="text-[10px] text-[#a1a1aa] font-medium">{session.lastActive}</span>
                       </div>
                     </div>
-                    <p className="text-xs sm:text-sm text-[#71717a] mt-0.5 truncate">{session.ip} · {session.location}</p>
+                    <p className="text-xs text-[#71717a] mt-0.5 truncate">{session.ip} · {session.location}</p>
                   </div>
                 ))}
                 {sessions.length > 1 ? (
                   <button
-                    className="mt-1 inline-flex min-h-8 items-center justify-center gap-2 rounded-lg border border-red-500/35 bg-red-500/10 px-3 text-xs sm:text-sm font-medium text-red-200 transition hover:bg-red-500/20 self-start"
+                    className="mt-1 inline-flex min-h-8 items-center justify-center gap-2 rounded-lg border border-red-500/35 bg-red-500/10 px-3 text-xs font-medium text-red-200 transition hover:bg-red-500/20 self-start"
                     onClick={handleTerminateOtherSessions}
                     type="button"
                   >
@@ -485,7 +485,7 @@ export function SettingsView({
                   {tab.icon}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm sm:text-[15px] font-medium leading-tight">{tab.label}</p>
+                  <p className="text-sm font-medium leading-tight">{tab.label}</p>
                   <p className={`text-xs leading-normal mt-0.5 truncate ${
                     isActive ? "text-[#e5e5e5]" : "text-[#71717a] group-hover:text-[#a1a1aa]"
                   }`}>
@@ -510,7 +510,7 @@ export function SettingsView({
           {isMobileTabOpen && (
             <button
               onClick={() => setIsMobileTabOpen(false)}
-              className="lg:hidden mb-3.5 flex items-center gap-1.5 text-xs sm:text-sm text-[#a1a1aa] hover:text-[#f4f4f5] transition self-start"
+              className="lg:hidden mb-3.5 flex items-center gap-1.5 text-xs text-[#a1a1aa] hover:text-[#f4f4f5] transition self-start"
               type="button"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -522,10 +522,10 @@ export function SettingsView({
 
           {/* Tab Title/Description on Desktop */}
           <div className="hidden lg:block mb-4">
-            <h3 className="text-base sm:text-lg font-semibold text-[#f4f4f5]">
+            <h3 className="text-base font-semibold text-[#f4f4f5]">
               {tabs.find((t) => t.id === activeTab)?.label}
             </h3>
-            <p className="text-xs sm:text-sm text-[#71717a] mt-0.5">
+            <p className="text-xs text-[#a1a1aa] mt-0.5">
               {tabs.find((t) => t.id === activeTab)?.description}
             </p>
           </div>
@@ -586,8 +586,8 @@ function SettingsCard({
           {icon}
         </span>
         <div>
-          <p className="text-sm sm:text-base font-semibold leading-tight text-[#f4f4f5]">{title}</p>
-          <p className="text-xs sm:text-sm leading-normal text-[#a1a1aa] mt-0.5">{description}</p>
+          <p className="text-sm font-semibold leading-tight text-[#f4f4f5]">{title}</p>
+          <p className="text-xs leading-normal text-[#a1a1aa] mt-0.5">{description}</p>
         </div>
       </div>
       <div className="grid gap-1.5">{children}</div>
@@ -646,13 +646,13 @@ function MutedChatsRow({ count }: { count: number }) {
             <BellIcon />
           </span>
           <div className="min-w-0">
-            <p className="text-sm sm:text-[15px] font-medium leading-5">{t("blockedChats")}</p>
-            <p className="text-xs sm:text-sm leading-normal text-[#71717a]">
+            <p className="text-sm font-medium leading-5">{t("blockedChats")}</p>
+            <p className="text-xs leading-normal text-[#71717a]">
               {t("blockedChatsDescription")}
             </p>
           </div>
         </div>
-        <span className="shrink-0 rounded-full bg-[#f4f4f5]/10 px-2.5 py-1.5 text-xs sm:text-sm font-medium text-[#e5e5e5]">
+        <span className="shrink-0 rounded-full bg-[#f4f4f5]/10 px-2.5 py-1 text-xs font-medium text-[#e5e5e5]">
           {count}
         </span>
       </div>
@@ -686,14 +686,14 @@ function LanguageRow({
           <StaggeredLinesIcon />
         </span>
         <div className="min-w-0">
-          <p className="text-sm sm:text-[15px] font-medium leading-5">{label}</p>
-          <p className="text-xs sm:text-sm leading-normal text-[#71717a]">{description}</p>
+          <p className="text-sm font-medium leading-5">{label}</p>
+          <p className="text-xs leading-normal text-[#71717a]">{description}</p>
         </div>
       </div>
       <div className="relative shrink-0">
         <button
           aria-expanded={isOpen}
-          className="flex min-h-8 min-w-[132px] items-center justify-between gap-3 rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/10 px-3 text-left text-xs sm:text-sm font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/14"
+          className="flex min-h-8 min-w-[132px] items-center justify-between gap-3 rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/10 px-3 text-left text-xs font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/14"
           onClick={() => setIsOpen((currentValue) => !currentValue)}
           type="button"
         >
@@ -722,7 +722,7 @@ function LanguageRow({
             <div className="hush-context-menu absolute right-0 top-[calc(100%+6px)] z-[80] w-[156px] overflow-hidden rounded-lg border border-white/10 bg-[#18181b]/98 py-1 text-[#f4f4f5] shadow-[0_18px_55px_rgba(0,0,0,0.48)] backdrop-blur-xl">
               {languageOptions.map((language) => (
                 <button
-                  className={`flex min-h-8 w-full items-center justify-between gap-2 px-3 text-left text-xs sm:text-sm font-medium transition hover:bg-white/10 ${
+                  className={`flex min-h-8 w-full items-center justify-between gap-2 px-3 text-left text-xs font-medium transition hover:bg-white/10 ${
                     currentLanguage === language ? "text-[#f4f4f5]" : "text-[#a1a1aa]"
                   }`}
                   key={language}
@@ -746,10 +746,10 @@ function LanguageRow({
 function InfoBlock({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
-      <p className="text-[11px] sm:text-xs font-medium uppercase tracking-[0.18em] text-[#a1a1aa]">
+      <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#a1a1aa]">
         {label}
       </p>
-      <p className="mt-1.5 truncate text-sm sm:text-base font-medium leading-5 text-[#f4f4f5]">
+      <p className="mt-0.5 truncate text-sm font-medium leading-5 text-[#f4f4f5]">
         {value}
       </p>
     </div>
@@ -855,6 +855,15 @@ function DatabaseIcon() {
       <ellipse cx="12" cy="6" rx="7.5" ry="2.5" />
       <path d="M4.5 6v6c0 1.38 3.36 2.5 7.5 2.5s7.5-1.12 7.5-2.5V6" />
       <path d="M4.5 12v6c0 1.38 3.36 2.5 7.5 2.5s7.5-1.12 7.5-2.5v-6" />
+    </svg>
+  );
+}
+
+function ShieldCheckIcon() {
+  return (
+    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="m9 11 2 2 4-4" />
     </svg>
   );
 }
