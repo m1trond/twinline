@@ -130,16 +130,96 @@ export function SettingsView({
     },
   ];
 
-  return (
-    <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
-      <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-black px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] sm:rounded-lg sm:px-4">
-        <h2 className="text-base font-medium leading-normal sm:text-base">{t("settings")}</h2>
-      </div>
+  const [activeTab, setActiveTab] = useState<"account" | "privacy" | "notifications" | "appearance" | "storage">("account");
+  const [isMobileTabOpen, setIsMobileTabOpen] = useState(false);
 
-      <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto rounded-lg border border-[#3f3f46]/45 bg-black p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:rounded-lg sm:p-3">
-        <div className="grid gap-2.5 lg:grid-cols-2 2xl:grid-cols-3">
-          {/* COLUMN 1 */}
-          <div className="grid auto-rows-min gap-2.5">
+  const tabs = [
+    {
+      id: "account",
+      label: t("account"),
+      icon: <UserIcon />,
+      description: isRu ? "Данные профиля и безопасность" : "Profile details & security",
+    },
+    {
+      id: "privacy",
+      label: t("privacy"),
+      icon: <ShieldIcon />,
+      description: isRu ? "Конфиденциальность и ключи" : "Privacy settings & security keys",
+    },
+    {
+      id: "notifications",
+      label: t("notifications"),
+      icon: <BellIcon />,
+      description: isRu ? "Уведомления браузера и чатов" : "Browser & mute settings",
+    },
+    {
+      id: "appearance",
+      label: t("appearance"),
+      icon: <PaletteIcon />,
+      description: isRu ? "Язык, эффекты и настройки чата" : "Language, visual effects & theme",
+    },
+    {
+      id: "storage",
+      label: isRu ? "Хранилище и сеансы" : "Storage & Sessions",
+      icon: <DatabaseIcon />,
+      description: isRu ? "Локальный кэш и сессии входа" : "Browser cache & device sessions",
+    },
+  ] as const;
+
+  function renderTabContent() {
+    switch (activeTab) {
+      case "account":
+        return (
+          <div className="grid gap-3">
+            <SettingsCard
+              description={t("accountDescription")}
+              icon={<UserIcon />}
+              title={t("account")}
+            >
+              <InfoBlock label={t("email")} value={userEmail ?? t("notSpecified")} />
+              <InfoBlock
+                label={t("profile")}
+                value={`${activeUserName}${currentProfile?.username ? ` · @${currentProfile.username}` : ""}`}
+              />
+              <button
+                className="mt-1 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-red-400/40 bg-red-500/15 px-3 text-xs font-medium text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60 self-start"
+                disabled={isSigningOut}
+                onClick={() => setIsSignOutDialogOpen(true)}
+                type="button"
+              >
+                <SignOutIcon />
+                {isSigningOut ? t("signingOut") : t("signOut")}
+              </button>
+            </SettingsCard>
+
+            <SettingsCard
+              description={isRu ? "Опасные действия с вашей учетной записью." : "Dangerous actions with your account."}
+              icon={<BlockIcon />}
+              title={isRu ? "Удаление аккаунта" : "Delete Account"}
+              tone="danger"
+            >
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-red-500/15 bg-red-500/5 px-2.5 py-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium leading-5 text-red-200">{isRu ? "Удаление аккаунта" : "Delete account"}</p>
+                  <p className="text-xs leading-4 text-red-200/60">
+                    {isRu ? "Безвозвратное удаление всей истории." : "Permanently delete profile and all chat history."}
+                  </p>
+                </div>
+                <button
+                  className="shrink-0 rounded-lg border border-red-500/35 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-200 transition hover:bg-red-500/20"
+                  onClick={() => alert(isRu ? "Это демо-версия настроек. Удаление аккаунта недоступно." : "This is a demo setup. Account deletion is disabled.")}
+                  type="button"
+                >
+                  {isRu ? "Удалить..." : "Delete..."}
+                </button>
+              </div>
+            </SettingsCard>
+          </div>
+        );
+
+      case "privacy":
+        return (
+          <div className="grid gap-3">
             <SettingsCard
               description={t("privacyDescription")}
               icon={<ShieldIcon />}
@@ -158,6 +238,106 @@ export function SettingsView({
               ))}
             </SettingsCard>
 
+            <SettingsCard
+              description={t("blackListDescription")}
+              icon={<BlockIcon />}
+              title={t("blackList")}
+              tone={blockedByMeProfiles.length > 0 ? "danger" : "default"}
+            >
+              {blockedByMeProfiles.length === 0 ? (
+                <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2 text-xs text-[#a1a1aa]">
+                  {t("blackListEmpty")}
+                </div>
+              ) : null}
+
+              {blockedByMeProfiles.map((profile) => (
+                <div
+                  className="flex items-center justify-between gap-2 rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2"
+                  key={profile.userId}
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <div className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505]">
+                      {profile.avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          alt={`${t("avatarAlt")} ${profile.name}`}
+                          className="h-full w-full object-cover"
+                          src={profile.avatarUrl}
+                        />
+                      ) : (
+                        profile.name[0]?.toUpperCase()
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-[#f4f4f5]">
+                        {profile.name}
+                      </p>
+                      <p className="truncate text-xs text-[#a1a1aa]">
+                        {profile.username ? `@${profile.username}` : t("nicknameNotSet")}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    className="shrink-0 rounded-lg border border-[#3f3f46]/40 px-2.5 py-1.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
+                    onClick={() => requestBlockChange(profile.userId, profile.name)}
+                    type="button"
+                  >
+                    {t("unblockUser")}
+                  </button>
+                </div>
+              ))}
+            </SettingsCard>
+
+            <SettingsCard
+              description={isRu ? "Ключи шифрования и безопасности." : "Encryption and security keys."}
+              icon={<KeyIcon />}
+              title={isRu ? "Сквозное шифрование" : "End-to-End Encryption"}
+            >
+              <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 p-2 font-mono text-[9px] break-all leading-normal text-[#a1a1aa] text-center select-all">
+                {fingerprint}
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                <button
+                  className="inline-flex min-h-8 items-center justify-center rounded-lg border border-[#3f3f46]/45 bg-[#f4f4f5]/10 px-2.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/14"
+                  onClick={() => alert(isRu ? "Ваши ключи успешно экспортированы." : "Your keys have been exported successfully.")}
+                  type="button"
+                >
+                  {isRu ? "Экспорт ключей" : "Export keys"}
+                </button>
+                <button
+                  className="inline-flex min-h-8 items-center justify-center rounded-lg border border-red-500/35 bg-red-500/10 px-2.5 text-xs font-medium text-red-200 transition hover:bg-red-500/20"
+                  onClick={() => alert(isRu ? "Демо-ключи шифрования успешно перегенерированы." : "Demo encryption keys regenerated successfully.")}
+                  type="button"
+                >
+                  {isRu ? "Сбросить ключи" : "Reset keys"}
+                </button>
+              </div>
+            </SettingsCard>
+          </div>
+        );
+
+      case "notifications":
+        return (
+          <div className="grid gap-3">
+            <SettingsCard
+              description={t("notificationsDescription")}
+              icon={<BellIcon />}
+              title={t("notifications")}
+            >
+              <SettingRow
+                description={t("browserNotificationsDescription")}
+                enabled={areNotificationsEnabled}
+                label={t("browserNotifications")}
+                onToggle={() => void toggleNotifications()}
+              />
+              <MutedChatsRow count={Object.keys(pruneMutedProfiles(mutedProfiles)).length} />
+            </SettingsCard>
+          </div>
+        );
+
+      case "appearance":
+        return (
+          <div className="grid gap-3">
             <SettingsCard
               description={t("appearanceDescription")}
               icon={<PaletteIcon />}
@@ -226,44 +406,11 @@ export function SettingsView({
               </div>
             </SettingsCard>
           </div>
+        );
 
-          {/* COLUMN 2 */}
-          <div className="grid auto-rows-min gap-2.5">
-            <SettingsCard
-              description={t("notificationsDescription")}
-              icon={<BellIcon />}
-              title={t("notifications")}
-            >
-              <SettingRow
-                description={t("browserNotificationsDescription")}
-                enabled={areNotificationsEnabled}
-                label={t("browserNotifications")}
-                onToggle={() => void toggleNotifications()}
-              />
-              <MutedChatsRow count={Object.keys(pruneMutedProfiles(mutedProfiles)).length} />
-            </SettingsCard>
-
-            <SettingsCard
-              description={t("accountDescription")}
-              icon={<UserIcon />}
-              title={t("account")}
-            >
-              <InfoBlock label={t("email")} value={userEmail ?? t("notSpecified")} />
-              <InfoBlock
-                label={t("profile")}
-                value={`${activeUserName}${currentProfile?.username ? ` · @${currentProfile.username}` : ""}`}
-              />
-              <button
-                className="mt-0.5 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-red-400/40 bg-red-500/15 px-3 text-xs font-medium text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={isSigningOut}
-                onClick={() => setIsSignOutDialogOpen(true)}
-                type="button"
-              >
-                <SignOutIcon />
-                {isSigningOut ? t("signingOut") : t("signOut")}
-              </button>
-            </SettingsCard>
-
+      case "storage":
+        return (
+          <div className="grid gap-3">
             <SettingsCard
               description={isRu ? "Управление кэшем и автозагрузкой." : "Manage cache and auto-download options."}
               icon={<DatabaseIcon />}
@@ -298,75 +445,6 @@ export function SettingsView({
                 label={isRu ? "Автозагрузка медиа" : "Auto-download media"}
                 onToggle={() => setAutoDownload(!autoDownload)}
               />
-
-              <div className="flex items-center justify-between gap-3 rounded-lg border border-red-500/15 bg-red-500/5 px-2.5 py-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium leading-5 text-red-200">{isRu ? "Удаление аккаунта" : "Delete account"}</p>
-                  <p className="text-xs leading-4 text-red-200/60">
-                    {isRu ? "Безвозвратное удаление всей истории." : "Permanently delete profile and all chat history."}
-                  </p>
-                </div>
-                <button
-                  className="shrink-0 rounded-lg border border-red-500/35 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-200 transition hover:bg-red-500/20"
-                  onClick={() => alert(isRu ? "Это демо-версия настроек. Удаление аккаунта недоступно." : "This is a demo setup. Account deletion is disabled.")}
-                  type="button"
-                >
-                  {isRu ? "Удалить..." : "Delete..."}
-                </button>
-              </div>
-            </SettingsCard>
-          </div>
-
-          {/* COLUMN 3 */}
-          <div className="grid auto-rows-min gap-2.5">
-            <SettingsCard
-              description={t("blackListDescription")}
-              icon={<BlockIcon />}
-              title={t("blackList")}
-              tone="danger"
-            >
-              {blockedByMeProfiles.length === 0 ? (
-                <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2 text-xs text-[#a1a1aa]">
-                  {t("blackListEmpty")}
-                </div>
-              ) : null}
-
-              {blockedByMeProfiles.map((profile) => (
-                <div
-                  className="flex items-center justify-between gap-2 rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2"
-                  key={profile.userId}
-                >
-                  <div className="flex min-w-0 items-center gap-2">
-                    <div className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505]">
-                      {profile.avatarUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          alt={`${t("avatarAlt")} ${profile.name}`}
-                          className="h-full w-full object-cover"
-                          src={profile.avatarUrl}
-                        />
-                      ) : (
-                        profile.name[0]?.toUpperCase()
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-[#f4f4f5]">
-                        {profile.name}
-                      </p>
-                      <p className="truncate text-xs text-[#a1a1aa]">
-                        {profile.username ? `@${profile.username}` : t("nicknameNotSet")}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    className="shrink-0 rounded-lg border border-[#3f3f46]/40 px-2.5 py-1.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
-                    onClick={() => requestBlockChange(profile.userId, profile.name)}
-                    type="button"
-                  >
-                    {t("unblockUser")}
-                  </button>
-                </div>
-              ))}
             </SettingsCard>
 
             <SettingsCard
@@ -389,7 +467,7 @@ export function SettingsView({
                 ))}
                 {sessions.length > 1 ? (
                   <button
-                    className="mt-0.5 inline-flex min-h-8 items-center justify-center gap-2 rounded-lg border border-red-500/35 bg-red-500/10 px-3 text-xs font-medium text-red-200 transition hover:bg-red-500/20"
+                    className="mt-1 inline-flex min-h-8 items-center justify-center gap-2 rounded-lg border border-red-500/35 bg-red-500/10 px-3 text-xs font-medium text-red-200 transition hover:bg-red-500/20 self-start"
                     onClick={handleTerminateOtherSessions}
                     type="button"
                   >
@@ -398,32 +476,97 @@ export function SettingsView({
                 ) : null}
               </div>
             </SettingsCard>
+          </div>
+        );
 
-            <SettingsCard
-              description={isRu ? "Ключи шифрования и безопасности." : "Encryption and security keys."}
-              icon={<KeyIcon />}
-              title={isRu ? "Сквозное шифрование" : "End-to-End Encryption"}
+      default:
+        return null;
+    }
+  }
+
+  return (
+    <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
+      <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-black px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] sm:rounded-lg sm:px-4">
+        <h2 className="text-base font-medium leading-normal sm:text-base">{t("settings")}</h2>
+      </div>
+
+      <div className="scrollbar-hidden min-h-0 flex-1 flex flex-col lg:flex-row overflow-hidden rounded-lg border border-[#3f3f46]/45 bg-black p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:rounded-lg sm:p-3">
+        {/* SIDEBAR NAVIGATION */}
+        <div className={`w-full lg:w-72 shrink-0 flex flex-col gap-1.5 lg:pr-3 lg:border-r border-[#3f3f46]/25 ${
+          isMobileTabOpen ? "hidden lg:flex" : "flex"
+        }`}>
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setIsMobileTabOpen(true);
+                }}
+                type="button"
+                className={`w-full flex items-center gap-3 p-3 rounded-lg border transition text-left group ${
+                  isActive
+                    ? "bg-white/8 border-[#3f3f46]/50 text-[#f4f4f5]"
+                    : "bg-transparent border-transparent text-[#a1a1aa] hover:bg-white/4 hover:text-[#f4f4f5]"
+                }`}
+              >
+                <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors ${
+                  isActive
+                    ? "bg-[#f4f4f5]/15 text-[#f4f4f5]"
+                    : "bg-[#f4f4f5]/6 text-[#a1a1aa] group-hover:bg-[#f4f4f5]/10 group-hover:text-[#f4f4f5]"
+                }`}>
+                  {tab.icon}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium leading-none">{tab.label}</p>
+                  <p className={`text-[11px] leading-tight mt-1 truncate ${
+                    isActive ? "text-[#e5e5e5]" : "text-[#71717a] group-hover:text-[#a1a1aa]"
+                  }`}>
+                    {tab.description}
+                  </p>
+                </div>
+                <svg className={`w-4 h-4 shrink-0 transition-transform ${
+                  isActive ? "text-[#f4f4f5] translate-x-0.5" : "text-[#71717a] group-hover:text-[#a1a1aa] group-hover:translate-x-0.5"
+                }`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* CONTENT AREA */}
+        <div className={`flex-1 min-h-0 flex flex-col lg:pl-4 ${
+          !isMobileTabOpen ? "hidden lg:flex" : "flex"
+        }`}>
+          {/* Mobile Back Button */}
+          {isMobileTabOpen && (
+            <button
+              onClick={() => setIsMobileTabOpen(false)}
+              className="lg:hidden mb-3.5 flex items-center gap-1.5 text-xs text-[#a1a1aa] hover:text-[#f4f4f5] transition self-start"
+              type="button"
             >
-              <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 p-2 font-mono text-[9px] break-all leading-normal text-[#a1a1aa] text-center select-all">
-                {fingerprint}
-              </div>
-              <div className="grid grid-cols-2 gap-2 mt-0.5">
-                <button
-                  className="inline-flex min-h-8 items-center justify-center rounded-lg border border-[#3f3f46]/45 bg-[#f4f4f5]/10 px-2.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/14"
-                  onClick={() => alert(isRu ? "Ваши ключи успешно экспортированы." : "Your keys have been exported successfully.")}
-                  type="button"
-                >
-                  {isRu ? "Экспорт ключей" : "Export keys"}
-                </button>
-                <button
-                  className="inline-flex min-h-8 items-center justify-center rounded-lg border border-red-500/35 bg-red-500/10 px-2.5 text-xs font-medium text-red-200 transition hover:bg-red-500/20"
-                  onClick={() => alert(isRu ? "Демо-ключи шифрования успешно перегенерированы." : "Demo encryption keys regenerated successfully.")}
-                  type="button"
-                >
-                  {isRu ? "Сбросить ключи" : "Reset keys"}
-                </button>
-              </div>
-            </SettingsCard>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              {isRu ? "Назад к разделам" : "Back to categories"}
+            </button>
+          )}
+
+          {/* Tab Title/Description on Desktop */}
+          <div className="hidden lg:block mb-4">
+            <h3 className="text-base font-semibold text-[#f4f4f5]">
+              {tabs.find((t) => t.id === activeTab)?.label}
+            </h3>
+            <p className="text-xs text-[#a1a1aa] mt-0.5">
+              {tabs.find((t) => t.id === activeTab)?.description}
+            </p>
+          </div>
+
+          {/* Scrollable Tab Content Container */}
+          <div className="scrollbar-hidden flex-1 overflow-y-auto pr-0.5 space-y-3.5">
+            {renderTabContent()}
           </div>
         </div>
       </div>
