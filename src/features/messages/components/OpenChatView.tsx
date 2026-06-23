@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 import type {
   ChangeEvent,
   DragEvent,
@@ -30,9 +30,6 @@ import {
   getMessageVideoUrl,
 } from "@/shared/utils/messages";
 
-const dialogRenderBatchSize = 700;
-const initialRenderWindowKey = "";
-
 type OpenChatViewProps = {
   activePinnedMessageIdSet: Set<number>;
   activePinnedMessages: MessageRow[];
@@ -51,6 +48,7 @@ type OpenChatViewProps = {
   handleMessageSelectionClick: (event: MouseEvent<HTMLElement>, message: MessageRow) => void;
   handleMessageTextChange: (event: ChangeEvent<HTMLInputElement>) => void;
   highlightedMessageId: number | null;
+  highlightMessage?: (messageId: number) => boolean;
   imageInputRef: RefObject<HTMLInputElement | null>;
   isDeletingChat: boolean;
   isFriendTyping: boolean;
@@ -96,7 +94,6 @@ type OpenChatViewProps = {
   user: User;
   visibleDialogMessages: MessageRow[];
   visibleDialogMessagesCount: number;
-  voiceInputLevel: number;
   voiceRecordingDuration: number;
 };
 
@@ -118,6 +115,7 @@ export function OpenChatView({
   handleMessageSelectionClick,
   handleMessageTextChange,
   highlightedMessageId,
+  highlightMessage,
   imageInputRef,
   isDeletingChat,
   isFriendTyping,
@@ -163,27 +161,193 @@ export function OpenChatView({
   user,
   visibleDialogMessages,
   visibleDialogMessagesCount,
-  voiceInputLevel,
   voiceRecordingDuration,
 }: OpenChatViewProps) {
   const { language, t } = useI18n();
   const [isDraggingAttachment, setIsDraggingAttachment] = useState(false);
   const [isCallConfirmOpen, setIsCallConfirmOpen] = useState(false);
-  const [renderWindow, setRenderWindow] = useState({
-    key: initialRenderWindowKey,
-    limit: dialogRenderBatchSize,
-  });
+  const scrollButtonRef = useRef<HTMLButtonElement | null>(null);
+  const scrollbarTrackRef = useRef<HTMLDivElement | null>(null);
+  const scrollbarThumbRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const button = scrollButtonRef.current;
+    if (button) {
+      button.classList.remove("opacity-100");
+      button.classList.add("opacity-0", "pointer-events-none");
+    }
+    const track = scrollbarTrackRef.current;
+    if (track) {
+      track.classList.remove("opacity-100");
+      track.classList.add("opacity-0", "pointer-events-none");
+    }
+  }, [selectedChatUserId]);
+
+  useEffect(() => {
+    if (messageInputRef.current && messageInputRef.current.value !== messageText) {
+      messageInputRef.current.value = messageText;
+    }
+  }, [messageText, messageInputRef]);
+
+  useEffect(() => {
+    const track = scrollbarTrackRef.current;
+    const thumb = scrollbarThumbRef.current;
+    const viewport = messagesListRef.current;
+
+    if (!track || !thumb || !viewport) {
+      return;
+    }
+
+    let isDragging = false;
+    let startY = 0;
+    let startScrollTop = 0;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      event.preventDefault();
+      const target = event.target as HTMLElement;
+
+      if (target === thumb) {
+        isDragging = true;
+        startY = event.clientY;
+        startScrollTop = viewport.scrollTop;
+        thumb.setPointerCapture(event.pointerId);
+        thumb.classList.remove("bg-white/32", "hover:bg-white/45");
+        thumb.classList.add("bg-white/60");
+        return;
+      }
+
+      if (target === track) {
+        const rect = track.getBoundingClientRect();
+        const clickY = event.clientY - rect.top;
+        const visibleRatio = viewport.clientHeight / viewport.scrollHeight;
+        const thumbHeight = Math.max(20, rect.height * visibleRatio);
+
+        const scrollableTrack = rect.height - thumbHeight;
+        const clickProgress = scrollableTrack > 0 ? (clickY - thumbHeight / 2) / scrollableTrack : 0;
+        const clampedProgress = Math.max(0, Math.min(1, clickProgress));
+
+        const maxScroll = viewport.scrollHeight - viewport.clientHeight;
+        viewport.scrollTop = clampedProgress * maxScroll;
+
+        isDragging = true;
+        startY = event.clientY;
+        startScrollTop = viewport.scrollTop;
+
+        thumb.setPointerCapture(event.pointerId);
+        thumb.classList.remove("bg-white/32", "hover:bg-white/45");
+        thumb.classList.add("bg-white/60");
+      }
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!isDragging) {
+        return;
+      }
+
+      const deltaY = event.clientY - startY;
+      const trackHeight = track.clientHeight;
+      const visibleRatio = viewport.clientHeight / viewport.scrollHeight;
+      const thumbHeight = Math.max(20, trackHeight * visibleRatio);
+
+      const scrollableTrack = trackHeight - thumbHeight;
+      const scrollableContent = viewport.scrollHeight - viewport.clientHeight;
+
+      if (scrollableTrack > 0) {
+        const scrollDelta = (deltaY / scrollableTrack) * scrollableContent;
+        viewport.scrollTop = startScrollTop + scrollDelta;
+      }
+    };
+
+    const handlePointerUp = (event: PointerEvent) => {
+      if (!isDragging) {
+        return;
+      }
+
+      isDragging = false;
+      thumb.releasePointerCapture(event.pointerId);
+      thumb.classList.remove("bg-white/60");
+      thumb.classList.add("bg-white/32", "hover:bg-white/45");
+    };
+
+    track.addEventListener("pointerdown", handlePointerDown);
+    thumb.addEventListener("pointermove", handlePointerMove);
+    thumb.addEventListener("pointerup", handlePointerUp);
+    thumb.addEventListener("pointercancel", handlePointerUp);
+
+    return () => {
+      track.removeEventListener("pointerdown", handlePointerDown);
+      thumb.removeEventListener("pointermove", handlePointerMove);
+      thumb.removeEventListener("pointerup", handlePointerUp);
+      thumb.removeEventListener("pointercancel", handlePointerUp);
+    };
+  }, [selectedChatUserId]);
+
+  const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    const target = event.currentTarget;
+    const maxScrollTop = target.scrollHeight - target.clientHeight;
+    const isUp = maxScrollTop - target.scrollTop > 450;
+
+    const button = scrollButtonRef.current;
+    if (button) {
+      if (isUp) {
+        button.classList.remove("opacity-0", "pointer-events-none");
+        button.classList.add("opacity-100");
+      } else {
+        button.classList.remove("opacity-100");
+        button.classList.add("opacity-0", "pointer-events-none");
+      }
+    }
+
+    const track = scrollbarTrackRef.current;
+    const thumb = scrollbarThumbRef.current;
+    if (track && thumb) {
+      if (isUp && maxScrollTop > 0) {
+        track.classList.remove("opacity-0", "pointer-events-none");
+        track.classList.add("opacity-100");
+
+        const trackHeight = track.clientHeight;
+        const visibleRatio = target.clientHeight / target.scrollHeight;
+        const thumbHeight = Math.max(20, trackHeight * visibleRatio);
+        
+        const scrollableTrack = trackHeight - thumbHeight;
+        const scrollableContent = target.scrollHeight - target.clientHeight;
+        const scrollProgress = scrollableContent > 0 ? target.scrollTop / scrollableContent : 0;
+        const thumbTranslateY = scrollProgress * scrollableTrack;
+
+        thumb.style.height = `${thumbHeight}px`;
+        thumb.style.transform = `translateY(${thumbTranslateY}px)`;
+      } else {
+        track.classList.remove("opacity-100");
+        track.classList.add("opacity-0", "pointer-events-none");
+      }
+    }
+  };
+
+  const scrollToBottom = () => {
+    const messagesList = messagesListRef.current;
+    if (messagesList) {
+      messagesList.scrollTo({
+        top: messagesList.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  const handleSendOrVoiceClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (isRecordingVoice) {
+      toggleVoiceRecording();
+      return;
+    }
+
+    const hasText = Boolean(messageInputRef.current?.value?.trim());
+    if (hasText) {
+      event.currentTarget.form?.requestSubmit();
+    } else {
+      toggleVoiceRecording();
+    }
+  };
+
   const isAttachmentDropDisabled = isUploadingAttachment || isRecordingVoice || isSelectedChatBlocked;
-  const renderWindowKey = `${selectedChatUserId}:${isPinnedMessagesViewOpen ? "pins" : "chat"}`;
-  const renderedMessageLimit =
-    renderWindow.key === renderWindowKey
-      ? renderWindow.limit
-      : dialogRenderBatchSize;
-  const renderedDialogMessages =
-    !isPinnedMessagesViewOpen && visibleDialogMessages.length > renderedMessageLimit
-      ? visibleDialogMessages.slice(-renderedMessageLimit)
-      : visibleDialogMessages;
-  const hiddenDialogMessagesCount = visibleDialogMessages.length - renderedDialogMessages.length;
 
   function hasDraggedFiles(event: DragEvent<HTMLDivElement>) {
     return Array.from(event.dataTransfer.types).includes("Files");
@@ -238,8 +402,10 @@ export function OpenChatView({
     }
   }
 
+
+
   return (<div
-                className="hush-panel-transition relative flex min-h-0 flex-col overflow-hidden [overflow-anchor:none]"
+                className="hush-panel-transition relative flex min-h-0 flex-col overflow-hidden"
                 onDragEnter={handleAttachmentDragEnter}
                 onDragLeave={handleAttachmentDragLeave}
                 onDragOver={handleAttachmentDragOver}
@@ -259,7 +425,7 @@ export function OpenChatView({
                     </div>
                   </div>
                 ) : null}
-                <div className="mb-2 flex h-11 min-h-11 items-center justify-between gap-2 overflow-hidden rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-1 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-3">
+                <div className="mb-2 flex h-11 min-h-11 items-center justify-between gap-2 overflow-hidden rounded-xl sm:rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-1 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-3">
                   <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
                     <button
                       aria-label={t("messages")}
@@ -427,25 +593,25 @@ export function OpenChatView({
                   </div>
                 ) : null}
                 {activePinnedMessages.length > 0 ? (
-                  <div className="mb-2 flex min-h-9 shrink-0 overflow-hidden rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 text-sm text-[#e5e5e5] shadow-[0_10px_30px_rgba(0,0,0,0.18)] sm:mb-3">
+                  <div className="mb-2 flex min-h-9 shrink-0 overflow-hidden rounded-xl sm:rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/82 text-sm text-[#e5e5e5] shadow-[0_10px_30px_rgba(0,0,0,0.18)] sm:mb-3">
                     <button
-                      className="flex min-w-0 flex-1 items-center gap-2 px-3 py-1.5 text-left transition hover:bg-white/[0.08]"
+                      className="flex min-w-0 flex-1 items-center gap-2 rounded-l-xl sm:rounded-l-2xl px-3 py-1.5 text-left transition-all duration-200 ease-out hover:bg-white/[0.06] hover:text-white"
                       onClick={scrollToNextPinnedMessage}
                       type="button"
                     >
                       <span className="shrink-0 font-medium text-[#f4f4f5]">
                         {t("pinned")}: {activePinnedMessages.length}
                       </span>
-                      <span className="min-w-0 truncate text-[#a1a1aa]">
+                      <span className="min-w-0 truncate text-[#a1a1aa] transition-colors duration-200">
                         {getReadableMessageText(activePinnedMessages.at(-1)?.text ?? "")}
                       </span>
                     </button>
                     <button
                       aria-label="Открыть все закрепы"
-                      className={`grid w-14 shrink-0 place-items-center border-l border-[#3f3f46]/35 transition ${
+                      className={`grid w-14 shrink-0 place-items-center rounded-r-xl sm:rounded-r-2xl border-l border-[#3f3f46]/35 transition-all duration-200 ease-out ${
                         isPinnedMessagesViewOpen
                           ? "bg-[#f4f4f5]/14 text-[#f4f4f5]"
-                          : "bg-white/[0.03] text-[#d4d4d8] hover:bg-white/[0.08] hover:text-[#f4f4f5]"
+                          : "bg-white/[0.02] text-[#d4d4d8] hover:bg-white/[0.06] hover:text-[#f4f4f5]"
                       }`}
                       onClick={() => setIsPinnedMessagesViewOpen((isOpen) => !isOpen)}
                       type="button"
@@ -458,466 +624,103 @@ export function OpenChatView({
                   </div>
                 ) : null}
 
-                <div
-                  className="scrollbar-hidden flex min-h-0 flex-1 flex-col overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#050505]/82 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] [overflow-anchor:none] backdrop-blur-md sm:rounded-2xl sm:p-4"
-                  ref={messagesListRef}
-                >
-                  {isLoadingMessages && visibleDialogMessagesCount === 0 ? (
-                    <p className="text-sm text-[#a1a1aa]">Загружаю сообщения...</p>
-                  ) : null}
-
-                  {!isLoadingMessages && visibleDialogMessagesCount === 0 ? (
-                    <p className="text-sm text-[#a1a1aa]">
-                      {isPinnedMessagesViewOpen
-                        ? language === "en" ? "No pinned messages yet." : "Закрепов пока нет."
-                        : language === "en" ? "No messages yet. Write the first one." : "Сообщений пока нет. Напиши первое."}
-                    </p>
-                  ) : null}
-
-                  {hiddenDialogMessagesCount > 0 ? (
-                    <button
-                      className="mx-auto mb-3 min-h-9 rounded-lg border border-[#3f3f46]/35 bg-[#111111]/44 px-3 text-sm font-medium text-[#d4d4d8] shadow-[0_10px_30px_rgba(0,0,0,0.18)] transition hover:border-[#f4f4f5]/35 hover:bg-[#f4f4f5]/10 hover:text-[#f4f4f5]"
-                      onClick={() =>
-                        setRenderWindow((currentWindow) => {
-                          const currentLimit =
-                            currentWindow.key === renderWindowKey
-                              ? currentWindow.limit
-                              : dialogRenderBatchSize;
-
-                          return {
-                            key: renderWindowKey,
-                            limit: Math.min(
-                              visibleDialogMessages.length,
-                              currentLimit + dialogRenderBatchSize,
-                            ),
-                          };
-                        })
-                      }
-                      type="button"
-                    >
-                      {language === "en"
-                        ? `Show ${Math.min(hiddenDialogMessagesCount, dialogRenderBatchSize)} earlier messages`
-                        : `Показать ещё ${Math.min(hiddenDialogMessagesCount, dialogRenderBatchSize)} сообщений`}
-                    </button>
-                  ) : null}
-
-                  {renderedDialogMessages.map((message, messageIndex) => {
-                    const isMine = message.user_id === user.id;
-                    const previousMessage = renderedDialogMessages[messageIndex - 1];
-                    const nextMessage = renderedDialogMessages[messageIndex + 1];
-                    const isPreviousSameAuthor =
-                      previousMessage?.user_id === message.user_id;
-                    const isNextSameAuthor = nextMessage?.user_id === message.user_id;
-                    const isSelected = selectedMessageIdSet.has(message.id);
-                    const isPinned = activePinnedMessageIdSet.has(message.id);
-                    const receiptStatus =
-                      isMine && message.id > 0
-                        ? messageReceiptStatuses.get(message.id) ?? "delivered"
-                        : isMine && message.id < 0
-                          ? "delivered"
-                          : null;
-                    const messageProfile = message.user_id
-                      ? profilesByUserId.get(message.user_id)
-                      : null;
-                    const messageAuthor = messageProfile?.display_name ?? message.author;
-                    const shouldShowFriendAvatar = !isMine && !isNextSameAuthor;
-                    const shouldShowOwnAvatar = isMine && !isNextSameAuthor;
-                    const reply = getMessageReply(message.text);
-                    const rawDisplayText = reply?.body ?? message.text;
-                    const forwarded = getMessageForward(rawDisplayText);
-                    const forwardedProfile = forwarded?.authorUserId
-                      ? forwarded.authorUserId === user.id
-                        ? currentProfile
-                        : profilesByUserId.get(forwarded.authorUserId)
-                      : null;
-                    const forwardedName =
-                      forwardedProfile?.display_name ?? forwarded?.authorName ?? "";
-                    const displayText = forwarded?.text ?? rawDisplayText;
-                    const imageUrl = getMessageImageUrl(displayText);
-                    const videoUrl = getMessageVideoUrl(displayText);
-                    const audioUrl = getMessageAudioUrl(displayText);
-                    const filePayload = getMessageFilePayload(displayText);
-                    const attachmentCaption = getMessageAttachmentCaption(displayText);
-                    const callDurationSeconds = getMessageCallDuration(displayText);
-                    const sticker = getMessageSticker(displayText);
-                    const hasCaptionableAttachment = Boolean(imageUrl || videoUrl || audioUrl);
-                    const hasFramedMedia = Boolean(imageUrl || videoUrl || filePayload);
-                    const hasAttachment = Boolean(
-                      imageUrl || videoUrl || audioUrl || filePayload || callDurationSeconds !== null || sticker,
-                    );
-                    const hasStandaloneBubble = Boolean(
-                      audioUrl || filePayload || callDurationSeconds !== null || sticker,
-                    );
-
-                    return (
-                      <article
-                        className={`-mx-1 flex items-end gap-1.5 rounded-xl px-1 py-1 transition-[background-color,box-shadow] duration-300 sm:gap-2 sm:rounded-2xl ${
-                          highlightedMessageId === message.id
-                            ? "bg-[#f4f4f5]/12 shadow-[0_0_0_2px_rgba(244,244,245,0.26),0_0_38px_rgba(244,244,245,0.12)]"
-                            : isSelected
-                              ? "bg-[#f4f4f5]/8 shadow-[0_0_0_1px_rgba(244,244,245,0.12)]"
-                              : "shadow-[0_0_0_0_rgba(244,244,245,0)]"
-                        } ${
-                          isPreviousSameAuthor ? "mt-1" : "mt-3"
-                        } ${isMine ? "justify-end" : "justify-start"}`}
-                        data-message-id={message.id}
-                        key={message.client_key ?? message.id}
-                        onClickCapture={(event) => handleMessageSelectionClick(event, message)}
-                      >
-                        {isMessageSelectionMode && isMine ? (
-                          <span
-                            className={`mb-1 grid h-6 w-6 shrink-0 place-items-center transition ${
-                              isSelected
-                                ? "text-[#f4f4f5]"
-                                : "text-transparent"
-                            }`}
+                <div className="relative flex min-h-0 flex-1 flex-col">
+                  {/* Pinned Messages Overlay */}
+                  {isPinnedMessagesViewOpen ? (
+                    <div className="absolute inset-0 z-20 flex flex-col rounded-xl border border-[#3f3f46]/45 bg-[#050505]/96 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4">
+                      {/* Pinned List Header */}
+                      <div className="mb-3 flex items-center justify-between border-b border-[#3f3f46]/35 pb-2">
+                        <div className="flex items-center gap-2">
+                          <button
+                            aria-label={language === "en" ? "Back" : "Назад"}
+                            className="grid h-8 w-8 place-items-center rounded-lg border border-[#3f3f46]/35 text-[#f4f4f5] transition hover:bg-white/10"
+                            onClick={() => setIsPinnedMessagesViewOpen(false)}
+                            type="button"
                           >
-                            <MessageCircleCheckIcon />
-                          </span>
-                        ) : null}
-                        {!isMine ? (
-                          shouldShowFriendAvatar ? (
-                            <button
-                              className="hush-avatar grid h-7 w-7 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505] transition sm:h-8 sm:w-8 sm:text-xs"
-                              onClick={() =>
-                                setViewedProfile({
-                                  avatarUrl: messageProfile?.avatar_url ?? null,
-                                  bio: messageProfile?.bio ?? null,
-                                  name: messageAuthor,
-                                  username: messageProfile?.username ?? null,
-                                  updatedAt: messageProfile?.updated_at ?? null,
-                                  userId: message.user_id,
-                                })
-                              }
-                              type="button"
-                            >
-                              {messageProfile?.avatar_url ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                  alt="Аватар собеседника"
-                                  className="h-full w-full object-cover"
-                                  src={messageProfile.avatar_url}
-                                />
-                              ) : (
-                                messageAuthor[0]?.toUpperCase()
-                              )}
-                            </button>
-                          ) : (
-                            <span className="h-7 w-7 shrink-0 sm:h-8 sm:w-8" />
-                          )
-                        ) : null}
-                        {isMessageSelectionMode && !isMine ? (
-                          <span
-                            className={`mb-1 grid h-6 w-6 shrink-0 place-items-center transition ${
-                              isSelected
-                                ? "text-[#f4f4f5]"
-                                : "text-transparent"
-                            }`}
-                          >
-                            <MessageCircleCheckIcon />
-                          </span>
-                        ) : null}
-                        {isPinned && isMine ? (
-                          <span className="mb-1 grid h-6 w-6 shrink-0 place-items-center text-[#f4f4f5]">
-                            <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                              <path d="M12 17v5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                              <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                            <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+                              <path d="m15 18-6-6 6-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                             </svg>
+                          </button>
+                          <span className="font-semibold text-[#f4f4f5]">
+                            {t("pinned") || "Закрепленные сообщения"} ({activePinnedMessages.length})
                           </span>
-                        ) : null}
-                        <div
-                          className={`max-w-[min(84vw,92%)] rounded-xl sm:max-w-[72%] sm:rounded-xl ${
-                            hasStandaloneBubble
-                              ? "bg-transparent p-0 shadow-none"
-                              : hasFramedMedia
-                                ? "bg-transparent p-0 shadow-none"
-                              : `shadow-[0_10px_30px_rgba(0,0,0,0.18)] ${
-                                  hasAttachment ? "p-1.5" : "px-3 py-1.5 sm:px-3 sm:py-1.5"
-                                }`
-                          } ${
-                            hasStandaloneBubble || hasFramedMedia
-                              ? "text-[#f4f4f5]"
-                              : isMine
-                                ? `bg-[#f4f4f5] text-[#050505] ${
-                                  isPreviousSameAuthor ? "rounded-tr-lg" : ""
-                                } ${isNextSameAuthor ? "rounded-br-lg" : "rounded-br-md"}`
-                                : `bg-[#262626] text-[#f4f4f5] ${
-                                  isPreviousSameAuthor ? "rounded-tl-lg" : ""
-                                } ${isNextSameAuthor ? "rounded-bl-lg" : "rounded-bl-md"}`
-                          } ${isSelected ? "ring-2 ring-[#f4f4f5]/80" : ""}`}
-                          onContextMenu={(event) => openMessageContextMenu(event, message)}
-                        >
-                          {!hasStandaloneBubble && !isMine && !isPreviousSameAuthor ? (
-                            <p className={`${hasAttachment ? "mb-1.5 px-1" : "mb-0.5"} text-xs font-medium leading-4 opacity-55`}>
-                              {messageAuthor}
-                            </p>
-                          ) : null}
-                          {reply ? (
-                            <button
-                              className={`hush-reply-preview mb-2 block w-full rounded-xl border-l-4 px-3 py-2 text-left transition ${
-                                isMine
-                                  ? "border-[#050505]/45 bg-[#050505]/12 hover:bg-[#050505]/18"
-                                  : "border-[#f4f4f5]/45 bg-white/8 hover:bg-white/12"
-                              }`}
-                              onClick={() => scrollToReplyMessage(reply)}
-                              type="button"
-                            >
-                              <p className="text-xs font-medium uppercase tracking-[0.12em] opacity-55">
-                                {reply.author}
-                              </p>
-                              <p className="mt-0.5 line-clamp-2 text-xs font-medium opacity-70">
-                                {reply.text}
-                              </p>
-                            </button>
-                          ) : null}
-                          {forwarded ? (
-                            <div className={`mb-1.5 flex items-center gap-2 px-0.5 text-left ${isMine && !hasStandaloneBubble && !hasFramedMedia ? "text-[#050505]" : "text-[#f4f4f5]"}`}>
-                              <button
-                                aria-label={forwardedName}
-                                className={`hush-avatar grid h-7 min-h-7 w-7 min-w-7 shrink-0 aspect-square place-items-center overflow-hidden rounded-full text-xs font-medium leading-none transition disabled:cursor-default ${forwarded.authorUserId ? "cursor-pointer" : ""} ${isMine && !hasStandaloneBubble && !hasFramedMedia ? "bg-[#050505] text-[#f4f4f5]" : "bg-[#f4f4f5] text-[#050505]"}`}
-                                disabled={!forwarded.authorUserId}
-                                onClick={() => {
-                                  if (!forwarded.authorUserId) {
-                                    return;
-                                  }
-
-                                  setViewedProfile({
-                                    avatarUrl: forwardedProfile?.avatar_url ?? null,
-                                    bio: forwardedProfile?.bio ?? null,
-                                    name: forwardedProfile?.display_name ?? forwardedName,
-                                    username: forwardedProfile?.username ?? null,
-                                    updatedAt: forwardedProfile?.updated_at ?? null,
-                                    userId: forwarded.authorUserId,
-                                  });
-                                }}
-                                type="button"
-                              >
-                                {forwardedProfile?.avatar_url ? (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img
-                                    alt={t("avatarAlt")}
-                                    className="h-full w-full object-cover"
-                                    src={forwardedProfile.avatar_url}
-                                  />
-                                ) : (
-                                  forwardedName[0]?.toUpperCase()
-                                )}
-                              </button>
-                              <div className="flex min-w-0 flex-col-reverse">
-                                <p className={`truncate text-xs font-medium leading-4 ${isMine && !hasStandaloneBubble && !hasFramedMedia ? "text-[#52525b]" : "text-[#a1a1aa]"}`}>
-                                  {language === "en" ? "Forwarded from" : "Переслано от"}
-                                </p>
-                                <p className="truncate text-sm font-medium leading-4">
-                                  {forwardedName}
-                                </p>
-                              </div>
-                            </div>
-                          ) : null}
-                          {imageUrl ? (
-                            <button
-                              className="block w-full overflow-hidden rounded-lg sm:rounded-xl"
-                              onClick={() => setSelectedImageUrl(imageUrl)}
-                              type="button"
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                alt="Отправленное изображение"
-                                className="max-h-[58dvh] w-full object-cover sm:max-h-[420px]"
-                                src={imageUrl}
-                              />
-                            </button>
-                        ) : videoUrl ? (
-                          <video
-                            className="max-h-[58dvh] w-full rounded-lg bg-black sm:max-h-[420px] sm:rounded-xl"
-                            controls
-                            controlsList="nodownload"
-                            preload="metadata"
-                            src={videoUrl}
-                          />
-                        ) : audioUrl ? (
-                          <VoiceMessage
-                            editedAt={message.edited_at ?? null}
-                            isMine={isMine}
-                            isUnplayed={
-                              message.id > 0 &&
-                              !playedVoiceMessageIds.has(message.id)
-                            }
-                            onPlaybackStart={() => markVoiceMessagePlayed(message)}
-                            receiptStatus={receiptStatus}
-                            sentAt={message.created_at}
-                            src={audioUrl}
-                          />
-                        ) : filePayload ? (
-                          <FileAttachment
-                            editedAt={message.edited_at ?? null}
-                            file={filePayload}
-                            isMine={isMine}
-                            receiptStatus={receiptStatus}
-                            sentAt={message.created_at}
-                          />
-                        ) : callDurationSeconds !== null ? (
-                          <div
-                            className={`min-w-[min(230px,70vw)] rounded-xl px-3 py-2 sm:min-w-[min(260px,70vw)] sm:rounded-xl ${
-                              isMine ? "bg-[#2f2f2f]" : "bg-[#262626]"
-                            }`}
-                        >
-                            <div className="flex items-center gap-3">
-                              <div
-                                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#f4f4f5] text-[#050505]"
-                              >
-                                <svg
-                                  aria-hidden="true"
-                                  className="h-5 w-5"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"
-                                    stroke="currentColor"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                  />
-                                </svg>
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium opacity-75">
-                                  {t("call")}
-                                </p>
-                                <p className="text-xs font-medium opacity-60">
-                                  {t("callConversation")} {formatCallDuration(callDurationSeconds)}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ) : sticker ? (
-                          <div className="hush-sticker-message px-1 py-0.5">
-                            <span className="block text-6xl leading-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.25)] sm:text-7xl">
-                              {sticker}
-                            </span>
-                            <span className="mt-1 flex items-center justify-end gap-1 text-xs font-medium text-[#a1a1aa]">
-                              {message.edited_at ? (
-                                <span>{t("edited")}</span>
-                              ) : null}
-                              {formatMessageTime(message.created_at)}
-                              {receiptStatus ? (
-                                <MessageReceiptIcon className="h-4 w-4" status={receiptStatus} />
-                              ) : null}
-                            </span>
-                          </div>
-                        ) : (
-                            <p
-                              className="whitespace-pre-wrap break-words text-sm leading-5"
-                            >
-                              {displayText}
-                              <span className="ml-2 inline-flex translate-y-[1px] items-center gap-1 align-baseline">
-                                <span
-                                  className={`text-xs font-medium leading-none ${
-                                    isMine ? "text-[#404040]" : "text-[#71717a]"
-                                  }`}
-                                >
-                                  {message.edited_at ? `${t("edited")} ` : ""}
-                                  {formatMessageTime(message.created_at)}
-                                </span>
-                                {receiptStatus ? (
-                                  <span
-                                    aria-label={
-                                      receiptStatus === "read" ? "Прочитано" : "Доставлено"
-                                    }
-                                    className="inline-flex items-center text-[#262626]"
-                                  >
-                                    {receiptStatus === "read" ? (
-                                      <MessageReceiptIcon className="h-4 w-4" status="read" />
-                                    ) : (
-                                      <MessageReceiptIcon className="h-4 w-4" status="delivered" />
-                                    )}
-                                  </span>
-                                ) : null}
-                              </span>
-                            </p>
-                          )}
-                          {hasCaptionableAttachment && attachmentCaption ? (
-                            <p className="mt-1.5 max-w-[min(320px,70vw)] whitespace-pre-wrap break-words px-1 text-sm leading-5 text-[#f4f4f5]">
-                              {attachmentCaption}
-                            </p>
-                          ) : null}
-                          {!hasStandaloneBubble && hasAttachment ? (
-                          <div className={`${hasAttachment ? "mt-2 px-1" : "mt-1"} flex items-center justify-end gap-3`}>
-                            <p
-                              className={`text-right text-xs font-medium ${
-                                hasFramedMedia
-                                  ? "text-[#a1a1aa]"
-                                  : isMine ? "text-[#404040]" : "text-[#71717a]"
-                              }`}
-                            >
-                              {message.edited_at ? (
-                                <span>{t("edited")} </span>
-                              ) : null}
-                              {formatMessageTime(message.created_at)}
-                            </p>
-                            {receiptStatus ? (
-                              <span
-                                aria-label={
-                                  receiptStatus === "read" ? "Прочитано" : "Доставлено"
-                                }
-                                className={`inline-flex items-center ${hasFramedMedia ? "text-[#a1a1aa]" : "text-[#262626]"}`}
-                              >
-                                {receiptStatus === "read" ? (
-                                  <MessageReceiptIcon className="h-4 w-4" status="read" />
-                                ) : (
-                                  <MessageReceiptIcon className="h-4 w-4" status="delivered" />
-                                )}
-                              </span>
-                            ) : null}
-                          </div>
-                          ) : null}
                         </div>
-                        {isPinned && !isMine ? (
-                          <span className="mb-1 grid h-6 w-6 shrink-0 place-items-center text-[#f4f4f5]">
-                            <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                              <path d="M12 17v5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                              <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                            </svg>
-                          </span>
-                        ) : null}
-                        {isMine ? (
-                          shouldShowOwnAvatar ? (
-                            <button
-                              className="hush-avatar grid h-7 w-7 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505] transition sm:h-8 sm:w-8 sm:text-xs"
-                              onClick={() =>
-                                setViewedProfile({
-                                  avatarUrl: currentProfile?.avatar_url ?? null,
-                                  bio: currentProfile?.bio ?? null,
-                                  name: activeUserName,
-                                  username: currentProfile?.username ?? null,
-                                  updatedAt: currentProfile?.updated_at ?? null,
-                                  userId: user.id,
-                                })
-                              }
-                              type="button"
-                            >
-                              {currentProfile?.avatar_url ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                  alt="Твоя аватарка"
-                                  className="h-full w-full object-cover"
-                                  src={currentProfile.avatar_url}
-                                />
-                              ) : (
-                                activeUserName[0]?.toUpperCase()
-                              )}
-                            </button>
-                          ) : (
-                            <span className="h-7 w-7 shrink-0 sm:h-8 sm:w-8" />
-                          )
-                        ) : null}
-                      </article>
-                    );
-                  })}
-                  <div
-                    aria-hidden="true"
-                    className="h-px shrink-0"
-                    ref={messagesBottomAnchorRef}
+                      </div>
+
+                      {/* Scrollable list of pinned messages */}
+                      <div className="scrollbar-hidden flex-1 overflow-y-auto">
+                        {activePinnedMessages.length === 0 ? (
+                          <p className="text-sm text-[#a1a1aa]">
+                            {language === "en" ? "No pinned messages yet." : "Закрепов пока нет."}
+                          </p>
+                        ) : (
+                          <div className="flex flex-col gap-1">
+                            {activePinnedMessages.map((message, idx) => (
+                              <MessageItem
+                                activePinnedMessageIdSet={activePinnedMessageIdSet}
+                                activeUserName={activeUserName}
+                                currentProfile={currentProfile}
+                                handleMessageSelectionClick={handleMessageSelectionClick}
+                                highlightMessage={highlightMessage}
+                                highlightedMessageId={highlightedMessageId}
+                                isFromPinnedList={true}
+                                isMessageSelectionMode={isMessageSelectionMode}
+                                setIsPinnedMessagesViewOpen={setIsPinnedMessagesViewOpen}
+                                key={message.client_key ?? message.id}
+                                language={language}
+                                markVoiceMessagePlayed={markVoiceMessagePlayed}
+                                message={message}
+                                messageIndex={idx}
+                                messageReceiptStatuses={messageReceiptStatuses}
+                                messagesArray={activePinnedMessages}
+                                openMessageContextMenu={openMessageContextMenu}
+                                playedVoiceMessageIds={playedVoiceMessageIds}
+                                profilesByUserId={profilesByUserId}
+                                scrollToReplyMessage={scrollToReplyMessage}
+                                selectedMessageIdSet={selectedMessageIdSet}
+                                setSelectedImageUrl={setSelectedImageUrl}
+                                setViewedProfile={setViewedProfile}
+                                t={t}
+                                user={user}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <MessageViewport
+                    activePinnedMessageIdSet={activePinnedMessageIdSet}
+                    activeUserName={activeUserName}
+                    currentProfile={currentProfile}
+                    handleMessageSelectionClick={handleMessageSelectionClick}
+                    highlightMessage={highlightMessage}
+                    highlightedMessageId={highlightedMessageId}
+                    isMessageSelectionMode={isMessageSelectionMode}
+                    setIsPinnedMessagesViewOpen={setIsPinnedMessagesViewOpen}
+                    language={language}
+                    markVoiceMessagePlayed={markVoiceMessagePlayed}
+                    messageReceiptStatuses={messageReceiptStatuses}
+                    visibleDialogMessages={visibleDialogMessages}
+                    openMessageContextMenu={openMessageContextMenu}
+                    playedVoiceMessageIds={playedVoiceMessageIds}
+                    profilesByUserId={profilesByUserId}
+                    scrollToReplyMessage={scrollToReplyMessage}
+                    selectedMessageIdSet={selectedMessageIdSet}
+                    setSelectedImageUrl={setSelectedImageUrl}
+                    setViewedProfile={setViewedProfile}
+                    t={t}
+                    user={user}
+                    isLoadingMessages={isLoadingMessages}
+                    visibleDialogMessagesCount={visibleDialogMessagesCount}
+                    messagesListRef={messagesListRef}
+                    handleScroll={handleScroll}
+                    messagesBottomAnchorRef={messagesBottomAnchorRef}
+                    scrollbarTrackRef={scrollbarTrackRef}
+                    scrollbarThumbRef={scrollbarThumbRef}
+                    scrollToBottom={scrollToBottom}
+                    scrollButtonRef={scrollButtonRef}
                   />
                 </div>
 
@@ -955,6 +758,7 @@ export function OpenChatView({
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth="2"
+                          transform="translate(0.2, 1.25)"
                         />
                       </svg>
                     )}
@@ -979,7 +783,7 @@ export function OpenChatView({
                     <>
                       <input
                         aria-label="Текст сообщения"
-                        className="min-h-9 min-w-0 flex-1 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] focus:bg-[#f4f4f5]/18 sm:px-3 sm:text-sm"
+                        className="hush-chat-input min-h-9 min-w-0 flex-1 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] focus:bg-[#f4f4f5]/18 sm:px-3 sm:text-sm"
                         disabled={isSelectedChatBlocked}
                         onChange={handleMessageTextChange}
                         placeholder={
@@ -995,7 +799,7 @@ export function OpenChatView({
                         }
                         ref={messageInputRef}
                         type="text"
-                        value={messageText}
+                        defaultValue={messageText}
                       />
                       <button
                         aria-label="Stickers"
@@ -1019,7 +823,27 @@ export function OpenChatView({
                             strokeWidth="2"
                           />
                           <path
-                            d="M9 10h.01M15 10h.01M8.8 14.5c1.8 1.7 4.6 1.7 6.4 0"
+                            d="M8 14s1.5 2.5 4 2.5 4-2.5 4-2.5"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                          />
+                          <line
+                            x1="9"
+                            x2="9.01"
+                            y1="9.5"
+                            y2="9.5"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                          />
+                          <line
+                            x1="15"
+                            x2="15.01"
+                            y1="9.5"
+                            y2="9.5"
                             stroke="currentColor"
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -1031,72 +855,102 @@ export function OpenChatView({
                   )}
                   <button
                     aria-label={isRecordingVoice ? "Отправить голосовое" : "Записать голосовое"}
-                    className={`relative grid min-h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg border text-[#f4f4f5] transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                    className={`hush-send-btn relative grid min-h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg border text-[#f4f4f5] transition disabled:cursor-not-allowed disabled:opacity-50 ${
                       isRecordingVoice
-                        ? "border-red-400/60 bg-red-500/85 text-white hover:bg-red-400"
+                        ? "border-red-400/60 bg-red-500/85 text-white hover:bg-red-400 hush-send-btn-recording"
                         : "border-[#3f3f46]/35 bg-[#f4f4f5]/12 hover:bg-[#f4f4f5]/18"
                     }`}
                     disabled={isUploadingAttachment || isSelectedChatBlocked}
-                    onClick={toggleVoiceRecording}
-                    style={
-                      isRecordingVoice
-                        ? {
-                            boxShadow: `0 0 ${16 + voiceInputLevel * 46}px rgba(248,113,113,${0.34 + voiceInputLevel * 0.58})`,
-                            transform: `scale(${1 + voiceInputLevel * 0.14})`,
-                          }
-                        : undefined
-                    }
+                    onClick={handleSendOrVoiceClick}
                     type="button"
                   >
                     {isRecordingVoice ? (
                       <>
                         <span
                           aria-hidden="true"
-                          className="absolute inset-0 rounded-lg border border-white/40 transition duration-75"
-                          style={{
-                            opacity: 0.22 + voiceInputLevel * 0.58,
-                            transform: `scale(${0.82 + voiceInputLevel * 0.34})`,
-                          }}
+                          className="absolute inset-0 rounded-lg border border-white/40 transition duration-75 hush-voice-wave-outer"
                         />
                         <span
                           aria-hidden="true"
-                          className="absolute inset-1 rounded-md bg-white/18 transition-transform duration-75"
-                          style={{
-                            transform: `scale(${0.42 + voiceInputLevel * 0.72})`,
-                            opacity: 0.24 + voiceInputLevel * 0.58,
-                          }}
+                          className="absolute inset-1 rounded-md bg-white/18 transition-transform duration-75 hush-voice-wave-inner"
                         />
                         <svg
                           aria-hidden="true"
                           className="relative h-5 w-5"
-                          fill="currentColor"
+                          fill="none"
                           viewBox="0 0 24 24"
                         >
-                          <path d="M5 12 19 4l-3.8 16-3.6-6.1L5 12Z" />
+                          <path
+                            d="M3 3l18 9-18 9 4-9-4-9z"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                          />
+                          <path
+                            d="M7 12h14"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                          />
                         </svg>
                       </>
                     ) : (
-                      <svg
-                        aria-hidden="true"
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                        />
-                        <path
-                          d="M19 11a7 7 0 0 1-14 0M12 18v3M9 21h6"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                        />
-                      </svg>
+                      <>
+                        <svg
+                          aria-hidden="true"
+                          className="hush-mic-icon h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                          />
+                          <path
+                            d="M19 10v1a7 7 0 0 1-14 0v-1"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                          />
+                          <line
+                            x1="12"
+                            x2="12"
+                            y1="19"
+                            y2="22"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                          />
+                        </svg>
+                        <svg
+                          aria-hidden="true"
+                          className="hush-send-icon h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M3 3l18 9-18 9 4-9-4-9z"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                          />
+                          <path
+                            d="M7 12h14"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                          />
+                        </svg>
+                      </>
                     )}
                   </button>
                 </form>
@@ -1146,6 +1000,558 @@ export function OpenChatView({
   );
 }
 
+type MessageItemProps = {
+  message: MessageRow;
+  messageIndex: number;
+  messagesArray: MessageRow[];
+  isFromPinnedList?: boolean;
+  user: User;
+  selectedMessageIdSet: Set<number>;
+  activePinnedMessageIdSet: Set<number>;
+  messageReceiptStatuses: Map<number, "delivered" | "read">;
+  profilesByUserId: Map<string, ProfileRow>;
+  currentProfile: ProfileRow | null;
+  highlightedMessageId: number | null;
+  isMessageSelectionMode: boolean;
+  playedVoiceMessageIds: Set<number>;
+  language: string;
+  t: (key: any) => string;
+  activeUserName: string;
+  highlightMessage?: (messageId: number) => boolean;
+  setIsPinnedMessagesViewOpen: Dispatch<SetStateAction<boolean>>;
+  handleMessageSelectionClick: (event: MouseEvent<HTMLElement>, message: MessageRow) => void;
+  setViewedProfile: (profile: ViewedProfileState | null) => void;
+  scrollToReplyMessage: (reply: ReplyMessagePayload) => void;
+  openMessageContextMenu: (event: MouseEvent<HTMLElement>, message: MessageRow) => void;
+  setSelectedImageUrl: (url: string | null) => void;
+  markVoiceMessagePlayed: (message: MessageRow) => void;
+};
+
+const MessageItem = memo(
+  function MessageItem({
+    message,
+    messageIndex,
+    messagesArray,
+    isFromPinnedList = false,
+    user,
+    selectedMessageIdSet,
+    activePinnedMessageIdSet,
+    messageReceiptStatuses,
+    profilesByUserId,
+    currentProfile,
+    highlightedMessageId,
+    isMessageSelectionMode,
+    playedVoiceMessageIds,
+    language,
+    t,
+    activeUserName,
+    highlightMessage,
+    setIsPinnedMessagesViewOpen,
+    handleMessageSelectionClick,
+    setViewedProfile,
+    scrollToReplyMessage,
+    openMessageContextMenu,
+    setSelectedImageUrl,
+    markVoiceMessagePlayed,
+  }: MessageItemProps) {
+    const isMine = message.user_id === user.id;
+    const previousMessage = messagesArray[messageIndex - 1];
+    const nextMessage = messagesArray[messageIndex + 1];
+    const isPreviousSameAuthor =
+      previousMessage?.user_id === message.user_id;
+    const isNextSameAuthor = nextMessage?.user_id === message.user_id;
+    const isSelected = selectedMessageIdSet.has(message.id);
+    const isPinned = activePinnedMessageIdSet.has(message.id);
+    const receiptStatus =
+      isMine && message.id > 0
+        ? messageReceiptStatuses.get(message.id) ?? "delivered"
+        : isMine && message.id < 0
+          ? "delivered"
+          : null;
+    const messageProfile = message.user_id
+      ? profilesByUserId.get(message.user_id)
+      : null;
+    const messageAuthor = messageProfile?.display_name ?? message.author;
+    const shouldShowFriendAvatar = !isMine && !isNextSameAuthor;
+    const shouldShowOwnAvatar = isMine && !isNextSameAuthor;
+    const reply = getMessageReply(message.text);
+    const rawDisplayText = reply?.body ?? message.text;
+    const forwarded = getMessageForward(rawDisplayText);
+    const forwardedProfile = forwarded?.authorUserId
+      ? forwarded.authorUserId === user.id
+        ? currentProfile
+        : profilesByUserId.get(forwarded.authorUserId)
+      : null;
+    const forwardedName =
+      forwardedProfile?.display_name ?? forwarded?.authorName ?? "";
+    const displayText = forwarded?.text ?? rawDisplayText;
+    const imageUrl = getMessageImageUrl(displayText);
+    const videoUrl = getMessageVideoUrl(displayText);
+    const audioUrl = getMessageAudioUrl(displayText);
+    const filePayload = getMessageFilePayload(displayText);
+    const attachmentCaption = getMessageAttachmentCaption(displayText);
+    const callDurationSeconds = getMessageCallDuration(displayText);
+    const sticker = getMessageSticker(displayText);
+    const hasCaptionableAttachment = Boolean(imageUrl || videoUrl || audioUrl);
+    const hasFramedMedia = Boolean(imageUrl || videoUrl || filePayload);
+    const hasAttachment = Boolean(
+      imageUrl || videoUrl || audioUrl || filePayload || callDurationSeconds !== null || sticker,
+    );
+    const hasStandaloneBubble = Boolean(
+      audioUrl || filePayload || callDurationSeconds !== null || sticker,
+    );
+
+    return (
+      <article
+        className={`hush-message-row -mx-1 flex items-end gap-1.5 rounded-xl px-1 py-1 transition-[background-color,box-shadow] duration-300 sm:gap-2 sm:rounded-2xl ${
+          isFromPinnedList
+            ? "cursor-pointer hover:bg-white/[0.03]"
+            : ""
+        } ${
+          highlightedMessageId === message.id
+            ? "bg-[#f4f4f5]/12 shadow-[0_0_0_2px_rgba(244,244,245,0.26),0_0_38px_rgba(244,244,245,0.12)]"
+            : isSelected
+              ? "bg-[#f4f4f5]/8 shadow-[0_0_0_1px_rgba(244,244,245,0.12)]"
+              : "shadow-[0_0_0_0_rgba(244,244,245,0)]"
+        } ${
+          isPreviousSameAuthor ? "mt-1" : "mt-3"
+        } ${isMine ? "justify-end" : "justify-start"}`}
+        data-message-id={message.id}
+        onClickCapture={(event) => {
+          if (isFromPinnedList) {
+            event.stopPropagation();
+            if (highlightMessage) {
+              highlightMessage(message.id);
+            }
+            setIsPinnedMessagesViewOpen(false);
+          } else {
+            handleMessageSelectionClick(event, message);
+          }
+        }}
+      >
+        {isMessageSelectionMode && isMine ? (
+          <span
+            className={`mb-1 grid h-6 w-6 shrink-0 place-items-center transition ${
+              isSelected
+                ? "text-[#f4f4f5]"
+                : "text-transparent"
+            }`}
+          >
+            <MessageCircleCheckIcon />
+          </span>
+        ) : null}
+        {!isMine ? (
+          shouldShowFriendAvatar ? (
+            <button
+              className="hush-avatar grid h-7 w-7 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505] transition sm:h-8 sm:w-8 sm:text-xs"
+              onClick={(e) => {
+                if (isFromPinnedList) e.stopPropagation();
+                setViewedProfile({
+                  avatarUrl: messageProfile?.avatar_url ?? null,
+                  bio: messageProfile?.bio ?? null,
+                  name: messageAuthor,
+                  username: messageProfile?.username ?? null,
+                  updatedAt: messageProfile?.updated_at ?? null,
+                  userId: message.user_id,
+                });
+              }}
+              type="button"
+            >
+              {messageProfile?.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  alt="Аватар собеседника"
+                  className="h-full w-full object-cover"
+                  src={messageProfile.avatar_url}
+                />
+              ) : (
+                messageAuthor[0]?.toUpperCase()
+              )}
+            </button>
+          ) : (
+            <span className="h-7 w-7 shrink-0 sm:h-8 sm:w-8" />
+          )
+        ) : null}
+        {isMessageSelectionMode && !isMine ? (
+          <span
+            className={`mb-1 grid h-6 w-6 shrink-0 place-items-center transition ${
+              isSelected
+                ? "text-[#f4f4f5]"
+                : "text-transparent"
+            }`}
+          >
+            <MessageCircleCheckIcon />
+          </span>
+        ) : null}
+        {isPinned && isMine ? (
+          <span className="mb-1 grid h-6 w-6 shrink-0 place-items-center text-[#f4f4f5]">
+            <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+              <path d="M12 17v5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+              <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 1z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+            </svg>
+          </span>
+        ) : null}
+        <div
+          className={`max-w-[min(84vw,92%)] rounded-xl sm:max-w-[72%] sm:rounded-xl ${
+            hasStandaloneBubble
+              ? "bg-transparent p-0 shadow-none"
+              : hasFramedMedia
+                ? "bg-transparent p-0 shadow-none"
+              : `shadow-[0_10px_30px_rgba(0,0,0,0.18)] ${
+                  hasAttachment ? "p-1.5" : "px-3 py-1.5 sm:px-3 sm:py-1.5"
+                }`
+          } ${
+            hasStandaloneBubble || hasFramedMedia
+              ? "text-[#f4f4f5]"
+              : isMine
+                ? `bg-[#f4f4f5] text-[#050505] ${
+                  isPreviousSameAuthor ? "rounded-tr-lg" : ""
+                } ${isNextSameAuthor ? "rounded-br-lg" : "rounded-br-md"}`
+                : `bg-[#262626] text-[#f4f4f5] ${
+                  isPreviousSameAuthor ? "rounded-tl-lg" : ""
+                } ${isNextSameAuthor ? "rounded-bl-lg" : "rounded-bl-md"}`
+          } ${isSelected ? "ring-2 ring-[#f4f4f5]/80" : ""}`}
+          onContextMenu={(event) => {
+            if (isFromPinnedList) event.stopPropagation();
+            openMessageContextMenu(event, message);
+          }}
+        >
+          {!hasStandaloneBubble && !isMine && !isPreviousSameAuthor ? (
+            <p className={`${hasAttachment ? "mb-1.5 px-1" : "mb-0.5"} text-xs font-medium leading-4 opacity-55`}>
+              {messageAuthor}
+            </p>
+          ) : null}
+          {reply ? (
+            <button
+              className={`hush-reply-preview mb-2 block w-full rounded-xl border-l-4 px-3 py-2 text-left transition ${
+                isMine
+                  ? "border-[#050505]/45 bg-[#050505]/12 hover:bg-[#050505]/18"
+                  : "border-[#f4f4f5]/45 bg-white/8 hover:bg-white/12"
+              }`}
+              onClick={(e) => {
+                if (isFromPinnedList) {
+                  e.stopPropagation();
+                  setIsPinnedMessagesViewOpen(false);
+                }
+                scrollToReplyMessage(reply);
+              }}
+              type="button"
+            >
+              <p className="text-xs font-medium uppercase tracking-[0.12em] opacity-55">
+                {reply.author}
+              </p>
+              <p className="mt-0.5 line-clamp-2 text-xs font-medium opacity-70">
+                {reply.text}
+              </p>
+            </button>
+          ) : null}
+          {forwarded ? (
+            <div className={`mb-1.5 flex items-center gap-2 px-0.5 text-left ${isMine && !hasStandaloneBubble && !hasFramedMedia ? "text-[#050505]" : "text-[#f4f4f5]"}`}>
+              <button
+                aria-label={forwardedName}
+                className={`hush-avatar grid h-7 min-h-7 w-7 min-w-7 shrink-0 aspect-square place-items-center overflow-hidden rounded-full text-xs font-medium leading-none transition disabled:cursor-default ${forwarded.authorUserId ? "cursor-pointer" : ""} ${isMine && !hasStandaloneBubble && !hasFramedMedia ? "bg-[#050505] text-[#f4f4f5]" : "bg-[#f4f4f5] text-[#050505]"}`}
+                disabled={!forwarded.authorUserId}
+                onClick={(e) => {
+                  if (!forwarded.authorUserId) {
+                    return;
+                  }
+                  if (isFromPinnedList) e.stopPropagation();
+                  setViewedProfile({
+                    avatarUrl: forwardedProfile?.avatar_url ?? null,
+                    bio: forwardedProfile?.bio ?? null,
+                    name: forwardedProfile?.display_name ?? forwardedName,
+                    username: forwardedProfile?.username ?? null,
+                    updatedAt: forwardedProfile?.updated_at ?? null,
+                    userId: forwarded.authorUserId,
+                  });
+                }}
+                type="button"
+              >
+                {forwardedProfile?.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    alt={t("avatarAlt")}
+                    className="h-full w-full object-cover"
+                    src={forwardedProfile.avatar_url}
+                  />
+                ) : (
+                  forwardedName[0]?.toUpperCase()
+                )}
+              </button>
+              <div className="flex min-w-0 flex-col-reverse">
+                <p className={`truncate text-xs font-medium leading-4 ${isMine && !hasStandaloneBubble && !hasFramedMedia ? "text-[#52525b]" : "text-[#a1a1aa]"}`}>
+                  {language === "en" ? "Forwarded from" : "Переслано от"}
+                </p>
+                <p className="truncate text-sm font-medium leading-4">
+                  {forwardedName}
+                </p>
+              </div>
+            </div>
+          ) : null}
+          {imageUrl ? (
+            <button
+              className="block w-full overflow-hidden rounded-lg sm:rounded-xl"
+              onClick={(e) => {
+                if (isFromPinnedList) e.stopPropagation();
+                setSelectedImageUrl(imageUrl);
+              }}
+              type="button"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                alt="Отправленное изображение"
+                className="max-h-[58dvh] w-full object-cover sm:max-h-[420px]"
+                src={imageUrl}
+              />
+            </button>
+          ) : videoUrl ? (
+            <video
+              className="max-h-[58dvh] w-full rounded-lg bg-black sm:max-h-[420px] sm:rounded-xl"
+              controls
+              controlsList="nodownload"
+              preload="metadata"
+              src={videoUrl}
+              onClick={(e) => {
+                if (isFromPinnedList) e.stopPropagation();
+              }}
+            />
+          ) : audioUrl ? (
+            <VoiceMessage
+              editedAt={message.edited_at ?? null}
+              isMine={isMine}
+              isUnplayed={
+                message.id > 0 &&
+                !playedVoiceMessageIds.has(message.id)
+              }
+              onPlaybackStart={() => markVoiceMessagePlayed(message)}
+              receiptStatus={receiptStatus}
+              sentAt={message.created_at}
+              src={audioUrl}
+            />
+          ) : filePayload ? (
+            <FileAttachment
+              editedAt={message.edited_at ?? null}
+              file={filePayload}
+              isMine={isMine}
+              receiptStatus={receiptStatus}
+              sentAt={message.created_at}
+            />
+          ) : callDurationSeconds !== null ? (
+            <div
+              className={`min-w-[min(230px,70vw)] rounded-xl px-3 py-2 sm:min-w-[min(260px,70vw)] sm:rounded-xl ${
+                isMine ? "bg-[#2f2f2f]" : "bg-[#262626]"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#f4f4f5] text-[#050505]"
+                >
+                  <svg
+                    aria-hidden="true"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium opacity-75">
+                    {t("call")}
+                  </p>
+                  <p className="text-xs font-medium opacity-60">
+                    {t("callConversation")} {formatCallDuration(callDurationSeconds)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : sticker ? (
+            <div className="hush-sticker-message px-1 py-0.5">
+              <span className="block text-6xl leading-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.25)] sm:text-7xl">
+                {sticker}
+              </span>
+              <span className="mt-1 flex items-center justify-end gap-1 text-xs font-medium text-[#a1a1aa]">
+                {message.edited_at ? (
+                  <span>{t("edited")}</span>
+                ) : null}
+                {formatMessageTime(message.created_at)}
+                {receiptStatus ? (
+                  <MessageReceiptIcon className="h-4 w-4" status={receiptStatus} />
+                ) : null}
+              </span>
+            </div>
+          ) : (
+            <p
+              className="whitespace-pre-wrap break-words text-sm leading-5"
+            >
+              {displayText}
+              <span className="ml-2 inline-flex translate-y-[1px] items-center gap-1 align-baseline">
+                <span
+                  className={`text-xs font-medium leading-none ${
+                    isMine ? "text-[#404040]" : "text-[#71717a]"
+                  }`}
+                >
+                  {message.edited_at ? `${t("edited")} ` : ""}
+                  {formatMessageTime(message.created_at)}
+                </span>
+                {receiptStatus ? (
+                  <span
+                    aria-label={
+                      receiptStatus === "read" ? "Прочитано" : "Доставлено"
+                    }
+                    className="inline-flex items-center text-[#262626]"
+                  >
+                    {receiptStatus === "read" ? (
+                      <MessageReceiptIcon className="h-4 w-4" status="read" />
+                    ) : (
+                      <MessageReceiptIcon className="h-4 w-4" status="delivered" />
+                    )}
+                  </span>
+                ) : null}
+              </span>
+            </p>
+          )}
+          {hasCaptionableAttachment && attachmentCaption ? (
+            <p className="mt-1.5 max-w-[min(320px,70vw)] whitespace-pre-wrap break-words px-1 text-sm leading-5 text-[#f4f4f5]">
+              {attachmentCaption}
+            </p>
+          ) : null}
+          {!hasStandaloneBubble && hasAttachment ? (
+            <div className={`${hasAttachment ? "mt-2 px-1" : "mt-1"} flex items-center justify-end gap-3`}>
+              <p
+                className={`text-right text-xs font-medium ${
+                  hasFramedMedia
+                    ? "text-[#a1a1aa]"
+                    : isMine ? "text-[#404040]" : "text-[#71717a]"
+                }`}
+              >
+                {message.edited_at ? (
+                  <span>{t("edited")} </span>
+                ) : null}
+                {formatMessageTime(message.created_at)}
+              </p>
+              {receiptStatus ? (
+                <span
+                  aria-label={
+                    receiptStatus === "read" ? "Прочитано" : "Доставлено"
+                  }
+                  className={`inline-flex items-center ${hasFramedMedia ? "text-[#a1a1aa]" : "text-[#262626]"}`}
+                >
+                  {receiptStatus === "read" ? (
+                    <MessageReceiptIcon className="h-4 w-4" status="read" />
+                  ) : (
+                    <MessageReceiptIcon className="h-4 w-4" status="delivered" />
+                  )}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+        {isPinned && !isMine ? (
+          <span className="mb-1 grid h-6 w-6 shrink-0 place-items-center text-[#f4f4f5]">
+            <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+              <path d="M12 17v5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+              <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 1z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+            </svg>
+          </span>
+        ) : null}
+        {isMine ? (
+          shouldShowOwnAvatar ? (
+            <button
+              className="hush-avatar grid h-7 w-7 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505] transition sm:h-8 sm:w-8 sm:text-xs"
+              onClick={(e) => {
+                if (isFromPinnedList) e.stopPropagation();
+                setViewedProfile({
+                  avatarUrl: currentProfile?.avatar_url ?? null,
+                  bio: currentProfile?.bio ?? null,
+                  name: activeUserName,
+                  username: currentProfile?.username ?? null,
+                  updatedAt: currentProfile?.updated_at ?? null,
+                  userId: user.id,
+                });
+              }}
+              type="button"
+            >
+              {currentProfile?.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  alt="Твоя аватарка"
+                  className="h-full w-full object-cover"
+                  src={currentProfile.avatar_url}
+                />
+              ) : (
+                activeUserName[0]?.toUpperCase()
+              )}
+            </button>
+          ) : (
+            <span className="h-7 w-7 shrink-0 sm:h-8 sm:w-8" />
+          )
+        ) : null}
+      </article>
+    );
+  },
+  (prev, next) => {
+    if (
+      prev.message !== next.message ||
+      prev.messageIndex !== next.messageIndex ||
+      prev.isFromPinnedList !== next.isFromPinnedList
+    ) {
+      return false;
+    }
+
+    const prevSelected = prev.selectedMessageIdSet.has(prev.message.id);
+    const nextSelected = next.selectedMessageIdSet.has(next.message.id);
+    if (prevSelected !== nextSelected) return false;
+
+    const prevPinned = prev.activePinnedMessageIdSet.has(prev.message.id);
+    const nextPinned = next.activePinnedMessageIdSet.has(next.message.id);
+    if (prevPinned !== nextPinned) return false;
+
+    const prevReceipt = prev.message.user_id === prev.user.id && prev.message.id > 0
+      ? prev.messageReceiptStatuses.get(prev.message.id) ?? "delivered"
+      : null;
+    const nextReceipt = next.message.user_id === next.user.id && next.message.id > 0
+      ? next.messageReceiptStatuses.get(next.message.id) ?? "delivered"
+      : null;
+    if (prevReceipt !== nextReceipt) return false;
+
+    const prevHighlighted = prev.highlightedMessageId === prev.message.id;
+    const nextHighlighted = next.highlightedMessageId === next.message.id;
+    if (prevHighlighted !== nextHighlighted) return false;
+
+    if (prev.isMessageSelectionMode !== next.isMessageSelectionMode) return false;
+
+    const prevVoicePlayed = prev.playedVoiceMessageIds.has(prev.message.id);
+    const nextVoicePlayed = next.playedVoiceMessageIds.has(next.message.id);
+    if (prevVoicePlayed !== nextVoicePlayed) return false;
+
+    if (prev.language !== next.language) return false;
+
+    const prevProfile = prev.message.user_id ? prev.profilesByUserId.get(prev.message.user_id) : null;
+    const nextProfile = next.message.user_id ? next.profilesByUserId.get(next.message.user_id) : null;
+    if (prevProfile?.updated_at !== nextProfile?.updated_at) return false;
+
+    if (prev.currentProfile?.updated_at !== next.currentProfile?.updated_at) return false;
+    if (prev.currentProfile?.avatar_url !== next.currentProfile?.avatar_url) return false;
+
+    const prevPrevAuthor = prev.messagesArray[prev.messageIndex - 1]?.user_id;
+    const nextPrevAuthor = next.messagesArray[next.messageIndex - 1]?.user_id;
+    if (prevPrevAuthor !== nextPrevAuthor) return false;
+
+    const prevNextAuthor = prev.messagesArray[prev.messageIndex + 1]?.user_id;
+    const nextNextAuthor = next.messagesArray[next.messageIndex + 1]?.user_id;
+    if (prevNextAuthor !== nextNextAuthor) return false;
+
+    return true;
+  }
+);
+
 function MessageCircleCheckIcon() {
   return (
     <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -1166,3 +1572,164 @@ function MessageCircleCheckIcon() {
     </svg>
   );
 }
+
+type MessageViewportProps = {
+  activePinnedMessageIdSet: Set<number>;
+  activeUserName: string;
+  currentProfile: ProfileRow | null;
+  handleMessageSelectionClick: (event: MouseEvent<HTMLElement>, message: MessageRow) => void;
+  highlightMessage?: (messageId: number) => boolean;
+  highlightedMessageId: number | null;
+  isMessageSelectionMode: boolean;
+  setIsPinnedMessagesViewOpen: Dispatch<SetStateAction<boolean>>;
+  language: string;
+  markVoiceMessagePlayed: (message: MessageRow) => void;
+  messageReceiptStatuses: Map<number, "delivered" | "read">;
+  visibleDialogMessages: MessageRow[];
+  openMessageContextMenu: (event: MouseEvent<HTMLElement>, message: MessageRow) => void;
+  playedVoiceMessageIds: Set<number>;
+  profilesByUserId: Map<string, ProfileRow>;
+  scrollToReplyMessage: (reply: ReplyMessagePayload) => void;
+  selectedMessageIdSet: Set<number>;
+  setSelectedImageUrl: (url: string | null) => void;
+  setViewedProfile: (profile: ViewedProfileState | null) => void;
+  t: (key: any) => string;
+  user: User;
+  isLoadingMessages: boolean;
+  visibleDialogMessagesCount: number;
+  messagesListRef: RefObject<HTMLDivElement | null>;
+  handleScroll: (event: React.UIEvent<HTMLDivElement>) => void;
+  messagesBottomAnchorRef: RefObject<HTMLDivElement | null>;
+  scrollbarTrackRef: RefObject<HTMLDivElement | null>;
+  scrollbarThumbRef: RefObject<HTMLDivElement | null>;
+  scrollToBottom: () => void;
+  scrollButtonRef: RefObject<HTMLButtonElement | null>;
+};
+
+const MessageViewport = memo(
+  function MessageViewport({
+    activePinnedMessageIdSet,
+    activeUserName,
+    currentProfile,
+    handleMessageSelectionClick,
+    highlightMessage,
+    highlightedMessageId,
+    isMessageSelectionMode,
+    setIsPinnedMessagesViewOpen,
+    language,
+    markVoiceMessagePlayed,
+    messageReceiptStatuses,
+    visibleDialogMessages,
+    openMessageContextMenu,
+    playedVoiceMessageIds,
+    profilesByUserId,
+    scrollToReplyMessage,
+    selectedMessageIdSet,
+    setSelectedImageUrl,
+    setViewedProfile,
+    t,
+    user,
+    isLoadingMessages,
+    visibleDialogMessagesCount,
+    messagesListRef,
+    handleScroll,
+    messagesBottomAnchorRef,
+    scrollbarTrackRef,
+    scrollbarThumbRef,
+    scrollToBottom,
+    scrollButtonRef,
+  }: MessageViewportProps) {
+    return (
+      <>
+        {/* Main Message List Viewport Wrapper */}
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          <div
+            className="hush-messages-viewport scrollbar-hidden flex min-h-0 flex-1 flex-col overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#050505] p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:rounded-2xl sm:p-4 w-full h-full"
+            ref={messagesListRef}
+            onScroll={handleScroll}
+          >
+            {isLoadingMessages && visibleDialogMessagesCount === 0 ? (
+              <p className="text-sm text-[#a1a1aa]">
+                {language === "en" ? "Loading messages..." : "Загружаю сообщения..."}
+              </p>
+            ) : null}
+
+            {!isLoadingMessages && visibleDialogMessagesCount === 0 ? (
+              <p className="text-sm text-[#a1a1aa]">
+                {language === "en"
+                  ? "No messages yet. Write the first one."
+                  : "Сообщений пока нет. Напиши первое."}
+              </p>
+            ) : null}
+
+            {visibleDialogMessages.map((message, messageIndex) => (
+              <MessageItem
+                activePinnedMessageIdSet={activePinnedMessageIdSet}
+                activeUserName={activeUserName}
+                currentProfile={currentProfile}
+                handleMessageSelectionClick={handleMessageSelectionClick}
+                highlightMessage={highlightMessage}
+                highlightedMessageId={highlightedMessageId}
+                isFromPinnedList={false}
+                isMessageSelectionMode={isMessageSelectionMode}
+                setIsPinnedMessagesViewOpen={setIsPinnedMessagesViewOpen}
+                key={message.client_key ?? message.id}
+                language={language}
+                markVoiceMessagePlayed={markVoiceMessagePlayed}
+                message={message}
+                messageIndex={messageIndex}
+                messageReceiptStatuses={messageReceiptStatuses}
+                messagesArray={visibleDialogMessages}
+                openMessageContextMenu={openMessageContextMenu}
+                playedVoiceMessageIds={playedVoiceMessageIds}
+                profilesByUserId={profilesByUserId}
+                scrollToReplyMessage={scrollToReplyMessage}
+                selectedMessageIdSet={selectedMessageIdSet}
+                setSelectedImageUrl={setSelectedImageUrl}
+                setViewedProfile={setViewedProfile}
+                t={t}
+                user={user}
+              />
+            ))}
+
+            <div
+              aria-hidden="true"
+              className="h-px shrink-0"
+              ref={messagesBottomAnchorRef}
+            />
+          </div>
+
+          {/* Custom Scrollbar Track */}
+          <div
+            className="absolute right-[4px] top-[6px] bottom-[6px] w-[6px] rounded-full bg-white/[0.03] hover:bg-white/[0.08] opacity-0 transition-[opacity,background-color] duration-200 pointer-events-none z-20 cursor-pointer"
+            ref={scrollbarTrackRef}
+          >
+            {/* Custom Scrollbar Thumb */}
+            <div
+              className="w-full rounded-full bg-white/32 hover:bg-white/45 transition-[background-color] duration-150 cursor-grab active:cursor-grabbing"
+              ref={scrollbarThumbRef}
+              style={{ height: "0px", transform: "translateY(0px)" }}
+            />
+          </div>
+        </div>
+
+        <button
+          className="hush-scroll-bottom-btn z-30 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-[#3f3f46]/35 bg-[#18181c]/75 text-[#f4f4f5] shadow-[0_4px_12px_rgba(0,0,0,0.4)] opacity-0 pointer-events-none hover:bg-[#f4f4f5] hover:text-[#050505]"
+          onClick={scrollToBottom}
+          ref={scrollButtonRef}
+          type="button"
+        >
+          <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+            <path
+              d="m6 9 6 6 6-6"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2.5"
+            />
+          </svg>
+        </button>
+      </>
+    );
+  }
+);

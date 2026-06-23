@@ -14,7 +14,6 @@ type MessageViewportEffectsParams = {
   lastOwnDialogMessageKey: string;
   messagesListRef: RefObject<HTMLDivElement | null>;
   selectedChatUserId: string | null;
-  isPinnedMessagesViewOpen: boolean;
 };
 
 type ScrollIntent = "open-chat" | "own-message" | "favorites";
@@ -37,11 +36,10 @@ function scrollMessagesListToBottom(
     return false;
   }
 
-  messagesList.scrollTop = getMaxScrollTop(messagesList);
-  bottomAnchorRef.current?.scrollIntoView({ block: "end", behavior: "auto" });
-  messagesList.scrollTop = getMaxScrollTop(messagesList);
+  const maxScroll = messagesList.scrollHeight - messagesList.clientHeight;
+  messagesList.scrollTop = maxScroll;
 
-  return isNearBottom(messagesList);
+  return true;
 }
 
 export function useMessageViewportEffects({
@@ -56,69 +54,12 @@ export function useMessageViewportEffects({
   lastOwnDialogMessageKey,
   messagesListRef,
   selectedChatUserId,
-  isPinnedMessagesViewOpen,
 }: MessageViewportEffectsParams) {
   const frameIdsRef = useRef<number[]>([]);
   const lastOpenedChatUserIdRef = useRef<string | null>(null);
   const lastOwnDialogMessageKeyRef = useRef("");
   const releaseIntentTimeoutRef = useRef<number | null>(null);
   const scrollIntentRef = useRef<ScrollIntent | null>(null);
-
-  const prePinsScrollTopRef = useRef<number | null>(null);
-  const previousIsPinnedRef = useRef(isPinnedMessagesViewOpen);
-  const lastChatUserIdRef = useRef<string | null>(null);
-  const isRestoringScrollRef = useRef(false);
-
-  if (lastChatUserIdRef.current !== selectedChatUserId) {
-    lastChatUserIdRef.current = selectedChatUserId;
-    prePinsScrollTopRef.current = null;
-    previousIsPinnedRef.current = isPinnedMessagesViewOpen;
-    isRestoringScrollRef.current = false;
-  }
-
-  useLayoutEffect(() => {
-    const messagesList = messagesListRef.current;
-    if (!messagesList) {
-      return;
-    }
-
-    const wasPinnedOpen = previousIsPinnedRef.current;
-    previousIsPinnedRef.current = isPinnedMessagesViewOpen;
-
-    if (!wasPinnedOpen && isPinnedMessagesViewOpen) {
-      prePinsScrollTopRef.current = messagesList.scrollTop;
-    } else if (wasPinnedOpen && !isPinnedMessagesViewOpen) {
-      const targetScrollTop = prePinsScrollTopRef.current;
-      if (targetScrollTop !== null) {
-        isRestoringScrollRef.current = true;
-        let pass = 0;
-        const maxPasses = 60; // Try for up to ~1 second
-        
-        function restore() {
-          if (previousIsPinnedRef.current || !isRestoringScrollRef.current) {
-            isRestoringScrollRef.current = false;
-            return;
-          }
-          const list = messagesListRef.current;
-          if (list) {
-            list.scrollTop = targetScrollTop as number;
-            // Check if we successfully reached the target scroll position
-            if (Math.abs(list.scrollTop - (targetScrollTop as number)) < 1.5) {
-              isRestoringScrollRef.current = false;
-              return;
-            }
-          }
-          pass++;
-          if (pass < maxPasses) {
-            window.requestAnimationFrame(restore);
-          } else {
-            isRestoringScrollRef.current = false;
-          }
-        }
-        restore();
-      }
-    }
-  }, [isPinnedMessagesViewOpen, messagesListRef]);
 
   const cancelScheduledScroll = useCallback(() => {
     for (const frameId of frameIdsRef.current) {
@@ -200,7 +141,7 @@ export function useMessageViewportEffects({
     lastOpenedChatUserIdRef.current = selectedChatUserId;
     lastOwnDialogMessageKeyRef.current = lastOwnDialogMessageKey;
     scrollIntentRef.current = "open-chat";
-    scheduleBottomScroll("open-chat", { holdMs: 700, passes: 8 });
+    scheduleBottomScroll("open-chat", { holdMs: 1200, passes: 8 });
   }, [
     activeView,
     clearScrollIntent,
@@ -213,16 +154,14 @@ export function useMessageViewportEffects({
     if (
       activeView !== "messages" ||
       selectedChatUserId === null ||
-      isLoadingMessages ||
-      scrollIntentRef.current !== "open-chat"
+      isLoadingMessages
     ) {
       return;
     }
 
-    scheduleBottomScroll("open-chat", { holdMs: 700, passes: 8 });
+    scrollIntentRef.current = "open-chat";
+    scheduleBottomScroll("open-chat", { holdMs: 1200, passes: 8 });
   }, [
-    activeDialogMessagesCount,
-    activeDialogMessagesKey,
     activeView,
     isLoadingMessages,
     scheduleBottomScroll,
@@ -245,7 +184,7 @@ export function useMessageViewportEffects({
       return;
     }
 
-    scheduleBottomScroll("own-message", { passes: 6 });
+    scheduleBottomScroll("own-message", { passes: 2 });
   }, [activeView, lastOwnDialogMessageKey, scheduleBottomScroll, selectedChatUserId]);
 
   useLayoutEffect(() => {
@@ -271,7 +210,6 @@ export function useMessageViewportEffects({
       if (scrollIntentRef.current === "open-chat") {
         clearScrollIntent();
       }
-      isRestoringScrollRef.current = false;
     }
 
     messagesList.addEventListener("wheel", cancelOpenScrollIntent, { passive: true });
@@ -296,7 +234,7 @@ export function useMessageViewportEffects({
 
     const observer = new ResizeObserver(() => {
       if (scrollIntentRef.current === "open-chat") {
-        scheduleBottomScroll("open-chat", { holdMs: 700, passes: 4 });
+        scheduleBottomScroll("open-chat", { holdMs: 1200, passes: 6 });
       }
     });
 
@@ -306,6 +244,25 @@ export function useMessageViewportEffects({
       observer.disconnect();
     };
   }, [messagesListRef, scheduleBottomScroll]);
+
+  // Auto-scroll when new messages arrive if near bottom
+  const lastMessagesKeyRef = useRef("");
+  useLayoutEffect(() => {
+    if (activeView !== "messages" || selectedChatUserId === null || activeDialogMessagesKey === "") {
+      return;
+    }
+    const prevKey = lastMessagesKeyRef.current;
+    lastMessagesKeyRef.current = activeDialogMessagesKey;
+
+    if (prevKey === activeDialogMessagesKey || prevKey === "") {
+      return;
+    }
+
+    const messagesList = messagesListRef.current;
+    if (messagesList && isNearBottom(messagesList)) {
+      scheduleBottomScroll("own-message", { passes: 2 });
+    }
+  }, [activeView, activeDialogMessagesKey, scheduleBottomScroll, selectedChatUserId, messagesListRef]);
 
   useEffect(() => {
     const timeoutRef = highlightedMessageTimeoutRef;

@@ -16,8 +16,8 @@ function isReceiptForUser(row: MessageReceiptRow, userId: string) {
   return row.sender_id === userId || row.recipient_id === userId;
 }
 
-function isTypingStateForUser(row: MessageTypingStateRow, userId: string) {
-  return row.sender_id === userId || row.recipient_id === userId;
+function isIncomingTypingState(row: MessageTypingStateRow, userId: string) {
+  return row.sender_id !== userId && row.recipient_id === userId;
 }
 
 function isPinForUser(row: MessagePinRow, userId: string) {
@@ -38,10 +38,18 @@ function mergeReceipts(
     rowsByKey.set(`${row.message_id}:${row.sender_id}:${row.status}`, row);
   }
 
-  return Array.from(rowsByKey.values()).sort(
-    (firstRow, secondRow) =>
-      new Date(firstRow.created_at).getTime() -
-        new Date(secondRow.created_at).getTime() || firstRow.id - secondRow.id,
+  const merged = Array.from(rowsByKey.values());
+  const timestamps = new Map<number, number>();
+  for (const row of merged) {
+    timestamps.set(row.id, new Date(row.created_at).getTime());
+  }
+
+  return merged.sort(
+    (firstRow, secondRow) => {
+      const firstTime = timestamps.get(firstRow.id) ?? 0;
+      const secondTime = timestamps.get(secondRow.id) ?? 0;
+      return firstTime - secondTime || firstRow.id - secondRow.id;
+    }
   );
 }
 
@@ -73,10 +81,18 @@ function mergePins(currentRows: MessagePinRow[], incomingRows: MessagePinRow[]) 
     rowsByKey.set(`${row.message_id}:${row.pinner_id}:${row.recipient_id}`, row);
   }
 
-  return Array.from(rowsByKey.values()).sort(
-    (firstRow, secondRow) =>
-      new Date(firstRow.updated_at).getTime() -
-      new Date(secondRow.updated_at).getTime(),
+  const merged = Array.from(rowsByKey.values());
+  const timestamps = new Map<number, number>();
+  for (const row of merged) {
+    timestamps.set(row.message_id, new Date(row.updated_at).getTime());
+  }
+
+  return merged.sort(
+    (firstRow, secondRow) => {
+      const firstTime = timestamps.get(firstRow.message_id) ?? 0;
+      const secondTime = timestamps.get(secondRow.message_id) ?? 0;
+      return firstTime - secondTime;
+    }
   );
 }
 
@@ -174,7 +190,7 @@ export function useMessageStateRealtime(user: User | null) {
       .on("broadcast", { event: "typing-upsert" }, (event) => {
         const typingState = (event.payload as { typingState?: MessageTypingStateRow } | null)?.typingState;
 
-        if (typingState && isTypingStateForUser(typingState, signedInUser.id)) {
+        if (typingState && isIncomingTypingState(typingState, signedInUser.id)) {
           setMessageTypingStates((currentRows) => mergeTypingStates(currentRows, [typingState]));
         }
       })
@@ -202,7 +218,7 @@ export function useMessageStateRealtime(user: User | null) {
         (payload) => {
           const typingState = payload.new as MessageTypingStateRow;
 
-          if (typingState && isTypingStateForUser(typingState, signedInUser.id)) {
+          if (typingState && isIncomingTypingState(typingState, signedInUser.id)) {
             setMessageTypingStates((currentRows) => mergeTypingStates(currentRows, [typingState]));
           }
         },

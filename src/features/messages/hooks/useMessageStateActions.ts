@@ -216,9 +216,6 @@ export function useMessageStateActions({
         sender_id: user.id,
       };
 
-      setMessageTypingStates((currentRows) =>
-        mergeMessageTypingStates(currentRows, [optimisticTypingState]),
-      );
       broadcastTypingState(optimisticTypingState);
 
       const { data, error } = await upsertMessageTypingState(
@@ -242,16 +239,12 @@ export function useMessageStateActions({
         return;
       }
 
-      setMessageTypingStates((currentRows) =>
-        mergeMessageTypingStates(currentRows, [data]),
-      );
       broadcastTypingState(data);
     },
     [
       activeUserName,
       broadcastTypingState,
       selectedChatUserId,
-      setMessageTypingStates,
       user,
     ],
   );

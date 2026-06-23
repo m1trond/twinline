@@ -26,6 +26,22 @@ type UseMessageDerivedStateParams = {
   userId: string | null | undefined;
 };
 
+const timestampCache = new Map<string, number>();
+function getMessageTimestamp(dateStr: string): number {
+  if (timestampCache.has(dateStr)) {
+    return timestampCache.get(dateStr)!;
+  }
+  const t = new Date(dateStr).getTime();
+  if (timestampCache.size > 5000) {
+    const firstKey = timestampCache.keys().next().value;
+    if (firstKey !== undefined) {
+      timestampCache.delete(firstKey);
+    }
+  }
+  timestampCache.set(dateStr, t);
+  return t;
+}
+
 export function useMessageDerivedState({
   hasLoadedMessageReceipts,
   hiddenMessageIdSet,
@@ -231,7 +247,13 @@ export function useMessageDerivedState({
       return 0;
     }
 
-    const latestFriendRealMessageCreatedAt = messages.reduce((latestCreatedAt, message) => {
+    const currentChatMessages = messages.filter(
+      (m) =>
+        (m.user_id === selectedChatUserId && m.recipient_id === userId) ||
+        (m.user_id === userId && m.recipient_id === selectedChatUserId)
+    );
+
+    const latestFriendRealMessageCreatedAt = currentChatMessages.reduce((latestCreatedAt, message) => {
       if (
         message.user_id !== selectedChatUserId ||
         message.recipient_id !== userId ||
@@ -240,8 +262,9 @@ export function useMessageDerivedState({
         return latestCreatedAt;
       }
 
-      return Math.max(latestCreatedAt, new Date(message.created_at).getTime());
+      return Math.max(latestCreatedAt, getMessageTimestamp(message.created_at));
     }, 0);
+
     const tableTypingState = messageTypingStates
       .filter((typingState) => {
         return (
@@ -251,13 +274,13 @@ export function useMessageDerivedState({
       })
       .sort(
         (firstState, secondState) =>
-          new Date(secondState.event_at).getTime() -
-          new Date(firstState.event_at).getTime(),
+          getMessageTimestamp(secondState.event_at) -
+          getMessageTimestamp(firstState.event_at),
       )[0];
 
     if (tableTypingState) {
-      const typingEventAt = new Date(tableTypingState.event_at).getTime();
-      const typingExpiresAt = new Date(tableTypingState.expires_at).getTime();
+      const typingEventAt = getMessageTimestamp(tableTypingState.event_at);
+      const typingExpiresAt = getMessageTimestamp(tableTypingState.expires_at);
 
       if (
         tableTypingState.action === "start" &&
@@ -270,7 +293,7 @@ export function useMessageDerivedState({
     let latestFriendTypingCreatedAt = 0;
     let latestFriendTypingExpiresAt = 0;
 
-    for (const message of messages) {
+    for (const message of currentChatMessages) {
       if (
         message.user_id !== selectedChatUserId ||
         message.recipient_id !== userId
@@ -278,7 +301,7 @@ export function useMessageDerivedState({
         continue;
       }
 
-      const createdAt = new Date(message.created_at).getTime();
+      const createdAt = getMessageTimestamp(message.created_at);
       const typingPayload = getTypingMessagePayload(message.text);
 
       if (typingPayload) {

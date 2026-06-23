@@ -1,4 +1,4 @@
-﻿import {
+import {
   audioMessagePrefix,
   blockMessagePrefix,
   callMessagePrefix,
@@ -24,6 +24,23 @@ import type {
   TypingMessagePayload,
 } from "../types";
 
+const cache = new Map<string, any>();
+function withCache<T>(keyPrefix: string, text: string, fn: () => T): T {
+  const cacheKey = `${keyPrefix}:${text}`;
+  if (cache.has(cacheKey)) {
+    return cache.get(cacheKey);
+  }
+  const result = fn();
+  if (cache.size > 5000) {
+    const firstKey = cache.keys().next().value;
+    if (firstKey !== undefined) {
+      cache.delete(firstKey);
+    }
+  }
+  cache.set(cacheKey, result);
+  return result;
+}
+
 function createMediaMessageText(prefix: string, payload: MediaMessagePayload) {
   const normalizedCaption = payload.caption?.trim();
 
@@ -40,34 +57,38 @@ function createMediaMessageText(prefix: string, payload: MediaMessagePayload) {
 }
 
 function getMediaMessagePayload(text: string, prefix: string): MediaMessagePayload | null {
-  if (!text.startsWith(prefix)) {
-    return null;
-  }
-
-  const rawPayload = text.slice(prefix.length);
-
-  if (!rawPayload) {
-    return null;
-  }
-
-  try {
-    const parsedPayload = JSON.parse(decodeURIComponent(rawPayload));
-
-    if (parsedPayload && typeof parsedPayload.url === "string") {
-      return {
-        caption:
-          typeof parsedPayload.caption === "string"
-            ? parsedPayload.caption
-            : undefined,
-        url: parsedPayload.url,
-      };
+  return withCache(`media:${prefix}`, text, () => {
+    if (!text.startsWith(prefix)) {
+      return null;
     }
-  } catch {
-    return { url: rawPayload };
-  }
 
-  return { url: rawPayload };
+    const rawPayload = text.slice(prefix.length);
+
+    if (!rawPayload) {
+      return null;
+    }
+
+    try {
+      const parsedPayload = JSON.parse(decodeURIComponent(rawPayload));
+
+      if (parsedPayload && typeof parsedPayload.url === "string") {
+        return {
+          caption:
+            typeof parsedPayload.caption === "string"
+              ? parsedPayload.caption
+              : undefined,
+          url: parsedPayload.url,
+        };
+      }
+    } catch {
+      return { url: rawPayload };
+    }
+
+    return { url: rawPayload };
+  });
 }
+
+
 
 function createImageMessageText(payload: MediaMessagePayload) {
   return createMediaMessageText(imageMessagePrefix, payload);
@@ -110,34 +131,36 @@ export function createFileMessageText(payload: FileMessagePayload) {
 }
 
 export function getMessageFilePayload(text: string): FileMessagePayload | null {
-  if (!text.startsWith(fileMessagePrefix)) {
-    return null;
-  }
-
-  try {
-    const parsedPayload = JSON.parse(
-      decodeURIComponent(text.slice(fileMessagePrefix.length)),
-    );
-
-    if (
-      parsedPayload &&
-      typeof parsedPayload.url === "string" &&
-      typeof parsedPayload.name === "string" &&
-      typeof parsedPayload.size === "number"
-    ) {
-      return {
-        caption: typeof parsedPayload.caption === "string" ? parsedPayload.caption : undefined,
-        name: parsedPayload.name,
-        size: parsedPayload.size,
-        type: typeof parsedPayload.type === "string" ? parsedPayload.type : "",
-        url: parsedPayload.url,
-      };
+  return withCache("file", text, () => {
+    if (!text.startsWith(fileMessagePrefix)) {
+      return null;
     }
-  } catch {
-    return null;
-  }
 
-  return null;
+    try {
+      const parsedPayload = JSON.parse(
+        decodeURIComponent(text.slice(fileMessagePrefix.length)),
+      );
+
+      if (
+        parsedPayload &&
+        typeof parsedPayload.url === "string" &&
+        typeof parsedPayload.name === "string" &&
+        typeof parsedPayload.size === "number"
+      ) {
+        return {
+          caption: typeof parsedPayload.caption === "string" ? parsedPayload.caption : undefined,
+          name: parsedPayload.name,
+          size: parsedPayload.size,
+          type: typeof parsedPayload.type === "string" ? parsedPayload.type : "",
+          url: parsedPayload.url,
+        };
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  });
 }
 
 export function getMessageAttachmentCaption(text: string) {
@@ -176,17 +199,19 @@ export function getMessageSticker(text: string) {
 }
 
 export function getMessageReply(text: string): ReplyMessagePayload | null {
-  if (!text.startsWith(replyMessagePrefix)) {
-    return null;
-  }
+  return withCache("reply", text, () => {
+    if (!text.startsWith(replyMessagePrefix)) {
+      return null;
+    }
 
-  try {
-    return JSON.parse(
-      decodeURIComponent(text.slice(replyMessagePrefix.length)),
-    ) as ReplyMessagePayload;
-  } catch {
-    return null;
-  }
+    try {
+      return JSON.parse(
+        decodeURIComponent(text.slice(replyMessagePrefix.length)),
+      ) as ReplyMessagePayload;
+    } catch {
+      return null;
+    }
+  });
 }
 
 export function createForwardMessageText(message: MessageRow, authorName: string) {
@@ -203,34 +228,36 @@ export function createForwardMessageText(message: MessageRow, authorName: string
 }
 
 export function getMessageForward(text: string): ForwardMessagePayload | null {
-  if (!text.startsWith(forwardMessagePrefix)) {
-    return null;
-  }
-
-  try {
-    const parsedPayload = JSON.parse(
-      decodeURIComponent(text.slice(forwardMessagePrefix.length)),
-    );
-
-    if (
-      parsedPayload &&
-      typeof parsedPayload.authorName === "string" &&
-      typeof parsedPayload.text === "string"
-    ) {
-      return {
-        authorName: parsedPayload.authorName,
-        authorUserId:
-          typeof parsedPayload.authorUserId === "string"
-            ? parsedPayload.authorUserId
-            : null,
-        text: parsedPayload.text,
-      };
+  return withCache("forward", text, () => {
+    if (!text.startsWith(forwardMessagePrefix)) {
+      return null;
     }
-  } catch {
-    return null;
-  }
 
-  return null;
+    try {
+      const parsedPayload = JSON.parse(
+        decodeURIComponent(text.slice(forwardMessagePrefix.length)),
+      );
+
+      if (
+        parsedPayload &&
+        typeof parsedPayload.authorName === "string" &&
+        typeof parsedPayload.text === "string"
+      ) {
+        return {
+          authorName: parsedPayload.authorName,
+          authorUserId:
+            typeof parsedPayload.authorUserId === "string"
+              ? parsedPayload.authorUserId
+              : null,
+          text: parsedPayload.text,
+        };
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  });
 }
 
 export function createPinMessageText(messageId: number, action: PinMessagePayload["action"]) {
@@ -238,25 +265,27 @@ export function createPinMessageText(messageId: number, action: PinMessagePayloa
 }
 
 export function getPinMessagePayload(text: string): PinMessagePayload | null {
-  if (!text.startsWith(pinMessagePrefix)) {
-    return null;
-  }
-
-  try {
-    const parsedPayload = JSON.parse(text.slice(pinMessagePrefix.length));
-
-    if (
-      parsedPayload &&
-      (parsedPayload.action === "pin" || parsedPayload.action === "unpin") &&
-      Number.isInteger(parsedPayload.messageId)
-    ) {
-      return parsedPayload;
+  return withCache("pinPayload", text, () => {
+    if (!text.startsWith(pinMessagePrefix)) {
+      return null;
     }
-  } catch {
-    return null;
-  }
 
-  return null;
+    try {
+      const parsedPayload = JSON.parse(text.slice(pinMessagePrefix.length));
+
+      if (
+        parsedPayload &&
+        (parsedPayload.action === "pin" || parsedPayload.action === "unpin") &&
+        Number.isInteger(parsedPayload.messageId)
+      ) {
+        return parsedPayload;
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  });
 }
 
 export function createReceiptMessageText(
@@ -267,29 +296,31 @@ export function createReceiptMessageText(
 }
 
 export function getReceiptMessagePayload(text: string): ReceiptMessagePayload | null {
-  if (!text.startsWith(receiptMessagePrefix)) {
-    return null;
-  }
-
-  try {
-    const parsedPayload = JSON.parse(text.slice(receiptMessagePrefix.length));
-
-    if (
-      parsedPayload &&
-      Number.isInteger(parsedPayload.messageId) &&
-      (
-        parsedPayload.status === "delivered" ||
-        parsedPayload.status === "played" ||
-        parsedPayload.status === "read"
-      )
-    ) {
-      return parsedPayload;
+  return withCache("receiptPayload", text, () => {
+    if (!text.startsWith(receiptMessagePrefix)) {
+      return null;
     }
-  } catch {
-    return null;
-  }
 
-  return null;
+    try {
+      const parsedPayload = JSON.parse(text.slice(receiptMessagePrefix.length));
+
+      if (
+        parsedPayload &&
+        Number.isInteger(parsedPayload.messageId) &&
+        (
+          parsedPayload.status === "delivered" ||
+          parsedPayload.status === "played" ||
+          parsedPayload.status === "read"
+        )
+      ) {
+        return parsedPayload;
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  });
 }
 
 export function createTypingMessageText(action: "start" | "stop", eventAt: string) {
@@ -300,32 +331,34 @@ export function createTypingMessageText(action: "start" | "stop", eventAt: strin
 }
 
 export function getTypingMessagePayload(text: string): TypingMessagePayload | null {
-  if (!text.startsWith(typingMessagePrefix)) {
-    return null;
-  }
-
-  try {
-    const parsedPayload = JSON.parse(text.slice(typingMessagePrefix.length));
-
-    if (
-      parsedPayload &&
-      (!parsedPayload.action ||
-        parsedPayload.action === "start" ||
-        parsedPayload.action === "stop") &&
-      (!parsedPayload.expiresAt ||
-        (typeof parsedPayload.expiresAt === "string" &&
-          Number.isFinite(new Date(parsedPayload.expiresAt).getTime()))) &&
-      (!parsedPayload.eventAt ||
-        (typeof parsedPayload.eventAt === "string" &&
-          Number.isFinite(new Date(parsedPayload.eventAt).getTime())))
-    ) {
-      return parsedPayload as TypingMessagePayload;
+  return withCache("typingPayload", text, () => {
+    if (!text.startsWith(typingMessagePrefix)) {
+      return null;
     }
-  } catch {
-    return null;
-  }
 
-  return null;
+    try {
+      const parsedPayload = JSON.parse(text.slice(typingMessagePrefix.length));
+
+      if (
+        parsedPayload &&
+        (!parsedPayload.action ||
+          parsedPayload.action === "start" ||
+          parsedPayload.action === "stop") &&
+        (!parsedPayload.expiresAt ||
+          (typeof parsedPayload.expiresAt === "string" &&
+            Number.isFinite(new Date(parsedPayload.expiresAt).getTime()))) &&
+        (!parsedPayload.eventAt ||
+          (typeof parsedPayload.eventAt === "string" &&
+            Number.isFinite(new Date(parsedPayload.eventAt).getTime())))
+      ) {
+        return parsedPayload as TypingMessagePayload;
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  });
 }
 
 export function createBlockMessageText(blockedId: string, action: BlockMessagePayload["action"]) {
@@ -333,34 +366,46 @@ export function createBlockMessageText(blockedId: string, action: BlockMessagePa
 }
 
 export function getBlockMessagePayload(text: string): BlockMessagePayload | null {
-  if (!text.startsWith(blockMessagePrefix)) {
-    return null;
-  }
-
-  try {
-    const parsedPayload = JSON.parse(text.slice(blockMessagePrefix.length));
-
-    if (
-      parsedPayload &&
-      typeof parsedPayload.blockedId === "string" &&
-      (parsedPayload.action === "block" || parsedPayload.action === "unblock")
-    ) {
-      return parsedPayload;
+  return withCache("blockPayload", text, () => {
+    if (!text.startsWith(blockMessagePrefix)) {
+      return null;
     }
-  } catch {
-    return null;
-  }
 
-  return null;
+    try {
+      const parsedPayload = JSON.parse(text.slice(blockMessagePrefix.length));
+
+      if (
+        parsedPayload &&
+        typeof parsedPayload.blockedId === "string" &&
+        (parsedPayload.action === "block" || parsedPayload.action === "unblock")
+      ) {
+        return parsedPayload;
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  });
 }
 
 export function isServiceMessage(text: string) {
-  return Boolean(
-    getPinMessagePayload(text) ||
-      getReceiptMessagePayload(text) ||
-      getTypingMessagePayload(text) ||
-      getBlockMessagePayload(text),
-  );
+  return withCache("isService", text, () => {
+    if (
+      !text.startsWith(pinMessagePrefix) &&
+      !text.startsWith(receiptMessagePrefix) &&
+      !text.startsWith(typingMessagePrefix) &&
+      !text.startsWith(blockMessagePrefix)
+    ) {
+      return false;
+    }
+    return Boolean(
+      getPinMessagePayload(text) ||
+        getReceiptMessagePayload(text) ||
+        getTypingMessagePayload(text) ||
+        getBlockMessagePayload(text),
+    );
+  });
 }
 
 export function getReadableMessageText(text: string): string {
@@ -576,6 +621,31 @@ export function mergeMessages(currentMessages: MessageRow[], nextMessages: Messa
   }
 
   for (const message of nextMessages) {
+    if (message.id > 0) {
+      let matchingOptimisticMessage: MessageRow | null = null;
+      for (const existingMsg of messagesById.values()) {
+        if (
+          existingMsg.id < 0 &&
+          existingMsg.user_id === message.user_id &&
+          existingMsg.recipient_id === message.recipient_id &&
+          existingMsg.text === message.text
+        ) {
+          matchingOptimisticMessage = existingMsg;
+          break;
+        }
+      }
+
+      if (matchingOptimisticMessage) {
+        messagesById.delete(matchingOptimisticMessage.id);
+        const mergedMessage: MessageRow = {
+          ...message,
+          client_key: matchingOptimisticMessage.client_key ?? message.client_key,
+        };
+        messagesById.set(message.id, mergedMessage);
+        continue;
+      }
+    }
+
     const existingMessage = messagesById.get(message.id);
 
     messagesById.set(
@@ -590,10 +660,34 @@ export function mergeMessages(currentMessages: MessageRow[], nextMessages: Messa
     );
   }
 
-  return Array.from(messagesById.values()).sort((firstMessage, secondMessage) => {
-    const createdAtDiff =
-      new Date(firstMessage.created_at).getTime() -
-      new Date(secondMessage.created_at).getTime();
+  const mergedList = Array.from(messagesById.values());
+  const timestamps = new Map<number, number>();
+  for (const msg of mergedList) {
+    timestamps.set(msg.id, new Date(msg.created_at).getTime());
+  }
+
+  return mergedList.sort((firstMessage, secondMessage) => {
+    const isFirstMine = firstMessage.user_id && firstMessage.recipient_id;
+    const isSecondMine = secondMessage.user_id && secondMessage.recipient_id;
+
+    if (isFirstMine && isSecondMine) {
+      const isSameChat =
+        (firstMessage.user_id === secondMessage.user_id && firstMessage.recipient_id === secondMessage.recipient_id) ||
+        (firstMessage.user_id === secondMessage.recipient_id && firstMessage.recipient_id === secondMessage.user_id);
+
+      if (isSameChat) {
+        const isFirstOptimistic = firstMessage.id < 0;
+        const isSecondOptimistic = secondMessage.id < 0;
+
+        if (isFirstOptimistic !== isSecondOptimistic) {
+          return isFirstOptimistic ? 1 : -1;
+        }
+      }
+    }
+
+    const firstTime = timestamps.get(firstMessage.id) ?? 0;
+    const secondTime = timestamps.get(secondMessage.id) ?? 0;
+    const createdAtDiff = firstTime - secondTime;
 
     if (createdAtDiff !== 0) {
       return createdAtDiff;
@@ -631,7 +725,7 @@ export function settleOptimisticMessage(
     ...savedMessage,
     client_key:
       optimisticMessage.client_key ?? `optimistic-message-${optimisticMessage.id}`,
-    created_at: optimisticMessage.created_at,
+    created_at: savedMessage.created_at,
   };
 
   return mergeMessages(

@@ -215,8 +215,6 @@ export default function Home() {
     setVoiceRecordingDuration,
     voiceRecordingStartedAt,
     setVoiceRecordingStartedAt,
-    voiceInputLevel,
-    setVoiceInputLevel,
     isStickerPickerOpen,
     setIsStickerPickerOpen,
     stickerPickerPosition,
@@ -310,6 +308,19 @@ export default function Home() {
   const messagesListRef = useRef<HTMLDivElement | null>(null);
   const stickerButtonRef = useRef<HTMLButtonElement | null>(null);
   const highlightedMessageTimeoutRef = useRef<number | null>(null);
+  const pendingHighlightObserverRef = useRef<IntersectionObserver | null>(null);
+  const pendingHighlightFallbackTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (pendingHighlightObserverRef.current !== null) {
+        pendingHighlightObserverRef.current.disconnect();
+      }
+      if (pendingHighlightFallbackTimeoutRef.current !== null) {
+        window.clearTimeout(pendingHighlightFallbackTimeoutRef.current);
+      }
+    };
+  }, []);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const remoteCallStreamRef = useRef<MediaStream | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
@@ -566,6 +577,7 @@ export default function Home() {
         recipient_id: recipientId,
         text,
         user_id: user.id,
+        created_at: optimisticMessage.created_at,
       }).select(messageColumns).single();
 
       if (error) {
@@ -584,52 +596,14 @@ export default function Home() {
     },
     [activeUserName, broadcastMessage, selectedChatUserId, setMessages, user],
   );
-  const scrollOutgoingMessageToBottom = useCallback(
-    (message: MessageRow) => {
-      if (
-        activeViewRef.current !== "messages" ||
-        selectedChatUserIdRef.current !== message.recipient_id ||
-        message.user_id !== user?.id
-      ) {
-        return;
-      }
-
-      function scroll() {
-        const bottomAnchor = messagesBottomAnchorRef.current;
-
-        if (bottomAnchor) {
-          bottomAnchor.scrollIntoView({ block: "end", behavior: "auto" });
-          return;
-        }
-
-        const messagesList = messagesListRef.current;
-
-        if (!messagesList) {
-          return;
-        }
-
-        messagesList.scrollTop = Math.max(
-          0,
-          messagesList.scrollHeight - messagesList.clientHeight,
-        );
-      }
-
-      scroll();
-      window.requestAnimationFrame(scroll);
-      window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(scroll);
-      });
-    },
-    [user?.id],
-  );
   const sendDirectMessage = useDirectMessageSender({
     activeUserName,
     broadcastMessage,
-    onOptimisticMessageCommit: scrollOutgoingMessageToBottom,
     selectedChatUserId,
     setErrorMessage,
     setMessages,
     user,
+    messages,
   });
   const { sendAttachment, sendVoiceMessage } = useMessageAttachmentSender({
     activeView,
@@ -825,8 +799,6 @@ export default function Home() {
   );
   const visibleDialogMessages = isActiveDialogLoading
     ? []
-    : isPinnedMessagesViewOpen
-    ? activePinnedMessages
     : activeDialogMessages;
   const visibleDialogMessagesCount = visibleDialogMessages.length;
   const visibleDialogLastMessage = visibleDialogMessages.at(-1);
@@ -1266,7 +1238,6 @@ export default function Home() {
     lastOwnDialogMessageKey,
     messagesListRef,
     selectedChatUserId,
-    isPinnedMessagesViewOpen,
   });
   useCallPanelEffects({
     callStartedAt,
@@ -1349,18 +1320,21 @@ export default function Home() {
     visibleMessages: activeDialogMessages,
   });
 
-  function markVoiceMessagePlayed(message: MessageRow) {
-    if (
-      !message.user_id ||
-      message.id <= 0 ||
-      message.user_id === user?.id ||
-      sentReceiptMessageIdSets.playedMessageIds.has(message.id)
-    ) {
-      return;
-    }
+  const markVoiceMessagePlayed = useCallback(
+    (message: MessageRow) => {
+      if (
+        !message.user_id ||
+        message.id <= 0 ||
+        message.user_id === user?.id ||
+        sentReceiptMessageIdSets.playedMessageIds.has(message.id)
+      ) {
+        return;
+      }
 
-    void sendMessageReceipt(message, "played");
-  }
+      void sendMessageReceipt(message, "played");
+    },
+    [user?.id, sentReceiptMessageIdSets.playedMessageIds, sendMessageReceipt],
+  );
 
 
 
@@ -1921,6 +1895,9 @@ export default function Home() {
       setReplyTarget(null);
       setEditingMessage(null);
       setMessageText("");
+      if (messageInputRef.current) {
+        messageInputRef.current.value = "";
+      }
 
       const { error } = await supabase.auth.signOut();
 
@@ -2189,6 +2166,9 @@ export default function Home() {
     setReplyTarget(item);
     setEditingMessage(null);
     setMessageText("");
+    if (messageInputRef.current) {
+      messageInputRef.current.value = "";
+    }
     setFavoriteContextMenu(null);
     setErrorMessage("");
 
@@ -2203,14 +2183,16 @@ export default function Home() {
     }
 
     const isCaptionEdit = isCaptionEditableMessage(item.text);
+    const editText = isCaptionEdit
+      ? getMessageAttachmentCaption(item.text) ?? ""
+      : getReadableMessageText(item.text);
 
     setEditingMessage(item);
     setReplyTarget(null);
-    setMessageText(
-      isCaptionEdit
-        ? getMessageAttachmentCaption(item.text) ?? ""
-        : getReadableMessageText(item.text),
-    );
+    setMessageText(editText);
+    if (messageInputRef.current) {
+      messageInputRef.current.value = editText;
+    }
     setFavoriteContextMenu(null);
     setErrorMessage("");
 
@@ -2252,13 +2234,92 @@ export default function Home() {
     setReplyTarget(message);
     setEditingMessage(null);
     setMessageText("");
+    if (messageInputRef.current) {
+      messageInputRef.current.value = "";
+    }
     setMessageContextMenu(null);
     setErrorMessage("");
 
     focusMessageInput();
   }
 
-  function scrollToReplyMessage(reply: ReplyMessagePayload) {
+  const triggerMessageHighlight = useCallback((messageId: number, targetMessage: HTMLElement) => {
+    if (highlightedMessageTimeoutRef.current !== null) {
+      window.clearTimeout(highlightedMessageTimeoutRef.current);
+      highlightedMessageTimeoutRef.current = null;
+    }
+    if (pendingHighlightFallbackTimeoutRef.current !== null) {
+      window.clearTimeout(pendingHighlightFallbackTimeoutRef.current);
+      pendingHighlightFallbackTimeoutRef.current = null;
+    }
+    if (pendingHighlightObserverRef.current !== null) {
+      pendingHighlightObserverRef.current.disconnect();
+      pendingHighlightObserverRef.current = null;
+    }
+
+    setHighlightedMessageId(null);
+
+    const messagesList = messagesListRef.current;
+    if (!messagesList || typeof IntersectionObserver === "undefined") {
+      setHighlightedMessageId(messageId);
+      highlightedMessageTimeoutRef.current = window.setTimeout(() => {
+        setHighlightedMessageId(null);
+        highlightedMessageTimeoutRef.current = null;
+      }, 1200);
+      return;
+    }
+
+    let isFinished = false;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            isFinished = true;
+            observer.disconnect();
+            if (pendingHighlightObserverRef.current === observer) {
+              pendingHighlightObserverRef.current = null;
+            }
+            if (pendingHighlightFallbackTimeoutRef.current !== null) {
+              window.clearTimeout(pendingHighlightFallbackTimeoutRef.current);
+              pendingHighlightFallbackTimeoutRef.current = null;
+            }
+
+            setHighlightedMessageId(messageId);
+            highlightedMessageTimeoutRef.current = window.setTimeout(() => {
+              setHighlightedMessageId(null);
+              highlightedMessageTimeoutRef.current = null;
+            }, 1200);
+            break;
+          }
+        }
+      },
+      {
+        root: messagesList,
+        threshold: 0.1,
+      }
+    );
+
+    pendingHighlightObserverRef.current = observer;
+    observer.observe(targetMessage);
+
+    pendingHighlightFallbackTimeoutRef.current = window.setTimeout(() => {
+      if (!isFinished) {
+        observer.disconnect();
+        if (pendingHighlightObserverRef.current === observer) {
+          pendingHighlightObserverRef.current = null;
+        }
+        setHighlightedMessageId(messageId);
+        highlightedMessageTimeoutRef.current = window.setTimeout(() => {
+          setHighlightedMessageId(null);
+          highlightedMessageTimeoutRef.current = null;
+        }, 1200);
+      }
+      pendingHighlightFallbackTimeoutRef.current = null;
+    }, 1500);
+  }, []);
+
+  const scrollToReplyMessage = useCallback((reply: ReplyMessagePayload) => {
     if (!reply.messageId) {
       setErrorMessage("К этому старому ответу нельзя перейти: он был создан до привязки сообщений.");
       return;
@@ -2273,20 +2334,12 @@ export default function Home() {
       return;
     }
 
-    if (highlightedMessageTimeoutRef.current !== null) {
-      window.clearTimeout(highlightedMessageTimeoutRef.current);
-    }
-
     targetMessage.scrollIntoView({ behavior: "smooth", block: "center" });
-    setHighlightedMessageId(reply.messageId);
+    triggerMessageHighlight(reply.messageId, targetMessage);
     setErrorMessage("");
-    highlightedMessageTimeoutRef.current = window.setTimeout(() => {
-      setHighlightedMessageId(null);
-      highlightedMessageTimeoutRef.current = null;
-    }, 1200);
-  }
+  }, [triggerMessageHighlight]);
 
-  function highlightMessage(messageId: number) {
+  const highlightMessage = useCallback((messageId: number) => {
     const targetMessage = messagesListRef.current?.querySelector<HTMLElement>(
       `[data-message-id="${messageId}"]`,
     );
@@ -2295,21 +2348,13 @@ export default function Home() {
       return false;
     }
 
-    if (highlightedMessageTimeoutRef.current !== null) {
-      window.clearTimeout(highlightedMessageTimeoutRef.current);
-    }
-
     targetMessage.scrollIntoView({ behavior: "smooth", block: "center" });
-    setHighlightedMessageId(messageId);
-    highlightedMessageTimeoutRef.current = window.setTimeout(() => {
-      setHighlightedMessageId(null);
-      highlightedMessageTimeoutRef.current = null;
-    }, 1200);
+    triggerMessageHighlight(messageId, targetMessage);
 
     return true;
-  }
+  }, [triggerMessageHighlight]);
 
-  function scrollToNextPinnedMessage() {
+  const scrollToNextPinnedMessage = useCallback(() => {
     if (activePinnedMessages.length === 0) {
       return;
     }
@@ -2326,7 +2371,7 @@ export default function Home() {
         setPinnedNavigationIndex((nextIndex + 1) % activePinnedMessages.length);
       }
     });
-  }
+  }, [activePinnedMessages, isPinnedMessagesViewOpen, pinnedNavigationIndex, highlightMessage]);
 
   function startEditingMessage(message: MessageRow) {
     if (!user || message.user_id !== user.id) {
@@ -2342,20 +2387,22 @@ export default function Home() {
     }
 
     const isCaptionEdit = isCaptionEditableMessage(message.text);
+    const editText = isCaptionEdit
+      ? getMessageAttachmentCaption(message.text) ?? ""
+      : getReadableMessageText(message.text);
 
     setEditingMessage(message);
     setReplyTarget(null);
-    setMessageText(
-      isCaptionEdit
-        ? getMessageAttachmentCaption(message.text) ?? ""
-        : getReadableMessageText(message.text),
-    );
+    setMessageText(editText);
+    if (messageInputRef.current) {
+      messageInputRef.current.value = editText;
+    }
     setMessageContextMenu(null);
     setErrorMessage("");
     focusMessageInput();
   }
 
-  function toggleSelectedMessage(message: MessageRow) {
+  const toggleSelectedMessage = useCallback((message: MessageRow) => {
     setSelectedMessageIds((currentIds) =>
       currentIds.includes(message.id)
         ? currentIds.filter((id) => id !== message.id)
@@ -2363,12 +2410,12 @@ export default function Home() {
     );
     setMessageContextMenu(null);
     setErrorMessage("");
-  }
+  }, [setSelectedMessageIds]);
 
-  function handleMessageSelectionClick(
+  const handleMessageSelectionClick = useCallback((
     event: MouseEvent<HTMLElement>,
     message: MessageRow,
-  ) {
+  ) => {
     if (!isMessageSelectionMode) {
       return;
     }
@@ -2376,7 +2423,7 @@ export default function Home() {
     event.preventDefault();
     event.stopPropagation();
     toggleSelectedMessage(message);
-  }
+  }, [isMessageSelectionMode, toggleSelectedMessage]);
 
   function hideSelectedMessagesForMe() {
     if (!user || selectedDialogMessages.length === 0) {
@@ -2698,8 +2745,6 @@ export default function Home() {
   function handleMessageTextChange(event: ChangeEvent<HTMLInputElement>) {
     const nextMessageText = event.target.value;
 
-    setMessageText(nextMessageText);
-
     if (!user || editingMessage || activeView === "favorites") {
       return;
     }
@@ -2712,167 +2757,213 @@ export default function Home() {
 
     const now = Date.now();
 
-    if (now - typingSentAtRef.current < 900) {
+    if (now - typingSentAtRef.current < 4000) {
       return;
     }
 
     typingSentAtRef.current = now;
     void sendTypingState("start");
   }
-  async function sendMessage(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const sendMessage = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
 
-    if (!user) {
-      setErrorMessage("Сначала войди в аккаунт.");
-      return;
-    }
+      if (!user) {
+        setErrorMessage("Сначала войди в аккаунт.");
+        return;
+      }
 
-    const trimmedText = messageText.trim();
+      const currentText = messageInputRef.current?.value ?? messageText;
+      const trimmedText = currentText.trim();
 
-    const isEditingCaptionMessage = Boolean(
-      editingMessage && isCaptionEditableMessage(editingMessage.text),
-    );
+      const isEditingCaptionMessage = Boolean(
+        editingMessage && isCaptionEditableMessage(editingMessage.text),
+      );
 
-    if (!trimmedText && !isEditingCaptionMessage) {
-      return;
-    }
+      if (!trimmedText && !isEditingCaptionMessage) {
+        return;
+      }
 
-    if (activeView === "favorites") {
+      if (activeView === "favorites") {
+        if (editingMessage) {
+          const editedText = updateEditableMessageText(editingMessage.text, trimmedText);
+          const hasTextChanged = editedText !== editingMessage.text;
+          const editedAt = new Date().toISOString();
+          const updatedFavoriteItem: FavoriteItem = {
+            ...(editingMessage as FavoriteItem),
+            edited_at: hasTextChanged ? editedAt : editingMessage.edited_at ?? null,
+            text: editedText,
+          };
+
+          saveFavoriteItems(
+            favoriteItems.map((favoriteItem) =>
+              favoriteItem.id === editingMessage.id ? updatedFavoriteItem : favoriteItem,
+            ),
+          );
+          setPinnedFavoriteItem((currentPinnedItem) =>
+            currentPinnedItem?.id === editingMessage.id ? updatedFavoriteItem : currentPinnedItem,
+          );
+          setEditingMessage(null);
+          setMessageText("");
+          if (messageInputRef.current) {
+            messageInputRef.current.value = "";
+          }
+          setErrorMessage("");
+          return;
+        }
+
+        addFavoriteChatMessage(
+          replyTarget ? createReplyMessageText(replyTarget, trimmedText) : trimmedText,
+        );
+        setMessageText("");
+        if (messageInputRef.current) {
+          messageInputRef.current.value = "";
+        }
+        setReplyTarget(null);
+        return;
+      }
+
+      if (!selectedChatUserId) {
+        setErrorMessage("Сначала выбери собеседника.");
+        return;
+      }
+
+      if (isSelectedChatBlockedByMe) {
+        setErrorMessage("Сначала разблокируй пользователя, чтобы написать ему.");
+        return;
+      }
+
+      if (isSelectedChatBlockingMe) {
+        setErrorMessage("Ты не можешь написать: пользователь тебя заблокировал.");
+        return;
+      }
+
+      typingSentAtRef.current = 0;
+      void sendTypingState("stop");
+
       if (editingMessage) {
+        const previousMessages = messages;
         const editedText = updateEditableMessageText(editingMessage.text, trimmedText);
         const hasTextChanged = editedText !== editingMessage.text;
         const editedAt = new Date().toISOString();
-        const updatedFavoriteItem: FavoriteItem = {
-          ...(editingMessage as FavoriteItem),
+        const updatedMessage: MessageRow = {
+          ...editingMessage,
           edited_at: hasTextChanged ? editedAt : editingMessage.edited_at ?? null,
           text: editedText,
         };
 
-        saveFavoriteItems(
-          favoriteItems.map((favoriteItem) =>
-            favoriteItem.id === editingMessage.id ? updatedFavoriteItem : favoriteItem,
+        setMessages((currentMessages) =>
+          currentMessages.map((message) =>
+            message.id === editingMessage.id ? updatedMessage : message,
           ),
-        );
-        setPinnedFavoriteItem((currentPinnedItem) =>
-          currentPinnedItem?.id === editingMessage.id ? updatedFavoriteItem : currentPinnedItem,
         );
         setEditingMessage(null);
         setMessageText("");
-        setErrorMessage("");
+        if (messageInputRef.current) {
+          messageInputRef.current.value = "";
+        }
+
+        const { data, error } = await supabase
+          .from("messages")
+          .update({ edited_at: hasTextChanged ? editedAt : editingMessage.edited_at ?? null, text: editedText })
+          .eq("id", editingMessage.id)
+          .eq("user_id", user.id)
+          .select(messageColumns)
+          .maybeSingle();
+
+        if (error || !data) {
+          setMessages(previousMessages);
+          setEditingMessage(editingMessage);
+          setMessageText(trimmedText);
+          if (messageInputRef.current) {
+            messageInputRef.current.value = trimmedText;
+          }
+          setErrorMessage("Не получилось изменить сообщение. Возможно, нужно разрешить UPDATE в Supabase.");
+        } else {
+          setMessages((currentMessages) =>
+            currentMessages.map((message) =>
+              message.id === data.id ? data : message,
+            ),
+          );
+          broadcastMessage(data);
+          setErrorMessage("");
+        }
+
         return;
       }
 
-      addFavoriteChatMessage(
-        replyTarget ? createReplyMessageText(replyTarget, trimmedText) : trimmedText,
-      );
+      const outgoingText = replyTarget
+        ? createReplyMessageText(replyTarget, trimmedText)
+        : trimmedText;
+
       setMessageText("");
+      if (messageInputRef.current) {
+        messageInputRef.current.value = "";
+      }
       setReplyTarget(null);
-      return;
-    }
+      await sendDirectMessage(outgoingText, {
+        errorMessage: "Не получилось отправить сообщение.",
+        onError: () => {
+          setMessageText(trimmedText);
+          if (messageInputRef.current) {
+            messageInputRef.current.value = trimmedText;
+          }
+          setReplyTarget(replyTarget);
+        },
+      });
+    },
+    [
+      user,
+      messageText,
+      editingMessage,
+      activeView,
+      favoriteItems,
+      saveFavoriteItems,
+      setPinnedFavoriteItem,
+      setEditingMessage,
+      setMessageText,
+      setErrorMessage,
+      setReplyTarget,
+      replyTarget,
+      selectedChatUserId,
+      isSelectedChatBlockedByMe,
+      isSelectedChatBlockingMe,
+      sendTypingState,
+      messages,
+      setMessages,
+      broadcastMessage,
+      sendDirectMessage,
+    ],
+  );
 
-    if (!selectedChatUserId) {
-      setErrorMessage("Сначала выбери собеседника.");
-      return;
-    }
-
-    if (isSelectedChatBlockedByMe) {
-      setErrorMessage("Сначала разблокируй пользователя, чтобы написать ему.");
-      return;
-    }
-
-    if (isSelectedChatBlockingMe) {
-      setErrorMessage("Ты не можешь написать: пользователь тебя заблокировал.");
-      return;
-    }
-
-    typingSentAtRef.current = 0;
-    void sendTypingState("stop");
-
-    if (editingMessage) {
-      const previousMessages = messages;
-      const editedText = updateEditableMessageText(editingMessage.text, trimmedText);
-      const hasTextChanged = editedText !== editingMessage.text;
-      const editedAt = new Date().toISOString();
-      const updatedMessage: MessageRow = {
-        ...editingMessage,
-        edited_at: hasTextChanged ? editedAt : editingMessage.edited_at ?? null,
-        text: editedText,
-      };
-
-      setMessages((currentMessages) =>
-        currentMessages.map((message) =>
-          message.id === editingMessage.id ? updatedMessage : message,
-        ),
-      );
-      setEditingMessage(null);
-      setMessageText("");
-
-      const { data, error } = await supabase
-        .from("messages")
-        .update({ edited_at: hasTextChanged ? editedAt : editingMessage.edited_at ?? null, text: editedText })
-        .eq("id", editingMessage.id)
-        .eq("user_id", user.id)
-        .select(messageColumns)
-        .maybeSingle();
-
-      if (error || !data) {
-        setMessages(previousMessages);
-        setEditingMessage(editingMessage);
-        setMessageText(trimmedText);
-        setErrorMessage("Не получилось изменить сообщение. Возможно, нужно разрешить UPDATE в Supabase.");
-      } else {
-        setMessages((currentMessages) =>
-          currentMessages.map((message) =>
-            message.id === data.id ? data : message,
-          ),
-        );
-        broadcastMessage(data);
-        setErrorMessage("");
+  const sendSticker = useCallback(
+    async (sticker: string) => {
+      if (!user) {
+        setErrorMessage("Сначала войди в аккаунт.");
+        return;
       }
 
-      return;
-    }
+      const stickerText = `${stickerMessagePrefix}${sticker}`;
 
-    const outgoingText = replyTarget
-      ? createReplyMessageText(replyTarget, trimmedText)
-      : trimmedText;
+      if (activeView === "favorites") {
+        addFavoriteChatMessage(stickerText);
+        setIsStickerPickerOpen(false);
+        return;
+      }
 
-    setMessageText("");
-    setReplyTarget(null);
-    await sendDirectMessage(outgoingText, {
-      errorMessage: "Не получилось отправить сообщение.",
-      onError: () => {
-        setMessageText(trimmedText);
-        setReplyTarget(replyTarget);
-      },
-    });
-  }
+      if (!selectedChatUserId) {
+        setErrorMessage("Сначала выбери собеседника.");
+        setIsStickerPickerOpen(false);
+        return;
+      }
 
-  async function sendSticker(sticker: string) {
-    if (!user) {
-      setErrorMessage("Сначала войди в аккаунт.");
-      return;
-    }
-
-    const stickerText = `${stickerMessagePrefix}${sticker}`;
-
-    if (activeView === "favorites") {
-      addFavoriteChatMessage(stickerText);
       setIsStickerPickerOpen(false);
-      return;
-    }
-
-    if (!selectedChatUserId) {
-      setErrorMessage("Сначала выбери собеседника.");
-      setIsStickerPickerOpen(false);
-      return;
-    }
-
-    setIsStickerPickerOpen(false);
-    await sendDirectMessage(stickerText, {
-      errorMessage: "Не получилось отправить стикер.",
-    });
-  }
+      await sendDirectMessage(stickerText, {
+        errorMessage: "Не получилось отправить стикер.",
+      });
+    },
+    [user, activeView, selectedChatUserId, sendDirectMessage, setIsStickerPickerOpen, setErrorMessage],
+  );
 
   function stopVoiceInputMeter() {
     if (recordingAnimationFrameRef.current !== null) {
@@ -2882,7 +2973,9 @@ export default function Home() {
 
     void recordingAudioContextRef.current?.close();
     recordingAudioContextRef.current = null;
-    setVoiceInputLevel(0);
+    if (typeof document !== "undefined") {
+      document.documentElement.style.setProperty("--hush-voice-input-level", "0");
+    }
   }
 
   function startVoiceInputMeter(stream: MediaStream) {
@@ -2916,7 +3009,9 @@ export default function Home() {
 
         if (Math.abs(nextLevel - lastLevel) > 0.012) {
           lastLevel = nextLevel;
-          setVoiceInputLevel(nextLevel);
+          if (typeof document !== "undefined") {
+            document.documentElement.style.setProperty("--hush-voice-input-level", nextLevel.toFixed(4));
+          }
         }
 
         recordingAnimationFrameRef.current = window.requestAnimationFrame(tick);
@@ -2924,7 +3019,9 @@ export default function Home() {
 
       tick();
     } catch {
-      setVoiceInputLevel(0);
+      if (typeof document !== "undefined") {
+        document.documentElement.style.setProperty("--hush-voice-input-level", "0");
+      }
     }
   }
 
@@ -3216,7 +3313,6 @@ export default function Home() {
           stickerButtonRef={stickerButtonRef}
           toggleStickerPicker={toggleStickerPicker}
           toggleVoiceRecording={toggleVoiceRecording}
-          voiceInputLevel={voiceInputLevel}
           voiceRecordingDuration={voiceRecordingDuration}
         />
       ) : activeView === "music" ? (
@@ -3284,6 +3380,7 @@ export default function Home() {
           handleMessageSelectionClick={handleMessageSelectionClick}
           handleMessageTextChange={handleMessageTextChange}
           highlightedMessageId={highlightedMessageId}
+          highlightMessage={highlightMessage}
           imageInputRef={imageInputRef}
           isDeletingChat={isDeletingChat}
           isFriendTyping={isFriendTyping}
@@ -3330,7 +3427,6 @@ export default function Home() {
           user={user}
           visibleDialogMessages={visibleDialogMessages}
           visibleDialogMessagesCount={visibleDialogMessagesCount}
-          voiceInputLevel={voiceInputLevel}
           voiceRecordingDuration={voiceRecordingDuration}
         />
       )}

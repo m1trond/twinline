@@ -8,7 +8,6 @@ export function useMessageComposerState() {
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [voiceRecordingDuration, setVoiceRecordingDuration] = useState(0);
   const [voiceRecordingStartedAt, setVoiceRecordingStartedAt] = useState<number | null>(null);
-  const [voiceInputLevel, setVoiceInputLevel] = useState(0);
   const [isStickerPickerOpen, setIsStickerPickerOpen] = useState(false);
   const [stickerPickerPosition, setStickerPickerPosition] = useState({ left: 0, top: 0 });
 
@@ -27,8 +26,6 @@ export function useMessageComposerState() {
     setVoiceRecordingDuration,
     voiceRecordingStartedAt,
     setVoiceRecordingStartedAt,
-    voiceInputLevel,
-    setVoiceInputLevel,
     isStickerPickerOpen,
     setIsStickerPickerOpen,
     stickerPickerPosition,

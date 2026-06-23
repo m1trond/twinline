@@ -59,7 +59,6 @@ type FavoritesViewProps = {
   stickerButtonRef: RefObject<HTMLButtonElement | null>;
   toggleStickerPicker: () => void;
   toggleVoiceRecording: () => void;
-  voiceInputLevel: number;
   voiceRecordingDuration: number;
 };
 
@@ -104,7 +103,6 @@ export function FavoritesView({
   stickerButtonRef,
   toggleStickerPicker,
   toggleVoiceRecording,
-  voiceInputLevel,
   voiceRecordingDuration,
 }: FavoritesViewProps) {
   const { language, t } = useI18n();
@@ -649,19 +647,11 @@ export function FavoritesView({
                     aria-label={isRecordingVoice ? "Send voice" : "Record voice"}
                     className={`relative grid min-h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg border text-[#f4f4f5] transition disabled:cursor-not-allowed disabled:opacity-50 ${
                       isRecordingVoice
-                        ? "border-red-400/60 bg-red-500/85 text-white hover:bg-red-400"
+                        ? "border-red-400/60 bg-red-500/85 text-white hover:bg-red-400 hush-send-btn-recording"
                         : "border-[#3f3f46]/35 bg-[#f4f4f5]/12 hover:bg-[#f4f4f5]/18"
                     }`}
                     disabled={isUploadingAttachment}
                     onClick={toggleVoiceRecording}
-                    style={
-                      isRecordingVoice
-                        ? {
-                            boxShadow: `0 0 ${16 + voiceInputLevel * 46}px rgba(248,113,113,${0.34 + voiceInputLevel * 0.58})`,
-                            transform: `scale(${1 + voiceInputLevel * 0.14})`,
-                          }
-                        : undefined
-                    }
                     type="button"
                   >
                     {isRecordingVoice ? (

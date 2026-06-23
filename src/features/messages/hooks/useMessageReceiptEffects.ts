@@ -80,7 +80,6 @@ export function useMessageReceiptEffects({
       pendingOpenReadChatUserIdRef.current = selectedChatUserId;
     }
 
-    let frameId = 0;
     const friendMessagesById = new Map(
       friendMessages
         .filter((message) => message.user_id === selectedChatUserId)
@@ -115,74 +114,80 @@ export function useMessageReceiptEffects({
       pendingOpenReadChatUserIdRef.current = null;
     }
 
-    function markVisibleMessagesAsRead() {
-      if (document.visibilityState !== "visible") {
-        return;
-      }
-
-      const messagesList = messagesListRef.current;
-
-      if (!messagesList) {
-        return;
-      }
-
-      const listRect = messagesList.getBoundingClientRect();
-      const messageElements =
-        messagesList.querySelectorAll<HTMLElement>("[data-message-id]");
-
-      for (const messageElement of messageElements) {
-        const messageId = Number(messageElement.dataset.messageId);
-
-        if (!Number.isInteger(messageId)) {
-          continue;
-        }
-
-        const message = friendMessagesById.get(messageId);
-
-        if (!message?.user_id) {
-          continue;
-        }
-
-        const messageRect = messageElement.getBoundingClientRect();
-        const isVisible =
-          messageRect.bottom > listRect.top + 8 &&
-          messageRect.top < listRect.bottom - 8;
-
-        if (!isVisible) {
-          continue;
-        }
-
-        markMessagesAsRead([message]);
-      }
-    }
-
-    function scheduleReadCheck() {
-      if (frameId !== 0) {
-        return;
-      }
-
-      frameId = window.requestAnimationFrame(() => {
-        frameId = 0;
-        markVisibleMessagesAsRead();
-      });
-    }
-
-    scheduleReadCheck();
-
     const messagesList = messagesListRef.current;
 
-    messagesList?.addEventListener("scroll", scheduleReadCheck, { passive: true });
-    window.addEventListener("resize", scheduleReadCheck);
-    document.addEventListener("visibilitychange", scheduleReadCheck);
+    if (!messagesList || typeof IntersectionObserver === "undefined") {
+      return;
+    }
+
+    const friendUnreadMessages = Array.from(friendMessagesById.values()).filter((message) => {
+      return (
+        !sentReceiptMessageIdSets.readMessageIds.has(message.id) &&
+        !sentReadReceiptIdsRef.current.has(message.id)
+      );
+    });
+
+    if (friendUnreadMessages.length === 0) {
+      return;
+    }
+
+    const friendUnreadMessageIds = new Set(friendUnreadMessages.map((m) => m.id));
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (document.visibilityState !== "visible") {
+          return;
+        }
+
+        const messagesToRead: MessageRow[] = [];
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const messageId = Number((entry.target as HTMLElement).dataset.messageId);
+            if (Number.isInteger(messageId) && friendUnreadMessageIds.has(messageId)) {
+              const message = friendMessagesById.get(messageId);
+              if (message) {
+                messagesToRead.push(message);
+                observer.unobserve(entry.target);
+              }
+            }
+          }
+        }
+
+        if (messagesToRead.length > 0) {
+          markMessagesAsRead(messagesToRead);
+        }
+      },
+      {
+        root: messagesList,
+        rootMargin: "-8px 0px",
+        threshold: 0,
+      }
+    );
+
+    const messageElements = messagesList.querySelectorAll<HTMLElement>("[data-message-id]");
+    for (const el of messageElements) {
+      const messageId = Number(el.dataset.messageId);
+      if (Number.isInteger(messageId) && friendUnreadMessageIds.has(messageId)) {
+        observer.observe(el);
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        for (const el of messageElements) {
+          const messageId = Number(el.dataset.messageId);
+          if (Number.isInteger(messageId) && friendUnreadMessageIds.has(messageId)) {
+            observer.observe(el);
+          }
+        }
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      if (frameId !== 0) {
-        window.cancelAnimationFrame(frameId);
-      }
-
-      messagesList?.removeEventListener("scroll", scheduleReadCheck);
-      window.removeEventListener("resize", scheduleReadCheck);
-      document.removeEventListener("visibilitychange", scheduleReadCheck);
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [
     activeView,
