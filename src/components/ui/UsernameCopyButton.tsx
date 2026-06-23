@@ -66,7 +66,7 @@ export function UsernameCopyButton({
     <>
       <button
         aria-label={`Copy username ${usernameWithAt}`}
-        className={`inline-flex h-auto min-h-0 max-w-full cursor-pointer items-center truncate border-0 bg-transparent p-0 text-left leading-none decoration-[#f4f4f5] decoration-1 underline-offset-[2px] transition hover:underline ${className}`}
+        className={`inline-flex h-auto min-h-0 max-w-full cursor-pointer items-center truncate border-0 bg-transparent p-0 text-left leading-normal decoration-[#f4f4f5] decoration-1 underline-offset-[2px] transition hover:underline ${className}`}
         onClick={() => void copyUsername()}
         title={usernameWithAt}
         type="button"

@@ -173,7 +173,7 @@ export function ViewedProfileModal({
                 strokeWidth="2"
               />
             </svg>
-            <span className="text-xs font-medium leading-none text-[#d4d4d8]">
+            <span className="text-xs font-medium leading-normal text-[#d4d4d8]">
               {language === "en" ? "Chat" : "Чат"}
             </span>
           </button>
@@ -193,7 +193,7 @@ export function ViewedProfileModal({
                 strokeWidth="2"
               />
             </svg>
-            <span className="text-xs font-medium leading-none text-[#d4d4d8]">{t("call")}</span>
+            <span className="text-xs font-medium leading-normal text-[#d4d4d8]">{t("call")}</span>
           </button>
           <div className="relative">
             <button
@@ -241,7 +241,7 @@ export function ViewedProfileModal({
                   strokeWidth="2"
                 />
               </svg>
-              <span className="text-xs font-medium leading-none text-[#d4d4d8]">
+              <span className="text-xs font-medium leading-normal text-[#d4d4d8]">
                 {isMuted
                   ? language === "en" ? "Muted" : "Без звука"
                   : language === "en" ? "Notify" : "Уведомл."}
@@ -278,7 +278,7 @@ export function ViewedProfileModal({
               />
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
             </svg>
-            <span className="text-xs font-medium leading-none text-[#d4d4d8]">
+            <span className="text-xs font-medium leading-normal text-[#d4d4d8]">
               {isBlockedByMe
                 ? language === "en" ? "Unblock" : "Разблок"
                 : language === "en" ? "Block" : "Блок"}

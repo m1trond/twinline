@@ -19,7 +19,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #000000;
     --foreground: #ededed;
   }
 }
@@ -72,7 +72,7 @@ a,
 .hush-shell .hush-nav-button:not(:disabled),
 .hush-shell .hush-stable-button:not(:disabled) {
   box-sizing: border-box;
-  line-height: 1;
+  line-height: 1.45;
   transition-property: background-color, border-color, color, opacity;
   transform: translateZ(0);
 }
@@ -119,11 +119,7 @@ a,
 }
 
 .hush-galaxy-background {
-  background:
-    radial-gradient(ellipse 780px 520px at 12% 0%, rgba(244, 244, 245, 0.11), transparent 64%),
-    radial-gradient(ellipse 640px 420px at 84% 10%, rgba(125, 132, 150, 0.1), transparent 66%),
-    radial-gradient(ellipse 900px 540px at 62% 92%, rgba(18, 80, 72, 0.11), transparent 72%),
-    linear-gradient(145deg, #030303 0%, #070707 34%, #111113 57%, #050506 100%);
+  background: #000000 !important;
 }
 
 .hush-galaxy-background::before,
@@ -135,10 +131,7 @@ a,
 }
 
 .hush-galaxy-background::before {
-  background:
-    linear-gradient(120deg, transparent 0 24%, rgba(255, 255, 255, 0.042) 34%, rgba(255, 255, 255, 0.015) 42%, transparent 54%),
-    linear-gradient(22deg, transparent 0 42%, rgba(45, 212, 191, 0.035) 50%, transparent 63%),
-    radial-gradient(ellipse 780px 180px at 50% 38%, rgba(244, 244, 245, 0.045), transparent 72%);
+  background: transparent !important;
   filter: blur(0.25px);
   opacity: 0.82;
 }

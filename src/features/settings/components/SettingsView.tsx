@@ -65,6 +65,37 @@ export function SettingsView({
 }: SettingsViewProps) {
   const { language, setLanguage, t } = useI18n();
   const [isSignOutDialogOpen, setIsSignOutDialogOpen] = useState(false);
+
+  const isRu = language === "ru";
+  const [sendByEnter, setSendByEnter] = useState(true);
+  const [messageSounds, setMessageSounds] = useState(true);
+  const [fontSize, setFontSize] = useState(15);
+  const [cacheSize, setCacheSize] = useState(isRu ? "14.2 МБ" : "14.2 MB");
+  const [autoDownload, setAutoDownload] = useState(true);
+  const [sessions, setSessions] = useState([
+    {
+      id: "s1",
+      device: "Windows · Chrome",
+      location: isRu ? "Санкт-Петербург, Россия" : "St. Petersburg, Russia",
+      ip: "192.168.1.45",
+      current: true,
+      lastActive: "online"
+    },
+    {
+      id: "s2",
+      device: "iOS · Safari",
+      location: isRu ? "Москва, Россия" : "Moscow, Russia",
+      ip: "84.204.18.2",
+      current: false,
+      lastActive: isRu ? "Активен 2 часа назад" : "Active 2 hours ago"
+    }
+  ]);
+
+  function handleTerminateOtherSessions() {
+    setSessions((currentSessions) => currentSessions.filter((s) => s.current));
+  }
+
+  const fingerprint = "SHA256: 7b9a 8c3e d9f2 a1b6 c5d8 e4f3 0a1b 2c3d e4f5 6a7b 8c9d e0f1";
   const privacySettings = [
     {
       description: t("onlineVisibleDescription"),
@@ -101,12 +132,13 @@ export function SettingsView({
 
   return (
     <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
-      <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-lg sm:px-4">
-        <h2 className="text-base font-medium leading-none sm:text-base">{t("settings")}</h2>
+      <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-black px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] sm:rounded-lg sm:px-4">
+        <h2 className="text-base font-medium leading-normal sm:text-base">{t("settings")}</h2>
       </div>
 
-      <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-lg sm:p-3">
+      <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto rounded-lg border border-[#3f3f46]/45 bg-black p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:rounded-lg sm:p-3">
         <div className="grid gap-2.5 lg:grid-cols-2 2xl:grid-cols-3">
+          {/* COLUMN 1 */}
           <div className="grid auto-rows-min gap-2.5">
             <SettingsCard
               description={t("privacyDescription")}
@@ -150,8 +182,52 @@ export function SettingsView({
               ))}
             </SettingsCard>
 
+            <SettingsCard
+              description={isRu ? "Персонализация интерфейса переписки." : "Personalization of the messaging interface."}
+              icon={<MessageSquareIcon />}
+              title={isRu ? "Настройки чатов" : "Chat Settings"}
+            >
+              <SettingRow
+                description={isRu ? "Использовать Enter для отправки сообщений." : "Use Enter key to send messages."}
+                enabled={sendByEnter}
+                label={isRu ? "Отправка по Enter" : "Send with Enter"}
+                onToggle={() => setSendByEnter(!sendByEnter)}
+              />
+              <SettingRow
+                description={isRu ? "Проигрывать звуки при получении сообщений." : "Play sounds for incoming messages."}
+                enabled={messageSounds}
+                label={isRu ? "Звуки сообщений" : "Message sounds"}
+                onToggle={() => setMessageSounds(!messageSounds)}
+              />
+              <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
+                <div className="flex items-center justify-between gap-3 mb-1.5">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium leading-5">{isRu ? "Размер шрифта" : "Font size"}</p>
+                    <p className="text-xs leading-4 text-[#a1a1aa]">
+                      {isRu ? "Настройка отображения текста в диалогах." : "Adjust text display in conversations."}
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-[#f4f4f5]/10 px-2 py-0.5 text-xs font-mono text-[#e5e5e5]">
+                    {fontSize}px
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-[#a1a1aa]">A</span>
+                  <input
+                    className="h-1 flex-1 cursor-pointer appearance-none rounded-lg bg-white/20 accent-[#f4f4f5]"
+                    max="22"
+                    min="12"
+                    onChange={(e) => setFontSize(Number(e.target.value))}
+                    type="range"
+                    value={fontSize}
+                  />
+                  <span className="text-sm text-[#f4f4f5] font-medium">A</span>
+                </div>
+              </div>
+            </SettingsCard>
           </div>
 
+          {/* COLUMN 2 */}
           <div className="grid auto-rows-min gap-2.5">
             <SettingsCard
               description={t("notificationsDescription")}
@@ -187,8 +263,61 @@ export function SettingsView({
                 {isSigningOut ? t("signingOut") : t("signOut")}
               </button>
             </SettingsCard>
+
+            <SettingsCard
+              description={isRu ? "Управление кэшем и автозагрузкой." : "Manage cache and auto-download options."}
+              icon={<DatabaseIcon />}
+              title={isRu ? "Хранилище и данные" : "Storage & Data"}
+            >
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium leading-5">{isRu ? "Локальный кэш" : "Local cache"}</p>
+                  <p className="text-xs leading-4 text-[#a1a1aa]">
+                    {isRu ? "Сохраненные медиафайлы и сообщения." : "Cached media and messages in the browser."}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-[#a1a1aa]">{cacheSize}</span>
+                  {cacheSize !== (isRu ? "0.0 КБ" : "0.0 KB") ? (
+                    <button
+                      className="rounded-lg border border-[#3f3f46]/40 px-2.5 py-1 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
+                      onClick={() => setCacheSize(isRu ? "0.0 КБ" : "0.0 KB")}
+                      type="button"
+                    >
+                      {isRu ? "Очистить" : "Clear"}
+                    </button>
+                  ) : (
+                    <span className="text-xs text-green-400 font-medium px-1">{isRu ? "Очищено" : "Cleared"}</span>
+                  )}
+                </div>
+              </div>
+
+              <SettingRow
+                description={isRu ? "Автоматически загружать входящие медиафайлы." : "Automatically load incoming media files."}
+                enabled={autoDownload}
+                label={isRu ? "Автозагрузка медиа" : "Auto-download media"}
+                onToggle={() => setAutoDownload(!autoDownload)}
+              />
+
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-red-500/15 bg-red-500/5 px-2.5 py-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium leading-5 text-red-200">{isRu ? "Удаление аккаунта" : "Delete account"}</p>
+                  <p className="text-xs leading-4 text-red-200/60">
+                    {isRu ? "Безвозвратное удаление всей истории." : "Permanently delete profile and all chat history."}
+                  </p>
+                </div>
+                <button
+                  className="shrink-0 rounded-lg border border-red-500/35 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-200 transition hover:bg-red-500/20"
+                  onClick={() => alert(isRu ? "Это демо-версия настроек. Удаление аккаунта недоступно." : "This is a demo setup. Account deletion is disabled.")}
+                  type="button"
+                >
+                  {isRu ? "Удалить..." : "Delete..."}
+                </button>
+              </div>
+            </SettingsCard>
           </div>
 
+          {/* COLUMN 3 */}
           <div className="grid auto-rows-min gap-2.5">
             <SettingsCard
               description={t("blackListDescription")}
@@ -238,6 +367,62 @@ export function SettingsView({
                   </button>
                 </div>
               ))}
+            </SettingsCard>
+
+            <SettingsCard
+              description={isRu ? "Управление активными сессиями." : "Manage active login sessions."}
+              icon={<DevicesIcon />}
+              title={isRu ? "Безопасность и устройства" : "Security & Devices"}
+            >
+              <div className="grid gap-1.5">
+                {sessions.map((session) => (
+                  <div key={session.id} className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium text-[#f4f4f5] truncate">{session.device}</p>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`h-1.5 w-1.5 rounded-full ${session.current ? "bg-green-400" : "bg-[#a1a1aa]"}`} />
+                        <span className="text-[10px] text-[#a1a1aa] font-medium">{session.lastActive}</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-[#a1a1aa] mt-0.5 truncate">{session.ip} · {session.location}</p>
+                  </div>
+                ))}
+                {sessions.length > 1 ? (
+                  <button
+                    className="mt-0.5 inline-flex min-h-8 items-center justify-center gap-2 rounded-lg border border-red-500/35 bg-red-500/10 px-3 text-xs font-medium text-red-200 transition hover:bg-red-500/20"
+                    onClick={handleTerminateOtherSessions}
+                    type="button"
+                  >
+                    {isRu ? "Завершить другие сеансы" : "Terminate other sessions"}
+                  </button>
+                ) : null}
+              </div>
+            </SettingsCard>
+
+            <SettingsCard
+              description={isRu ? "Ключи шифрования и безопасности." : "Encryption and security keys."}
+              icon={<KeyIcon />}
+              title={isRu ? "Сквозное шифрование" : "End-to-End Encryption"}
+            >
+              <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 p-2 font-mono text-[9px] break-all leading-normal text-[#a1a1aa] text-center select-all">
+                {fingerprint}
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-0.5">
+                <button
+                  className="inline-flex min-h-8 items-center justify-center rounded-lg border border-[#3f3f46]/45 bg-[#f4f4f5]/10 px-2.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/14"
+                  onClick={() => alert(isRu ? "Ваши ключи успешно экспортированы." : "Your keys have been exported successfully.")}
+                  type="button"
+                >
+                  {isRu ? "Экспорт ключей" : "Export keys"}
+                </button>
+                <button
+                  className="inline-flex min-h-8 items-center justify-center rounded-lg border border-red-500/35 bg-red-500/10 px-2.5 text-xs font-medium text-red-200 transition hover:bg-red-500/20"
+                  onClick={() => alert(isRu ? "Демо-ключи шифрования успешно перегенерированы." : "Demo encryption keys regenerated successfully.")}
+                  type="button"
+                >
+                  {isRu ? "Сбросить ключи" : "Reset keys"}
+                </button>
+              </div>
             </SettingsCard>
           </div>
         </div>
@@ -502,6 +687,45 @@ function SignOutIcon() {
       <path d="m16 17 5-5-5-5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
       <path d="M21 12H9" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+    </svg>
+  );
+}
+
+function MessageSquareIcon() {
+  return (
+    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+    </svg>
+  );
+}
+
+function DatabaseIcon() {
+  return (
+    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+      <ellipse cx="12" cy="5" rx="9" ry="3" stroke="currentColor" strokeWidth="2" />
+      <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+      <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+    </svg>
+  );
+}
+
+function DevicesIcon() {
+  return (
+    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+      <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2" />
+      <path d="M8 21h8" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+      <path d="M12 17v4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+    </svg>
+  );
+}
+
+function KeyIcon() {
+  return (
+    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+      <circle cx="7.5" cy="16.5" r="3.5" stroke="currentColor" strokeWidth="2" />
+      <path d="m10 14 10-10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+      <path d="m16 4 4 4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+      <path d="m13 7 2 2" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
     </svg>
   );
 }

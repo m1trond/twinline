@@ -70,11 +70,11 @@ export function ChatListView({
 
   return (
     <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
-      <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-4">
-        <h2 className="text-base font-medium leading-none sm:text-base">{t("messages")}</h2>
+      <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-black px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] sm:px-4">
+        <h2 className="text-base font-medium leading-normal sm:text-base">{t("messages")}</h2>
       </div>
 
-      <div className="scrollbar-hidden grid min-h-0 flex-1 content-start gap-2 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-4">
+      <div className="scrollbar-hidden grid min-h-0 flex-1 content-start gap-2 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-black p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:rounded-2xl sm:p-4">
         <div className="scrollbar-hidden mb-1 flex gap-1.5 overflow-x-auto pb-1">
           <FolderFilterButton
             isActive={selectedChatFolderId === archivedChatFolderId}

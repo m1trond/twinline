@@ -4,6 +4,7 @@ import {
   ChangeEvent,
   FormEvent,
   MouseEvent,
+  ReactNode,
   useCallback,
   useEffect,
   useMemo,
@@ -24,6 +25,7 @@ import { BlockConfirmationDialog } from "@/components/feedback/BlockConfirmation
 import { LoadingScreen } from "@/components/feedback/LoadingScreen";
 import { AppShell } from "@/components/layout/AppShell";
 import { ImagePreviewOverlay } from "@/components/media/ImagePreviewOverlay";
+import { Toast } from "@/components/ui/Toast";
 import { AuthScreen } from "@/features/auth/AuthScreen";
 import { useAuthFormState } from "@/features/auth/useAuthFormState";
 import { useAuthSessionState } from "@/features/auth/useAuthSessionState";
@@ -301,6 +303,10 @@ export default function Home() {
     errorMessage,
     setErrorMessage,
   } = useFloatingUiState();
+  const [activeToast, setActiveToast] = useState<{ message: ReactNode; key: number } | null>(null);
+  const showToast = useCallback((message: ReactNode) => {
+    setActiveToast({ message, key: Date.now() });
+  }, []);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const messageInputRef = useRef<HTMLInputElement | null>(null);
@@ -424,6 +430,7 @@ export default function Home() {
     saveUserSyncPatch,
     setChatContextMenu,
     setErrorMessage,
+    showToast,
     user,
   });
   const {
@@ -1398,6 +1405,16 @@ export default function Home() {
     activeViewRef.current = activeView;
     selectedChatUserIdRef.current = selectedChatUserId;
   }, [activeView, selectedChatUserId]);
+
+  useEffect(() => {
+    if (activeView !== "messages") {
+      setActiveToast(null);
+    }
+  }, [activeView]);
+
+  useEffect(() => {
+    setActiveToast(null);
+  }, [selectedChatFolderId]);
 
   useEffect(() => {
     originalPageTitleRef.current = document.title || "Hush";
@@ -3616,6 +3633,13 @@ export default function Home() {
         user={user}
         viewedProfile={viewedProfile}
       />
+      {activeToast && activeView === "messages" ? (
+        <Toast
+          key={activeToast.key}
+          message={activeToast.message}
+          onClose={() => setActiveToast(null)}
+        />
+      ) : null}
     </I18nProvider>
   );
 }

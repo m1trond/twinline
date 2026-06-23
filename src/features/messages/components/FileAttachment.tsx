@@ -66,7 +66,7 @@ export function FileAttachment({
           </svg>
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold leading-4">
+          <span className="block truncate text-sm font-semibold leading-normal">
             {file.name}
           </span>
           <span className="flex min-w-0 items-center gap-2 text-xs font-medium opacity-60">

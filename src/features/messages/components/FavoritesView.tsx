@@ -180,8 +180,8 @@ export function FavoritesView({
                     </div>
                   </div>
                 ) : null}
-                <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-4">
-                  <h2 className="text-base font-medium leading-none sm:text-base">
+                <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-black px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] sm:px-4">
+                  <h2 className="text-base font-medium leading-normal sm:text-base">
                     {t("favorites")}
                   </h2>
                 </div>
@@ -265,7 +265,7 @@ export function FavoritesView({
                   </article>
                 ) : null}
 
-                <div className="scrollbar-hidden flex min-h-0 flex-1 flex-col overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#050505]/82 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] [overflow-anchor:none] backdrop-blur-md sm:rounded-2xl sm:p-4">
+                <div className="scrollbar-hidden flex min-h-0 flex-1 flex-col overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-transparent p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] [overflow-anchor:none] sm:rounded-2xl sm:p-4">
                   {favoriteItems.length === 0 ? (
                     <div className="grid flex-1 place-items-center text-center">
                       <div className="max-w-sm rounded-2xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-5">
@@ -360,7 +360,7 @@ export function FavoritesView({
                             <div className={`mb-1.5 flex items-center gap-2 px-0.5 text-left ${!hasStandaloneBubble && !hasFramedMedia ? "text-[#050505]" : "text-[#f4f4f5]"}`}>
                               <button
                                 aria-label={forwardedName}
-                                className={`hush-avatar grid h-7 min-h-7 w-7 min-w-7 shrink-0 aspect-square place-items-center overflow-hidden rounded-full text-xs font-medium leading-none transition ${!hasStandaloneBubble && !hasFramedMedia ? "bg-[#050505] text-[#f4f4f5]" : "bg-[#f4f4f5] text-[#050505]"}`}
+                                className={`hush-avatar grid h-7 min-h-7 w-7 min-w-7 shrink-0 aspect-square place-items-center overflow-hidden rounded-full text-xs font-medium leading-normal transition ${!hasStandaloneBubble && !hasFramedMedia ? "bg-[#050505] text-[#f4f4f5]" : "bg-[#f4f4f5] text-[#050505]"}`}
                                 disabled={!forwarded.authorUserId}
                                 onClick={() => {
                                   if (!forwarded.authorUserId) {
@@ -390,10 +390,10 @@ export function FavoritesView({
                                 )}
                               </button>
                               <div className="flex min-w-0 flex-col-reverse">
-                                <p className={`truncate text-xs font-medium leading-4 ${!hasStandaloneBubble && !hasFramedMedia ? "text-[#52525b]" : "text-[#a1a1aa]"}`}>
+                                 <p className={`truncate text-xs font-medium leading-normal ${!hasStandaloneBubble && !hasFramedMedia ? "text-[#52525b]" : "text-[#a1a1aa]"}`}>
                                   {language === "en" ? "Forwarded from" : "Переслано от"}
                                 </p>
-                                <p className="truncate text-sm font-medium leading-4">
+                                <p className="truncate text-sm font-medium leading-normal">
                                   {forwardedName}
                                 </p>
                               </div>
@@ -445,7 +445,7 @@ export function FavoritesView({
                             </div>
                           ) : sticker ? (
                             <div className="px-1 py-0.5">
-                              <span className="block text-6xl leading-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.25)] sm:text-7xl">
+                              <span className="block text-6xl leading-normal drop-shadow-[0_10px_20px_rgba(0,0,0,0.25)] sm:text-7xl">
                                 {sticker}
                               </span>
                             </div>
@@ -453,7 +453,7 @@ export function FavoritesView({
                             <p className="whitespace-pre-wrap break-words text-sm leading-5">
                               {displayText}
                               <span className="ml-2 inline-flex translate-y-[1px] items-center gap-1 align-baseline">
-                                <span className="text-xs font-medium leading-none text-[#404040]">
+                                <span className="text-xs font-medium leading-normal text-[#404040]">
                                   {favoriteItem.edited_at ? `${t("edited")} ` : ""}
                                   {formatMessageTime(favoriteItem.created_at)}
                                 </span>

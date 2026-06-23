@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import type { MouseEvent } from "react";
+import React, { useEffect, useState } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import type { User } from "@supabase/supabase-js";
 import {
   type FolderContextMenuState,
@@ -66,6 +66,7 @@ type ChatFoldersStateParams = {
   saveUserSyncPatch: (patch: UserSyncPayload) => void;
   setChatContextMenu: (menu: null) => void;
   setErrorMessage: (message: string) => void;
+  showToast?: (message: ReactNode) => void;
   user: User | null;
 };
 
@@ -74,6 +75,7 @@ export function useChatFoldersState({
   saveUserSyncPatch,
   setChatContextMenu,
   setErrorMessage,
+  showToast,
   user,
 }: ChatFoldersStateParams) {
   const [chatFolders, setChatFolders] = useState<ChatFolder[]>([]);
@@ -457,11 +459,46 @@ export function useChatFoldersState({
 
     saveChatFolderAssignments(nextAssignments);
     setChatContextMenu(null);
-    setErrorMessage(
-      isAlreadyAssigned
-        ? `Чат убран из папки «${folder.name}».`
-        : `Чат добавлен в папку «${folder.name}».`,
-    );
+
+    if (showToast) {
+      const usernameOrName = profile.username || profile.display_name;
+      const toastMessage = isAlreadyAssigned ? (
+        interfaceLanguage === "en" ? (
+          React.createElement("span", null,
+            "You removed ",
+            React.createElement("strong", { className: "font-bold text-[#f4f4f5]" }, usernameOrName),
+            ` from folder "${folder.name}"`
+          )
+        ) : (
+          React.createElement("span", null,
+            "Вы убрали ",
+            React.createElement("strong", { className: "font-bold text-[#f4f4f5]" }, usernameOrName),
+            ` из папки «${folder.name}»`
+          )
+        )
+      ) : (
+        interfaceLanguage === "en" ? (
+          React.createElement("span", null,
+            "You added ",
+            React.createElement("strong", { className: "font-bold text-[#f4f4f5]" }, usernameOrName),
+            ` to folder "${folder.name}"`
+          )
+        ) : (
+          React.createElement("span", null,
+            "Вы добавили ",
+            React.createElement("strong", { className: "font-bold text-[#f4f4f5]" }, usernameOrName),
+            ` в папку «${folder.name}»`
+          )
+        )
+      );
+      showToast(toastMessage);
+    } else {
+      setErrorMessage(
+        isAlreadyAssigned
+          ? `Чат убран из папки «${folder.name}».`
+          : `Чат добавлен в папку «${folder.name}».`
+      );
+    }
   }
 
   function updateChatFolderColor(folderId: string, color: string) {

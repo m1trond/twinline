@@ -83,10 +83,10 @@ export function AvatarGalleryOverlay({
         onClick={(event) => event.stopPropagation()}
       >
         <div className="min-w-0">
-          <p className="text-xs font-medium uppercase leading-none tracking-[0.16em] text-[#a1a1aa]">
+          <p className="text-xs font-medium uppercase leading-normal tracking-[0.16em] text-[#a1a1aa]">
             {t("avatars")}
           </p>
-          <p className="mt-0.5 text-[11px] leading-none text-[#a1a1aa]">
+          <p className="mt-0.5 text-[11px] leading-normal text-[#a1a1aa]">
             {(avatarGalleryIndex ?? 0) + 1} / {avatarGalleryItems.length}
           </p>
         </div>

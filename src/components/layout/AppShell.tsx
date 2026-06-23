@@ -209,22 +209,26 @@ export function AppShell({
   }
 
   return (
-    <main className={`hush-shell ${isLightThemeEnabled ? "hush-light" : ""} ${areSoftEffectsEnabled ? "" : "hush-reduced-effects"} relative h-dvh overflow-hidden bg-[#050505] text-[#f4f4f5]`}>
-      <div
-        aria-hidden="true"
-        className="hush-galaxy-background absolute inset-0"
-      />
-      <div
-        aria-hidden="true"
-        className="hush-galaxy-stars absolute inset-0"
-      />
-      <div className="relative h-full overflow-hidden bg-[#0a0a0a]/35">
+    <main className={`hush-shell ${isLightThemeEnabled ? "hush-light" : ""} ${areSoftEffectsEnabled ? "" : "hush-reduced-effects"} relative h-dvh overflow-hidden bg-[#000000] text-[#f4f4f5]`}>
+      {isLightThemeEnabled ? (
+        <>
+          <div
+            aria-hidden="true"
+            className="hush-galaxy-background absolute inset-0"
+          />
+          <div
+            aria-hidden="true"
+            className="hush-galaxy-stars absolute inset-0"
+          />
+        </>
+      ) : null}
+      <div className="relative h-full overflow-hidden bg-transparent">
         <div className="safe-bottom flex h-full w-full flex-col overflow-hidden px-1.5 py-1.5 sm:px-3 sm:py-3 lg:px-4 xl:px-5">
-          <header className="mb-2 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 px-3 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl sm:px-4 lg:hidden">
+          <header className="mb-2 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-[#3f3f46]/45 bg-black px-3 py-2 shadow-[0_14px_45px_rgba(0,0,0,0.28)] sm:rounded-2xl sm:px-4 lg:hidden">
             <BrandMark compact />
           </header>
 
-          <nav className="scrollbar-hidden mb-2 flex shrink-0 gap-1.5 overflow-x-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.24)] backdrop-blur-md sm:mb-3 sm:gap-2 sm:rounded-2xl sm:p-2 lg:hidden">
+          <nav className="scrollbar-hidden mb-2 flex shrink-0 gap-1.5 overflow-x-auto rounded-xl border border-[#3f3f46]/45 bg-black p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.24)] sm:mb-3 sm:gap-2 sm:rounded-2xl sm:p-2 lg:hidden">
             {[...translatedNavItems, ...(canViewAccess ? [translatedAccessNavItem] : []), translatedSettingsNavItem].map((item) => (
               <NavButton
                 activeView={activeView}
@@ -242,7 +246,7 @@ export function AppShell({
             ref={sidebarGridRef}
             style={sidebarGridStyle}
           >
-            <aside className={`relative z-[70] hidden min-h-0 flex-col rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 p-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md lg:flex ${
+            <aside className={`relative z-[70] hidden min-h-0 flex-col rounded-2xl border border-[#3f3f46]/45 bg-black p-3 shadow-[0_14px_45px_rgba(0,0,0,0.28)] lg:flex ${
               isSidebarIconMode ? "items-center" : ""
             }`}>
               <div className={`flex h-10 w-full items-center ${isSidebarIconMode ? "mb-4 justify-center" : "mb-5 gap-3"}`}>
@@ -465,7 +469,7 @@ export function AppShell({
                 <button
                   aria-label={isSidebarIconMode ? translatedSettingsNavItem.label : undefined}
                   title={isSidebarIconMode ? translatedSettingsNavItem.label : undefined}
-                  className={`hush-nav-button border ${isSidebarIconMode ? "mx-auto grid h-9 min-h-9 w-9 place-items-center px-0 py-0" : "flex h-9 min-h-9 items-center px-3.5 py-0 text-left"} rounded-xl text-sm font-medium leading-none transition ${
+                  className={`hush-nav-button border ${isSidebarIconMode ? "mx-auto grid h-9 min-h-9 w-9 place-items-center px-0 py-0" : "flex h-9 min-h-9 items-center px-3.5 py-0 text-left"} rounded-xl text-sm font-medium leading-normal transition ${
                     activeView === translatedSettingsNavItem.view
                       ? "border-transparent bg-[#f4f4f5] text-[#050505]"
                       : "border-[#3f3f46]/25 text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"

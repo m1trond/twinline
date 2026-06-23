@@ -43,7 +43,7 @@ type ProfileViewProps = {
 };
 
 const sectionClass =
-  "rounded-lg border border-[#3f3f46]/35 bg-[#0c0c0d]/76 p-2.5";
+  "rounded-lg border border-[#3f3f46]/35 bg-black/18 p-2.5";
 const labelClass =
   "text-[11px] font-medium uppercase tracking-[0.18em] text-[#d4d4d8]";
 const inputClass =
@@ -122,13 +122,13 @@ export function ProfileView({
 
   return (
     <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
-      <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-4">
-        <h2 className="text-base font-medium leading-none text-[#f4f4f5]">{t("profile")}</h2>
+      <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-black px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] sm:px-4">
+        <h2 className="text-base font-medium leading-normal text-[#f4f4f5]">{t("profile")}</h2>
       </div>
 
-      <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:p-3">
+      <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto rounded-lg border border-[#3f3f46]/45 bg-black p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:p-3">
         <div className="w-full max-w-[780px]">
-          <section className="mb-2.5 rounded-lg border border-[#3f3f46]/35 bg-[#0b0b0c]/78 p-2.5">
+          <section className="mb-2.5 rounded-lg border border-[#3f3f46]/35 bg-black/18 p-2.5">
             <div className="flex items-center gap-3">
               <Avatar
                 alt={t("avatarAlt")}
@@ -143,7 +143,7 @@ export function ProfileView({
                     {activeUserName}
                   </h2>
                   <UsernameCopyButton
-                    className="mt-0.5 block text-sm font-medium leading-none text-[#a1a1aa] hover:text-[#e5e5e5]"
+                    className="mt-0.5 block text-sm font-medium leading-normal text-[#a1a1aa] hover:text-[#e5e5e5]"
                     fallback={t("nicknameNotSet")}
                     username={currentProfile?.username}
                   />

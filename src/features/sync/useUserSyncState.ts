@@ -680,7 +680,7 @@ export function useUserSyncState({
     };
     // Remote sync is loaded only when the account changes. Setting/folder writes go through saveUserSyncPatch.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [interfaceLanguage, user]);
+  }, [user]);
 
   return {
     muteProfileNotifications,

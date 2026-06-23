@@ -184,6 +184,57 @@ export function OpenChatView({
   }, [selectedChatUserId]);
 
   useEffect(() => {
+    if (isPinnedMessagesViewOpen) {
+      const button = scrollButtonRef.current;
+      if (button) {
+        button.classList.remove("opacity-100");
+        button.classList.add("opacity-0", "pointer-events-none");
+      }
+      const track = scrollbarTrackRef.current;
+      if (track) {
+        track.classList.remove("opacity-100");
+        track.classList.add("opacity-0", "pointer-events-none");
+      }
+    } else {
+      const messagesList = messagesListRef.current;
+      if (messagesList) {
+        const maxScrollTop = messagesList.scrollHeight - messagesList.clientHeight;
+        const isUp = maxScrollTop - messagesList.scrollTop > 450;
+        const button = scrollButtonRef.current;
+        if (button) {
+          if (isUp) {
+            button.classList.remove("opacity-0", "pointer-events-none");
+            button.classList.add("opacity-100");
+          } else {
+            button.classList.remove("opacity-100");
+            button.classList.add("opacity-0", "pointer-events-none");
+          }
+        }
+        const track = scrollbarTrackRef.current;
+        const thumb = scrollbarThumbRef.current;
+        if (track && thumb) {
+          if (isUp && maxScrollTop > 0) {
+            track.classList.remove("opacity-0", "pointer-events-none");
+            track.classList.add("opacity-100");
+            const trackHeight = track.clientHeight;
+            const visibleRatio = messagesList.clientHeight / messagesList.scrollHeight;
+            const thumbHeight = Math.max(20, trackHeight * visibleRatio);
+            const scrollableTrack = trackHeight - thumbHeight;
+            const scrollableContent = messagesList.scrollHeight - messagesList.clientHeight;
+            const scrollProgress = scrollableContent > 0 ? messagesList.scrollTop / scrollableContent : 0;
+            const thumbTranslateY = scrollProgress * scrollableTrack;
+            thumb.style.height = `${thumbHeight}px`;
+            thumb.style.transform = `translateY(${thumbTranslateY}px)`;
+          } else {
+            track.classList.remove("opacity-100");
+            track.classList.add("opacity-0", "pointer-events-none");
+          }
+        }
+      }
+    }
+  }, [isPinnedMessagesViewOpen]);
+
+  useEffect(() => {
     if (messageInputRef.current && messageInputRef.current.value !== messageText) {
       messageInputRef.current.value = messageText;
     }
@@ -289,7 +340,7 @@ export function OpenChatView({
 
     const button = scrollButtonRef.current;
     if (button) {
-      if (isUp) {
+      if (isUp && !isPinnedMessagesViewOpen) {
         button.classList.remove("opacity-0", "pointer-events-none");
         button.classList.add("opacity-100");
       } else {
@@ -301,7 +352,7 @@ export function OpenChatView({
     const track = scrollbarTrackRef.current;
     const thumb = scrollbarThumbRef.current;
     if (track && thumb) {
-      if (isUp && maxScrollTop > 0) {
+      if (isUp && maxScrollTop > 0 && !isPinnedMessagesViewOpen) {
         track.classList.remove("opacity-0", "pointer-events-none");
         track.classList.add("opacity-100");
 
@@ -329,6 +380,20 @@ export function OpenChatView({
       messagesList.scrollTo({
         top: messagesList.scrollHeight,
         behavior: "smooth",
+      });
+    }
+  };
+
+  const handleImageLoad = (messageUserId: string | null) => {
+    const messagesList = messagesListRef.current;
+    if (!messagesList) return;
+
+    const isOwnMessage = messageUserId === user.id;
+    const isNearBottom = messagesList.scrollHeight - messagesList.clientHeight - messagesList.scrollTop < 550;
+
+    if (isOwnMessage || isNearBottom) {
+      requestAnimationFrame(() => {
+        messagesList.scrollTop = messagesList.scrollHeight;
       });
     }
   };
@@ -425,7 +490,7 @@ export function OpenChatView({
                     </div>
                   </div>
                 ) : null}
-                <div className="mb-2 flex h-11 min-h-11 items-center justify-between gap-2 overflow-hidden rounded-xl sm:rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-1 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-3">
+                <div className="mb-2 flex h-11 min-h-11 items-center justify-between gap-2 overflow-hidden rounded-xl sm:rounded-2xl border border-[#3f3f46]/45 bg-black px-2.5 py-1 shadow-[0_14px_45px_rgba(0,0,0,0.28)] sm:px-3">
                   <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
                     <button
                       aria-label={t("messages")}
@@ -682,6 +747,7 @@ export function OpenChatView({
                                 setViewedProfile={setViewedProfile}
                                 t={t}
                                 user={user}
+                                onImageLoad={handleImageLoad}
                               />
                             ))}
                           </div>
@@ -721,6 +787,7 @@ export function OpenChatView({
                     scrollbarThumbRef={scrollbarThumbRef}
                     scrollToBottom={scrollToBottom}
                     scrollButtonRef={scrollButtonRef}
+                    onImageLoad={handleImageLoad}
                   />
                 </div>
 
@@ -1025,6 +1092,7 @@ type MessageItemProps = {
   openMessageContextMenu: (event: MouseEvent<HTMLElement>, message: MessageRow) => void;
   setSelectedImageUrl: (url: string | null) => void;
   markVoiceMessagePlayed: (message: MessageRow) => void;
+  onImageLoad?: (messageUserId: string | null) => void;
 };
 
 const MessageItem = memo(
@@ -1053,6 +1121,7 @@ const MessageItem = memo(
     openMessageContextMenu,
     setSelectedImageUrl,
     markVoiceMessagePlayed,
+    onImageLoad,
   }: MessageItemProps) {
     const isMine = message.user_id === user.id;
     const previousMessage = messagesArray[messageIndex - 1];
@@ -1249,7 +1318,7 @@ const MessageItem = memo(
             <div className={`mb-1.5 flex items-center gap-2 px-0.5 text-left ${isMine && !hasStandaloneBubble && !hasFramedMedia ? "text-[#050505]" : "text-[#f4f4f5]"}`}>
               <button
                 aria-label={forwardedName}
-                className={`hush-avatar grid h-7 min-h-7 w-7 min-w-7 shrink-0 aspect-square place-items-center overflow-hidden rounded-full text-xs font-medium leading-none transition disabled:cursor-default ${forwarded.authorUserId ? "cursor-pointer" : ""} ${isMine && !hasStandaloneBubble && !hasFramedMedia ? "bg-[#050505] text-[#f4f4f5]" : "bg-[#f4f4f5] text-[#050505]"}`}
+                className={`hush-avatar grid h-7 min-h-7 w-7 min-w-7 shrink-0 aspect-square place-items-center overflow-hidden rounded-full text-xs font-medium leading-normal transition disabled:cursor-default ${forwarded.authorUserId ? "cursor-pointer" : ""} ${isMine && !hasStandaloneBubble && !hasFramedMedia ? "bg-[#050505] text-[#f4f4f5]" : "bg-[#f4f4f5] text-[#050505]"}`}
                 disabled={!forwarded.authorUserId}
                 onClick={(e) => {
                   if (!forwarded.authorUserId) {
@@ -1279,10 +1348,10 @@ const MessageItem = memo(
                 )}
               </button>
               <div className="flex min-w-0 flex-col-reverse">
-                <p className={`truncate text-xs font-medium leading-4 ${isMine && !hasStandaloneBubble && !hasFramedMedia ? "text-[#52525b]" : "text-[#a1a1aa]"}`}>
+                <p className={`truncate text-xs font-medium leading-normal ${isMine && !hasStandaloneBubble && !hasFramedMedia ? "text-[#52525b]" : "text-[#a1a1aa]"}`}>
                   {language === "en" ? "Forwarded from" : "Переслано от"}
                 </p>
-                <p className="truncate text-sm font-medium leading-4">
+                <p className="truncate text-sm font-medium leading-normal">
                   {forwardedName}
                 </p>
               </div>
@@ -1302,6 +1371,7 @@ const MessageItem = memo(
                 alt="Отправленное изображение"
                 className="max-h-[58dvh] w-full object-cover sm:max-h-[420px]"
                 src={imageUrl}
+                onLoad={() => onImageLoad?.(message.user_id)}
               />
             </button>
           ) : videoUrl ? (
@@ -1373,7 +1443,7 @@ const MessageItem = memo(
             </div>
           ) : sticker ? (
             <div className="hush-sticker-message px-1 py-0.5">
-              <span className="block text-6xl leading-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.25)] sm:text-7xl">
+              <span className="block text-6xl leading-normal drop-shadow-[0_10px_20px_rgba(0,0,0,0.25)] sm:text-7xl">
                 {sticker}
               </span>
               <span className="mt-1 flex items-center justify-end gap-1 text-xs font-medium text-[#a1a1aa]">
@@ -1393,7 +1463,7 @@ const MessageItem = memo(
               {displayText}
               <span className="ml-2 inline-flex translate-y-[1px] items-center gap-1 align-baseline">
                 <span
-                  className={`text-xs font-medium leading-none ${
+                  className={`text-xs font-medium leading-normal ${
                     isMine ? "text-[#404040]" : "text-[#71717a]"
                   }`}
                 >
@@ -1604,6 +1674,7 @@ type MessageViewportProps = {
   scrollbarThumbRef: RefObject<HTMLDivElement | null>;
   scrollToBottom: () => void;
   scrollButtonRef: RefObject<HTMLButtonElement | null>;
+  onImageLoad: (messageUserId: string | null) => void;
 };
 
 const MessageViewport = memo(
@@ -1638,13 +1709,14 @@ const MessageViewport = memo(
     scrollbarThumbRef,
     scrollToBottom,
     scrollButtonRef,
+    onImageLoad,
   }: MessageViewportProps) {
     return (
       <>
         {/* Main Message List Viewport Wrapper */}
         <div className="relative flex min-h-0 flex-1 flex-col">
           <div
-            className="hush-messages-viewport scrollbar-hidden flex min-h-0 flex-1 flex-col overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#050505] p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:rounded-2xl sm:p-4 w-full h-full"
+            className="hush-messages-viewport scrollbar-hidden flex min-h-0 flex-1 flex-col overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-transparent p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:rounded-2xl sm:p-4 w-full h-full"
             ref={messagesListRef}
             onScroll={handleScroll}
           >
@@ -1689,6 +1761,7 @@ const MessageViewport = memo(
                 setViewedProfile={setViewedProfile}
                 t={t}
                 user={user}
+                onImageLoad={onImageLoad}
               />
             ))}
 

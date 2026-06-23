@@ -130,7 +130,7 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
 
   if (!canViewAccess) {
     return (
-      <div className="hush-panel-transition grid min-h-0 place-items-center rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-5 text-center shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl">
+      <div className="hush-panel-transition grid min-h-0 place-items-center rounded-xl border border-[#3f3f46]/45 bg-black p-5 text-center shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:rounded-2xl">
         <p className="text-sm font-medium text-[#f4f4f5]">
           {t("insufficientAccess")}
         </p>
@@ -140,17 +140,17 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
 
   return (
     <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
-      <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-[#111111]/78 px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-4">
-        <div className="inline-flex min-w-0 items-center gap-3 leading-none">
-          <h2 className="text-base font-medium leading-none text-[#f4f4f5]">{t("access")}</h2>
+      <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-black px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] sm:px-4">
+        <div className="inline-flex min-w-0 items-center gap-3 leading-normal">
+          <h2 className="text-base font-medium leading-normal text-[#f4f4f5]">{t("access")}</h2>
           <span aria-hidden="true" className="h-4 w-px shrink-0 self-center rounded-full bg-[#f4f4f5]/35" />
         </div>
-        <p className="ml-3 min-w-0 truncate text-xs font-medium leading-none text-[#a1a1aa]">
+        <p className="ml-3 min-w-0 truncate text-xs font-medium leading-normal text-[#a1a1aa]">
           {isLoading ? t("loadingUsers") : userCountText}
         </p>
       </div>
 
-      <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-[#111111]/78 p-2 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-md sm:rounded-2xl sm:p-3">
+      <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-black p-2 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:rounded-2xl sm:p-3">
         {errorMessage ? (
           <div className="mb-2 rounded-xl border border-red-400/25 bg-red-500/10 px-3 py-2.5 text-sm font-medium text-red-100">
             {errorMessage}
