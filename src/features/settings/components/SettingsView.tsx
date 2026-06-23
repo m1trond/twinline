@@ -613,8 +613,8 @@ function SettingRow({
       <div className="flex items-center gap-2.5 min-w-0">
         {icon && <span className="text-[#a1a1aa] shrink-0">{icon}</span>}
         <div className="min-w-0">
-          <p className="text-sm sm:text-[15px] font-medium leading-5">{label}</p>
-          <p className="text-xs sm:text-sm leading-normal text-[#71717a]">{description}</p>
+          <p className="text-sm font-medium leading-5">{label}</p>
+          <p className="text-xs leading-normal text-[#71717a]">{description}</p>
         </div>
       </div>
       <button
