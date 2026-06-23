@@ -156,7 +156,7 @@ export function SettingsView({
     {
       id: "appearance",
       label: t("appearance"),
-      icon: <PaletteIcon />,
+      icon: <StaggeredLinesIcon />,
       description: isRu ? "Язык, визуальные эффекты и тема" : "Language, visual effects & theme",
     },
     {
@@ -343,7 +343,7 @@ export function SettingsView({
           <div className="grid gap-3">
             <SettingsCard
               description={t("appearanceDescription")}
-              icon={<PaletteIcon />}
+              icon={<StaggeredLinesIcon />}
               title={t("appearance")}
             >
               <LanguageRow
@@ -477,7 +477,7 @@ export function SettingsView({
                     : "bg-transparent border-transparent text-[#a1a1aa] hover:bg-white/4 hover:text-[#f4f4f5]"
                 }`}
               >
-                <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors ${
+                <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full transition-colors ${
                   isActive
                     ? "bg-[#f4f4f5]/15 text-[#f4f4f5]"
                     : "bg-[#f4f4f5]/6 text-[#a1a1aa] group-hover:bg-[#f4f4f5]/10 group-hover:text-[#f4f4f5]"
@@ -577,7 +577,7 @@ function SettingsCard({
     <section className="rounded-lg border border-[#3f3f46]/35 bg-black/18 p-2.5 sm:p-3">
       <div className="mb-2.5 flex items-center gap-2.5">
         <span
-          className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${
+          className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${
             tone === "danger"
               ? "bg-red-500/12 text-red-100"
               : "bg-[#f4f4f5]/10 text-[#f4f4f5]"
@@ -683,7 +683,7 @@ function LanguageRow({
     <div className="flex items-center justify-between gap-3 rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
       <div className="flex items-center gap-2.5 min-w-0">
         <span className="text-[#a1a1aa] shrink-0">
-          <PaletteIcon />
+          <StaggeredLinesIcon />
         </span>
         <div className="min-w-0">
           <p className="text-sm sm:text-[15px] font-medium leading-5">{label}</p>
@@ -829,15 +829,12 @@ function UserIcon() {
   );
 }
 
-function PaletteIcon() {
+function StaggeredLinesIcon() {
   return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-      <path d="M16 5H3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-      <path d="M16 12H3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-      <path d="M16 19H3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-      <path d="M21 5h.01" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-      <path d="M21 12h.01" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-      <path d="M21 19h.01" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 6h11" />
+      <path d="M4 12h11" />
+      <path d="M11 18h9" />
     </svg>
   );
 }
@@ -854,10 +851,10 @@ function SignOutIcon() {
 
 function DatabaseIcon() {
   return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-      <ellipse cx="12" cy="5" rx="9" ry="3" stroke="currentColor" strokeWidth="2" />
-      <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-      <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <ellipse cx="12" cy="6" rx="7.5" ry="2.5" />
+      <path d="M4.5 6v6c0 1.38 3.36 2.5 7.5 2.5s7.5-1.12 7.5-2.5V6" />
+      <path d="M4.5 12v6c0 1.38 3.36 2.5 7.5 2.5s7.5-1.12 7.5-2.5v-6" />
     </svg>
   );
 }
