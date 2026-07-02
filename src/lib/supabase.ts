@@ -7,4 +7,10 @@ if (!supabaseUrl || !supabasePublishableKey) {
   throw new Error("Supabase environment variables are missing.");
 }
 
-export const supabase = createClient(supabaseUrl, supabasePublishableKey);
+export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
+  auth: {
+    lock: async (_name, _acquireTimeout, fn) => {
+      return await fn();
+    },
+  },
+});
