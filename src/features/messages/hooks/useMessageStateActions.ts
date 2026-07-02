@@ -1,7 +1,6 @@
 import { useCallback } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { User } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
 import {
   upsertMessageReceipt,
   upsertMessageReceipts,
@@ -15,18 +14,15 @@ import type {
 } from "@/shared/types";
 import {
   createReceiptMessageText,
-  createTypingMessageText,
 } from "@/shared/utils/messages";
 
 type UseMessageStateActionsParams = {
-  activeUserName: string;
   broadcastReceipt: (receipt: MessageReceiptRow) => void;
   broadcastReceipts: (receipts: MessageReceiptRow[]) => void;
   broadcastTypingState: (typingState: MessageTypingStateRow) => void;
   selectedChatUserId: string | null;
   sendLegacyServiceMessage: (text: string, recipientId?: string | null) => void | Promise<void>;
   setMessageReceipts: Dispatch<SetStateAction<MessageReceiptRow[]>>;
-  setMessageTypingStates: Dispatch<SetStateAction<MessageTypingStateRow[]>>;
   user: User | null;
 };
 
@@ -47,32 +43,15 @@ function mergeMessageReceipts(
   return Array.from(rowsByKey.values());
 }
 
-function mergeMessageTypingStates(
-  currentRows: MessageTypingStateRow[],
-  incomingRows: MessageTypingStateRow[],
-) {
-  const rowsByKey = new Map<string, MessageTypingStateRow>();
 
-  for (const row of currentRows) {
-    rowsByKey.set(`${row.sender_id}:${row.recipient_id}`, row);
-  }
-
-  for (const row of incomingRows) {
-    rowsByKey.set(`${row.sender_id}:${row.recipient_id}`, row);
-  }
-
-  return Array.from(rowsByKey.values());
-}
 
 export function useMessageStateActions({
-  activeUserName,
   broadcastReceipt,
   broadcastReceipts,
   broadcastTypingState,
   selectedChatUserId,
   sendLegacyServiceMessage,
   setMessageReceipts,
-  setMessageTypingStates,
   user,
 }: UseMessageStateActionsParams) {
   const sendMessageReceipts = useCallback(
@@ -226,23 +205,13 @@ export function useMessageStateActions({
       );
 
       if (error || !data) {
-        const fallbackResponse = await supabase.from("messages").insert({
-          author: activeUserName,
-          recipient_id: selectedChatUserId,
-          text: createTypingMessageText(action, eventAt),
-          user_id: user.id,
-        });
-
-        if (fallbackResponse.error) {
-          console.error("Hush typing state failed:", fallbackResponse.error.message);
-        }
+        console.warn("Hush typing state upsert failed:", error?.message);
         return;
       }
 
       broadcastTypingState(data);
     },
     [
-      activeUserName,
       broadcastTypingState,
       selectedChatUserId,
       user,

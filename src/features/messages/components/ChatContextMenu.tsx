@@ -2,6 +2,7 @@ import type { ChatFolder, MutedProfileUntil, ProfileRow } from "@/shared/types";
 import type { ReactNode } from "react";
 import { useI18n } from "@/shared/i18n-context";
 import { isProfileMuted } from "@/shared/utils/storage";
+import { BellIcon, BlockIcon, TrashIcon } from "@/components/ui/icons";
 
 type ChatContextMenuState = {
   left: number;
@@ -147,7 +148,7 @@ export function ChatContextMenu({
           </div>
         </div>
         <MenuButton
-          icon={<BanIcon />}
+          icon={<BlockIcon />}
           onClick={() => {
             requestBlockChange(
               profile.user_id,
@@ -286,14 +287,3 @@ function ChevronIcon() {
   return <svg aria-hidden="true" className="h-5 w-5 shrink-0 text-[#a1a1aa]" fill="none" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>;
 }
 
-function BanIcon() {
-  return <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" /><path d="M4.929 4.929 19.07 19.071" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>;
-}
-
-function BellIcon() {
-  return <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>;
-}
-
-function TrashIcon() {
-  return <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24"><path d="M10 11v6M14 11v6M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>;
-}

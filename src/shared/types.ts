@@ -41,6 +41,9 @@ export type MessagePinRow = {
 
 export type FavoriteItem = MessageRow & {
   saved_at: string;
+  original_created_at?: string;
+  original_message_id?: number;
+  original_sender_id?: string;
 };
 
 export type ProfileRow = {

@@ -1,11 +1,46 @@
 import { useState } from "react";
-import type { Dispatch, ReactNode, SetStateAction } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { ConfirmDialog } from "@/components/feedback/ConfirmDialog";
 import { useI18n } from "@/shared/i18n-context";
-import { interfaceLanguageLabels } from "@/shared/i18n";
-import type { InterfaceLanguage } from "@/shared/i18n";
 import type { MutedProfileUntil, ProfileRow } from "@/shared/types";
 import { pruneMutedProfiles } from "@/shared/utils/storage";
+import { supabase } from "@/lib/supabase";
+import {
+  SettingsCard,
+  SettingRow,
+  MutedChatsRow,
+  LanguageRow,
+  InfoBlock,
+} from "./SettingsCard";
+import {
+  BellIcon,
+  EyeIcon,
+  IncognitoIcon,
+  SunIcon,
+  SparklesIcon,
+  DownloadIcon,
+  BlockIcon,
+  UserIcon,
+  StaggeredLinesIcon,
+  SignOutIcon,
+  DatabaseIcon,
+  ShieldCheckIcon,
+  DevicesIcon,
+  KeyIcon,
+} from "@/components/ui/icons";
+
+function CheckIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg aria-hidden="true" className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        d="m5 12 4 4 10-10"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
 
 type BlockedProfile = {
   avatarUrl: string | null;
@@ -65,8 +100,53 @@ export function SettingsView({
 }: SettingsViewProps) {
   const { language, setLanguage, t } = useI18n();
   const [isSignOutDialogOpen, setIsSignOutDialogOpen] = useState(false);
-
   const isRu = language === "ru";
+
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordStatus, setPasswordStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
+  const [selfDestructOption, setSelfDestructOption] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("hush-account-self-destruct") || "never";
+    }
+    return "never";
+  });
+  const [isSelfDestructDropdownOpen, setIsSelfDestructDropdownOpen] = useState(false);
+
+  async function handleUpdatePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      setPasswordStatus({
+        type: "error",
+        message: isRu ? "Пароль должен быть не менее 6 символов" : "Password must be at least 6 characters",
+      });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordStatus({
+        type: "error",
+        message: isRu ? "Пароли не совпадают" : "Passwords do not match",
+      });
+      return;
+    }
+    setIsUpdatingPassword(true);
+    setPasswordStatus(null);
+    const { error: err } = await supabase.auth.updateUser({ password: newPassword });
+    setIsUpdatingPassword(false);
+    if (err) {
+      setPasswordStatus({ type: "error", message: err.message });
+    } else {
+      setPasswordStatus({
+        type: "success",
+        message: isRu ? "Пароль успешно изменен" : "Password successfully updated",
+      });
+      setNewPassword("");
+      setConfirmPassword("");
+    }
+  }
+
   const [cacheSize, setCacheSize] = useState(isRu ? "14.2 МБ" : "14.2 MB");
   const [autoDownload, setAutoDownload] = useState(true);
   const [sessions, setSessions] = useState([
@@ -91,8 +171,6 @@ export function SettingsView({
   function handleTerminateOtherSessions() {
     setSessions((currentSessions) => currentSessions.filter((s) => s.current));
   }
-
-  const fingerprint = "SHA256: 7b9a 8c3e d9f2 a1b6 c5d8 e4f3 0a1b 2c3d e4f5 6a7b 8c9d e0f1";
   const privacySettings = [
     {
       description: t("onlineVisibleDescription"),
@@ -169,7 +247,16 @@ export function SettingsView({
 
   function renderTabContent() {
     switch (activeTab) {
-      case "account":
+      case "account": {
+        const selfDestructOptions = [
+          { value: "never", label: isRu ? "Никогда" : "Never" },
+          { value: "1", label: isRu ? "1 месяц" : "1 month" },
+          { value: "3", label: isRu ? "3 месяца" : "3 months" },
+          { value: "6", label: isRu ? "6 месяцев" : "6 months" },
+          { value: "12", label: isRu ? "12 месяцев" : "12 months" },
+        ];
+        const currentOptionLabel = selfDestructOptions.find(o => o.value === selfDestructOption)?.label || (isRu ? "Никогда" : "Never");
+
         return (
           <div className="grid gap-3">
             <SettingsCard
@@ -193,30 +280,124 @@ export function SettingsView({
               </button>
             </SettingsCard>
 
+            {/* Password Change Card */}
             <SettingsCard
-              description={isRu ? "Опасные действия с вашей учетной записью." : "Dangerous actions with your account."}
-              icon={<BlockIcon />}
-              title={isRu ? "Удаление аккаунта" : "Delete Account"}
-              tone="danger"
+              description={isRu ? "Управление безопасностью вашей учетной записи." : "Manage your account security."}
+              icon={<KeyIcon />}
+              title={isRu ? "Смена пароля" : "Change Password"}
             >
-              <div className="flex items-center justify-between gap-3 rounded-lg border border-red-500/15 bg-red-500/5 px-2.5 py-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium leading-5 text-red-200">{isRu ? "Удаление аккаунта" : "Delete account"}</p>
-                  <p className="text-xs leading-normal text-red-200/60">
-                    {isRu ? "Безвозвратное удаление всей истории." : "Permanently delete profile and all chat history."}
-                  </p>
+              <form onSubmit={handleUpdatePassword} className="grid gap-2.5">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#a1a1aa]">
+                    {isRu ? "Новый пароль" : "New Password"}
+                  </span>
+                  <input
+                    className="h-8 min-h-8 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none focus:border-[#f4f4f5] text-white"
+                    placeholder={isRu ? "Введите новый пароль (мин. 6 символов)" : "Enter new password (min. 6 chars)"}
+                    required
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
                 </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#a1a1aa]">
+                    {isRu ? "Подтвердите пароль" : "Confirm Password"}
+                  </span>
+                  <input
+                    className="h-8 min-h-8 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm outline-none focus:border-[#f4f4f5] text-white"
+                    placeholder={isRu ? "Повторите новый пароль" : "Repeat new password"}
+                    required
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+
+                {passwordStatus && (
+                  <p className={`text-xs font-medium ${passwordStatus.type === "success" ? "text-green-400" : "text-red-400"}`}>
+                    {passwordStatus.message}
+                  </p>
+                )}
+
                 <button
-                  className="shrink-0 rounded-lg border border-red-500/35 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-200 transition hover:bg-red-500/20"
-                  onClick={() => alert(isRu ? "Это демо-версия настроек. Удаление аккаунта недоступно." : "This is a demo setup. Account deletion is disabled.")}
-                  type="button"
+                  className="mt-1 inline-flex min-h-8 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 self-start"
+                  disabled={isUpdatingPassword || !newPassword || !confirmPassword}
+                  type="submit"
                 >
-                  {isRu ? "Удалить..." : "Delete..."}
+                  {isUpdatingPassword ? (isRu ? "Обновление..." : "Updating...") : (isRu ? "Обновить пароль" : "Update Password")}
                 </button>
+              </form>
+            </SettingsCard>
+
+            {/* Self-Destruct Account Card */}
+            <SettingsCard
+              description={isRu ? "Автоматическое удаление при неактивности." : "Automatically delete account after inactivity."}
+              icon={<DevicesIcon />}
+              title={isRu ? "Самоуничтожение аккаунта" : "Account Self-Destruction"}
+            >
+              <div className="flex flex-col gap-2 rounded-lg border border-[#3f3f46]/35 bg-black/18 p-2.5">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#a1a1aa]">
+                  {isRu ? "Если вы не заходите" : "If inactive for"}
+                </span>
+                
+                <div className="relative">
+                  {/* Custom Dropdown Trigger */}
+                  <button
+                    className="flex h-8 w-full items-center justify-between rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 px-3 text-sm text-white hover:bg-white/10 transition text-left cursor-pointer outline-none focus:border-[#f4f4f5]"
+                    onClick={() => setIsSelfDestructDropdownOpen(!isSelfDestructDropdownOpen)}
+                    type="button"
+                  >
+                    <span>{currentOptionLabel}</span>
+                    <svg className={`h-4 w-4 text-[#a1a1aa] transition-transform ${isSelfDestructDropdownOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path d="m19 9-7 7-7-7" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/>
+                    </svg>
+                  </button>
+
+                  {/* Backdrop to close when clicking outside */}
+                  {isSelfDestructDropdownOpen && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-[85] cursor-default" 
+                        onClick={() => setIsSelfDestructDropdownOpen(false)}
+                      />
+                      {/* Floating custom select options */}
+                      <div className="absolute left-0 right-0 z-[90] mt-1 overflow-hidden rounded-lg border border-white/10 bg-[#18181b] py-1 text-[#f4f4f5] shadow-[0_18px_60px_rgba(0,0,0,0.55)]">
+                        {selfDestructOptions.map((opt) => (
+                          <button
+                            key={opt.value}
+                            className={`flex min-h-8 w-full items-center justify-between px-3.5 py-1.5 text-left text-sm font-medium transition hover:bg-white/10 text-white ${
+                              selfDestructOption === opt.value ? "bg-white/5" : ""
+                            }`}
+                            onClick={() => {
+                              setSelfDestructOption(opt.value);
+                              localStorage.setItem("hush-account-self-destruct", opt.value);
+                              setIsSelfDestructDropdownOpen(false);
+                            }}
+                            type="button"
+                          >
+                            <span>{opt.label}</span>
+                            {selfDestructOption === opt.value && (
+                              <CheckIcon className="h-4 w-4 text-[#f4f4f5]" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <p className="text-[11px] leading-normal text-[#a1a1aa]">
+                  {isRu 
+                    ? "Все ваши сообщения, медиафайлы и контакты будут безвозвратно удалены из базы данных Hush, если вы не авторизуетесь в течение указанного срока."
+                    : "All your messages, media, and contacts will be permanently deleted from Hush database if you do not log in within the selected period."}
+                </p>
               </div>
             </SettingsCard>
           </div>
         );
+      }
 
       case "privacy":
         return (
@@ -288,32 +469,6 @@ export function SettingsView({
                   </button>
                 </div>
               ))}
-            </SettingsCard>
-
-            <SettingsCard
-              description={isRu ? "Ключи шифрования и безопасности." : "Encryption and security keys."}
-              icon={<KeyIcon />}
-              title={isRu ? "Сквозное шифрование" : "End-to-End Encryption"}
-            >
-              <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 p-2.5 font-mono text-[11px] break-all leading-normal text-[#a1a1aa] text-center select-all">
-                {fingerprint}
-              </div>
-              <div className="grid grid-cols-2 gap-2 mt-1">
-                <button
-                  className="inline-flex min-h-8 items-center justify-center rounded-lg border border-[#3f3f46]/45 bg-[#f4f4f5]/10 px-2.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/14"
-                  onClick={() => alert(isRu ? "Ваши ключи успешно экспортированы." : "Your keys have been exported successfully.")}
-                  type="button"
-                >
-                  {isRu ? "Экспорт ключей" : "Export keys"}
-                </button>
-                <button
-                  className="inline-flex min-h-8 items-center justify-center rounded-lg border border-red-500/35 bg-red-500/10 px-2.5 text-xs font-medium text-red-200 transition hover:bg-red-500/20"
-                  onClick={() => alert(isRu ? "Демо-ключи шифрования успешно перегенерированы." : "Demo encryption keys regenerated successfully.")}
-                  type="button"
-                >
-                  {isRu ? "Сбросить ключи" : "Reset keys"}
-                </button>
-              </div>
             </SettingsCard>
           </div>
         );
@@ -560,331 +715,3 @@ export function SettingsView({
   );
 }
 
-function SettingsCard({
-  children,
-  description,
-  icon,
-  title,
-  tone = "default",
-}: {
-  children: ReactNode;
-  description: string;
-  icon: ReactNode;
-  title: string;
-  tone?: "danger" | "default";
-}) {
-  return (
-    <section className="rounded-lg border border-[#3f3f46]/35 bg-black/18 p-2.5 sm:p-3">
-      <div className="mb-2.5 flex items-center gap-2.5">
-        <span
-          className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${
-            tone === "danger"
-              ? "bg-red-500/12 text-red-100"
-              : "bg-[#f4f4f5]/10 text-[#f4f4f5]"
-          }`}
-        >
-          {icon}
-        </span>
-        <div>
-          <p className="text-sm font-semibold leading-tight text-[#f4f4f5]">{title}</p>
-          <p className="text-xs leading-normal text-[#a1a1aa] mt-0.5">{description}</p>
-        </div>
-      </div>
-      <div className="grid gap-1.5">{children}</div>
-    </section>
-  );
-}
-
-function SettingRow({
-  description,
-  enabled,
-  icon,
-  label,
-  onToggle,
-}: {
-  description: string;
-  enabled: boolean;
-  icon?: ReactNode;
-  label: string;
-  onToggle: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
-      <div className="flex items-center gap-2.5 min-w-0">
-        {icon && <span className="text-[#a1a1aa] shrink-0">{icon}</span>}
-        <div className="min-w-0">
-          <p className="text-sm font-medium leading-5">{label}</p>
-          <p className="text-xs leading-normal text-[#71717a]">{description}</p>
-        </div>
-      </div>
-      <button
-        aria-label={label}
-        className={`flex h-6 w-10 shrink-0 items-center rounded-full p-0.5 transition ${
-          enabled ? "justify-end bg-[#f4f4f5]" : "justify-start bg-[#f4f4f5]/18"
-        }`}
-        onClick={onToggle}
-        type="button"
-      >
-        <span
-          className={`h-5 w-5 rounded-full transition ${
-            enabled ? "bg-[#050505]" : "bg-[#f4f4f5]"
-          }`}
-        />
-      </button>
-    </div>
-  );
-}
-
-function MutedChatsRow({ count }: { count: number }) {
-  const { t } = useI18n();
-
-  return (
-    <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className="text-[#a1a1aa] shrink-0">
-            <BellIcon />
-          </span>
-          <div className="min-w-0">
-            <p className="text-sm font-medium leading-5">{t("blockedChats")}</p>
-            <p className="text-xs leading-normal text-[#71717a]">
-              {t("blockedChatsDescription")}
-            </p>
-          </div>
-        </div>
-        <span className="shrink-0 rounded-full bg-[#f4f4f5]/10 px-2.5 py-1 text-xs font-medium text-[#e5e5e5]">
-          {count}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function LanguageRow({
-  currentLanguage,
-  description,
-  label,
-  onChange,
-}: {
-  currentLanguage: InterfaceLanguage;
-  description: string;
-  label: string;
-  onChange: Dispatch<SetStateAction<InterfaceLanguage>>;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const languageOptions: InterfaceLanguage[] = ["ru", "en"];
-
-  function selectLanguage(nextLanguage: InterfaceLanguage) {
-    onChange(nextLanguage);
-    setIsOpen(false);
-  }
-
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
-      <div className="flex items-center gap-2.5 min-w-0">
-        <span className="text-[#a1a1aa] shrink-0">
-          <StaggeredLinesIcon />
-        </span>
-        <div className="min-w-0">
-          <p className="text-sm font-medium leading-5">{label}</p>
-          <p className="text-xs leading-normal text-[#71717a]">{description}</p>
-        </div>
-      </div>
-      <div className="relative shrink-0">
-        <button
-          aria-expanded={isOpen}
-          className="flex min-h-8 min-w-[132px] items-center justify-between gap-3 rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/10 px-3 text-left text-xs font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/14"
-          onClick={() => setIsOpen((currentValue) => !currentValue)}
-          type="button"
-        >
-          <span>{interfaceLanguageLabels[currentLanguage]}</span>
-          <svg
-            aria-hidden="true"
-            className={`h-3.5 w-3.5 shrink-0 text-[#a1a1aa] transition-transform duration-200 ${
-              isOpen ? "" : "rotate-180"
-            }`}
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path d="M12 5v14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-            <path d="m19 12-7 7-7-7" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-          </svg>
-        </button>
-
-        {isOpen ? (
-          <>
-            <button
-              aria-label="Закрыть выбор языка"
-              className="fixed inset-0 z-[70] cursor-default bg-transparent"
-              onClick={() => setIsOpen(false)}
-              type="button"
-            />
-            <div className="hush-context-menu absolute right-0 top-[calc(100%+6px)] z-[80] w-[156px] overflow-hidden rounded-lg border border-white/10 bg-[#18181b]/98 py-1 text-[#f4f4f5] shadow-[0_18px_55px_rgba(0,0,0,0.48)] backdrop-blur-xl">
-              {languageOptions.map((language) => (
-                <button
-                  className={`flex min-h-8 w-full items-center justify-between gap-2 px-3 text-left text-xs font-medium transition hover:bg-white/10 ${
-                    currentLanguage === language ? "text-[#f4f4f5]" : "text-[#a1a1aa]"
-                  }`}
-                  key={language}
-                  onClick={() => selectLanguage(language)}
-                  type="button"
-                >
-                  <span>{interfaceLanguageLabels[language]}</span>
-                  {currentLanguage === language ? (
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#f4f4f5]" />
-                  ) : null}
-                </button>
-              ))}
-            </div>
-          </>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function InfoBlock({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
-      <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#a1a1aa]">
-        {label}
-      </p>
-      <p className="mt-0.5 truncate text-sm font-medium leading-5 text-[#f4f4f5]">
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function BellIcon() {
-  return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-      <path d="M10.268 21a2 2 0 0 0 3.464 0" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-      <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-    </svg>
-  );
-}
-
-function EyeIcon() {
-  return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-    </svg>
-  );
-}
-
-function IncognitoIcon() {
-  return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2 12h20" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 12c.5-3.5 2.5-7 7-7s6.5 3.5 7 7" />
-      <circle cx="8.5" cy="17" r="2.5" />
-      <circle cx="15.5" cy="17" r="2.5" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M11 17h2" />
-    </svg>
-  );
-}
-
-function SunIcon() {
-  return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="4" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-    </svg>
-  );
-}
-
-function SparklesIcon() {
-  return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 21l-.813-5.096L3.096 15 8 14.187 8.813 9l.813 5.187L15 15l-5.187.904zM19.071 4.929l-.244 1.53L17.296 6.7l1.531.244.244 1.531.244-1.53 1.53-.245-1.53-.244-.244-1.531z" />
-    </svg>
-  );
-}
-
-function DownloadIcon() {
-  return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-    </svg>
-  );
-}
-
-function BlockIcon() {
-  return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-      <path d="M4.929 4.929 19.07 19.071" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-    </svg>
-  );
-}
-
-function UserIcon() {
-  return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-      <circle cx="12" cy="8" r="5" stroke="currentColor" strokeWidth="2" />
-      <path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-    </svg>
-  );
-}
-
-function StaggeredLinesIcon() {
-  return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8 6h11" />
-      <path d="M4 12h11" />
-      <path d="M11 18h9" />
-    </svg>
-  );
-}
-
-function SignOutIcon() {
-  return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-      <path d="m16 17 5-5-5-5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-      <path d="M21 12H9" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-    </svg>
-  );
-}
-
-function DatabaseIcon() {
-  return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <ellipse cx="12" cy="6" rx="7.5" ry="2.5" />
-      <path d="M4.5 6v6c0 1.38 3.36 2.5 7.5 2.5s7.5-1.12 7.5-2.5V6" />
-      <path d="M4.5 12v6c0 1.38 3.36 2.5 7.5 2.5s7.5-1.12 7.5-2.5v-6" />
-    </svg>
-  );
-}
-
-function ShieldCheckIcon() {
-  return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <path d="m9 11 2 2 4-4" />
-    </svg>
-  );
-}
-
-function DevicesIcon() {
-  return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-      <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2" />
-      <path d="M8 21h8" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-      <path d="M12 17v4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-    </svg>
-  );
-}
-
-function KeyIcon() {
-  return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-      <circle cx="7.5" cy="16.5" r="3.5" stroke="currentColor" strokeWidth="2" />
-      <path d="m10 14 10-10" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-      <path d="m16 4 4 4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-      <path d="m13 7 2 2" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-    </svg>
-  );
-}

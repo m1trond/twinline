@@ -1,19 +1,19 @@
 import { MouseEvent, useCallback } from "react";
 import type { FavoriteItem, MessageRow, ProfileRow } from "@/shared/types";
 
-type MessageContextMenuState = {
+export type MessageContextMenuState = {
   left: number;
   message: MessageRow;
   top: number;
 };
 
-type FavoriteContextMenuState = {
+export type FavoriteContextMenuState = {
   item: FavoriteItem;
   left: number;
   top: number;
 };
 
-type ChatContextMenuState = {
+export type ChatContextMenuState = {
   left: number;
   profile: ProfileRow;
   top: number;

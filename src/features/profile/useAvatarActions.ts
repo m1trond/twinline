@@ -7,7 +7,7 @@ import { profileColumns } from "@/shared/constants";
 import type { ProfileRow } from "@/shared/types";
 import { readStoredStringList } from "@/shared/utils/storage";
 
-type ProfileAvatarTarget = {
+export type ProfileAvatarTarget = {
   avatarUrl: string | null;
   userId: string | null;
 };

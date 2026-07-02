@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { deleteAccessProfile, fetchAccessProfiles } from "@/features/access/queries";
 import { useI18n } from "@/shared/i18n-context";
 import type { AccessProfileRow } from "@/shared/types";
+import { TrashIcon } from "@/components/ui/icons";
 
 type AccessViewProps = {
   canViewAccess: boolean;
@@ -291,37 +292,4 @@ function AccessDeleteDialog({
   );
 }
 
-function TrashIcon() {
-  return (
-    <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
-      <path
-        d="M3 6h18"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      />
-      <path
-        d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      />
-      <path
-        d="M19 6 18 20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      />
-      <path
-        d="M10 11v6M14 11v6"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      />
-    </svg>
-  );
-}
+

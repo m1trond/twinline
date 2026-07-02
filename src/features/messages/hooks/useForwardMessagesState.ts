@@ -147,7 +147,7 @@ export function useForwardMessagesState({
     setErrorMessage("Сообщения пересланы.");
   }
 
-  function forwardMessagesToFavorites() {
+  async function forwardMessagesToFavorites() {
     if (!user || selectedForwardMessages.length === 0 || isForwardingMessages) {
       return;
     }

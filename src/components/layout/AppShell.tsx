@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties, Dispatch, PointerEvent, ReactNode, SetStateAction } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { useSidebarResize, clampSidebarWidth } from "./useSidebarResize";
+import { SearchResultList } from "./SidebarSearch";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { NavButton, NavIcon } from "@/components/navigation/NavButton";
-import { Avatar } from "@/components/ui/Avatar";
 import { useI18n } from "@/shared/i18n-context";
 import { accessNavItem, navItems, settingsNavItem } from "@/shared/constants";
 import type { ActiveView, ProfileRow } from "@/shared/types";
@@ -16,45 +17,17 @@ type AppShellProps = {
   areSoftEffectsEnabled: boolean;
   isLightThemeEnabled: boolean;
   searchableProfiles: ProfileRow[];
-  setActiveView: Dispatch<SetStateAction<ActiveView>>;
-  setChatSearchQuery: Dispatch<SetStateAction<string>>;
-  setSelectedChatUserId: Dispatch<SetStateAction<string | null>>;
-  setViewedProfile: Dispatch<SetStateAction<ViewedProfileState | null>>;
+  setActiveView: (view: ActiveView) => void;
+  setChatSearchQuery: (query: string) => void;
+  setSelectedChatUserId: (userId: string | null) => void;
+  setViewedProfile: (profile: ViewedProfileState | null) => void;
   totalUnreadMessageCount: number;
 };
 
 const sidebarStorageKey = "hush-sidebar-width";
 const legacySidebarStorageKey = "twinline-sidebar-width";
 const defaultSidebarWidth = 270;
-const minSidebarWidth = 72;
 const collapsedSidebarThreshold = 190;
-const sidebarGridGap = 8;
-
-function getMaxSidebarWidth(availableWidth?: number) {
-  const gridWidth =
-    availableWidth ??
-    (typeof window === "undefined" ? defaultSidebarWidth * 2 + sidebarGridGap : window.innerWidth);
-
-  const halfGridWidth = Math.floor((gridWidth - sidebarGridGap) / 2);
-
-  return Math.max(minSidebarWidth, halfGridWidth);
-}
-
-function getCurrentMaxSidebarWidth(gridElement: HTMLElement | null) {
-  if (gridElement) {
-    return getMaxSidebarWidth(gridElement.clientWidth);
-  }
-
-  if (typeof window === "undefined") {
-    return defaultSidebarWidth;
-  }
-
-  return getMaxSidebarWidth();
-}
-
-function clampSidebarWidth(width: number, gridElement: HTMLElement | null = null) {
-  return Math.min(Math.max(width, minSidebarWidth), getCurrentMaxSidebarWidth(gridElement));
-}
 
 export function AppShell({
   activeView,
@@ -185,28 +158,11 @@ export function AppShell({
     }
   }
 
-  function startSidebarResize(event: PointerEvent<HTMLDivElement>) {
-    event.preventDefault();
-    const startX = event.clientX;
-    const startWidth = sidebarWidth;
-    const pointerId = event.pointerId;
-
-    event.currentTarget.setPointerCapture(pointerId);
-
-    function resizeSidebar(nextEvent: globalThis.PointerEvent) {
-      setSidebarWidth(clampSidebarWidth(startWidth + nextEvent.clientX - startX, sidebarGridRef.current));
-    }
-
-    function stopSidebarResize() {
-      window.removeEventListener("pointermove", resizeSidebar);
-      window.removeEventListener("pointerup", stopSidebarResize);
-      window.removeEventListener("pointercancel", stopSidebarResize);
-    }
-
-    window.addEventListener("pointermove", resizeSidebar);
-    window.addEventListener("pointerup", stopSidebarResize);
-    window.addEventListener("pointercancel", stopSidebarResize);
-  }
+  const { startSidebarResize } = useSidebarResize({
+    sidebarWidth,
+    setSidebarWidth,
+    sidebarGridRef,
+  });
 
   return (
     <main className={`hush-shell ${isLightThemeEnabled ? "hush-light" : ""} ${areSoftEffectsEnabled ? "" : "hush-reduced-effects"} relative h-dvh overflow-hidden bg-[#000000] text-[#f4f4f5]`}>
@@ -303,50 +259,25 @@ export function AppShell({
                         </label>
                         {chatSearchQuery.trim().length > 0 ? (
                           <div className="mt-2 grid max-h-64 gap-1 overflow-y-auto pr-1">
-                            {chatSearchQuery.trim().replace(/^@+/, "").length < 2 ? (
-                              <p className="px-2 py-1 text-xs text-[#a1a1aa]">
-                                {t("searchMinUsername")}
-                              </p>
-                            ) : searchableProfiles.length === 0 ? (
-                              <p className="px-2 py-1 text-xs text-[#a1a1aa]">
-                                {t("searchUserNotFound")}
-                              </p>
-                            ) : (
-                              searchableProfiles.map((profile) => (
-                                <button
-                                  className="flex min-h-9 items-center gap-2 rounded-lg px-2 py-1 text-left transition hover:bg-[#f4f4f5]/10"
-                                  key={"collapsed-search-" + profile.user_id}
-                                  onClick={() => {
-                                    setViewedProfile({
-                                      avatarUrl: profile.avatar_url,
-                                      bio: profile.bio,
-                                      name: profile.display_name,
-                                      username: profile.username,
-                                      updatedAt: profile.updated_at,
-                                      userId: profile.user_id,
-                                    });
-                                    setChatSearchQuery("");
-                                    setIsCollapsedSearchOpen(false);
-                                  }}
-                                  type="button"
-                                >
-                                  <Avatar
-                                    alt={"Avatar " + profile.display_name}
-                                    className="h-8 w-8 text-xs"
-                                    name={profile.display_name}
-                                    src={profile.avatar_url}
-                                  />
-                                  <span className="min-w-0">
-                                    <span className="block truncate text-sm font-medium text-[#f4f4f5]">
-                                      {profile.display_name}
-                                    </span>
-                                    <span className="block truncate text-xs text-[#a1a1aa]">
-                                      {profile.username ? "@" + profile.username : t("nicknameNotSet")}
-                                    </span>
-                                  </span>
-                                </button>
-                              ))
-                            )}
+                            <SearchResultList
+                              query={chatSearchQuery}
+                              searchableProfiles={searchableProfiles}
+                              onSelectProfile={(profile) => {
+                                setViewedProfile({
+                                  avatarUrl: profile.avatar_url,
+                                  bio: profile.bio,
+                                  name: profile.display_name,
+                                  username: profile.username,
+                                  updatedAt: profile.updated_at,
+                                  userId: profile.user_id,
+                                });
+                                setChatSearchQuery("");
+                                setIsCollapsedSearchOpen(false);
+                              }}
+                              t={t}
+                              itemClassName="flex min-h-9 items-center gap-2 rounded-lg px-2 py-1 text-left transition hover:bg-[#f4f4f5]/10"
+                              keyPrefix="collapsed-search-"
+                            />
                           </div>
                         ) : (
                           <p className="px-2 py-1.5 text-xs leading-5 text-[#a1a1aa]">
@@ -392,49 +323,24 @@ export function AppShell({
                 </label>
                 {chatSearchQuery.trim().length > 0 ? (
                   <div className="mt-2 grid max-h-64 gap-1.5 overflow-y-auto pr-1">
-                    {chatSearchQuery.trim().replace(/^@+/, "").length < 2 ? (
-                      <p className="px-2 py-1 text-xs text-[#a1a1aa]">
-                        {t("searchMinUsername")}
-                      </p>
-                    ) : searchableProfiles.length === 0 ? (
-                      <p className="px-2 py-1 text-xs text-[#a1a1aa]">
-                        {t("searchUserNotFound")}
-                      </p>
-                    ) : (
-                      searchableProfiles.map((profile) => (
-                        <button
-                          className="flex items-center gap-2 rounded-lg px-2 py-2 text-left transition hover:bg-[#f4f4f5]/10"
-                          key={"search-" + profile.user_id}
-                          onClick={() => {
-                            setViewedProfile({
-                              avatarUrl: profile.avatar_url,
-                              bio: profile.bio,
-                              name: profile.display_name,
-                              username: profile.username,
-                              updatedAt: profile.updated_at,
-                              userId: profile.user_id,
-                            });
-                            setChatSearchQuery("");
-                          }}
-                          type="button"
-                        >
-                          <Avatar
-                            alt={"Avatar " + profile.display_name}
-                            className="h-8 w-8 text-xs"
-                            name={profile.display_name}
-                            src={profile.avatar_url}
-                          />
-                          <span className="min-w-0">
-                            <span className="block truncate text-sm font-medium text-[#f4f4f5]">
-                              {profile.display_name}
-                            </span>
-                            <span className="block truncate text-xs text-[#a1a1aa]">
-                              {profile.username ? "@" + profile.username : t("nicknameNotSet")}
-                            </span>
-                          </span>
-                        </button>
-                      ))
-                    )}
+                    <SearchResultList
+                      query={chatSearchQuery}
+                      searchableProfiles={searchableProfiles}
+                      onSelectProfile={(profile) => {
+                        setViewedProfile({
+                          avatarUrl: profile.avatar_url,
+                          bio: profile.bio,
+                          name: profile.display_name,
+                          username: profile.username,
+                          updatedAt: profile.updated_at,
+                          userId: profile.user_id,
+                        });
+                        setChatSearchQuery("");
+                      }}
+                      t={t}
+                      itemClassName="flex items-center gap-2 rounded-lg px-2 py-2 text-left transition hover:bg-[#f4f4f5]/10"
+                      keyPrefix="search-"
+                    />
                   </div>
                 ) : null}
               </div>

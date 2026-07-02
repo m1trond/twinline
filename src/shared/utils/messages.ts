@@ -24,11 +24,11 @@ import type {
   TypingMessagePayload,
 } from "../types";
 
-const cache = new Map<string, any>();
+const cache = new Map<string, unknown>();
 function withCache<T>(keyPrefix: string, text: string, fn: () => T): T {
   const cacheKey = `${keyPrefix}:${text}`;
   if (cache.has(cacheKey)) {
-    return cache.get(cacheKey);
+    return cache.get(cacheKey) as T;
   }
   const result = fn();
   if (cache.size > 5000) {

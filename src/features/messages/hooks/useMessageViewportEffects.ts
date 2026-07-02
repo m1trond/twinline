@@ -4,13 +4,11 @@ import type { ActiveView } from "@/shared/types";
 
 type MessageViewportEffectsParams = {
   activeView: ActiveView;
-  activeDialogMessagesCount: number;
   activeDialogMessagesKey: string;
-  bottomAnchorRef: RefObject<HTMLDivElement | null>;
   favoriteItemsCount: number;
   favoriteItemsKey: string;
   highlightedMessageTimeoutRef: RefObject<number | null>;
-  isLoadingMessages: boolean;
+  isActiveDialogReady: boolean;
   lastOwnDialogMessageKey: string;
   messagesListRef: RefObject<HTMLDivElement | null>;
   selectedChatUserId: string | null;
@@ -18,17 +16,8 @@ type MessageViewportEffectsParams = {
 
 type ScrollIntent = "open-chat" | "own-message" | "favorites";
 
-function getMaxScrollTop(messagesList: HTMLDivElement) {
-  return Math.max(0, messagesList.scrollHeight - messagesList.clientHeight);
-}
-
-function isNearBottom(messagesList: HTMLDivElement) {
-  return getMaxScrollTop(messagesList) - messagesList.scrollTop <= 12;
-}
-
 function scrollMessagesListToBottom(
   messagesListRef: RefObject<HTMLDivElement | null>,
-  bottomAnchorRef: RefObject<HTMLDivElement | null>,
 ) {
   const messagesList = messagesListRef.current;
 
@@ -44,18 +33,28 @@ function scrollMessagesListToBottom(
 
 export function useMessageViewportEffects({
   activeView,
-  activeDialogMessagesCount,
   activeDialogMessagesKey,
-  bottomAnchorRef,
   favoriteItemsCount,
   favoriteItemsKey,
   highlightedMessageTimeoutRef,
-  isLoadingMessages,
+  isActiveDialogReady,
   lastOwnDialogMessageKey,
   messagesListRef,
   selectedChatUserId,
 }: MessageViewportEffectsParams) {
+  // Disable browser native scroll restoration — we handle it manually
+  useEffect(() => {
+    if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
+      const original = window.history.scrollRestoration;
+      window.history.scrollRestoration = "manual";
+      return () => {
+        window.history.scrollRestoration = original;
+      };
+    }
+  }, []);
+
   const frameIdsRef = useRef<number[]>([]);
+  // Tracks which chat was last opened — used to detect chat switches
   const lastOpenedChatUserIdRef = useRef<string | null>(null);
   const lastOwnDialogMessageKeyRef = useRef("");
   const releaseIntentTimeoutRef = useRef<number | null>(null);
@@ -96,7 +95,7 @@ export function useMessageViewportEffects({
         return;
       }
 
-      scrollMessagesListToBottom(messagesListRef, bottomAnchorRef);
+      scrollMessagesListToBottom(messagesListRef);
 
       if (passIndex >= passes) {
         if (options?.holdMs) {
@@ -120,12 +119,14 @@ export function useMessageViewportEffects({
 
     run(0);
   }, [
-    bottomAnchorRef,
     cancelScheduledScroll,
     clearReleaseIntentTimeout,
     messagesListRef,
   ]);
 
+  // ─── Chat switch detection ──────────────────────────────────────────────────
+  // When the user opens a different chat, reset refs so the key-based effect
+  // below knows a fresh initial scroll is needed.
   useLayoutEffect(() => {
     if (activeView !== "messages" || selectedChatUserId === null) {
       lastOpenedChatUserIdRef.current = null;
@@ -138,36 +139,20 @@ export function useMessageViewportEffects({
       return;
     }
 
+    // New chat opened — reset tracking state but do NOT scroll yet.
+    // The scroll will happen in the activeDialogMessagesKey effect below
+    // once messages are actually in the DOM.
     lastOpenedChatUserIdRef.current = selectedChatUserId;
     lastOwnDialogMessageKeyRef.current = lastOwnDialogMessageKey;
-    scrollIntentRef.current = "open-chat";
-    scheduleBottomScroll("open-chat", { holdMs: 1200, passes: 8 });
   }, [
     activeView,
     clearScrollIntent,
     lastOwnDialogMessageKey,
-    scheduleBottomScroll,
     selectedChatUserId,
   ]);
 
-  useLayoutEffect(() => {
-    if (
-      activeView !== "messages" ||
-      selectedChatUserId === null ||
-      isLoadingMessages
-    ) {
-      return;
-    }
-
-    scrollIntentRef.current = "open-chat";
-    scheduleBottomScroll("open-chat", { holdMs: 1200, passes: 8 });
-  }, [
-    activeView,
-    isLoadingMessages,
-    scheduleBottomScroll,
-    selectedChatUserId,
-  ]);
-
+  // ─── Own-message sent ───────────────────────────────────────────────────────
+  // Scroll to bottom when the current user sends a new message.
   useLayoutEffect(() => {
     if (
       activeView !== "messages" ||
@@ -187,6 +172,7 @@ export function useMessageViewportEffects({
     scheduleBottomScroll("own-message", { passes: 2 });
   }, [activeView, lastOwnDialogMessageKey, scheduleBottomScroll, selectedChatUserId]);
 
+  // ─── Favorites view ─────────────────────────────────────────────────────────
   useLayoutEffect(() => {
     if (activeView !== "favorites") {
       return;
@@ -195,6 +181,7 @@ export function useMessageViewportEffects({
     scheduleBottomScroll("favorites", { passes: 4 });
   }, [activeView, favoriteItemsCount, favoriteItemsKey, scheduleBottomScroll]);
 
+  // ─── Cancel intent on manual scroll ─────────────────────────────────────────
   useLayoutEffect(() => {
     if (activeView !== "messages" || selectedChatUserId === null) {
       return;
@@ -225,6 +212,7 @@ export function useMessageViewportEffects({
     };
   }, [activeView, clearScrollIntent, messagesListRef, selectedChatUserId]);
 
+  // ─── ResizeObserver: re-apply scroll during open-chat intent ────────────────
   useLayoutEffect(() => {
     const messagesList = messagesListRef.current;
 
@@ -234,7 +222,7 @@ export function useMessageViewportEffects({
 
     const observer = new ResizeObserver(() => {
       if (scrollIntentRef.current === "open-chat") {
-        scheduleBottomScroll("open-chat", { holdMs: 1200, passes: 6 });
+        scheduleBottomScroll("open-chat", { holdMs: 2500, passes: 50 });
       }
     });
 
@@ -245,25 +233,51 @@ export function useMessageViewportEffects({
     };
   }, [messagesListRef, scheduleBottomScroll]);
 
-  // Auto-scroll when new messages arrive if near bottom
+  // ─── Messages key tracker ────────────────────────────────────────────────────
+  // Tracks the last messages key per chat. Reset when chat changes.
   const lastMessagesKeyRef = useRef("");
+
+  useEffect(() => {
+    lastMessagesKeyRef.current = "";
+  }, [selectedChatUserId]);
+
+  // ─── Primary scroll trigger: fires when messages load into DOM ───────────────
+  //
+  // This is the single source of truth for scroll-to-bottom on chat open.
+  //
+  // Sequence of events on page refresh:
+  //  1. selectedChatUserId is set → chat-switch effect resets refs
+  //  2. Messages are fetched → activeDialogMessagesKey changes from "" to a real value
+  //  3. THIS effect fires: prevKey === "" → initial open → scheduleBottomScroll
+  //  4. Additional message batches arrive → key changes again → isNearBottom check
   useLayoutEffect(() => {
-    if (activeView !== "messages" || selectedChatUserId === null || activeDialogMessagesKey === "") {
+    if (
+      activeView !== "messages" ||
+      selectedChatUserId === null ||
+      !isActiveDialogReady ||
+      activeDialogMessagesKey === ""
+    ) {
       return;
     }
+
     const prevKey = lastMessagesKeyRef.current;
     lastMessagesKeyRef.current = activeDialogMessagesKey;
 
-    if (prevKey === activeDialogMessagesKey || prevKey === "") {
+    if (prevKey === activeDialogMessagesKey) {
       return;
     }
 
-    const messagesList = messagesListRef.current;
-    if (messagesList && isNearBottom(messagesList)) {
-      scheduleBottomScroll("own-message", { passes: 2 });
+    if (prevKey === "") {
+      // Initial load for this chat: scroll to bottom firmly with retries
+      scheduleBottomScroll("open-chat", { holdMs: 2500, passes: 50 });
+      return;
     }
-  }, [activeView, activeDialogMessagesKey, scheduleBottomScroll, selectedChatUserId, messagesListRef]);
 
+    // Subsequent messages are handled by the own-message effect only.
+    // Incoming messages should not pull the recipient to the bottom.
+  }, [activeView, activeDialogMessagesKey, isActiveDialogReady, scheduleBottomScroll, selectedChatUserId]);
+
+  // ─── Cleanup on unmount ──────────────────────────────────────────────────────
   useEffect(() => {
     const timeoutRef = highlightedMessageTimeoutRef;
 

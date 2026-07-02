@@ -2,21 +2,14 @@ import { useState } from "react";
 import type { ChangeEvent, Dispatch, DragEvent, FormEvent, MouseEvent, RefObject, SetStateAction } from "react";
 import type { ViewedProfileState } from "@/features/navigation/useNavigationState";
 import type { FavoriteItem, MessageRow, ProfileRow } from "@/shared/types";
-import { FileAttachment } from "@/features/messages/components/FileAttachment";
-import { VoiceMessage } from "@/features/messages/components/VoiceMessage";
 import { useI18n } from "@/shared/i18n-context";
-import { formatAudioTime, formatCallDuration, formatMessageTime } from "@/shared/utils/format";
-import {
-  getMessageAudioUrl,
-  getMessageAttachmentCaption,
-  getMessageCallDuration,
-  getMessageFilePayload,
-  getMessageForward,
-  getMessageImageUrl,
-  getMessageReply,
-  getMessageSticker,
-  getMessageVideoUrl,
-} from "@/shared/utils/messages";
+
+// Subcomponents
+import { FavoritePinnedBanner } from "./favorites/FavoritePinnedBanner";
+import { FavoriteSelectionToolbar } from "./favorites/FavoriteSelectionToolbar";
+import { ReplyEditingBanner } from "./favorites/ReplyEditingBanner";
+import { FavoritesComposeForm } from "./favorites/FavoritesComposeForm";
+import { FavoriteMessageBubble } from "./favorites/FavoriteMessageBubble";
 
 type FavoritesViewProps = {
   cancelVoiceRecording: () => void;
@@ -161,579 +154,144 @@ export function FavoritesView({
       void handleAttachmentDrop(event.dataTransfer.files);
     }
   }
-  return (<div
-                className="hush-panel-transition relative flex min-h-0 flex-col overflow-hidden"
-                onDragEnter={handleAttachmentDragEnter}
-                onDragLeave={handleAttachmentDragLeave}
-                onDragOver={handleAttachmentDragOver}
-                onDrop={handleAttachmentDropEvent}
-              >
-                {isDraggingAttachment ? (
-                  <div className="pointer-events-none absolute inset-0 z-30 grid place-items-center rounded-xl border border-[#f4f4f5]/25 bg-black/70 p-4 backdrop-blur-sm sm:rounded-2xl">
-                    <div className="grid max-w-sm place-items-center rounded-2xl border border-dashed border-[#f4f4f5]/35 bg-[#111111]/88 px-6 py-5 text-center shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
-                      <p className="text-base font-medium text-[#f4f4f5]">
-                        {t("moveFileHere")}
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
-                        {t("moveFileHereDescription")}
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
-                <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-black px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] sm:px-4">
-                  <h2 className="text-base font-medium leading-normal sm:text-base">
-                    {t("favorites")}
-                  </h2>
-                </div>
 
-                {isFavoriteSelectionMode ? (
-                  <div className="mb-2 flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/88 px-3 py-2 text-[#f4f4f5] shadow-[0_12px_35px_rgba(0,0,0,0.25)] backdrop-blur-md sm:mb-3">
-                    <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-[#d4d4d8]">
-                      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#f4f4f5] text-[#050505]">
-                        {selectedFavoriteItems.length}
-                      </span>
-                      <span className="truncate">
-                        {t("selectedMessages")}
-                      </span>
-                    </div>
-                    <div className="flex flex-1 justify-end gap-2 sm:flex-none">
-                      <button
-                        className="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-[#3f3f46]/55 bg-[#f4f4f5]/10 px-3 text-sm font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/16 sm:flex-none"
-                        onClick={forwardSelectedMessages}
-                        type="button"
-                      >
-                        <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                          <path d="m15 14 5-5-5-5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                          <path d="M4 20v-7a4 4 0 0 1 4-4h12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                        </svg>
-                        {t("forward")}
-                      </button>
-                      <button
-                        className="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-[#3f3f46]/55 bg-[#f4f4f5]/10 px-3 text-sm font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/16 sm:flex-none"
-                        onClick={removeSelectedFavoriteItems}
-                        type="button"
-                      >
-                        <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-                          <path d="M10 11v6M14 11v6M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                        </svg>
-                        {t("delete")}
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-
-                {pinnedFavoriteItem ? (
-                  <article className="mb-2 flex shrink-0 items-center gap-2.5 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 px-3 py-2.5 text-left shadow-[0_14px_45px_rgba(0,0,0,0.22)] backdrop-blur-md sm:mb-3 sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
-                    <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#f4f4f5]/18 text-[#e5e5e5] sm:h-9 sm:w-9 sm:rounded-xl">
-                      <svg
-                        aria-hidden="true"
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M12 17v5"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                        />
-                        <path
-                          d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                        />
-                      </svg>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <span className="block text-xs font-medium uppercase tracking-[0.16em] text-[#e5e5e5]">
-                        {t("pinned")}
-                      </span>
-                      <span className="mt-0.5 block truncate text-sm font-medium text-[#f4f4f5]">
-                        {getReadableMessageText(pinnedFavoriteItem.text)}
-                      </span>
-                    </div>
-                    <button
-                      className="min-h-9 shrink-0 rounded-lg border border-[#3f3f46]/35 px-2.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 sm:min-h-10 sm:rounded-xl sm:px-4"
-                      onClick={() => setPinnedFavoriteItem(null)}
-                      type="button"
-                    >
-                      {t("unpin")}
-                    </button>
-                  </article>
-                ) : null}
-
-                <div className="scrollbar-hidden flex min-h-0 flex-1 flex-col overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-transparent p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] [overflow-anchor:none] sm:rounded-2xl sm:p-4">
-                  {favoriteItems.length === 0 ? (
-                    <div className="grid flex-1 place-items-center text-center">
-                      <div className="max-w-sm rounded-2xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-5">
-                        <p className="text-sm font-medium">
-                          {t("favoritesEmptyTitle")}
-                        </p>
-                        <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
-                          {t("favoritesEmptyText")}
-                        </p>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {favoriteItems.map((favoriteItem, favoriteItemIndex) => {
-                    const previousFavoriteItem = favoriteItems[favoriteItemIndex - 1];
-                    const nextFavoriteItem = favoriteItems[favoriteItemIndex + 1];
-                    const isPreviousSameAuthor = previousFavoriteItem?.user_id === favoriteItem.user_id;
-                    const isNextSameAuthor = nextFavoriteItem?.user_id === favoriteItem.user_id;
-                    const isSelected = selectedMessageIdSet.has(favoriteItem.id);
-                    const reply = getMessageReply(favoriteItem.text);
-                    const rawDisplayText = reply?.body ?? favoriteItem.text;
-                    const forwarded = getMessageForward(rawDisplayText);
-                    const forwardedProfile = forwarded?.authorUserId
-                      ? forwarded.authorUserId === currentProfile?.user_id
-                        ? currentProfile
-                        : profilesByUserId.get(forwarded.authorUserId)
-                      : null;
-                    const forwardedName =
-                      forwardedProfile?.display_name ?? forwarded?.authorName ?? "";
-                    const displayText = forwarded?.text ?? rawDisplayText;
-                    const imageUrl = getMessageImageUrl(displayText);
-                    const videoUrl = getMessageVideoUrl(displayText);
-                    const audioUrl = getMessageAudioUrl(displayText);
-                    const filePayload = getMessageFilePayload(displayText);
-                    const attachmentCaption = getMessageAttachmentCaption(displayText);
-                    const callDurationSeconds = getMessageCallDuration(displayText);
-                    const sticker = getMessageSticker(displayText);
-                    const hasCaptionableAttachment = Boolean(imageUrl || videoUrl || audioUrl);
-                    const hasFramedMedia = Boolean(imageUrl || videoUrl || filePayload);
-                    const hasAttachment = Boolean(
-                      imageUrl || videoUrl || audioUrl || filePayload || callDurationSeconds !== null || sticker,
-                    );
-                    const hasStandaloneBubble = Boolean(
-                      audioUrl || filePayload || callDurationSeconds !== null || sticker,
-                    );
-                    const shouldShowOwnAvatar = !isNextSameAuthor;
-
-                    return (
-                      <article
-                        className={`-mx-1 flex items-end justify-end gap-1.5 rounded-xl px-1 py-1 transition sm:gap-2 sm:rounded-2xl ${
-                          isPreviousSameAuthor ? "mt-1" : "mt-3"
-                        } ${isSelected ? "bg-[#f4f4f5]/8 shadow-[0_0_0_1px_rgba(244,244,245,0.12)]" : ""}`}
-                        data-message-id={favoriteItem.id}
-                        key={favoriteItem.id}
-                        onClickCapture={(event) => handleFavoriteSelectionClick(event, favoriteItem)}
-                        onContextMenu={(event) => openFavoriteContextMenu(event, favoriteItem)}
-                      >
-                        {isFavoriteSelectionMode ? (
-                          <span
-                            className={`mb-1 grid h-6 w-6 shrink-0 place-items-center transition ${
-                              isSelected ? "text-[#f4f4f5]" : "text-transparent"
-                            }`}
-                          >
-                            <MessageCircleCheckIcon />
-                          </span>
-                        ) : null}
-                        <div
-                          className={`relative max-w-[min(84vw,92%)] rounded-xl sm:max-w-[72%] sm:rounded-xl ${
-                            hasStandaloneBubble
-                              ? "bg-transparent p-0 text-[#f4f4f5] shadow-none"
-                              : hasFramedMedia
-                                ? "bg-transparent p-0 text-[#f4f4f5] shadow-none"
-                              : `bg-[#f4f4f5] text-[#050505] shadow-[0_10px_30px_rgba(0,0,0,0.18)] ${
-                                  hasAttachment ? "p-1.5" : "px-3 py-1.5 sm:px-3 sm:py-1.5"
-                                } ${isPreviousSameAuthor ? "rounded-tr-lg" : ""} ${
-                                  isNextSameAuthor ? "rounded-br-lg" : "rounded-br-md"
-                                }`
-                          } ${isSelected ? "ring-2 ring-[#f4f4f5]/80" : ""}`}
-                        >
-                          {reply ? (
-                            <div className="hush-reply-preview mb-2 block w-full rounded-xl border-l-4 border-[#050505]/45 bg-[#050505]/12 px-3 py-2 text-left">
-                              <p className="text-xs font-medium uppercase tracking-[0.12em] opacity-55">
-                                {reply.author}
-                              </p>
-                              <p className="mt-0.5 line-clamp-2 text-xs font-medium opacity-70">
-                                {reply.text}
-                              </p>
-                            </div>
-                          ) : null}
-
-                          {forwarded ? (
-                            <div className={`mb-1.5 flex items-center gap-2 px-0.5 text-left ${!hasStandaloneBubble && !hasFramedMedia ? "text-[#050505]" : "text-[#f4f4f5]"}`}>
-                              <button
-                                aria-label={forwardedName}
-                                className={`hush-avatar grid h-7 min-h-7 w-7 min-w-7 shrink-0 aspect-square place-items-center overflow-hidden rounded-full text-xs font-medium leading-normal transition ${!hasStandaloneBubble && !hasFramedMedia ? "bg-[#050505] text-[#f4f4f5]" : "bg-[#f4f4f5] text-[#050505]"}`}
-                                disabled={!forwarded.authorUserId}
-                                onClick={() => {
-                                  if (!forwarded.authorUserId) {
-                                    return;
-                                  }
-
-                                  setViewedProfile({
-                                    avatarUrl: forwardedProfile?.avatar_url ?? null,
-                                    bio: forwardedProfile?.bio ?? null,
-                                    name: forwardedProfile?.display_name ?? forwardedName,
-                                    username: forwardedProfile?.username ?? null,
-                                    updatedAt: forwardedProfile?.updated_at ?? null,
-                                    userId: forwarded.authorUserId,
-                                  });
-                                }}
-                                type="button"
-                              >
-                                {forwardedProfile?.avatar_url ? (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img
-                                    alt={t("avatarAlt")}
-                                    className="h-full w-full object-cover"
-                                    src={forwardedProfile.avatar_url}
-                                  />
-                                ) : (
-                                  forwardedName[0]?.toUpperCase()
-                                )}
-                              </button>
-                              <div className="flex min-w-0 flex-col-reverse">
-                                 <p className={`truncate text-xs font-medium leading-normal ${!hasStandaloneBubble && !hasFramedMedia ? "text-[#52525b]" : "text-[#a1a1aa]"}`}>
-                                  {language === "en" ? "Forwarded from" : "Переслано от"}
-                                </p>
-                                <p className="truncate text-sm font-medium leading-normal">
-                                  {forwardedName}
-                                </p>
-                              </div>
-                            </div>
-                          ) : null}
-
-                          {imageUrl ? (
-                            <button
-                              className="block w-full overflow-hidden rounded-lg sm:rounded-xl"
-                              onClick={() => setSelectedImageUrl(imageUrl)}
-                              type="button"
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                alt={t("favoriteImage")}
-                                className="max-h-[58dvh] w-full object-cover sm:max-h-[420px]"
-                                src={imageUrl}
-                              />
-                            </button>
-                          ) : videoUrl ? (
-                            <video
-                              className="max-h-[58dvh] w-full rounded-lg bg-black sm:max-h-[420px] sm:rounded-xl"
-                              controls
-                              controlsList="nodownload"
-                              preload="metadata"
-                              src={videoUrl}
-                            />
-                          ) : audioUrl ? (
-                            <VoiceMessage
-                              editedAt={favoriteItem.edited_at ?? null}
-                              isMine
-                              sentAt={favoriteItem.created_at}
-                              src={audioUrl}
-                            />
-                          ) : filePayload ? (
-                            <FileAttachment
-                              editedAt={favoriteItem.edited_at ?? null}
-                              file={filePayload}
-                              isMine
-                            />
-                          ) : callDurationSeconds !== null ? (
-                            <div className="min-w-[min(230px,70vw)] rounded-xl bg-[#262626] px-3 py-2 text-[#f4f4f5] sm:min-w-[min(260px,70vw)] sm:rounded-xl">
-                              <p className="text-sm font-medium opacity-75">
-                                {t("call")}
-                              </p>
-                              <p className="text-xs font-medium opacity-60">
-                                {t("callConversation")} {formatCallDuration(callDurationSeconds)}
-                              </p>
-                            </div>
-                          ) : sticker ? (
-                            <div className="px-1 py-0.5">
-                              <span className="block text-6xl leading-normal drop-shadow-[0_10px_20px_rgba(0,0,0,0.25)] sm:text-7xl">
-                                {sticker}
-                              </span>
-                            </div>
-                          ) : (
-                            <p className="whitespace-pre-wrap break-words text-sm leading-5">
-                              {displayText}
-                              <span className="ml-2 inline-flex translate-y-[1px] items-center gap-1 align-baseline">
-                                <span className="text-xs font-medium leading-normal text-[#404040]">
-                                  {favoriteItem.edited_at ? `${t("edited")} ` : ""}
-                                  {formatMessageTime(favoriteItem.created_at)}
-                                </span>
-                              </span>
-                            </p>
-                          )}
-
-                          {hasCaptionableAttachment && attachmentCaption ? (
-                            <p className="mt-1.5 max-w-[min(320px,70vw)] whitespace-pre-wrap break-words px-1 text-sm leading-5 text-[#f4f4f5]">
-                              {attachmentCaption}
-                            </p>
-                          ) : null}
-
-                          {!hasStandaloneBubble && hasAttachment ? (
-                            <div className="mt-2 flex items-center justify-end gap-3 px-1">
-                              <p className={`text-right text-xs font-medium ${hasFramedMedia ? "text-[#a1a1aa]" : "text-[#404040]"}`}>
-                                {favoriteItem.edited_at ? (
-                                  <span>{t("edited")} </span>
-                                ) : null}
-                                {formatMessageTime(favoriteItem.created_at)}
-                              </p>
-                            </div>
-                          ) : null}
-                        </div>
-                        {shouldShowOwnAvatar ? (
-                          <button
-                            className="hush-avatar grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-[#f4f4f5] text-xs font-medium text-[#050505] transition sm:h-8 sm:w-8 sm:text-xs"
-                            onClick={() =>
-                              setViewedProfile({
-                                avatarUrl: currentProfile?.avatar_url ?? null,
-                                bio: currentProfile?.bio ?? null,
-                                name: currentProfile?.display_name ?? favoriteItem.author,
-                                username: currentProfile?.username ?? null,
-                                updatedAt: currentProfile?.updated_at ?? null,
-                                userId: currentUserId,
-                              })
-                            }
-                            type="button"
-                          >
-                            {currentProfile?.avatar_url ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                alt={t("avatarAlt")}
-                                className="h-full w-full object-cover"
-                                src={currentProfile.avatar_url}
-                              />
-                            ) : (
-                              (currentProfile?.display_name ?? favoriteItem.author)[0]?.toUpperCase()
-                            )}
-                          </button>
-                        ) : (
-                          <span className="h-7 w-7 shrink-0 sm:h-8 sm:w-8" />
-                        )}
-
-                      </article>
-                    );
-                  })}
-                </div>
-
-                {isSelectedChatBlocked ? (
-                  <div className="mt-2 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl">
-                    {isSelectedChatBlockedByMe ? (
-                      <button
-                        className="min-h-11 w-full rounded-lg bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] sm:rounded-xl"
-                        onClick={() => {
-                          if (selectedChatUserId && friendProfile?.name) {
-                            requestBlockChange(
-                              selectedChatUserId,
-                              friendProfile.username
-                                ? `@${friendProfile.username}`
-                                : friendProfile.name,
-                            );
-                          }
-                        }}
-                        type="button"
-                      >
-                        {t("unblockUser")}
-                      </button>
-                    ) : (
-                      <div className="flex min-h-11 items-center justify-center rounded-lg bg-[#f4f4f5]/12 px-4 text-sm font-medium text-[#a1a1aa] sm:rounded-xl">
-                        {t("youWereBlocked")}
-                      </div>
-                    )}
-                  </div>
-                ) : !isPinnedMessagesViewOpen ? (
-                <form
-                  className="mt-2 grid grid-cols-[auto_1fr_auto_auto_auto] gap-1.5 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:flex sm:gap-2 sm:rounded-2xl"
-                  onSubmit={sendMessage}
-                >
-                  <input
-                    className="hidden"
-                    multiple
-                    onChange={handleAttachmentChange}
-                    ref={imageInputRef}
-                    type="file"
-                  />
-                  <button
-                    aria-label={t("attachFile")}
-                    className="grid min-h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 text-[#f4f4f5] transition hover:bg-[#f4f4f5]/18 disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={isUploadingAttachment || isRecordingVoice}
-                    onClick={() => imageInputRef.current?.click()}
-                    type="button"
-                  >
-                    {isUploadingAttachment ? (
-                      <span className="h-4 w-4 rounded-full border-2 border-[#f4f4f5] border-t-transparent" />
-                    ) : (
-                      <svg
-                        aria-hidden="true"
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="m8.5 12.5 5.9-5.9a3.2 3.2 0 0 1 4.5 4.5l-7.1 7.1a5 5 0 0 1-7.1-7.1l7.8-7.8"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                        />
-                      </svg>
-                    )}
-                  </button>
-
-                  {isRecordingVoice ? (
-                    <div className="relative col-span-3 flex min-h-9 min-w-0 flex-1 items-center rounded-lg border border-red-400/35 bg-red-500/10 px-3 text-sm text-[#f4f4f5] sm:col-span-1">
-                      <div className="flex min-w-[86px] items-center gap-2">
-                        <span className="h-2.5 w-2.5 rounded-full bg-red-300 shadow-[0_0_14px_rgba(252,165,165,0.65)]" />
-                        <span className="font-medium tabular-nums text-red-100">
-                          {formatAudioTime(voiceRecordingDuration)}
-                        </span>
-                      </div>
-                      <button
-                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg px-4 py-2 text-xs font-medium text-[#e5e5e5] transition hover:bg-white/10 hover:text-[#f4f4f5]"
-                        onClick={cancelVoiceRecording}
-                        type="button"
-                      >
-                        {t("cancel")}
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <input
-                        aria-label="Текст избранного"
-                        className="min-h-9 min-w-0 flex-1 rounded-lg border border-transparent bg-[#f4f4f5]/12 px-3 text-sm text-[#f4f4f5] outline-none transition placeholder:text-[#a1a1aa]/70 focus:border-[#f4f4f5] focus:bg-[#f4f4f5]/18 sm:px-3 sm:text-sm"
-                        onChange={handleMessageTextChange}
-                        placeholder={
-                          editingMessage
-                            ? `${t("edit")}...`
-                            : replyTarget
-                              ? t("typeReply")
-                              : t("typeFavorite")
-                        }
-                        ref={messageInputRef}
-                        type="text"
-                        value={messageText}
-                      />
-                      <button
-                        aria-label="Stickers"
-                        className="grid min-h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 text-[#f4f4f5] transition hover:bg-[#f4f4f5]/18 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={isUploadingAttachment}
-                        onClick={toggleStickerPicker}
-                        ref={stickerButtonRef}
-                        type="button"
-                      >
-                        <svg
-                          aria-hidden="true"
-                          className="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            cx="12"
-                            cy="12"
-                            r="9"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          />
-                          <path
-                            d="M9 10h.01M15 10h.01M8.8 14.5c1.8 1.7 4.6 1.7 6.4 0"
-                            stroke="currentColor"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                          />
-                        </svg>
-                      </button>
-                    </>
-                  )}
-
-                  <button
-                    aria-label={isRecordingVoice ? "Send voice" : "Record voice"}
-                    className={`relative grid min-h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg border text-[#f4f4f5] transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                      isRecordingVoice
-                        ? "border-red-400/60 bg-red-500/85 text-white hover:bg-red-400 hush-send-btn-recording"
-                        : "border-[#3f3f46]/35 bg-[#f4f4f5]/12 hover:bg-[#f4f4f5]/18"
-                    }`}
-                    disabled={isUploadingAttachment}
-                    onClick={toggleVoiceRecording}
-                    type="button"
-                  >
-                    {isRecordingVoice ? (
-                      <svg
-                        aria-hidden="true"
-                        className="relative h-5 w-5"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M5 12 19 4l-3.8 16-3.6-6.1L5 12Z" />
-                      </svg>
-                    ) : (
-                      <svg
-                        aria-hidden="true"
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                        />
-                        <path
-                          d="M19 11a7 7 0 0 1-14 0M12 18v3M9 21h6"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                        />
-                      </svg>
-                    )}
-                  </button>
-                </form>
-                ) : null}
-
-                {replyTarget || editingMessage ? (
-                  <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[#3f3f46]/35 bg-[#111111]/82 px-3 py-2.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-md sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium uppercase tracking-[0.14em] text-[#e5e5e5]">
-                        {editingMessage ? t("editing") : t("reply")}
-                      </p>
-                      <p className="mt-1 truncate font-medium text-[#f4f4f5]">
-                        {getReadableMessageText((editingMessage ?? replyTarget)?.text ?? "")}
-                      </p>
-                    </div>
-                    <button
-                      className="shrink-0 rounded-xl border border-[#3f3f46]/35 px-3 py-2 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
-                      onClick={() => {
-                        setReplyTarget(null);
-                        setEditingMessage(null);
-                        setMessageText("");
-                      }}
-                      type="button"
-                    >
-                      {t("cancel")}
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-  );
-}
-
-function MessageCircleCheckIcon() {
   return (
-    <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-      <path
-        d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
+    <div
+      className="hush-panel-transition relative flex min-h-0 flex-col overflow-hidden"
+      onDragEnter={handleAttachmentDragEnter}
+      onDragLeave={handleAttachmentDragLeave}
+      onDragOver={handleAttachmentDragOver}
+      onDrop={handleAttachmentDropEvent}
+    >
+      {isDraggingAttachment ? (
+        <div className="pointer-events-none absolute inset-0 z-30 grid place-items-center rounded-xl border border-[#f4f4f5]/25 bg-black/70 p-4 backdrop-blur-sm sm:rounded-2xl">
+          <div className="grid max-w-sm place-items-center rounded-2xl border border-dashed border-[#f4f4f5]/35 bg-[#111111]/88 px-6 py-5 text-center shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
+            <p className="text-base font-medium text-[#f4f4f5]">
+              {t("moveFileHere")}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
+              {t("moveFileHereDescription")}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-black px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] sm:px-4">
+        <h2 className="text-base font-medium leading-normal sm:text-base">
+          {t("favorites")}
+        </h2>
+      </div>
+
+      <FavoriteSelectionToolbar
+        forwardSelectedMessages={forwardSelectedMessages}
+        isFavoriteSelectionMode={isFavoriteSelectionMode}
+        removeSelectedFavoriteItems={removeSelectedFavoriteItems}
+        selectedFavoriteItems={selectedFavoriteItems}
+        t={t}
       />
-      <path
-        d="m9 12 2 2 4-4"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
+
+      <FavoritePinnedBanner
+        getReadableMessageText={getReadableMessageText}
+        pinnedFavoriteItem={pinnedFavoriteItem}
+        setPinnedFavoriteItem={setPinnedFavoriteItem}
+        t={t}
       />
-    </svg>
+
+      <div className="scrollbar-hidden flex min-h-0 flex-1 flex-col overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-transparent p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] [overflow-anchor:none] sm:rounded-2xl sm:p-4">
+        {favoriteItems.length === 0 ? (
+          <div className="grid flex-1 place-items-center text-center">
+            <div className="max-w-sm rounded-2xl border border-dashed border-[#3f3f46]/45 bg-black/20 p-5">
+              <p className="text-sm font-medium">
+                {t("favoritesEmptyTitle")}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
+                {t("favoritesEmptyText")}
+              </p>
+            </div>
+          </div>
+        ) : null}
+
+        {favoriteItems.map((favoriteItem, favoriteItemIndex) => {
+          const previousFavoriteItem = favoriteItems[favoriteItemIndex - 1];
+          const nextFavoriteItem = favoriteItems[favoriteItemIndex + 1];
+
+          return (
+            <FavoriteMessageBubble
+              currentProfile={currentProfile}
+              currentUserId={currentUserId}
+              favoriteItem={favoriteItem}
+              handleFavoriteSelectionClick={handleFavoriteSelectionClick}
+              isFavoriteSelectionMode={isFavoriteSelectionMode}
+              key={favoriteItem.id}
+              language={language}
+              nextFavoriteItem={nextFavoriteItem}
+              openFavoriteContextMenu={openFavoriteContextMenu}
+              previousFavoriteItem={previousFavoriteItem}
+              profilesByUserId={profilesByUserId}
+              selectedMessageIdSet={selectedMessageIdSet}
+              setSelectedImageUrl={setSelectedImageUrl}
+              setViewedProfile={setViewedProfile}
+              t={t}
+            />
+          );
+        })}
+      </div>
+
+      {isSelectedChatBlocked ? (
+        <div className="mt-2 rounded-xl border border-[#3f3f46]/45 bg-[#111111]/82 p-1.5 shadow-[0_14px_45px_rgba(0,0,0,0.28)] backdrop-blur-md sm:rounded-2xl">
+          {isSelectedChatBlockedByMe ? (
+            <button
+              className="min-h-11 w-full rounded-lg bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] sm:rounded-xl"
+              onClick={() => {
+                if (selectedChatUserId && friendProfile?.name) {
+                  requestBlockChange(
+                    selectedChatUserId,
+                    friendProfile.username
+                      ? `@${friendProfile.username}`
+                      : friendProfile.name,
+                  );
+                }
+              }}
+              type="button"
+            >
+              {t("unblockUser")}
+            </button>
+          ) : (
+            <div className="flex min-h-11 items-center justify-center rounded-lg bg-[#f4f4f5]/12 px-4 text-sm font-medium text-[#a1a1aa] sm:rounded-xl">
+              {t("youWereBlocked")}
+            </div>
+          )}
+        </div>
+      ) : !isPinnedMessagesViewOpen ? (
+        <FavoritesComposeForm
+          cancelVoiceRecording={cancelVoiceRecording}
+          editingMessage={editingMessage}
+          handleAttachmentChange={handleAttachmentChange}
+          handleMessageTextChange={handleMessageTextChange}
+          imageInputRef={imageInputRef}
+          isRecordingVoice={isRecordingVoice}
+          isUploadingAttachment={isUploadingAttachment}
+          messageInputRef={messageInputRef}
+          messageText={messageText}
+          replyTarget={replyTarget}
+          sendMessage={sendMessage}
+          stickerButtonRef={stickerButtonRef}
+          t={t}
+          toggleStickerPicker={toggleStickerPicker}
+          toggleVoiceRecording={toggleVoiceRecording}
+          voiceRecordingDuration={voiceRecordingDuration}
+        />
+      ) : null}
+
+      <ReplyEditingBanner
+        editingMessage={editingMessage}
+        getReadableMessageText={getReadableMessageText}
+        replyTarget={replyTarget}
+        setEditingMessage={setEditingMessage}
+        setMessageText={setMessageText}
+        setReplyTarget={setReplyTarget}
+        t={t}
+      />
+    </div>
   );
 }

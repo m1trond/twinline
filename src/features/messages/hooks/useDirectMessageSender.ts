@@ -1,6 +1,5 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { flushSync } from "react-dom";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { messageColumns } from "@/shared/constants";
@@ -35,9 +34,12 @@ export function useDirectMessageSender({
   user,
   messages,
 }: UseDirectMessageSenderParams) {
-  const sendQueueRef = useRef<Promise<any>>(Promise.resolve());
+  const sendQueueRef = useRef<Promise<unknown>>(Promise.resolve());
   const messagesRef = useRef(messages);
-  messagesRef.current = messages;
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   return useCallback(
     async (
@@ -119,7 +121,7 @@ export function useDirectMessageSender({
 
             setErrorMessage("");
             resolve(data ?? null);
-          } catch (e) {
+          } catch {
             setMessages((currentMessages) =>
               currentMessages.filter((message) => message.id !== committedMessage.id),
             );
@@ -142,4 +144,3 @@ export function useDirectMessageSender({
     ],
   );
 }
-

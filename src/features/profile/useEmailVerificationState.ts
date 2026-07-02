@@ -11,6 +11,25 @@ function isSupabaseEmailVerified(user: User | null) {
   return Boolean(user?.email_confirmed_at || user?.confirmed_at);
 }
 
+let activeUserPromise: Promise<{ data: { user: User | null } }> | null = null;
+
+async function getDeduplicatedUser(): Promise<{ data: { user: User | null } }> {
+  if (activeUserPromise) {
+    return activeUserPromise!;
+  }
+  const promise = supabase.auth.getUser() as unknown as Promise<{ data: { user: User | null } }>;
+  activeUserPromise = promise;
+  try {
+    const result = await promise;
+    return result;
+  } catch (error) {
+    console.warn("Supabase auth getUser error caught:", error);
+    return { data: { user: null } };
+  } finally {
+    activeUserPromise = null;
+  }
+}
+
 export function useEmailVerificationState({
   setErrorMessage,
   user,
@@ -34,7 +53,7 @@ export function useEmailVerificationState({
     let isMounted = true;
 
     async function syncEmailVerification() {
-      const { data } = await supabase.auth.getUser();
+      const { data } = await getDeduplicatedUser();
       const nextUser = data.user ?? user;
       const isVerified = isSupabaseEmailVerified(nextUser);
 

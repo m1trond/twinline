@@ -37,7 +37,7 @@ import {
 } from "@/features/sync/payload";
 
 type SaveUserSyncPatchRef = {
-  current: (patch: UserSyncPayload) => void;
+  current: ((patch: UserSyncPayload) => void) | null;
 };
 
 type UserSyncStateParams = {

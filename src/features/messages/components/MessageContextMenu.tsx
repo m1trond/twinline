@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import { useI18n } from "@/shared/i18n-context";
 import { getMessageAudioUrl } from "@/shared/utils/messages";
+import { TrashIcon } from "@/components/ui/icons";
 
 type MessageContextMenuState = {
   left: number;
@@ -299,13 +300,6 @@ function CopyIcon() {
   );
 }
 
-function TrashIcon() {
-  return (
-    <svg aria-hidden="true" className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24">
-      <path d="M10 11v6M14 11v6M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-    </svg>
-  );
-}
 
 function SelectIcon() {
   return (
