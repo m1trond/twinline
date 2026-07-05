@@ -3,6 +3,7 @@ import type { ChangeEvent, Dispatch, DragEvent, FormEvent, MouseEvent, RefObject
 import type { ViewedProfileState } from "@/features/navigation/useNavigationState";
 import type { FavoriteItem, MessageRow, ProfileRow } from "@/shared/types";
 import { useI18n } from "@/shared/i18n-context";
+import { NavIcon } from "@/components/navigation/NavButton";
 
 // Subcomponents
 import { FavoritePinnedBanner } from "./favorites/FavoritePinnedBanner";
@@ -177,9 +178,10 @@ export function FavoritesView({
       ) : null}
 
       <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-black px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] sm:px-4">
-        <h2 className="text-base font-medium leading-normal sm:text-base">
-          {t("favorites")}
-        </h2>
+        <div className="flex items-center gap-2.5 text-sm font-medium text-[#f4f4f5]">
+          <NavIcon view="favorites" />
+          <h2 className="leading-normal">{t("favorites")}</h2>
+        </div>
       </div>
 
       <FavoriteSelectionToolbar

@@ -79,7 +79,7 @@ export function useAuthSubmit() {
         const signedUpUser = data.user;
 
         if (!data.session) {
-          setErrorMessage("Supabase сейчас блокирует вход до подтверждения. Для сценария с красной кнопкой в профиле выключи Confirm sign up и используй подтверждение из профиля.");
+          setErrorMessage("Аккаунт создан. Подтверди почту, затем войди снова.");
           setAuthPassword("");
           return;
         }

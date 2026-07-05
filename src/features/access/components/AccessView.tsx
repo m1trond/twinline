@@ -3,6 +3,7 @@ import { deleteAccessProfile, fetchAccessProfiles } from "@/features/access/quer
 import { useI18n } from "@/shared/i18n-context";
 import type { AccessProfileRow } from "@/shared/types";
 import { TrashIcon } from "@/components/ui/icons";
+import { NavIcon } from "@/components/navigation/NavButton";
 
 type AccessViewProps = {
   canViewAccess: boolean;
@@ -143,7 +144,10 @@ export function AccessView({ canViewAccess, currentUserId }: AccessViewProps) {
     <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
       <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-black px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] sm:px-4">
         <div className="inline-flex min-w-0 items-center gap-3 leading-normal">
-          <h2 className="text-base font-medium leading-normal text-[#f4f4f5]">{t("access")}</h2>
+          <div className="flex items-center gap-2.5 text-sm font-medium text-[#f4f4f5]">
+            <NavIcon view="access" />
+            <h2 className="leading-normal">{t("access")}</h2>
+          </div>
           <span aria-hidden="true" className="h-4 w-px shrink-0 self-center rounded-full bg-[#f4f4f5]/35" />
         </div>
         <p className="ml-3 min-w-0 truncate text-xs font-medium leading-normal text-[#a1a1aa]">

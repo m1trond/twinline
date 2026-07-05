@@ -28,6 +28,7 @@ import {
   DevicesIcon,
   KeyIcon,
 } from "@/components/ui/icons";
+import { NavIcon } from "@/components/navigation/NavButton";
 
 function CheckIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -270,7 +271,7 @@ export function SettingsView({
                 value={`${activeUserName}${currentProfile?.username ? ` · @${currentProfile.username}` : ""}`}
               />
               <button
-                className="mt-1 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-red-400/40 bg-red-500/15 px-3 text-xs font-medium text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60 self-start"
+                className="mt-1 flex w-full min-h-9 items-center justify-center gap-2 rounded-lg bg-red-500/15 px-3 text-xs font-medium text-red-100 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isSigningOut}
                 onClick={() => setIsSignOutDialogOpen(true)}
                 type="button"
@@ -322,7 +323,7 @@ export function SettingsView({
                 )}
 
                 <button
-                  className="mt-1 inline-flex min-h-8 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 self-start"
+                  className="mt-1.5 flex w-full min-h-9 items-center justify-center gap-2 rounded-lg bg-white/5 px-3 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={isUpdatingPassword || !newPassword || !confirmPassword}
                   type="submit"
                 >
@@ -337,7 +338,7 @@ export function SettingsView({
               icon={<DevicesIcon />}
               title={isRu ? "Самоуничтожение аккаунта" : "Account Self-Destruction"}
             >
-              <div className="flex flex-col gap-2 rounded-lg border border-[#3f3f46]/35 bg-black/18 p-2.5">
+              <div className="flex flex-col gap-2 px-1 py-1">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-[#a1a1aa]">
                   {isRu ? "Если вы не заходите" : "If inactive for"}
                 </span>
@@ -345,7 +346,7 @@ export function SettingsView({
                 <div className="relative">
                   {/* Custom Dropdown Trigger */}
                   <button
-                    className="flex h-8 w-full items-center justify-between rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/12 px-3 text-sm text-white hover:bg-white/10 transition text-left cursor-pointer outline-none focus:border-[#f4f4f5]"
+                    className="flex h-8 w-full items-center justify-between rounded-lg bg-[#f4f4f5]/12 px-3 text-sm text-white hover:bg-white/10 transition text-left cursor-pointer outline-none focus:border-[#f4f4f5]"
                     onClick={() => setIsSelfDestructDropdownOpen(!isSelfDestructDropdownOpen)}
                     type="button"
                   >
@@ -363,7 +364,7 @@ export function SettingsView({
                         onClick={() => setIsSelfDestructDropdownOpen(false)}
                       />
                       {/* Floating custom select options */}
-                      <div className="absolute left-0 right-0 z-[90] mt-1 overflow-hidden rounded-lg border border-white/10 bg-[#18181b] py-1 text-[#f4f4f5] shadow-[0_18px_60px_rgba(0,0,0,0.55)]">
+                      <div className="absolute left-0 right-0 z-[90] bottom-full mb-1.5 overflow-hidden rounded-lg border border-white/10 bg-[#18181b] py-1 text-[#f4f4f5] shadow-[0_18px_60px_rgba(0,0,0,0.55)]">
                         {selfDestructOptions.map((opt) => (
                           <button
                             key={opt.value}
@@ -428,14 +429,14 @@ export function SettingsView({
               tone={blockedByMeProfiles.length > 0 ? "danger" : "default"}
             >
               {blockedByMeProfiles.length === 0 ? (
-                <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-3 py-2 text-xs text-[#a1a1aa]">
+                <div className="px-1 py-1 text-xs text-[#a1a1aa]">
                   {t("blackListEmpty")}
                 </div>
               ) : null}
 
               {blockedByMeProfiles.map((profile) => (
                 <div
-                  className="flex items-center justify-between gap-2 rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2"
+                  className="flex items-center justify-between gap-2 px-1 py-1"
                   key={profile.userId}
                 >
                   <div className="flex min-w-0 items-center gap-2.5">
@@ -461,7 +462,7 @@ export function SettingsView({
                     </div>
                   </div>
                   <button
-                    className="shrink-0 rounded-lg border border-[#3f3f46]/40 px-2.5 py-1.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
+                    className="shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
                     onClick={() => requestBlockChange(profile.userId, profile.name)}
                     type="button"
                   >
@@ -531,7 +532,7 @@ export function SettingsView({
               icon={<DatabaseIcon />}
               title={isRu ? "Хранилище и данные" : "Storage & Data"}
             >
-              <div className="flex items-center justify-between gap-3 rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
+              <div className="flex items-center justify-between gap-3 px-1 py-1">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span className="text-[#a1a1aa] shrink-0">
                     <DatabaseIcon />
@@ -547,7 +548,7 @@ export function SettingsView({
                   <span className="text-xs font-mono text-[#a1a1aa]">{cacheSize}</span>
                   {cacheSize !== (isRu ? "0.0 КБ" : "0.0 KB") ? (
                     <button
-                      className="rounded-lg border border-[#3f3f46]/40 px-2.5 py-1 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
+                      className="rounded-lg px-2.5 py-1 text-xs font-medium text-[#f4f4f5] transition hover:bg-white/10"
                       onClick={() => setCacheSize(isRu ? "0.0 КБ" : "0.0 KB")}
                       type="button"
                     >
@@ -573,9 +574,9 @@ export function SettingsView({
               icon={<DevicesIcon />}
               title={isRu ? "Безопасность и устройства" : "Security & Devices"}
             >
-              <div className="grid gap-1.5">
+              <div className="flex flex-col gap-2.5">
                 {sessions.map((session) => (
-                  <div key={session.id} className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
+                  <div key={session.id} className="px-1 py-1">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm font-medium text-[#f4f4f5] truncate">{session.device}</p>
                       <div className="flex items-center gap-1.5">
@@ -588,7 +589,7 @@ export function SettingsView({
                 ))}
                 {sessions.length > 1 ? (
                   <button
-                    className="mt-1 inline-flex min-h-8 items-center justify-center gap-2 rounded-lg border border-red-500/35 bg-red-500/10 px-3 text-xs font-medium text-red-200 transition hover:bg-red-500/20 self-start"
+                    className="mt-2.5 flex w-full min-h-9 items-center justify-center gap-2 rounded-lg bg-red-500/10 px-3 text-xs font-medium text-red-200 transition hover:bg-red-500/20"
                     onClick={handleTerminateOtherSessions}
                     type="button"
                   >
@@ -608,7 +609,10 @@ export function SettingsView({
   return (
     <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
       <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-black px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] sm:rounded-lg sm:px-4">
-        <h2 className="text-base font-medium leading-normal sm:text-base">{t("settings")}</h2>
+        <div className="flex items-center gap-2.5 text-sm font-medium text-[#f4f4f5]">
+          <NavIcon view="settings" />
+          <h2 className="leading-normal">{t("settings")}</h2>
+        </div>
       </div>
 
       <div className="scrollbar-hidden min-h-0 flex-1 flex flex-col lg:flex-row overflow-hidden rounded-lg border border-[#3f3f46]/45 bg-black p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:rounded-lg sm:p-3">
@@ -626,10 +630,10 @@ export function SettingsView({
                   setIsMobileTabOpen(true);
                 }}
                 type="button"
-                className={`w-full flex items-center gap-3 p-3 rounded-lg border transition text-left group ${
+                className={`w-full flex items-center gap-3 p-3 rounded-lg border border-transparent transition text-left group ${
                   isActive
-                    ? "bg-white/8 border-[#3f3f46]/50 text-[#f4f4f5]"
-                    : "bg-transparent border-transparent text-[#a1a1aa] hover:bg-white/4 hover:text-[#f4f4f5]"
+                    ? "bg-white/8 text-[#f4f4f5]"
+                    : "bg-transparent text-[#a1a1aa] hover:bg-white/4 hover:text-[#f4f4f5]"
                 }`}
               >
                 <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full transition-colors ${

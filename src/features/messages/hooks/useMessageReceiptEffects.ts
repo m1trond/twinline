@@ -36,8 +36,6 @@ export function useMessageReceiptEffects({
   userId,
   visibleMessages,
 }: UseMessageReceiptEffectsParams) {
-  const openedChatUserIdRef = useRef<string | null>(null);
-  const pendingOpenReadChatUserIdRef = useRef<string | null>(null);
   const sentDeliveryReceiptIdsRef = useRef<Set<number>>(new Set());
   const sentReadReceiptIdsRef = useRef<Set<number>>(new Set());
 
@@ -70,14 +68,7 @@ export function useMessageReceiptEffects({
     }
 
     if (activeView !== "messages" || selectedChatUserId === null) {
-      openedChatUserIdRef.current = null;
-      pendingOpenReadChatUserIdRef.current = null;
       return;
-    }
-
-    if (openedChatUserIdRef.current !== selectedChatUserId) {
-      openedChatUserIdRef.current = selectedChatUserId;
-      pendingOpenReadChatUserIdRef.current = selectedChatUserId;
     }
 
     const friendMessagesById = new Map(
@@ -106,17 +97,9 @@ export function useMessageReceiptEffects({
       }
     }
 
-    if (
-      !isDialogLoading &&
-      pendingOpenReadChatUserIdRef.current === selectedChatUserId
-    ) {
-      markMessagesAsRead(Array.from(friendMessagesById.values()));
-      pendingOpenReadChatUserIdRef.current = null;
-    }
-
     const messagesList = messagesListRef.current;
 
-    if (!messagesList || typeof IntersectionObserver === "undefined") {
+    if (isDialogLoading || !messagesList || typeof IntersectionObserver === "undefined") {
       return;
     }
 
@@ -159,8 +142,8 @@ export function useMessageReceiptEffects({
       },
       {
         root: messagesList,
-        rootMargin: "-8px 0px",
-        threshold: 0,
+        rootMargin: "-16px 0px -16px 0px",
+        threshold: 0.6,
       }
     );
 

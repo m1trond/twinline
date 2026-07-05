@@ -4,6 +4,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { MessageReceiptIcon } from "@/features/messages/components/MessageReceiptIcon";
 import { useI18n } from "@/shared/i18n-context";
 import { archivedChatFolderId } from "@/shared/constants";
+import { NavIcon } from "@/components/navigation/NavButton";
 import type { ChatFolder, MessageRow, ProfileRow } from "@/shared/types";
 import type { ViewedProfileState } from "@/features/navigation/useNavigationState";
 import { formatMessageTime } from "@/shared/utils/format";
@@ -71,7 +72,10 @@ export function ChatListView({
   return (
     <div className="hush-panel-transition flex min-h-0 flex-col overflow-hidden">
       <div className="mb-2 flex h-9 min-h-9 items-center rounded-lg border border-[#3f3f46]/45 bg-black px-2.5 py-0 shadow-[0_14px_45px_rgba(0,0,0,0.28)] sm:px-4">
-        <h2 className="text-base font-medium leading-normal sm:text-base">{t("messages")}</h2>
+        <div className="flex items-center gap-2.5 text-sm font-medium text-[#f4f4f5]">
+          <NavIcon view="messages" />
+          <h2 className="leading-normal">{t("messages")}</h2>
+        </div>
       </div>
 
       <div className="scrollbar-hidden grid min-h-0 flex-1 content-start gap-2 overflow-y-auto rounded-xl border border-[#3f3f46]/45 bg-black p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:rounded-2xl sm:p-4">
@@ -161,7 +165,7 @@ export function ChatListView({
                 className={`hush-chat-list-row flex w-full items-center gap-2.5 rounded-xl border p-2.5 text-left sm:gap-3 sm:rounded-2xl sm:p-3 ${
                   profileUnreadCount > 0
                     ? "border-[#f4f4f5]/20 bg-[#f4f4f5]/10"
-                    : "border-transparent bg-[#050505]/52"
+                    : "border-transparent bg-transparent"
                 }`}
                 key={profile.user_id}
                 onClick={() => {
@@ -310,19 +314,18 @@ function FolderFilterButton({
   const coloredStyle = color
     ? {
         backgroundColor: isActive ? color : "transparent",
-        borderColor: color,
         color: isActive ? "#050505" : "#f4f4f5",
       }
     : undefined;
 
   return (
     <button
-      className={`hush-stable-button inline-flex min-h-8 shrink-0 cursor-pointer items-center rounded-lg border px-3 text-xs font-medium transition ${
+      className={`hush-stable-button inline-flex min-h-8 shrink-0 cursor-pointer items-center rounded-lg px-3 text-xs font-medium transition ${
         color
-          ? "border-2 hover:bg-[#f4f4f5]/8"
+          ? "hover:bg-[#f4f4f5]/8"
           : isActive
-            ? "border-[#f4f4f5]/60 bg-[#f4f4f5] text-[#050505]"
-            : "border-[#3f3f46]/35 bg-[#f4f4f5]/10 text-[#f4f4f5] hover:bg-[#f4f4f5]/18"
+            ? "bg-[#f4f4f5] text-[#050505]"
+            : "bg-[#f4f4f5]/10 text-[#f4f4f5] hover:bg-[#f4f4f5]/18"
       }`}
       draggable={draggable}
       onClick={onClick}

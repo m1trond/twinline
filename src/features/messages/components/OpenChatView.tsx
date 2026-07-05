@@ -123,11 +123,11 @@ export const OpenChatView = memo(
         ) : null}
 
         {/* Chat Header */}
-        <div className="mb-2 flex h-11 min-h-11 items-center justify-between gap-2 overflow-hidden rounded-xl sm:rounded-2xl border border-[#3f3f46]/45 bg-black px-2.5 py-1 shadow-[0_14px_45px_rgba(0,0,0,0.28)] sm:px-3">
-          <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
+        <div className="mb-2 flex h-11 min-h-11 items-center justify-between gap-2 overflow-hidden rounded-xl sm:rounded-2xl border border-[#3f3f46]/45 bg-black pl-1 pr-1 py-1 shadow-[0_14px_45px_rgba(0,0,0,0.28)] sm:pl-1.5 sm:pr-1.5">
+          <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-1.5">
             <button
               aria-label={t("messages")}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 text-[#f4f4f5] transition hover:bg-white/10 sm:rounded-xl"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-[#f4f4f5] transition hover:bg-white/10"
               onClick={() => setSelectedChatUserId(null)}
               type="button"
             >
@@ -171,10 +171,10 @@ export const OpenChatView = memo(
               </p>
             </div>
           </div>
-          <div className="flex shrink-0 items-center justify-end gap-2">
+          <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-1.5">
             <button
               aria-label={t("deleteChat")}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 text-[#f4f4f5] transition hover:border-red-400/45 hover:bg-red-500/12 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-55 sm:rounded-xl"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-[#f4f4f5] transition hover:bg-red-500/12 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-55"
               disabled={isDeletingChat}
               onClick={() => {
                 setChatDeleteTargetUserId(selectedChatUserId);
@@ -198,7 +198,7 @@ export const OpenChatView = memo(
             </button>
             <button
               aria-label={callStatus === "idle" ? t("call") : callStatusText}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#3f3f46]/35 text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:border-[#3f3f46]/25 disabled:text-[#71717a] sm:rounded-xl"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-[#f4f4f5] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:text-[#71717a]"
               disabled={!friendProfile?.user_id || callStatus !== "idle"}
               onClick={() => setIsCallConfirmOpen(true)}
               type="button"

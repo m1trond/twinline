@@ -35,7 +35,7 @@ export function SettingsCard({
           <p className="text-xs leading-normal text-[#a1a1aa] mt-0.5">{description}</p>
         </div>
       </div>
-      <div className="grid gap-1.5">{children}</div>
+      <div className="flex flex-col gap-2.5">{children}</div>
     </section>
   );
 }
@@ -54,7 +54,7 @@ export function SettingRow({
   onToggle: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
+    <div className="flex items-center justify-between gap-3 px-1 py-1">
       <div className="flex items-center gap-2.5 min-w-0">
         {icon && <span className="text-[#a1a1aa] shrink-0">{icon}</span>}
         <div className="min-w-0">
@@ -84,8 +84,7 @@ export function MutedChatsRow({ count }: { count: number }) {
   const { t } = useI18n();
 
   return (
-    <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
-      <div className="flex items-center justify-between gap-3">
+    <div className="flex items-center justify-between gap-3 px-1 py-1">
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="text-[#a1a1aa] shrink-0">
             <BellIcon />
@@ -100,7 +99,6 @@ export function MutedChatsRow({ count }: { count: number }) {
         <span className="shrink-0 rounded-full bg-[#f4f4f5]/10 px-2.5 py-1 text-xs font-medium text-[#e5e5e5]">
           {count}
         </span>
-      </div>
     </div>
   );
 }
@@ -125,7 +123,7 @@ export function LanguageRow({
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
+    <div className="flex items-center justify-between gap-3 px-1 py-1">
       <div className="flex items-center gap-2.5 min-w-0">
         <span className="text-[#a1a1aa] shrink-0">
           <StaggeredLinesIcon />
@@ -138,7 +136,7 @@ export function LanguageRow({
       <div className="relative shrink-0">
         <button
           aria-expanded={isOpen}
-          className="flex min-h-8 min-w-[132px] items-center justify-between gap-3 rounded-lg border border-[#3f3f46]/35 bg-[#f4f4f5]/10 px-3 text-left text-xs font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/14"
+          className="flex min-h-8 min-w-[132px] items-center justify-between gap-3 rounded-lg bg-[#f4f4f5]/10 px-3 text-left text-xs font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/14"
           onClick={() => setIsOpen((currentValue) => !currentValue)}
           type="button"
         >
@@ -190,11 +188,11 @@ export function LanguageRow({
 
 export function InfoBlock({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-[#3f3f46]/30 bg-[#050505]/42 px-2.5 py-2">
-      <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#a1a1aa]">
+    <div className="px-1 py-1">
+      <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#a1a1aa]">
         {label}
       </p>
-      <p className="mt-0.5 truncate text-sm font-medium leading-5 text-[#f4f4f5]">
+      <p className="mt-0.5 truncate text-sm font-medium leading-normal text-[#f4f4f5]">
         {value}
       </p>
     </div>
