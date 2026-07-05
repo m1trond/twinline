@@ -99,9 +99,10 @@ export function useMessageReceiptEffects({
 
     const messagesList = messagesListRef.current;
 
-    if (isDialogLoading || !messagesList || typeof IntersectionObserver === "undefined") {
+    if (isDialogLoading || !messagesList) {
       return;
     }
+    const messagesRoot = messagesList;
 
     const friendUnreadMessages = Array.from(friendMessagesById.values()).filter((message) => {
       return (
@@ -115,52 +116,116 @@ export function useMessageReceiptEffects({
     }
 
     const friendUnreadMessageIds = new Set(friendUnreadMessages.map((m) => m.id));
+    let scanFrameId: number | null = null;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (document.visibilityState !== "visible") {
-          return;
+    function getVisibleUnreadMessages() {
+      const rootRect = messagesRoot.getBoundingClientRect();
+      const messagesToRead: MessageRow[] = [];
+      const messageElements = messagesRoot.querySelectorAll<HTMLElement>("[data-message-id]");
+
+      for (const el of messageElements) {
+        const messageId = Number(el.dataset.messageId);
+
+        if (!Number.isInteger(messageId) || !friendUnreadMessageIds.has(messageId)) {
+          continue;
         }
 
-        const messagesToRead: MessageRow[] = [];
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            const messageId = Number((entry.target as HTMLElement).dataset.messageId);
-            if (Number.isInteger(messageId) && friendUnreadMessageIds.has(messageId)) {
-              const message = friendMessagesById.get(messageId);
-              if (message) {
-                messagesToRead.push(message);
-                observer.unobserve(entry.target);
+        const message = friendMessagesById.get(messageId);
+
+        if (!message) {
+          continue;
+        }
+
+        const rect = el.getBoundingClientRect();
+        const visibleTop = Math.max(rect.top, rootRect.top);
+        const visibleBottom = Math.min(rect.bottom, rootRect.bottom);
+        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+        const visibleRatio = rect.height > 0 ? visibleHeight / rect.height : 0;
+
+        if (visibleRatio >= 0.55) {
+          messagesToRead.push(message);
+        }
+      }
+
+      return messagesToRead;
+    }
+
+    function scanVisibleUnreadMessages() {
+      scanFrameId = null;
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+
+      const messagesToRead = getVisibleUnreadMessages();
+      if (messagesToRead.length > 0) {
+        markMessagesAsRead(messagesToRead);
+      }
+    }
+
+    function scheduleVisibleScan() {
+      if (scanFrameId !== null) {
+        return;
+      }
+
+      scanFrameId = window.requestAnimationFrame(scanVisibleUnreadMessages);
+    }
+
+    scheduleVisibleScan();
+    const scanTimeoutId = window.setTimeout(scheduleVisibleScan, 120);
+
+    messagesRoot.addEventListener("scroll", scheduleVisibleScan, { passive: true });
+    window.addEventListener("resize", scheduleVisibleScan);
+
+    let observer: IntersectionObserver | null = null;
+
+    if (typeof IntersectionObserver !== "undefined") {
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (document.visibilityState !== "visible") {
+            return;
+          }
+
+          const messagesToRead: MessageRow[] = [];
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              const messageId = Number((entry.target as HTMLElement).dataset.messageId);
+              if (Number.isInteger(messageId) && friendUnreadMessageIds.has(messageId)) {
+                const message = friendMessagesById.get(messageId);
+                if (message) {
+                  messagesToRead.push(message);
+                  observer?.unobserve(entry.target);
+                }
               }
             }
           }
-        }
 
-        if (messagesToRead.length > 0) {
-          markMessagesAsRead(messagesToRead);
-        }
-      },
-      {
-        root: messagesList,
-        rootMargin: "-16px 0px -16px 0px",
-        threshold: 0.6,
-      }
-    );
+          if (messagesToRead.length > 0) {
+            markMessagesAsRead(messagesToRead);
+          }
+        },
+        {
+          root: messagesRoot,
+          rootMargin: "-12px 0px -12px 0px",
+          threshold: [0.45, 0.6, 0.8],
+        },
+      );
+    }
 
-    const messageElements = messagesList.querySelectorAll<HTMLElement>("[data-message-id]");
+    const messageElements = messagesRoot.querySelectorAll<HTMLElement>("[data-message-id]");
     for (const el of messageElements) {
       const messageId = Number(el.dataset.messageId);
       if (Number.isInteger(messageId) && friendUnreadMessageIds.has(messageId)) {
-        observer.observe(el);
+        observer?.observe(el);
       }
     }
 
     function handleVisibilityChange() {
       if (document.visibilityState === "visible") {
+        scheduleVisibleScan();
         for (const el of messageElements) {
           const messageId = Number(el.dataset.messageId);
           if (Number.isInteger(messageId) && friendUnreadMessageIds.has(messageId)) {
-            observer.observe(el);
+            observer?.observe(el);
           }
         }
       }
@@ -169,7 +234,13 @@ export function useMessageReceiptEffects({
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      observer.disconnect();
+      if (scanFrameId !== null) {
+        window.cancelAnimationFrame(scanFrameId);
+      }
+      window.clearTimeout(scanTimeoutId);
+      messagesRoot.removeEventListener("scroll", scheduleVisibleScan);
+      window.removeEventListener("resize", scheduleVisibleScan);
+      observer?.disconnect();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [

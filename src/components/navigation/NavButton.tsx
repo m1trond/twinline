@@ -149,6 +149,7 @@ export function NavButton({
 }) {
   const isActive = activeView === item.view;
   const isMobile = variant === "mobile";
+  const isSettings = item.view === "settings";
 
   return (
     <button
@@ -157,7 +158,7 @@ export function NavButton({
       className={`hush-nav-button border ${iconOnly ? "relative grid h-9 min-h-9 w-9 place-items-center rounded-xl px-0 py-0" : isMobile ? "h-9 min-h-9 shrink-0 rounded-lg px-3 py-0 sm:rounded-xl sm:px-4" : "h-9 min-h-9 rounded-xl px-3.5 py-0 text-left"} text-sm font-medium transition ${
         isActive
           ? "border-transparent bg-[#f4f4f5] text-[#050505]"
-          : "border-transparent text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
+          : `${isSettings ? "border-[#3f3f46]/35" : "border-transparent"} text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100`
       }`}
       onClick={() => onSelect(item.view)}
       type="button"

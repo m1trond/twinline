@@ -107,8 +107,6 @@ export function ProfilesContextProvider({
   const {
     profileName,
     setProfileName,
-    profileBio,
-    setProfileBio,
     profileUsername,
     setProfileUsername,
     profileUsernameError,
@@ -223,10 +221,8 @@ export function ProfilesContextProvider({
 
   const isProfileBioChanged = profileBioInputValue !== profileBioSavedValue;
 
-  const isUsernameChangeAllowed = !currentProfile?.username_changed_at;
-  const nextUsernameChangeDate = currentProfile?.username_changed_at
-    ? new Date(currentProfile.username_changed_at).toLocaleDateString()
-    : null;
+  const isUsernameChangeAllowed = true;
+  const nextUsernameChangeDate = null;
 
   // Actions
   const updateProfileName = useCallback(async (event: FormEvent<HTMLFormElement>) => {
@@ -426,11 +422,29 @@ export function ProfilesContextProvider({
         activeUserName,
 
         profileName,
-        setProfileName,
-        profileBio,
-        setProfileBio,
+        setProfileName: setProfileNameInputValue,
+        profileBio: profileBioInputValue,
+        setProfileBio: (value) => {
+          if (typeof value === "function") {
+            setProfileBioInputValue((prev) => {
+              const res = (value as (prev: string | null) => string | null)(prev);
+              return res === null ? "" : res;
+            });
+          } else {
+            setProfileBioInputValue(value === null ? "" : value);
+          }
+        },
         profileUsername,
-        setProfileUsername,
+        setProfileUsername: (value) => {
+          if (typeof value === "function") {
+            setProfileUsernameInputValue((prev) => {
+              const res = (value as (prev: string | null) => string | null)(prev);
+              return res === null ? "" : res;
+            });
+          } else {
+            setProfileUsernameInputValue(value === null ? "" : value);
+          }
+        },
         profileUsernameError,
         setProfileUsernameError,
 
