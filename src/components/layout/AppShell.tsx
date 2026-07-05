@@ -378,7 +378,7 @@ export function AppShell({
                   className={`hush-nav-button border ${isSidebarIconMode ? "mx-auto grid h-9 min-h-9 w-9 place-items-center px-0 py-0" : "flex h-9 min-h-9 items-center px-3.5 py-0 text-left"} rounded-xl text-sm font-medium leading-normal transition ${
                     activeView === translatedSettingsNavItem.view
                       ? "border-transparent bg-[#f4f4f5] text-[#050505]"
-                      : "border-transparent text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
+                      : "border-[#3f3f46]/35 text-[#f4f4f5] opacity-80 hover:bg-white/10 hover:opacity-100"
                   }`}
                   onClick={() => setActiveView(translatedSettingsNavItem.view)}
                   type="button"

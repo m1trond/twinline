@@ -39,7 +39,7 @@ type SelectedMessagesDeleteDialogProps = {
 
 type ChatDeleteDialogProps = {
   chatDeleteTargetProfile: ChatDeleteTargetProfile | null;
-  confirmDeleteChat: () => void;
+  confirmDeleteChat: (deleteForBoth?: boolean) => void;
   isDeletingChat: boolean;
   isOpen: boolean;
   onClose: () => void;
@@ -486,7 +486,7 @@ export function SelectedMessagesDeleteDialog({
   );
 }
 
-export function ChatDeleteDialog({
+export function LegacyChatDeleteDialog({
   chatDeleteTargetProfile,
   confirmDeleteChat,
   isDeletingChat,
@@ -548,12 +548,116 @@ export function ChatDeleteDialog({
             <button
               className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isDeletingChat}
-              onClick={confirmDeleteChat}
+              onClick={() => confirmDeleteChat(true)}
               type="button"
             >
               {isDeletingChat
                 ? language === "en" ? "Deleting..." : "Удаляю..."
                 : language === "en" ? "Delete for both" : "Удалить у двоих"}
+            </button>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+
+export function ChatDeleteDialog({
+  chatDeleteTargetProfile,
+  confirmDeleteChat,
+  isDeletingChat,
+  isOpen,
+  onClose,
+}: ChatDeleteDialogProps) {
+  const { language, t } = useI18n();
+  const [deleteForBoth, setDeleteForBoth] = useState(false);
+
+  if (!isOpen) {
+    return null;
+  }
+
+  const chatDeleteTargetLabel = chatDeleteTargetProfile?.username
+    ? `@${chatDeleteTargetProfile.username}`
+    : chatDeleteTargetProfile?.name ?? (language === "en" ? "this user" : "этим пользователем");
+  const closeDialog = () => {
+    setDeleteForBoth(false);
+    onClose();
+  };
+
+  return (
+    <>
+      <button
+        aria-label={t("cancel")}
+        className="fixed inset-0 z-[95] bg-black/62 backdrop-blur-sm"
+        onClick={closeDialog}
+        type="button"
+      />
+      <section className="hush-modal-transition fixed left-1/2 top-1/2 z-[96] w-[min(460px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-[#3f3f46]/45 bg-[#111111]/96 p-4 text-left shadow-[0_24px_90px_rgba(0,0,0,0.65)] sm:rounded-3xl sm:p-5">
+        <div className="relative">
+          <div className="mb-4 flex items-start gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#3f3f46]/45 bg-[#f4f4f5]/10 text-[#f4f4f5]">
+              <DeleteIcon />
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-base font-medium text-[#f4f4f5]">
+                {language === "en" ? "Delete chat?" : "Удалить чат?"}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-[#a1a1aa]">
+                {language === "en"
+                  ? `Delete the conversation with ${chatDeleteTargetLabel}?`
+                  : `Удалить переписку с ${chatDeleteTargetLabel}?`}
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-[#3f3f46]/35 bg-black/24 p-3">
+            <p className="text-sm font-medium text-[#f4f4f5]">
+              {chatDeleteTargetProfile?.name
+                ? `${t("chatWith")} ${chatDeleteTargetProfile.name}`
+                : language === "en" ? "Current chat" : "Текущий чат"}
+            </p>
+          </div>
+
+          <button
+            className="mt-2 flex min-h-10 w-full items-center gap-3 rounded-xl border border-[#3f3f46]/35 bg-[#f4f4f5]/5 px-3 text-left text-sm font-medium text-[#f4f4f5] transition hover:bg-[#f4f4f5]/10"
+            onClick={() => setDeleteForBoth((value) => !value)}
+            type="button"
+          >
+            <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border transition ${
+              deleteForBoth
+                ? "border-[#f4f4f5] bg-[#f4f4f5] text-[#050505]"
+                : "border-[#3f3f46] bg-transparent text-transparent"
+            }`}>
+              <svg aria-hidden="true" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                <path
+                  d="m5 12 4 4 10-10"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2.5"
+                />
+              </svg>
+            </span>
+            <span>{language === "en" ? "Delete for both" : "Удалить у двоих"}</span>
+          </button>
+
+          <div className="mt-5 grid gap-2 sm:grid-cols-2">
+            <button
+              className="min-h-11 rounded-xl border border-[#3f3f46]/35 px-4 text-sm font-medium text-[#f4f4f5] transition hover:bg-white/10"
+              onClick={closeDialog}
+              type="button"
+            >
+              {language === "en" ? "Keep" : "Оставить"}
+            </button>
+            <button
+              className="min-h-11 rounded-xl bg-[#f4f4f5] px-4 text-sm font-medium text-[#050505] transition hover:bg-[#e5e5e5] disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isDeletingChat}
+              onClick={() => confirmDeleteChat(deleteForBoth)}
+              type="button"
+            >
+              {isDeletingChat
+                ? language === "en" ? "Deleting..." : "Удаляю..."
+                : language === "en" ? "Delete" : "Удалить"}
             </button>
           </div>
         </div>

@@ -175,7 +175,7 @@ type MessagesContextType = {
   setIsUnpinAllDialogOpen: Dispatch<SetStateAction<boolean>>;
   isDeletingChat: boolean;
   requestChatDeleteFromMenu: (profile: ProfileRow) => void;
-  confirmChatDelete: () => Promise<void>;
+  confirmChatDelete: (deleteForBoth?: boolean) => Promise<void>;
   messageDeleteTarget: MessageRow | null;
   setMessageDeleteTarget: Dispatch<SetStateAction<MessageRow | null>>;
   isSelectedDeleteDialogOpen: boolean;
@@ -421,6 +421,7 @@ export function MessagesContextProvider({
     setMessages,
     hasLoadedInitialMessages,
     loadedDialogUserIds,
+    broadcastChatDelete,
     broadcastMessage,
   } = useMessagesRealtimeState({
     activeViewRef,
@@ -1524,12 +1525,39 @@ export function MessagesContextProvider({
     [activeUserName, user]
   );
 
-  const confirmChatDelete = useCallback(async () => {
+  const confirmChatDelete = useCallback(async (deleteForBoth = false) => {
     if (!user || !chatDeleteTargetUserId) {
       return;
     }
 
     const targetUserId = chatDeleteTargetUserId;
+    const chatMessages = messages.filter((message) =>
+      isMessageBetweenUsers(message, user.id, targetUserId),
+    );
+    const chatMessageIds = chatMessages
+      .filter((message) => message.id > 0)
+      .map((message) => message.id);
+
+    if (!deleteForBoth) {
+      if (chatMessageIds.length > 0) {
+        saveHiddenMessageIds(Array.from(new Set([...hiddenMessageIds, ...chatMessageIds])));
+      }
+
+      for (const message of chatMessages) {
+        removeLocalPinnedMessageId(message.id, targetUserId);
+      }
+
+      setIsChatDeleteDialogOpen(false);
+      setChatDeleteTargetUserId(null);
+
+      if (selectedChatUserId === targetUserId) {
+        setSelectedChatUserId(null);
+      }
+
+      setErrorMessage("");
+      return;
+    }
+
     isDeletingChatRef.current = true;
     setIsDeletingChat(true);
     setIsChatDeleteDialogOpen(false);
@@ -1560,19 +1588,16 @@ export function MessagesContextProvider({
 
     setErrorMessage("");
 
-    broadcastMessage({
-      author: "",
-      created_at: new Date().toISOString(),
-      id: 0,
-      recipient_id: user.id,
-      text: "",
-      user_id: targetUserId,
-    });
+    broadcastChatDelete(user.id, targetUserId);
   }, [
+    broadcastChatDelete,
     chatDeleteTargetUserId,
+    hiddenMessageIds,
+    messages,
+    removeLocalPinnedMessageId,
+    saveHiddenMessageIds,
     selectedChatUserId,
     user,
-    broadcastMessage,
     setErrorMessage,
     setMessages,
     setSelectedChatUserId,

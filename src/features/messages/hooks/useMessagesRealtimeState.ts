@@ -533,6 +533,43 @@ export function useMessagesRealtimeState({
         },
       )
       .on(
+        "broadcast",
+        { event: "chat-delete" },
+        (event) => {
+          const payload = event.payload as {
+            deletedByUserId?: unknown;
+            targetUserId?: unknown;
+          } | null;
+
+          if (
+            typeof payload?.deletedByUserId !== "string" ||
+            typeof payload.targetUserId !== "string"
+          ) {
+            return;
+          }
+
+          const { deletedByUserId, targetUserId } = payload;
+
+          if (signedInUser.id !== deletedByUserId && signedInUser.id !== targetUserId) {
+            return;
+          }
+
+          setMessages((currentMessages) =>
+            currentMessages.filter(
+              (message) =>
+                !(
+                  (message.user_id === deletedByUserId && message.recipient_id === targetUserId) ||
+                  (message.user_id === targetUserId && message.recipient_id === deletedByUserId)
+                ),
+            ),
+          );
+
+          if (selectedChatUserIdRef.current === deletedByUserId || selectedChatUserIdRef.current === targetUserId) {
+            setSelectedChatUserId(null);
+          }
+        },
+      )
+      .on(
         "postgres_changes",
         {
           event: "INSERT",
@@ -630,7 +667,16 @@ export function useMessagesRealtimeState({
     });
   }, []);
 
+  const broadcastChatDelete = useCallback((deletedByUserId: string, targetUserId: string) => {
+    void messagesChannelRef.current?.send({
+      event: "chat-delete",
+      payload: { deletedByUserId, targetUserId },
+      type: "broadcast",
+    });
+  }, []);
+
   return {
+    broadcastChatDelete,
     broadcastMessage,
     hasLoadedInitialMessages,
     loadedDialogUserIds,
